@@ -24,32 +24,42 @@ export default function Navbar() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-sm p-4 flex justify-between items-center">
-      <div className="flex space-x-6">
+    <nav className="bg-[#032F36] border-b border-[#04363E] py-3 px-4 flex justify-between items-center">
+      <div className="flex space-x-8">
         <Link href="/">
-          <a className={`border-b-2 px-1 ${location === "/" ? "text-primary border-primary" : "text-gray-500 border-transparent hover:border-primary hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 ${location === "/" ? "text-primary" : "text-white hover:text-primary"}`}>
             Sports
-          </a>
+            {location === "/" && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+            )}
+          </div>
         </Link>
         <Link href="/?live=true">
-          <a className={`border-b-2 px-1 flex items-center ${location === "/?live=true" ? "text-primary border-primary" : "text-gray-500 border-transparent hover:border-primary hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 flex items-center ${location === "/?live=true" ? "text-primary" : "text-white hover:text-primary"}`}>
             Live 
-            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block live-pulse"></span>
-          </a>
+            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+            {location === "/?live=true" && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+            )}
+          </div>
         </Link>
         <Link href="/promotions">
-          <a className={`border-b-2 px-1 ${location === "/promotions" ? "text-primary border-primary" : "text-gray-500 border-transparent hover:border-primary hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-primary" : "text-white hover:text-primary"}`}>
             Promotions
-          </a>
+            {location === "/promotions" && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+            )}
+          </div>
         </Link>
       </div>
       
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-4">
         {isAuthenticated ? (
           <>
             <Button 
               variant="ghost" 
               size="icon"
+              className="text-white hover:text-primary hover:bg-[#04363E]"
               onClick={() => setIsNotificationsModalOpen(true)}
             >
               <Bell className="h-5 w-5" />
@@ -58,6 +68,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
+              className="text-white hover:text-primary hover:bg-[#04363E]"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="h-5 w-5" />
@@ -65,7 +76,7 @@ export default function Navbar() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2">
+                <Button variant="outline" className="ml-2 border-primary text-primary hover:bg-primary hover:text-white">
                   {user?.walletAddress && shortenAddress(user.walletAddress)}
                 </Button>
               </DropdownMenuTrigger>
@@ -86,11 +97,11 @@ export default function Navbar() {
         ) : (
           <>
             <Link href="/join">
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white">
+              <Button variant="outline" className="border-primary text-primary hover:bg-primary/20 font-medium">
                 Join Now
               </Button>
             </Link>
-            <Button onClick={() => setIsWalletModalOpen(true)}>
+            <Button className="bg-primary hover:bg-primary/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
               Connect Wallet
             </Button>
           </>

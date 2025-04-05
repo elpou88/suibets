@@ -10,11 +10,11 @@ import {
 
 export default function Footer() {
   return (
-    <footer className="bg-white p-6 border-t border-gray-200">
+    <footer className="bg-[#032F36] p-6 border-t border-[#04363E]">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
         <div>
-          <h3 className="font-medium text-gray-800 mb-3">Information</h3>
-          <ul className="space-y-2 text-sm text-gray-500">
+          <h3 className="font-medium text-white mb-3">Information</h3>
+          <ul className="space-y-2 text-sm text-gray-300">
             <li><Link href="/faq"><a className="hover:text-primary">FAQ</a></Link></li>
             <li><Link href="/blog"><a className="hover:text-primary">Blog</a></Link></li>
             <li><Link href="/affiliate"><a className="hover:text-primary">Become an Affiliate</a></Link></li>
@@ -27,8 +27,8 @@ export default function Footer() {
         </div>
         
         <div>
-          <h3 className="font-medium text-gray-800 mb-3">Community</h3>
-          <ul className="space-y-2 text-sm text-gray-500">
+          <h3 className="font-medium text-white mb-3">Community</h3>
+          <ul className="space-y-2 text-sm text-gray-300">
             <li>
               <a href="#" className="flex items-center hover:text-primary">
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -51,8 +51,8 @@ export default function Footer() {
         </div>
         
         <div>
-          <h3 className="font-medium text-gray-800 mb-3">Contact Us</h3>
-          <ul className="space-y-2 text-sm text-gray-500">
+          <h3 className="font-medium text-white mb-3">Contact Us</h3>
+          <ul className="space-y-2 text-sm text-gray-300">
             <li>
               <a href="#" className="flex items-center hover:text-primary">
                 <HelpCircle className="h-4 w-4 mr-2" />
@@ -69,9 +69,9 @@ export default function Footer() {
         </div>
         
         <div>
-          <h3 className="font-medium text-gray-800 mb-3">Preferences</h3>
-          <div className="flex items-center text-sm text-gray-500 mb-3">
-            <div className="border rounded inline-flex items-center p-2">
+          <h3 className="font-medium text-white mb-3">Preferences</h3>
+          <div className="flex items-center text-sm text-gray-300 mb-3">
+            <div className="border border-[#04363E] rounded inline-flex items-center p-2 bg-[#04363E]">
               <span className="mr-2 flex items-center">
                 <svg className="h-4 w-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 30">
                   <clipPath id="a"><path d="M0 0v30h60V0z"/></clipPath>
@@ -94,7 +94,7 @@ export default function Footer() {
         </div>
       </div>
       
-      <div className="mt-8 pt-8 border-t border-gray-200 text-center text-sm text-gray-500">
+      <div className="mt-8 pt-8 border-t border-[#04363E] text-center text-sm text-gray-400">
         <p>© {new Date().getFullYear()} SuiBets. All rights reserved.</p>
         <p className="mt-2">
           SuiBets is a sports betting platform built on the Sui blockchain.

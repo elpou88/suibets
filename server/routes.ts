@@ -6,6 +6,11 @@ import { SuiService } from "./services/sui";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Add a simple health check endpoint
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
+  
   // Initialize services
   const sportsApi = new SportsApi();
   const suiService = new SuiService();

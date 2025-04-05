@@ -115,3 +115,44 @@
     }
   }
 }
+
+.sui-logo {
+  font-family: 'Arial', sans-serif;
+  font-weight: 700;
+  font-size: 1.75rem;
+  color: hsl(170, 95%, 45%);
+  letter-spacing: -0.05em;
+  position: relative;
+}
+
+.sui-logo::first-letter {
+  color: hsl(170, 95%, 45%);
+}
+
+.sui-logo::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: hsl(170, 95%, 45%);
+  top: 8px;
+  left: -8px;
+}
+
+/* Background colors for sidebar and main body */
+.bg-primary-gradient {
+  background-color: #032F36;
+  background-image: linear-gradient(180deg, #032F36 0%, #042A30 100%);
+}
+
+/* Custom button styles for active states */
+.sport-button {
+  transition: all 0.2s ease;
+}
+
+.sport-button-active {
+  background-color: hsl(170, 95%, 45%);
+  color: #000000;
+  font-weight: 500;
+}

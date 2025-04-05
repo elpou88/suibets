@@ -47,38 +47,38 @@ export default function MobileSidebar() {
   const getSportIcon = (sport: string) => {
     switch (sport.toLowerCase()) {
       case 'football':
-        return <MdSportsSoccer className="h-5 w-5 mr-2" />;
+        return <MdSportsSoccer className="h-5 w-5" />;
       case 'basketball':
-        return <MdSportsBasketball className="h-5 w-5 mr-2" />;
+        return <MdSportsBasketball className="h-5 w-5" />;
       case 'tennis':
-        return <MdSportsTennis className="h-5 w-5 mr-2" />;
+        return <MdSportsTennis className="h-5 w-5" />;
       case 'baseball':
-        return <MdSportsBaseball className="h-5 w-5 mr-2" />;
+        return <MdSportsBaseball className="h-5 w-5" />;
       case 'boxing':
-        return <FaFistRaised className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5" />;
       case 'hockey':
-        return <MdSportsHockey className="h-5 w-5 mr-2" />;
+        return <MdSportsHockey className="h-5 w-5" />;
       case 'esports':
-        return <MdSportsEsports className="h-5 w-5 mr-2" />;
+        return <MdSportsEsports className="h-5 w-5" />;
       case 'mma-ufc':
-        return <FaFistRaised className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5" />;
       case 'volleyball':
-        return <MdSportsVolleyball className="h-5 w-5 mr-2" />;
+        return <MdSportsVolleyball className="h-5 w-5" />;
       case 'table-tennis':
-        return <FaTableTennis className="h-5 w-5 mr-2" />;
+        return <FaTableTennis className="h-5 w-5" />;
       case 'rugby-league':
       case 'rugby-union':
-        return <MdSportsRugby className="h-5 w-5 mr-2" />;
+        return <MdSportsRugby className="h-5 w-5" />;
       case 'cricket':
-        return <MdSportsCricket className="h-5 w-5 mr-2" />;
+        return <MdSportsCricket className="h-5 w-5" />;
       case 'horse-racing':
-        return <FaHorse className="h-5 w-5 mr-2" />;
+        return <FaHorse className="h-5 w-5" />;
       case 'greyhounds':
-        return <FaDog className="h-5 w-5 mr-2" />;
+        return <FaDog className="h-5 w-5" />;
       case 'afl':
-        return <FaShieldAlt className="h-5 w-5 mr-2" />;
+        return <FaShieldAlt className="h-5 w-5" />;
       default:
-        return <Grid2X2 className="h-5 w-5 mr-2" />;
+        return <Grid2X2 className="h-5 w-5" />;
     }
   };
 
@@ -93,46 +93,48 @@ export default function MobileSidebar() {
           <Menu className="h-6 w-6" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="p-0 bg-secondary text-white w-64">
+      <SheetContent side="left" className="p-0 bg-[#032F36] text-white w-64">
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-4 flex items-center">
-            <span className="text-2xl font-bold text-primary">SuiBets</span>
+          <div className="py-6 px-6 flex items-center">
+            <span className="sui-logo">SuiBets</span>
           </div>
           
           {/* Navigation */}
-          <div className="flex-grow overflow-y-auto scrollbar-hidden p-4 space-y-2">
+          <div className="flex-grow overflow-y-auto scrollbar-hidden space-y-1">
             {/* Upcoming */}
             <Link href="/">
-              <Button
-                variant={activeSport === 'upcoming' ? 'default' : 'ghost'}
-                className={`w-full justify-start ${
+              <div 
+                className={`flex items-center px-4 py-3 mx-2 rounded ${
                   activeSport === 'upcoming' 
-                    ? 'bg-primary text-secondary' 
-                    : 'text-white hover:bg-gray-700'
+                    ? 'bg-primary text-black' 
+                    : 'text-white hover:bg-[#042A30]'
                 }`}
                 onClick={() => handleNavigation('/')}
               >
-                <Grid2X2 className="h-5 w-5 mr-2" />
-                Upcoming
-              </Button>
+                <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                  <Grid2X2 className="h-5 w-5" />
+                </div>
+                <span className={activeSport === 'upcoming' ? 'font-semibold' : ''}>Upcoming</span>
+              </div>
             </Link>
 
             {/* Sports categories */}
             {sports.map((sport) => (
               <Link key={sport.id} href={`/sport/${sport.slug}`}>
-                <Button
-                  variant={activeSport === sport.slug ? 'default' : 'ghost'}
-                  className={`w-full justify-start ${
+                <div
+                  className={`flex items-center px-4 py-3 mx-2 rounded ${
                     activeSport === sport.slug 
-                      ? 'bg-primary text-secondary' 
-                      : 'text-white hover:bg-gray-700'
+                      ? 'bg-primary text-black' 
+                      : 'text-white hover:bg-[#042A30]'
                   }`}
                   onClick={() => handleNavigation(`/sport/${sport.slug}`)}
                 >
-                  {getSportIcon(sport.slug)}
-                  {sport.name}
-                </Button>
+                  <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                    {getSportIcon(sport.slug)}
+                  </div>
+                  <span className={activeSport === sport.slug ? 'font-semibold' : ''}>{sport.name}</span>
+                </div>
               </Link>
             ))}
           </div>

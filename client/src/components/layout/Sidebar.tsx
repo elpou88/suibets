@@ -2,24 +2,26 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Sport } from "@/types";
+import { Grid2X2 } from "lucide-react";
+import { 
+  MdSportsBaseball, 
+  MdSportsBasketball, 
+  MdSportsSoccer, 
+  MdSportsTennis, 
+  MdSportsHockey, 
+  MdSportsEsports, 
+  MdSportsRugby, 
+  MdSportsCricket, 
+  MdSportsHandball,
+  MdSportsVolleyball
+} from "react-icons/md";
 import {
-  Activity,
-  CircleDotDashed,
-  Bike,
-  CircleEllipsis,
-  Zap,
-  Trophy,
-  Monitor,
-  Users,
-  UserRound,
-  Tablet,
-  Flag,
-  Bug,
-  CircleEllipsis as HorseIcon,
-  CircleOff,
-  Shield,
-  Grid2X2
-} from "lucide-react";
+  FaFistRaised,
+  FaHorse,
+  FaDog,
+  FaShieldAlt,
+  FaTableTennis
+} from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 
 export default function Sidebar() {
@@ -43,36 +45,36 @@ export default function Sidebar() {
   const getSportIcon = (sport: string) => {
     switch (sport.toLowerCase()) {
       case 'football':
-        return <Activity className="h-5 w-5 mr-2" />;
+        return <MdSportsSoccer className="h-5 w-5 mr-2" />;
       case 'basketball':
-        return <CircleDotDashed className="h-5 w-5 mr-2" />;
+        return <MdSportsBasketball className="h-5 w-5 mr-2" />;
       case 'tennis':
-        return <Bike className="h-5 w-5 mr-2" />;
+        return <MdSportsTennis className="h-5 w-5 mr-2" />;
       case 'baseball':
-        return <CircleEllipsis className="h-5 w-5 mr-2" />;
+        return <MdSportsBaseball className="h-5 w-5 mr-2" />;
       case 'boxing':
-        return <Zap className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5 mr-2" />;
       case 'hockey':
-        return <Trophy className="h-5 w-5 mr-2" />;
+        return <MdSportsHockey className="h-5 w-5 mr-2" />;
       case 'esports':
-        return <Monitor className="h-5 w-5 mr-2" />;
+        return <MdSportsEsports className="h-5 w-5 mr-2" />;
       case 'mma-ufc':
-        return <Users className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5 mr-2" />;
       case 'volleyball':
-        return <UserRound className="h-5 w-5 mr-2" />;
+        return <MdSportsVolleyball className="h-5 w-5 mr-2" />;
       case 'table-tennis':
-        return <Tablet className="h-5 w-5 mr-2" />;
+        return <FaTableTennis className="h-5 w-5 mr-2" />;
       case 'rugby-league':
       case 'rugby-union':
-        return <Flag className="h-5 w-5 mr-2" />;
+        return <MdSportsRugby className="h-5 w-5 mr-2" />;
       case 'cricket':
-        return <Bug className="h-5 w-5 mr-2" />;
+        return <MdSportsCricket className="h-5 w-5 mr-2" />;
       case 'horse-racing':
-        return <HorseIcon className="h-5 w-5 mr-2" />;
+        return <FaHorse className="h-5 w-5 mr-2" />;
       case 'greyhounds':
-        return <CircleOff className="h-5 w-5 mr-2" />;
+        return <FaDog className="h-5 w-5 mr-2" />;
       case 'afl':
-        return <Shield className="h-5 w-5 mr-2" />;
+        return <FaShieldAlt className="h-5 w-5 mr-2" />;
       default:
         return <Grid2X2 className="h-5 w-5 mr-2" />;
     }

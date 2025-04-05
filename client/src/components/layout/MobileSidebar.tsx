@@ -1,26 +1,28 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
 import { Sport } from "@/types";
+import { Menu, Grid2X2 } from "lucide-react";
 import { 
-  Menu, 
-  Activity,
-  CircleDotDashed,
-  Bike,
-  Trophy,
-  Zap,
-  Monitor, 
-  Users, 
-  UserRound,
-  Tablet, 
-  Flag, 
-  Bug, 
-  CircleEllipsis,
-  CircleOff,
-  Shield,
-  Grid2X2
-} from "lucide-react";
+  MdSportsBaseball, 
+  MdSportsBasketball, 
+  MdSportsSoccer, 
+  MdSportsTennis, 
+  MdSportsHockey, 
+  MdSportsEsports, 
+  MdSportsRugby, 
+  MdSportsCricket, 
+  MdSportsHandball,
+  MdSportsVolleyball
+} from "react-icons/md";
+import {
+  FaFistRaised,
+  FaHorse,
+  FaDog,
+  FaShieldAlt,
+  FaTableTennis
+} from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 
 export default function MobileSidebar() {
@@ -31,40 +33,50 @@ export default function MobileSidebar() {
   const { data: sports = [] } = useQuery<Sport[]>({
     queryKey: ['/api/sports']
   });
+  
+  useEffect(() => {
+    // Extract the current sport from the location
+    const path = location.split('?')[0];
+    if (path === '/') {
+      setActiveSport('upcoming');
+    } else if (path.startsWith('/sport/')) {
+      setActiveSport(path.replace('/sport/', ''));
+    }
+  }, [location]);
 
   const getSportIcon = (sport: string) => {
     switch (sport.toLowerCase()) {
       case 'football':
-        return <Activity className="h-5 w-5 mr-2" />;
+        return <MdSportsSoccer className="h-5 w-5 mr-2" />;
       case 'basketball':
-        return <CircleDotDashed className="h-5 w-5 mr-2" />;
+        return <MdSportsBasketball className="h-5 w-5 mr-2" />;
       case 'tennis':
-        return <Bike className="h-5 w-5 mr-2" />;
+        return <MdSportsTennis className="h-5 w-5 mr-2" />;
       case 'baseball':
-        return <CircleEllipsis className="h-5 w-5 mr-2" />;
+        return <MdSportsBaseball className="h-5 w-5 mr-2" />;
       case 'boxing':
-        return <Zap className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5 mr-2" />;
       case 'hockey':
-        return <Trophy className="h-5 w-5 mr-2" />;
+        return <MdSportsHockey className="h-5 w-5 mr-2" />;
       case 'esports':
-        return <Monitor className="h-5 w-5 mr-2" />;
+        return <MdSportsEsports className="h-5 w-5 mr-2" />;
       case 'mma-ufc':
-        return <Users className="h-5 w-5 mr-2" />;
+        return <FaFistRaised className="h-5 w-5 mr-2" />;
       case 'volleyball':
-        return <UserRound className="h-5 w-5 mr-2" />;
+        return <MdSportsVolleyball className="h-5 w-5 mr-2" />;
       case 'table-tennis':
-        return <Tablet className="h-5 w-5 mr-2" />;
+        return <FaTableTennis className="h-5 w-5 mr-2" />;
       case 'rugby-league':
       case 'rugby-union':
-        return <Flag className="h-5 w-5 mr-2" />;
+        return <MdSportsRugby className="h-5 w-5 mr-2" />;
       case 'cricket':
-        return <Bug className="h-5 w-5 mr-2" />;
+        return <MdSportsCricket className="h-5 w-5 mr-2" />;
       case 'horse-racing':
-        return <Activity className="h-5 w-5 mr-2" />;
+        return <FaHorse className="h-5 w-5 mr-2" />;
       case 'greyhounds':
-        return <CircleOff className="h-5 w-5 mr-2" />;
+        return <FaDog className="h-5 w-5 mr-2" />;
       case 'afl':
-        return <Shield className="h-5 w-5 mr-2" />;
+        return <FaShieldAlt className="h-5 w-5 mr-2" />;
       default:
         return <Grid2X2 className="h-5 w-5 mr-2" />;
     }

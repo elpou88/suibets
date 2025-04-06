@@ -275,16 +275,24 @@ export class SuiMoveService {
    * @param walletAddress User's Sui wallet address
    * @returns Promise resolving to boolean indicating success
    */
-  async connectWallet(walletAddress: string): Promise<boolean> {
+  async connectWallet(walletAddress: string, walletType: string = 'Sui'): Promise<boolean> {
     try {
-      // Following Wal.app documentation for wallet connection
+      // Generate a random username based on address (will be changeable by user later)
+      const randomUsername = `user_${walletAddress.substring(0, 8)}`;
+
+      // Following Wal.app documentation for wallet connection and user_registry module
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
         packageObjectId: this.network.packageId,
         module: this.moduleNames.userRegistry,
         function: 'register_user',
         typeArguments: [],
-        arguments: [this.network.protocolObjectId],
+        arguments: [
+          this.network.protocolObjectId,  // Protocol object
+          randomUsername,                // Username
+          walletType,                    // Wallet type (Sui, Suiet, Nightly, WalletConnect)
+          null                           // Email (optional)
+        ],
         gasBudget: 10000
       };
 

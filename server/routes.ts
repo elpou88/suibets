@@ -296,8 +296,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
 
       // Connect wallet to wurlus protocol using Sui Move
-      console.log(`Connecting wallet ${address} to Wurlus protocol`);
-      const connected = await suiMoveService.connectWallet(address);
+      console.log(`Connecting wallet ${address} to Wurlus protocol with type ${sanitizedWalletType}`);
+      const connected = await suiMoveService.connectWallet(address, sanitizedWalletType);
       
       if (!connected) {
         return res.status(400).json({ message: "Failed to connect wallet to Wurlus protocol" });
@@ -371,17 +371,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Wurlus Protocol specific API endpoints
   app.post("/api/wurlus/connect", async (req: Request, res: Response) => {
     try {
-      const { walletAddress } = req.body;
+      const { walletAddress, walletType } = req.body;
       
       if (!walletAddress) {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
+      // Sanitize inputs to prevent XSS
+      const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
+      
       // Use the Sui Move service for wurlus protocol integration
       const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       
       // Connect to the Wurlus protocol using Sui Move
-      const connected = await suiMoveService.connectWallet(walletAddress);
+      const connected = await suiMoveService.connectWallet(walletAddress, sanitizedWalletType);
       
       if (!connected) {
         return res.status(400).json({ 

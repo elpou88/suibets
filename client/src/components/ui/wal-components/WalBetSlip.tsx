@@ -71,8 +71,8 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
       const totalOdds = selections.reduce((acc, selection) => acc * selection.odds, 1);
       const winnings = amountValue * totalOdds;
 
-      // Calculate fees based on Wal.app documentation
-      const platformFee = amountValue * 0.05; // 5% platform fee
+      // Calculate fees based on updated documentation
+      const platformFee = amountValue * 0.00; // 0% platform fee (removed)
       const networkFee = amountValue * 0.01; // 1% network fee
 
       setPotentialWinnings(winnings);
@@ -293,7 +293,7 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
                   <span className="font-medium">{formatBetCurrency(potentialWinnings)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>Platform Fee (5%):</span>
+                  <span>Platform Fee (0%):</span>
                   <span>{formatBetCurrency(betFees.platformFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">

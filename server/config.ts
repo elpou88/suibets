@@ -49,9 +49,9 @@ interface AppConfig {
     contentSecurityPolicy: boolean;
   };
   
-  // Fees configuration based on Wal.app cost documentation
+  // Fees configuration
   fees: {
-    // Platform fee for betting (5%)
+    // Platform fee for betting (0% - removed as requested)
     platformFeeBetting: number;
     // Network fee for betting (1%)
     networkFeeBetting: number;
@@ -91,8 +91,8 @@ const config: AppConfig = {
     contentSecurityPolicy: process.env.NODE_ENV === 'production'
   },
   fees: {
-    // Based on Wal.app cost documentation
-    platformFeeBetting: 0.05, // 5%
+    // Updated fee structure
+    platformFeeBetting: 0.00, // 0% (removed platform fee)
     networkFeeBetting: 0.01,  // 1%
     platformFeeStaking: 0.02, // 2%
     platformFeeRewards: 0.10  // 10%

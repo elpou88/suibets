@@ -204,7 +204,7 @@ export class SuiMoveService {
       const potentialPayout = betAmount * odds;
       
       // Calculate platform and network fees
-      const platformFee = betAmount * 0.05; // 5%
+      const platformFee = betAmount * 0.00; // 0% (platform fee removed)
       const networkFee = betAmount * 0.01; // 1%
       
       // Total amount needed for the bet including fees
@@ -385,7 +385,7 @@ export class SuiMoveService {
       const potentialPayout = betAmount * odds;
       
       // Calculate platform and network fees
-      const platformFee = betAmount * 0.05; // 5%
+      const platformFee = betAmount * 0.00; // 0% (platform fee removed)
       const networkFee = betAmount * 0.01; // 1%
       
       // Total amount needed for the bet including fees
@@ -1409,7 +1409,7 @@ export class SuiMoveService {
       const potentialPayout = betAmount * totalOdds;
       
       // Calculate platform and network fees
-      const platformFee = betAmount * 0.05; // 5%
+      const platformFee = betAmount * 0.00; // 0% (platform fee removed)
       const networkFee = betAmount * 0.01; // 1%
       
       // Total amount needed for the bet including fees
@@ -1578,7 +1578,7 @@ export class SuiMoveService {
       const potentialPayout = betAmount * totalOdds;
       
       // Calculate platform and network fees
-      const platformFee = betAmount * 0.05; // 5%
+      const platformFee = betAmount * 0.00; // 0% (platform fee removed)
       const networkFee = betAmount * 0.01; // 1%
       
       // Total amount needed for the bet including fees

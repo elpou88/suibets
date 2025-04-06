@@ -43,11 +43,16 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <Link href="/promotions">
+        <a 
+          href="/promotions-image.png" 
+          target="_blank"
+          rel="noopener noreferrer"
+          className="block"
+        >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
           </div>
-        </Link>
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

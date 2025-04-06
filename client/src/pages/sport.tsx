@@ -82,20 +82,33 @@ export default function Sport() {
     }
   };
 
+  // Choose the correct image based on the sport
+  const getSportImage = () => {
+    switch(sportSlug) {
+      case 'football':
+        return "/images/Sports 1 (2).png";
+      case 'basketball':
+        return "/images/Sports 2 (2).png";
+      case 'tennis':
+        return "/images/Sports 3 (2).png";
+      case 'baseball':
+        return "/images/Sports 4 (2).png";
+      default:
+        return "/images/Sports 1 (2).png";
+    }
+  };
+
   console.log('Sport page loaded for:', sportSlug);
 
   return (
     <Layout>
       <div className="w-full min-h-screen flex flex-col">
-        <div className="absolute top-16 left-0 right-0 z-50 text-center bg-black bg-opacity-75 text-white p-2">
-          Currently viewing: {sportSlug}
-        </div>
         <div 
           className="relative w-full cursor-pointer" 
           onClick={handleImageClick}
         >
           <img 
-            src="/images/Sports 3 (2).png" 
+            src={getSportImage()} 
             alt={`${sportSlug} Sport Details`} 
             className="w-full h-full object-contain pointer-events-none"
           />

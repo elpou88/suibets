@@ -15,14 +15,14 @@ export default function Footer() {
         <div>
           <h3 className="font-medium text-white mb-3">Information</h3>
           <ul className="space-y-2 text-sm text-gray-300">
-            <li><Link href="/faq"><a className="hover:text-primary">FAQ</a></Link></li>
-            <li><Link href="/blog"><a className="hover:text-primary">Blog</a></Link></li>
-            <li><Link href="/affiliate"><a className="hover:text-primary">Become an Affiliate</a></Link></li>
-            <li><Link href="/privacy"><a className="hover:text-primary">Privacy Policy</a></Link></li>
-            <li><Link href="/rules"><a className="hover:text-primary">Rules</a></Link></li>
-            <li><Link href="/integrity"><a className="hover:text-primary">Betting Integrity</a></Link></li>
-            <li><Link href="/responsible"><a className="hover:text-primary">Responsible Gambling</a></Link></li>
-            <li><Link href="/about"><a className="hover:text-primary">About Us</a></Link></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/faq"}>FAQ</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/blog"}>Blog</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/affiliate"}>Become an Affiliate</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/privacy"}>Privacy Policy</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/rules"}>Rules</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/integrity"}>Betting Integrity</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/responsible"}>Responsible Gambling</span></li>
+            <li><span className="hover:text-primary cursor-pointer" onClick={() => window.location.href="/about"}>About Us</span></li>
           </ul>
         </div>
         

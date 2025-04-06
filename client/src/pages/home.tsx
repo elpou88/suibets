@@ -1,27 +1,13 @@
 import { useLocation } from "wouter";
-import { PromotionBanner } from "@/components/home/PromotionBanner";
-import { PromotionCards } from "@/components/home/PromotionCards";
-import { EventsContainer } from "@/components/home/EventsContainer";
-import { LiveEventsSection } from "@/components/home/LiveEventsSection";
 
 export default function Home() {
-  const [location] = useLocation();
-  const isLiveView = location.includes("?live=true");
-  
   return (
-    <div>
-      <PromotionBanner />
-      
-      <PromotionCards />
-      
-      {isLiveView ? (
-        <LiveEventsSection />
-      ) : (
-        <>
-          <LiveEventsSection />
-          <EventsContainer />
-        </>
-      )}
+    <div className="w-full min-h-screen flex flex-col">
+      <img 
+        src="/images/Sports 1 (2).png" 
+        alt="Sports Home" 
+        className="w-full h-full object-contain"
+      />
     </div>
   );
 }

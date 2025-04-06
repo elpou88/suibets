@@ -1,11 +1,11 @@
 import { useLocation } from "wouter";
 
-export default function Match() {
+export default function Settings() {
   return (
     <div className="w-full min-h-screen flex flex-col">
       <img 
-        src="/images/Sports 2 (2).png" 
-        alt="Match Details" 
+        src="/images/Settings (2).png" 
+        alt="Settings" 
         className="w-full h-full object-contain"
       />
     </div>

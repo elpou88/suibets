@@ -1,6 +1,7 @@
 import { storage } from '../storage';
 import { sealService } from './sealService';
 import { type InsertBet, type InsertWurlusStaking, type InsertNotification, type InsertWurlusWalletOperation } from '@shared/schema';
+import { db } from '../db';
 
 // Define available blockchain networks
 export enum SuiNetwork {
@@ -24,6 +25,26 @@ export class SuiMoveService {
     this.wurlusApiKey = process.env.WURLUS_API_KEY || '';
     this.walAppApiKey = process.env.WAL_APP_API_KEY || '';
     this.network = network;
+  }
+  
+  /**
+   * Get wallet balance from the blockchain
+   * @param walletAddress - User's wallet address
+   * @returns Promise<number> - The wallet balance
+   */
+  async getWalletBalance(walletAddress: string): Promise<number> {
+    try {
+      // In a real implementation, this would call the Sui blockchain
+      // using JSON-RPC or a Sui SDK to fetch the wallet balance
+      
+      // For now, return a mock balance
+      const mockBalance = 1000 + Math.floor(Math.random() * 5000);
+      
+      return mockBalance / 100; // Convert to a reasonable SUI amount
+    } catch (error) {
+      console.error('Error getting wallet balance:', error);
+      return 0;
+    }
   }
   
   /**
@@ -560,6 +581,179 @@ export class SuiMoveService {
    * @param betId Bet ID to claim winnings from
    * @returns The transaction hash or null on failure
    */
+  /**
+   * Settle a market with a winning outcome
+   * @param adminWallet Admin wallet address
+   * @param marketId Market ID to settle
+   * @param winningOutcomeId Winning outcome ID
+   * @returns The transaction hash
+   */
+  async settleMarket(
+    adminWallet: string,
+    marketId: number,
+    winningOutcomeId: number
+  ): Promise<string | null> {
+    try {
+      // Get the market
+      const market = await storage.getMarket(marketId);
+      if (!market) {
+        throw new Error('Market not found');
+      }
+      
+      if (market.status === 'settled') {
+        throw new Error('Market is already settled');
+      }
+      
+      // Get the outcome
+      const outcome = await storage.getOutcome(winningOutcomeId);
+      if (!outcome) {
+        throw new Error('Outcome not found');
+      }
+      
+      if (outcome.marketId !== marketId) {
+        throw new Error('Outcome does not belong to the specified market');
+      }
+      
+      // Create a wurlus blob for settlement verification
+      const wurlusBlob = this.createWurlusBlob('settle_market', {
+        adminWallet,
+        marketId,
+        winningOutcomeId,
+        timestamp: Date.now()
+      });
+      
+      // In a real implementation, this would call the Sui blockchain
+      // using JSON-RPC or a Sui SDK to execute the Move code for settling a market
+      
+      // For now, simulate the settlement with a mock transaction hash
+      const txHash = `settle_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Update the market status to settled
+      await storage.updateMarket(marketId, { 
+        status: 'settled',
+        settledAt: new Date()
+      });
+      
+      // Update the outcome to mark it as winner
+      await storage.updateOutcome(winningOutcomeId, { isWinner: true });
+      
+      // Find all bets related to this market
+      const allBets = await storage.getBetsByMarketId(marketId);
+      
+      // Process each bet automatically
+      for (const bet of allBets) {
+        if (bet.outcomeId === winningOutcomeId) {
+          // The bet has won - update it and process payment automatically
+          await this.processWinningBet(bet);
+        } else {
+          // The bet has lost
+          await storage.updateBet(bet.id, { 
+            status: 'lost',
+            settledAt: new Date(),
+            result: 'lost'
+          });
+          
+          // Create a notification for the user
+          const user = await storage.getUser(bet.userId);
+          if (user) {
+            const notification: InsertNotification = {
+              userId: user.id,
+              title: 'Bet Lost',
+              message: `Your bet of ${bet.betAmount} ${bet.feeCurrency} has lost`,
+              notificationType: 'bet_result'
+            };
+            
+            await storage.createNotification(notification);
+          }
+        }
+      }
+      
+      return txHash;
+    } catch (error) {
+      console.error('Error settling market:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Process a winning bet, update status and automatically credit user
+   * @param bet The bet that won
+   */
+  private async processWinningBet(bet: any): Promise<void> {
+    try {
+      // Update the bet status
+      await storage.updateBet(bet.id, { 
+        status: 'won',
+        settledAt: new Date(),
+        result: 'won'
+      });
+      
+      // Get the user
+      const user = await storage.getUser(bet.userId);
+      if (!user) {
+        console.error(`User not found for bet ${bet.id}`);
+        return;
+      }
+      
+      // Create a transaction hash for the automatic payment
+      const txHash = `autopay_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Create a wurlus blob for automatic payment verification
+      const wurlusBlob = this.createWurlusBlob('auto_payment', {
+        betId: bet.id,
+        userId: user.id,
+        potentialPayout: bet.potentialPayout,
+        feeCurrency: bet.feeCurrency,
+        timestamp: Date.now()
+      });
+      
+      // Automatically credit the user with their winnings
+      await storage.updateUserBalance(user.id, user.balance + bet.potentialPayout);
+      
+      // Update the bet to paid status
+      await storage.updateBet(bet.id, { status: 'paid' });
+      
+      // Create a notification
+      const notification: InsertNotification = {
+        userId: user.id,
+        title: 'Bet Won - Automatic Payment',
+        message: `You won ${bet.potentialPayout} ${bet.feeCurrency} and it has been automatically credited to your account!`,
+        relatedTxHash: txHash,
+        notificationType: 'win'
+      };
+      
+      await storage.createNotification(notification);
+      
+      // Create a wallet operation record
+      const operation: InsertWurlusWalletOperation = {
+        userId: user.id,
+        walletAddress: user.walletAddress || '',
+        operationType: 'auto_win_payment',
+        amount: bet.potentialPayout,
+        txHash,
+        status: 'completed',
+        metadata: {
+          betId: bet.id,
+          betAmount: bet.betAmount,
+          currency: bet.feeCurrency,
+          wurlusBlob
+        }
+      };
+      
+      await storage.createWalletOperation(operation);
+      
+    } catch (error) {
+      console.error(`Error processing winning bet ${bet.id}:`, error);
+    }
+  }
+  
+  /**
+   * Claim winnings for a bet (for backward compatibility)
+   * Note: This method is now deprecated as winnings are automatically credited
+   * @param walletAddress User's wallet address
+   * @param betId Bet ID to claim
+   * @returns The transaction hash or null on failure
+   */
   async claimWinnings(
     walletAddress: string,
     betId: number
@@ -605,6 +799,9 @@ export class SuiMoveService {
       
       // Update the bet status
       await storage.updateBet(betId, { status: 'paid' });
+      
+      // Update the user's balance
+      await storage.updateUserBalance(user.id, user.balance + bet.potentialPayout);
       
       // Create a notification
       const notification: InsertNotification = {
@@ -684,11 +881,166 @@ export class SuiMoveService {
         return amount * 0.0005; // 0.05% of stake amount as gas fee
       case 'unstake':
         return amount * 0.0008; // 0.08% of unstake amount as gas fee
+      case 'deposit':
+        return amount * 0.0003; // 0.03% of deposit amount as gas fee
+      case 'withdraw':
+        return amount * 0.0005; // 0.05% of withdrawal amount as gas fee  
       case 'claim_winnings':
       case 'claim_reward':
         return 0.001; // Fixed gas fee for claiming
       default:
         return 0.0005; // Default gas fee
+    }
+  }
+  
+  /**
+   * Deposit funds into the user's wallet
+   * @param userId User ID
+   * @param walletAddress User's wallet address
+   * @param amount Amount to deposit
+   * @param currency Currency to deposit (SUI or SBETS)
+   * @returns The transaction hash or null on failure
+   */
+  async depositFunds(
+    userId: number,
+    walletAddress: string,
+    amount: number,
+    currency: string = 'SUI'
+  ): Promise<string | null> {
+    try {
+      // Create a wurlus blob for deposit verification
+      const wurlusBlob = this.createWurlusBlob('deposit', {
+        userId,
+        walletAddress,
+        amount,
+        currency,
+        timestamp: Date.now()
+      });
+      
+      // In a real implementation, this would call the Sui blockchain
+      // using JSON-RPC or a Sui SDK to execute the Move code for deposit
+      
+      // For now, simulate the deposit with a mock transaction hash
+      const txHash = `deposit_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Fetch the user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Update the user's balance
+      await storage.updateUserBalance(userId, (user.balance || 0) + amount);
+      
+      // Create a notification for the user
+      const notification: InsertNotification = {
+        userId,
+        title: `Deposit of ${amount} ${currency}`,
+        message: `You deposited ${amount} ${currency} to your wallet`,
+        relatedTxHash: txHash,
+        notificationType: 'deposit'
+      };
+      
+      await storage.createNotification(notification);
+      
+      // Create a wallet operation record
+      const operation: InsertWurlusWalletOperation = {
+        userId,
+        walletAddress,
+        operationType: 'deposit',
+        amount,
+        txHash,
+        status: 'completed',
+        metadata: {
+          currency,
+          wurlusBlob
+        }
+      };
+      
+      await storage.createWalletOperation(operation);
+      
+      return txHash;
+    } catch (error) {
+      console.error('Error depositing funds:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * Withdraw funds from the user's wallet
+   * @param userId User ID
+   * @param walletAddress User's wallet address
+   * @param amount Amount to withdraw
+   * @param currency Currency to withdraw (SUI or SBETS)
+   * @returns The transaction hash or null on failure
+   */
+  async withdrawFunds(
+    userId: number,
+    walletAddress: string,
+    amount: number,
+    currency: string = 'SUI'
+  ): Promise<string | null> {
+    try {
+      // Fetch the user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Check if user has enough balance
+      if ((user.balance || 0) < amount) {
+        throw new Error('Insufficient balance');
+      }
+      
+      // Create a wurlus blob for withdrawal verification
+      const wurlusBlob = this.createWurlusBlob('withdraw', {
+        userId,
+        walletAddress,
+        amount,
+        currency,
+        timestamp: Date.now()
+      });
+      
+      // In a real implementation, this would call the Sui blockchain
+      // using JSON-RPC or a Sui SDK to execute the Move code for withdrawal
+      
+      // For now, simulate the withdrawal with a mock transaction hash
+      const txHash = `withdraw_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+      
+      // Update the user's balance
+      await storage.updateUserBalance(userId, (user.balance || 0) - amount);
+      
+      // Create a notification for the user
+      const notification: InsertNotification = {
+        userId,
+        title: `Withdrawal of ${amount} ${currency}`,
+        message: `You withdrew ${amount} ${currency} from your wallet`,
+        relatedTxHash: txHash,
+        notificationType: 'withdrawal'
+      };
+      
+      await storage.createNotification(notification);
+      
+      // Create a wallet operation record
+      const operation: InsertWurlusWalletOperation = {
+        userId,
+        walletAddress,
+        operationType: 'withdraw',
+        amount,
+        txHash,
+        status: 'completed',
+        metadata: {
+          currency,
+          wurlusBlob
+        }
+      };
+      
+      await storage.createWalletOperation(operation);
+      
+      return txHash;
+    } catch (error) {
+      console.error('Error withdrawing funds:', error);
+      return null;
     }
   }
 }

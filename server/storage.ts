@@ -20,6 +20,7 @@ export interface IStorage {
   getUserByWalletFingerprint(fingerprint: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<User>): Promise<User | undefined>;
+  updateUserBalance(id: number, newBalance: number): Promise<User | undefined>;
 
   // Sports methods
   getSports(): Promise<Sport[]>;
@@ -36,6 +37,7 @@ export interface IStorage {
   // Bets methods
   getBets(userId: number): Promise<Bet[]>;
   getBet(id: number): Promise<Bet | undefined>;
+  getBetsByMarketId(marketId: number): Promise<Bet[]>;
   createBet(bet: InsertBet): Promise<Bet>;
   updateBet(id: number, bet: Partial<Bet>): Promise<Bet | undefined>;
 
@@ -440,6 +442,15 @@ export class MemStorage implements IStorage {
     this.users.set(id, updatedUser);
     return updatedUser;
   }
+  
+  async updateUserBalance(id: number, newBalance: number): Promise<User | undefined> {
+    const user = this.users.get(id);
+    if (!user) return undefined;
+    
+    const updatedUser = { ...user, balance: newBalance };
+    this.users.set(id, updatedUser);
+    return updatedUser;
+  }
 
   // Sports methods
   async getSports(): Promise<Sport[]> {
@@ -548,6 +559,12 @@ export class MemStorage implements IStorage {
 
   async getBet(id: number): Promise<Bet | undefined> {
     return this.bets.get(id);
+  }
+  
+  async getBetsByMarketId(marketId: number): Promise<Bet[]> {
+    return Array.from(this.bets.values()).filter(
+      (bet) => bet.marketId === marketId
+    );
   }
 
   async createBet(insertBet: InsertBet): Promise<Bet> {
@@ -1188,6 +1205,15 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return updatedUser;
   }
+  
+  async updateUserBalance(id: number, newBalance: number): Promise<User | undefined> {
+    const [updatedUser] = await db
+      .update(users)
+      .set({ balance: newBalance })
+      .where(eq(users.id, id))
+      .returning();
+    return updatedUser;
+  }
 
   // Sports methods
   async getSports(): Promise<Sport[]> {
@@ -1290,6 +1316,10 @@ export class DatabaseStorage implements IStorage {
   async getBet(id: number): Promise<Bet | undefined> {
     const [bet] = await db.select().from(bets).where(eq(bets.id, id));
     return bet;
+  }
+  
+  async getBetsByMarketId(marketId: number): Promise<Bet[]> {
+    return await db.select().from(bets).where(eq(bets.marketId, marketId));
   }
 
   async createBet(insertBet: InsertBet): Promise<Bet> {

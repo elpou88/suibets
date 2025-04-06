@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { SportsApi } from "./services/sportsApi";
 import { SuiService } from "./services/sui";
-import { SuiMoveService } from "./services/suiMoveService";
+import { suiMoveService } from "./services/suiMoveService";
 import { securityService } from "./services/securityService";
 import { aggregatorService } from "./services/aggregatorService";
 import { config } from "./config";
@@ -387,8 +387,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sanitize inputs to prevent XSS
       const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
       
-      // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton for wurlus protocol integration
 
       // Connect wallet to wurlus protocol using Sui Move
       console.log(`Connecting wallet ${address} to Wurlus protocol with type ${sanitizedWalletType}`);
@@ -475,8 +474,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sanitize inputs to prevent XSS
       const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
       
-      // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton for wurlus protocol integration
       
       // Connect to the Wurlus protocol using Sui Move
       const connected = await suiMoveService.connectWallet(walletAddress, sanitizedWalletType);
@@ -511,7 +509,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const isRegistered = await suiMoveService.getUserRegistrationStatus(walletAddress);
       
       res.json({ 
@@ -537,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const dividends = await suiMoveService.getUserDividends(walletAddress);
       
       // Format dates for better readability in the response
@@ -598,7 +596,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const txHash = await suiMoveService.stakeTokens(walletAddress, amount, periodDays);
       
       res.json({ 
@@ -629,7 +627,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const txHash = await suiMoveService.claimWinnings(walletAddress, betId);
       
       res.json({ 
@@ -659,7 +657,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       
       // Get current dividends to check if there's anything to claim
       const dividends = await suiMoveService.getUserDividends(walletAddress);
@@ -703,7 +701,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const bets = await suiMoveService.getUserBets(walletAddress);
       
       // Format bets with human-readable values for frontend display
@@ -759,7 +757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const marketId = await suiMoveService.createMarket(adminWallet, eventId, marketName);
       
       res.json({ 
@@ -789,7 +787,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Using the imported suiMoveService singleton
       const outcomeId = await suiMoveService.createOutcome(
         adminWallet, 
         marketId, 
@@ -825,7 +823,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const txHash = await suiMoveService.settleMarket(
         adminWallet, 
         marketId, 

@@ -1,9 +1,11 @@
 import { ReactNode } from "react";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import Sidebar from "./Sidebar";
 import { useMobile } from "@/hooks/use-mobile";
 import { Grid2X2, Home, User } from "lucide-react";
 import { BiFootball } from "react-icons/bi";
+import { Link, useLocation } from "wouter";
 
 interface LayoutProps {
   children: ReactNode;
@@ -11,27 +13,45 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const isMobile = useMobile();
+  const [location, setLocation] = useLocation();
+
+  const navigateTo = (path: string) => {
+    setLocation(path);
+  };
 
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar has been removed as it was duplicating what's in the images */}
+      {/* Sidebar for desktop */}
+      {!isMobile && <Sidebar />}
       
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-[#09181B] text-white z-30 flex justify-around p-2 border-t border-[#112225]">
-          <button className="p-2 flex flex-col items-center justify-center">
+          <button 
+            className="p-2 flex flex-col items-center justify-center"
+            onClick={() => navigateTo("/")}
+          >
             <Home className="h-6 w-6 text-[#00FFFF]" />
             <span className="text-xs mt-1">Home</span>
           </button>
-          <button className="p-2 flex flex-col items-center justify-center">
+          <button 
+            className="p-2 flex flex-col items-center justify-center"
+            onClick={() => navigateTo("/sports")}
+          >
             <BiFootball className="h-6 w-6" />
             <span className="text-xs mt-1">Sports</span>
           </button>
-          <button className="p-2 flex flex-col items-center justify-center">
+          <button 
+            className="p-2 flex flex-col items-center justify-center"
+            onClick={() => navigateTo("/live")}
+          >
             <Grid2X2 className="h-6 w-6" />
             <span className="text-xs mt-1">Live</span>
           </button>
-          <button className="p-2 flex flex-col items-center justify-center">
+          <button 
+            className="p-2 flex flex-col items-center justify-center"
+            onClick={() => navigateTo("/settings")}
+          >
             <User className="h-6 w-6" />
             <span className="text-xs mt-1">Account</span>
           </button>

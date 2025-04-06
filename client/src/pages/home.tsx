@@ -3,6 +3,33 @@ import HomeLayout from "@/components/layout/HomeLayout";
 import { useState } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 
+// Function to determine which sport was clicked based on position
+function getSportSlugFromPosition(xPercent: number, yPercent: number): string {
+  // First row of sports (top section)
+  if (yPercent > 48 && yPercent < 55) {
+    if (xPercent < 33) return "football";
+    if (xPercent < 66) return "basketball";
+    return "baseball";
+  }
+  
+  // Second row of sports (middle section)
+  if (yPercent >= 55 && yPercent < 62) {
+    if (xPercent < 33) return "hockey";
+    if (xPercent < 66) return "tennis";
+    return "golf";
+  }
+  
+  // Third row of sports (bottom section)
+  if (yPercent >= 62 && yPercent < 75) {
+    if (xPercent < 33) return "esports";
+    if (xPercent < 66) return "boxing";
+    return "mma-ufc";
+  }
+  
+  // Default fallback
+  return "football";
+}
+
 export default function Home() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
@@ -57,7 +84,9 @@ export default function Home() {
     
     // League listings
     if (yPercent > 48 && yPercent < 75) {
-      window.location.href = "/match/1";
+      // Determine which sport was clicked based on position
+      const sportSlug = getSportSlugFromPosition(xPercent, yPercent);
+      window.location.href = `/sport/${sportSlug}`;
       return;
     }
   };

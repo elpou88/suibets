@@ -23,6 +23,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/sports" component={Home} />
+      <Route path="/sport/:slug" component={Match} />
       <Route path="/live" component={Home} />
       <Route path="/match/:id" component={Match} />
       <Route path="/match-detail/:id" component={MatchDetail} />

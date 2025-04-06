@@ -1,6 +1,6 @@
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
 import Layout from "@/components/layout/Layout";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
@@ -9,6 +9,26 @@ export default function Match() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  
+  // Check if we're in a match/:id route
+  const [matchRoute, matchParams] = useRoute('/match/:id');
+  
+  // Check if we're in a sport/:slug route
+  const [sportRoute, sportParams] = useRoute('/sport/:slug');
+  
+  // Image state based on the route
+  const [imageSrc, setImageSrc] = useState('/images/Sports 3 (2).png');
+  
+  useEffect(() => {
+    if (matchRoute && matchParams) {
+      // This is a match page
+      setImageSrc('/images/Sports 3 (2).png');
+    } else if (sportRoute && sportParams) {
+      // This is a sport page with a slug
+      console.log('Sport slug:', sportParams.slug);
+      setImageSrc('/images/Sports 3 (2).png'); // Use the same image for now
+    }
+  }, [matchRoute, matchParams, sportRoute, sportParams]);
 
   // Function to handle clicks on the image that should navigate
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -81,7 +101,7 @@ export default function Match() {
           onClick={handleImageClick}
         >
           <img 
-            src="/images/Sports 3 (2).png" 
+            src={imageSrc} 
             alt="Match Details" 
             className="w-full h-full object-contain pointer-events-none"
           />

@@ -81,7 +81,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="hidden md:flex flex-col w-64 bg-[#032F36] text-white">
+    <div className="hidden md:flex flex-col w-64 bg-[#09181B] text-white">
       {/* Logo */}
       <div className="py-6 px-6 flex items-center">
         <span className="sui-logo">SuiBets</span>
@@ -95,7 +95,7 @@ export default function Sidebar() {
             className={`flex items-center px-4 py-3 mx-2 rounded ${
               activeSport === 'upcoming' 
                 ? 'bg-primary text-black' 
-                : 'text-white hover:bg-[#042A30]'
+                : 'text-white hover:bg-[#112225]'
             }`}
           >
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
@@ -112,7 +112,7 @@ export default function Sidebar() {
               className={`flex items-center px-4 py-3 mx-2 rounded ${
                 activeSport === sport.slug 
                   ? 'bg-primary text-black' 
-                  : 'text-white hover:bg-[#042A30]'
+                  : 'text-white hover:bg-[#112225]'
               }`}
             >
               <div className="w-8 h-8 mr-3 flex items-center justify-center">

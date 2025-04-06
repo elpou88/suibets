@@ -24,7 +24,7 @@ export default function Layout({ children }: LayoutProps) {
       
       {/* Mobile Bottom Navigation */}
       {isMobile && (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#032F36] text-white z-30 flex justify-around p-2 border-t border-[#04363E]">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#09181B] text-white z-30 flex justify-around p-2 border-t border-[#112225]">
           <button className="p-2 flex flex-col items-center justify-center">
             <Home className="h-6 w-6 text-primary" />
             <span className="text-xs mt-1">Home</span>
@@ -44,9 +44,9 @@ export default function Layout({ children }: LayoutProps) {
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-[#032F36]">
+      <div className="flex-1 flex flex-col bg-[#09181B]">
         <Navbar />
-        <main className="flex-1 p-4 overflow-y-auto pb-20 md:pb-4 bg-[#032F36] text-white">
+        <main className="flex-1 p-4 overflow-y-auto pb-20 md:pb-4 bg-[#09181B] text-white">
           {children}
         </main>
         <Footer />

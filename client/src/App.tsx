@@ -42,9 +42,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BettingProvider>
-          <Layout>
-            <Router />
-          </Layout>
+          <Router />
           <Toaster />
         </BettingProvider>
       </AuthProvider>

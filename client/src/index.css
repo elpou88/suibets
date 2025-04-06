@@ -7,16 +7,16 @@
     --background: 210 20% 98%;
     --foreground: 222.2 47.4% 11.2%;
     
-    --primary: 168 96% 48%;
+    --primary: 183 100% 43%;
     --primary-foreground: 0 0% 100%;
     
     --secondary: 225 56% 13%;
     --secondary-foreground: 0 0% 98%;
     
-    --sidebar-background: 225 56% 13%;
+    --sidebar-background: 189 27% 7%;
     --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 168 96% 48%;
-    --sidebar-primary-foreground: 225 56% 13%;
+    --sidebar-primary: 183 100% 43%;
+    --sidebar-primary-foreground: 189 27% 7%;
     --sidebar-accent: 0 0% 100%;
     --sidebar-accent-foreground: 240 10% 3.9%;
     --sidebar-border: 240 5.9% 90%;
@@ -43,24 +43,24 @@
     
     --radius: 0.5rem;
     
-    --chart-1: 168 96% 48%;
-    --chart-2: 225 56% 13%;
+    --chart-1: 183 100% 43%;
+    --chart-2: 189 27% 7%;
     --chart-3: 262.1 83.3% 57.8%;
     --chart-4: 19.2 90.9% 48.2%;
     --chart-5: 334.41 96.8% 51.96%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
+    --background: 189 27% 7%;
     --foreground: 210 40% 98%;
     
-    --card: 222.2 84% 4.9%;
+    --card: 189 27% 7%;
     --card-foreground: 210 40% 98%;
     
-    --popover: 222.2 84% 4.9%;
+    --popover: 189 27% 7%;
     --popover-foreground: 210 40% 98%;
     
-    --primary: 168 96% 48%;
+    --primary: 183 100% 43%;
     --primary-foreground: 0 0% 100%;
     
     --secondary: 225 56% 13%;
@@ -120,13 +120,13 @@
   font-family: 'Arial', sans-serif;
   font-weight: 700;
   font-size: 1.75rem;
-  color: hsl(170, 95%, 45%);
+  color: hsl(183, 100%, 43%);
   letter-spacing: -0.05em;
   position: relative;
 }
 
 .sui-logo::first-letter {
-  color: hsl(170, 95%, 45%);
+  color: hsl(183, 100%, 43%);
 }
 
 .sui-logo::before {
@@ -135,15 +135,15 @@
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background-color: hsl(170, 95%, 45%);
+  background-color: hsl(183, 100%, 43%);
   top: 8px;
   left: -8px;
 }
 
 /* Background colors for sidebar and main body */
 .bg-primary-gradient {
-  background-color: #032F36;
-  background-image: linear-gradient(180deg, #032F36 0%, #042A30 100%);
+  background-color: #09181B;
+  background-image: linear-gradient(180deg, #09181B 0%, #112225 100%);
 }
 
 /* Custom button styles for active states */
@@ -152,7 +152,7 @@
 }
 
 .sport-button-active {
-  background-color: hsl(170, 95%, 45%);
+  background-color: hsl(183, 100%, 43%);
   color: #000000;
   font-weight: 500;
 }

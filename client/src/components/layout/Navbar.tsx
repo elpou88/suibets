@@ -24,7 +24,7 @@ export default function Navbar() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   return (
-    <nav className="bg-[#032F36] border-b border-[#04363E] py-3 px-4 flex justify-between items-center">
+    <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
       <div className="flex space-x-8">
         <Link href="/">
           <div className={`relative px-3 py-1 ${location === "/" ? "text-primary" : "text-white hover:text-primary"}`}>
@@ -59,7 +59,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-primary hover:bg-[#04363E]"
+              className="text-white hover:text-primary hover:bg-[#112225]"
               onClick={() => setIsNotificationsModalOpen(true)}
             >
               <Bell className="h-5 w-5" />
@@ -68,7 +68,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-primary hover:bg-[#04363E]"
+              className="text-white hover:text-primary hover:bg-[#112225]"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="h-5 w-5" />

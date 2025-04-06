@@ -331,6 +331,217 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Check if user is registered with Wurlus protocol
+  app.get("/api/wurlus/registration/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const isRegistered = await suiMoveService.getUserRegistrationStatus(walletAddress);
+      
+      res.json({ 
+        success: true,
+        isRegistered,
+        walletAddress
+      });
+    } catch (error) {
+      console.error("Error checking registration status:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to check registration status" 
+      });
+    }
+  });
+  
+  // Get user's dividend information
+  app.get("/api/wurlus/dividends/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const dividends = await suiMoveService.getUserDividends(walletAddress);
+      
+      res.json({ 
+        success: true,
+        walletAddress,
+        ...dividends
+      });
+    } catch (error) {
+      console.error("Error fetching dividend information:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch dividend information" 
+      });
+    }
+  });
+  
+  // Claim winnings from a bet
+  app.post("/api/wurlus/claim-winnings", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, betId } = req.body;
+      
+      if (!walletAddress || !betId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Wallet address and bet ID are required" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const txHash = await suiMoveService.claimWinnings(walletAddress, betId);
+      
+      res.json({ 
+        success: true,
+        txHash,
+        betId,
+        message: "Successfully claimed winnings"
+      });
+    } catch (error) {
+      console.error("Error claiming winnings:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to claim winnings" 
+      });
+    }
+  });
+  
+  // Get betting history for a user
+  app.get("/api/wurlus/bets/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const bets = await suiMoveService.getUserBets(walletAddress);
+      
+      res.json({ 
+        success: true,
+        walletAddress,
+        bets
+      });
+    } catch (error) {
+      console.error("Error fetching bet history:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch bet history" 
+      });
+    }
+  });
+  
+  // Admin endpoints for Wurlus protocol
+  
+  // Create a new market for an event
+  app.post("/api/wurlus/admin/markets", async (req: Request, res: Response) => {
+    try {
+      const { adminWallet, eventId, marketName } = req.body;
+      
+      if (!adminWallet || !eventId || !marketName) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Admin wallet, event ID, and market name are required" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const marketId = await suiMoveService.createMarket(adminWallet, eventId, marketName);
+      
+      res.json({ 
+        success: true,
+        marketId,
+        eventId,
+        marketName
+      });
+    } catch (error) {
+      console.error("Error creating market:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create market" 
+      });
+    }
+  });
+  
+  // Create a new outcome for a market
+  app.post("/api/wurlus/admin/outcomes", async (req: Request, res: Response) => {
+    try {
+      const { adminWallet, marketId, outcomeName, oddsValue } = req.body;
+      
+      if (!adminWallet || !marketId || !outcomeName || !oddsValue) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Admin wallet, market ID, outcome name, and odds value are required" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const outcomeId = await suiMoveService.createOutcome(
+        adminWallet, 
+        marketId, 
+        outcomeName, 
+        Number(oddsValue)
+      );
+      
+      res.json({ 
+        success: true,
+        outcomeId,
+        marketId,
+        outcomeName,
+        oddsValue
+      });
+    } catch (error) {
+      console.error("Error creating outcome:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to create outcome" 
+      });
+    }
+  });
+  
+  // Settle a market
+  app.post("/api/wurlus/admin/settle-market", async (req: Request, res: Response) => {
+    try {
+      const { adminWallet, marketId, winningOutcomeId } = req.body;
+      
+      if (!adminWallet || !marketId || !winningOutcomeId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Admin wallet, market ID, and winning outcome ID are required" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService();
+      const txHash = await suiMoveService.settleMarket(
+        adminWallet, 
+        marketId, 
+        winningOutcomeId
+      );
+      
+      res.json({ 
+        success: true,
+        txHash,
+        marketId,
+        winningOutcomeId,
+        message: "Market settled successfully"
+      });
+    } catch (error) {
+      console.error("Error settling market:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to settle market" 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

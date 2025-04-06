@@ -43,28 +43,18 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <a 
-          href="#"
-          className="block"
-          onClick={(e) => {
-            e.preventDefault();
-            console.log('Opening Promotions image directly - with delay');
-            
-            // Add a small delay before navigation
-            setTimeout(() => {
-              try {
-                window.location.href = '/attached_assets/Promotions (2).png';
-                console.log('Navigation executed');
-              } catch (error) {
-                console.error('Navigation failed:', error);
-              }
-            }, 100);
+        <div 
+          className="block cursor-pointer"
+          onClick={() => {
+            console.log('Opening Promotions image directly');
+            // Direct approach with the image in public folder
+            window.location.href = '/promotions-image.png';
           }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
           </div>
-        </a>
+        </div>
       </div>
       
       {/* Logo in center - only visible on mobile */}

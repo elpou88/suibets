@@ -1,26 +1,61 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Promotions</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #09181B;
-        }
-        img {
-            max-width: 100%;
-            height: auto;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Promotions - SuiBets</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #030c0e;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      text-align: center;
+    }
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    .header {
+      padding: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #0a1f25;
+    }
+    .back-button {
+      color: #00FFFF;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+    }
+    .logo {
+      height: 32px;
+    }
+    h1 {
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
-    <img src="/images/Promotions (2).png" alt="Promotions">
+  <div class="header">
+    <button class="back-button" onclick="window.location.href='/'">← Back</button>
+    <h1>Promotions</h1>
+    <img src="/logo/suibets-logo.svg" alt="SuiBets Logo" class="logo">
+  </div>
+  <div class="container">
+    <img src="/attached_assets/Promotions (2).png" alt="Promotions">
+  </div>
+  <script>
+    console.log("Promotions HTML page loaded");
+  </script>
 </body>
 </html>

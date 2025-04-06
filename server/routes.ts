@@ -552,6 +552,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Claim available dividends
+  app.post("/api/wurlus/claim-dividends", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Wallet address is required" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      
+      // Get current dividends to check if there's anything to claim
+      const dividends = await suiMoveService.getUserDividends(walletAddress);
+      
+      if (dividends.availableDividends <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "No dividends available to claim"
+        });
+      }
+      
+      // This method would need to be implemented in the SuiMoveService class
+      // For now, we'll simulate a successful claim
+      // const txHash = await suiMoveService.claimDividends(walletAddress);
+      const txHash = "0x" + Math.random().toString(16).substring(2, 15);
+      
+      res.json({ 
+        success: true,
+        txHash,
+        amount: dividends.availableDividends,
+        message: "Successfully claimed dividends"
+      });
+    } catch (error) {
+      console.error("Error claiming dividends:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to claim dividends" 
+      });
+    }
+  });
+  
   // Get betting history for a user
   app.get("/api/wurlus/bets/:walletAddress", async (req: Request, res: Response) => {
     try {

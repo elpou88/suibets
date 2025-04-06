@@ -1,13 +1,8 @@
-import { useEffect } from 'react';
+import React from 'react';
 
-export default function PromotionsPage() {
-  useEffect(() => {
-    // Set page title
-    document.title = 'Promotions | SuiBets';
-  }, []);
-
+const Promotions: React.FC = () => {
   return (
-    <div className="min-h-screen bg-[#09181B] flex flex-col items-center justify-center p-4">
+    <div className="flex justify-center items-center bg-[#09181B] min-h-screen">
       <img 
         src="/promotions-image.png" 
         alt="Promotions" 
@@ -15,4 +10,6 @@ export default function PromotionsPage() {
       />
     </div>
   );
-}
+};
+
+export default Promotions;

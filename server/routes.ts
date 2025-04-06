@@ -297,6 +297,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Wurlus Protocol specific API endpoints
+  app.post("/api/wurlus/connect", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      // Import the Sui Move service for wurlus protocol integration
+      const { SuiMoveService } = await import('./services/suiMoveService');
+      const suiMoveService = new SuiMoveService();
+      
+      // Connect to the Wurlus protocol using Sui Move
+      const connected = await suiMoveService.connectWallet(walletAddress);
+      
+      if (!connected) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Failed to connect to Wurlus protocol" 
+        });
+      }
+      
+      // Return success response
+      res.json({ 
+        success: true, 
+        message: "Successfully connected to Wurlus protocol" 
+      });
+    } catch (error) {
+      console.error("Error connecting to Wurlus protocol:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Internal server error connecting to Wurlus protocol" 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

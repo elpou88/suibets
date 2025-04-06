@@ -167,15 +167,25 @@ export class SuiMoveService {
    * @param walletAddress User's wallet address
    * @returns Promise resolving to array of bet objects
    */
-  async getUserBets(walletAddress: string): Promise<any[]> {
+  async getUserBets(walletAddress: string): Promise<{ 
+    id: string; 
+    eventId: string; 
+    market: string; 
+    selection: string;
+    odds: number;
+    amount: number;
+    status: 'pending' | 'won' | 'lost';
+    timestamp: number;
+    txHash: string;
+  }[]> {
     try {
       console.log(`[SuiMove] Getting bet history for wallet ${walletAddress}`);
       
       // This would make a call to the Sui blockchain to get the user's bet history
-      // Mock bet history for testing
-      const mockBets = [];
+      // In a real implementation, we would query the Sui blockchain using the wurlus_protocol module
       
-      return mockBets;
+      // Return empty array for now
+      return [];
     } catch (error) {
       console.error(`[SuiMove] Error getting user bets: ${error}`);
       return [];

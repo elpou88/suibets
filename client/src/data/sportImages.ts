@@ -27,7 +27,7 @@ const sportImages: SportImage[] = [
   },
   {
     slug: 'hockey',
-    imagePath: '/images/Sports 4 (2).png',
+    imagePath: '/images/Hockey_No_Highlight.png',
     title: 'Hockey'
   },
   {
@@ -52,7 +52,7 @@ const sportImages: SportImage[] = [
   },
   {
     slug: 'esports',
-    imagePath: '/images/image_1743933103859.png',
+    imagePath: '/images/Esports_No_Highlight.png',
     title: 'Esports'
   },
   {

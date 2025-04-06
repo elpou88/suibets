@@ -44,11 +44,15 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions-page.html"
+          href="/promotions"
           className="block"
           onClick={(e) => {
-            e.preventDefault(); // Prevent default behavior
-            window.open('/promotions-page.html', '_blank'); // Open in new tab
+            e.preventDefault();
+            // Try the direct approach the user wants
+            const win = window.open('/promotions-image.png', '_self');
+            if (win) {
+              win.focus();
+            }
             console.log('Clicked on Promotions');
           }}
         >

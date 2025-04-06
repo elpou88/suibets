@@ -43,22 +43,11 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <div 
-          className="block cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            // Using EXACTLY the same approach that worked for Esports
-            const win = window.open('/attached_assets/Promotions (2).png', '_self');
-            if (win) {
-              win.focus();
-            }
-            console.log('Opening Promotions image directly - using exactly the Esports approach');
-          }}
-        >
+        <Link href="/promotions">
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
           </div>
-        </div>
+        </Link>
       </div>
       
       {/* Logo in center - only visible on mobile */}

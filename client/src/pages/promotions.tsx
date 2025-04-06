@@ -24,7 +24,7 @@ const Promotions: React.FC = () => {
       
       <div className="max-w-full mx-auto p-0">
         <img 
-          src="/promotions-image.png" 
+          src="/attached_assets/Promotions (2).png" 
           alt="Promotions" 
           className="w-full h-auto"
         />

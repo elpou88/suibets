@@ -1,10 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 
 interface BetHistoryEntry {
   id: string;
@@ -27,141 +24,137 @@ export default function BetHistory() {
   const fetchBetHistory = async () => {
     try {
       // In a real implementation, this would call the API
-      // const response = await apiRequest('GET', '/api/bets/user/1');
-      // setBets(response.data);
+      // const response = await fetch('/api/bets/user/1');
+      // const data = await response.json();
+      // setBets(data);
       
       // For now, using empty state as shown in the design
     } catch (error) {
       console.error("Error fetching bet history:", error);
     }
   };
+  
+  useEffect(() => {
+    fetchBetHistory();
+  }, []);
 
   return (
     <Layout>
-      <div className="w-full min-h-screen bg-gray-100 p-4">
-        {/* Banner Image */}
-        <div className="max-w-4xl mx-auto mb-6">
+      <div className="w-full min-h-screen bg-gray-100 flex flex-col items-center">
+        {/* Banner/Promotion */}
+        <div className="w-full max-w-[880px] mt-4 mb-4">
           <div className="h-28 bg-blue-900 relative rounded-lg overflow-hidden">
-            <img 
-              src="/images/500000.png" 
-              alt="Earn Referral Bonus of up to 500000 SUIBETS" 
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="text-center text-white">
-                <div className="text-sm font-medium mb-1">Earn Referral Bonus of up to</div>
-                <div className="text-4xl font-bold">500000</div>
-                <div className="text-sm">$SUIBETS</div>
+            <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-blue-900 to-blue-800 opacity-90"></div>
+            <div className="absolute top-0 left-0 w-full h-full">
+              <img 
+                src="/images/Bet History (2).png" 
+                alt="Earn Referral Bonus of up to 500000 SUIBETS"
+                className="absolute top-0 left-0 w-full h-full object-cover opacity-60"
+              />
+              <div className="absolute top-0 left-0 z-10 w-full h-full flex items-center justify-center">
+                <div className="text-center text-white">
+                  <div className="text-xs font-medium mb-1">Earn Refferal Bonus of up to</div>
+                  <div className="text-5xl font-bold leading-none">500000</div>
+                  <div className="text-xs mt-1">$SUIBETS</div>
+                </div>
               </div>
             </div>
           </div>
         </div>
         
-        <div className="max-w-4xl mx-auto">
-          <Card className="shadow-sm">
-            <CardHeader className="border-b pb-3">
-              <CardTitle className="text-lg font-bold">BET HISTORY</CardTitle>
-            </CardHeader>
-            <CardContent className="p-5">
-              <div className="flex justify-between mb-8">
-                <div>
-                  <Select defaultValue={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-36 text-sm h-9 bg-gray-100">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="settled">Settled</SelectItem>
-                      <SelectItem value="all">All Bets</SelectItem>
-                    </SelectContent>
-                  </Select>
+        {/* Main Content */}
+        <div className="w-full max-w-[880px] bg-white rounded-lg shadow-sm overflow-hidden mb-16">
+          <div className="px-4 py-3 border-b border-gray-200">
+            <h2 className="font-bold uppercase text-lg text-center tracking-wide">BET HISTORY</h2>
+          </div>
+          
+          <div className="px-5 py-4">
+            <div className="flex justify-between mb-8">
+              {/* Filter dropdown */}
+              <div className="relative inline-block">
+                <button className="bg-gray-100 text-gray-700 text-sm font-normal py-2 px-4 rounded inline-flex items-center">
+                  <span>Pending</span>
+                  <ChevronDown className="h-3.5 w-3.5 ml-1 text-gray-500" />
+                </button>
+              </div>
+              
+              {/* Search */}
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Search className="h-3.5 w-3.5 text-gray-400" />
                 </div>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Search className="h-4 w-4 text-gray-400" />
-                  </div>
+                <div className="flex items-center">
                   <input
                     type="text"
                     placeholder="Search Bet"
-                    className="bg-gray-100 pl-10 pr-4 py-2 text-sm rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 w-40"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="bg-gray-100 pl-9 pr-8 py-1.5 rounded-md text-xs focus:outline-none w-32"
                   />
+                  <ChevronDown className="h-3.5 w-3.5 ml-1 text-gray-400 absolute right-2" />
                 </div>
               </div>
-              
-              {/* No history state */}
-              <div className="flex flex-col items-center justify-center py-10">
-                <p className="text-gray-600 mb-1">No history Available</p>
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Footer content */}
-          <div className="mt-16 grid grid-cols-3 gap-8">
-            <div>
-              <h3 className="font-medium mb-4">Information</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>FAQ</li>
-                <li>Blog</li>
-                <li>Become an Affiliate</li>
-                <li>Privacy Policy</li>
-                <li>Rules</li>
-                <li>Betting Integrity</li>
-                <li>Responsible Gambling</li>
-                <li>About Us</li>
-              </ul>
             </div>
-            <div>
-              <h3 className="font-medium mb-4">Community</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-500 rounded-full"></div>
-                  Telegram
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-purple-500 rounded-full"></div>
-                  Discord
-                </li>
-                <li className="flex items-center gap-2">
-                  <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                  Twitter
-                </li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium mb-4">Contact Us</h3>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li>Support</li>
-                <li>Cooperation</li>
-              </ul>
+            
+            {/* No history state */}
+            <div className="flex justify-center items-center py-6">
+              <p className="text-gray-500 text-sm">No history Available</p>
             </div>
           </div>
+        </div>
+        
+        {/* Footer */}
+        <div className="w-full max-w-[880px] grid grid-cols-4 gap-4 text-sm mb-8">
+          <div>
+            <h3 className="font-medium mb-3">Information</h3>
+            <ul className="space-y-2 text-gray-600">
+              <li>FAQ</li>
+              <li>Blog</li>
+              <li>Become an Affiliate</li>
+              <li>Privacy Policy</li>
+              <li>Rules</li>
+              <li>Betting Integrity</li>
+              <li>Responsible Gambling</li>
+              <li>About Us</li>
+            </ul>
+          </div>
           
-          {/* Language selection */}
-          <div className="mt-8 flex justify-end">
-            <div>
-              <h3 className="font-medium mb-2">Preferences</h3>
-              <Select defaultValue="en">
-                <SelectTrigger className="w-32">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                      <span className="text-white text-xs">EN</span>
-                    </div>
-                    <span>English</span>
+          <div>
+            <h3 className="font-medium mb-3">Community</h3>
+            <ul className="space-y-2 text-gray-600">
+              <li className="flex items-center">
+                <span className="w-3 h-3 bg-blue-400 rounded-full mr-2"></span>
+                Telegram
+              </li>
+              <li className="flex items-center">
+                <span className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></span>
+                Discord
+              </li>
+              <li className="flex items-center">
+                <span className="w-3 h-3 bg-blue-400 rounded-full mr-2"></span>
+                Twitter
+              </li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="font-medium mb-3">Contact Us</h3>
+            <ul className="space-y-2 text-gray-600">
+              <li>Support</li>
+              <li>Cooperation</li>
+            </ul>
+          </div>
+          
+          <div>
+            <h3 className="font-medium mb-3">Preferences</h3>
+            <div className="relative">
+              <button className="bg-white border border-gray-200 rounded flex items-center pl-2 pr-3 py-1">
+                <div className="flex items-center mr-2">
+                  <div className="w-5 h-3.5 bg-red-500 flex items-center justify-center rounded-sm mr-2">
+                    <span className="text-white text-[10px]">EN</span>
                   </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="en">
-                    <div className="flex items-center gap-2">
-                      <div className="w-5 h-4 bg-red-500 rounded-sm flex items-center justify-center">
-                        <span className="text-white text-xs">EN</span>
-                      </div>
-                      <span>English</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                  <span>English</span>
+                </div>
+                <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+              </button>
             </div>
           </div>
         </div>

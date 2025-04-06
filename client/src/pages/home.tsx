@@ -43,50 +43,56 @@ export default function Home() {
     const xPercent = (x / rect.width) * 100;
     const yPercent = (y / rect.height) * 100;
     
-    // Define clickable areas (approximate percentages)
-    if (yPercent < 12) { // Top navigation bar area
-      if (xPercent > 82 && xPercent < 92) { // Join Now button
-        window.location.href = "/join";
-        return;
-      }
-      if (xPercent > 92) { // Connect Wallet button
-        setIsWalletModalOpen(true);
-        return;
-      }
-      
-      // Sports, Live, Promotions tabs
-      if (xPercent > 50 && xPercent < 60) {
-        window.location.href = "/";
-        return;
-      }
-      if (xPercent > 60 && xPercent < 70) {
-        window.location.href = "/live";
-        return;
-      }
-      if (xPercent > 70 && xPercent < 80) {
-        window.location.href = "/promotions";
-        return;
-      }
+    console.log('Clicked at position:', xPercent, yPercent);
+    
+    // Connect wallet button in top right corner
+    if (yPercent < 12 && xPercent > 90) {
+      setIsWalletModalOpen(true);
+      return;
     }
     
-    // Promotions cards area
-    if (yPercent > 25 && yPercent < 40) {
-      // Join Now buttons in the bonus cards
-      if (xPercent > 47 && xPercent < 57) {
-        window.location.href = "/join";
+    // Handle sport navigation - use direct links for most reliable navigation
+    // Just use some predefined zones on the screen
+    
+    // Top row of sports
+    if (yPercent >= 48 && yPercent < 55) {
+      if (xPercent < 33) {
+        window.open('/sport/football', '_self');
         return;
       }
-      if (xPercent > 75 && xPercent < 85) {
-        window.location.href = "/join";
+      if (xPercent < 66) {
+        window.open('/sport/basketball', '_self');
         return;
       }
+      window.open('/sport/baseball', '_self');
+      return;
     }
     
-    // League listings
-    if (yPercent > 48 && yPercent < 75) {
-      // Determine which sport was clicked based on position
-      const sportSlug = getSportSlugFromPosition(xPercent, yPercent);
-      window.location.href = `/sport/${sportSlug}`;
+    // Second row of sports
+    if (yPercent >= 55 && yPercent < 62) {
+      if (xPercent < 33) {
+        window.open('/sport/hockey', '_self');
+        return;
+      }
+      if (xPercent < 66) {
+        window.open('/sport/tennis', '_self');
+        return;
+      }
+      window.open('/sport/golf', '_self');
+      return;
+    }
+    
+    // Third row of sports
+    if (yPercent >= 62 && yPercent < 75) {
+      if (xPercent < 33) {
+        window.open('/sport/esports', '_self');
+        return;
+      }
+      if (xPercent < 66) {
+        window.open('/sport/boxing', '_self');
+        return;
+      }
+      window.open('/sport/ufc', '_self');
       return;
     }
   };

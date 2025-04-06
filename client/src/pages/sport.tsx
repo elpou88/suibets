@@ -1,50 +1,30 @@
-import { useEffect, useState } from 'react';
-import { useRoute, useLocation } from 'wouter';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 
 /**
  * Sport page that displays a full-screen image based on the sport slug
  */
 export default function Sport() {
-  // Extract the sport slug from the URL
-  const [, params] = useRoute('/sport/:slug*');
-  const sportSlug = params?.slug || '';
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
   
-  // Log the loaded sport for debugging
+  // Get the sport slug from the URL path
+  const pathname = window.location.pathname;
+  const parts = pathname.split('/');
+  const sportSlug = parts[parts.length - 1] || '';
+  
+  // Log for debugging
+  console.log('Sport Page - sport slug:', sportSlug);
+  console.log('Full pathname:', pathname);
+  
   useEffect(() => {
-    console.log('Sport page mounted with slug:', sportSlug);
-    console.log('Current URL:', window.location.href);
-    console.log('Params:', params);
     setLoading(false);
-  }, [sportSlug, params]);
+  }, [sportSlug]);
 
   // Function to handle clicks on the sport page image for navigation
-  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    // Percentage positions
-    const xPercent = (x / rect.width) * 100;
-    const yPercent = (y / rect.height) * 100;
-    
-    console.log('Clicked at:', xPercent, yPercent);
-    
-    if (yPercent < 15) {
-      // Clicked on navigation area at top
-      if (xPercent < 20) {
-        // Clicked on back/home
-        setLocation('/');
-        return;
-      }
-    }
-    
-    // Match detail links in the lower part of the page
-    if (yPercent > 30) {
-      setLocation(`/match/1`);
-      return;
-    }
+  const handleImageClick = () => {
+    // Navigate back to home page
+    setLocation('/');
   };
 
   // Get the appropriate image based on the sport slug
@@ -75,7 +55,15 @@ export default function Sport() {
 
   // Simply display the full-screen sport image with click handler
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen relative">
+      {/* Back button */}
+      <button 
+        className="absolute top-4 left-4 z-10 bg-black bg-opacity-50 text-white px-4 py-2 rounded-md"
+        onClick={() => setLocation('/')}
+      >
+        Back to Home
+      </button>
+      
       <img 
         src={getSportImage()} 
         alt={`${sportSlug} Sport`} 

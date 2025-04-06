@@ -124,6 +124,19 @@ export default function Home() {
   return (
     <HomeLayout>
       <div className="w-full min-h-screen flex flex-col">
+        {/* Direct promotion link */}
+        <div className="bg-gradient-to-r from-cyan-900 to-blue-900 p-4 flex justify-between items-center">
+          <div className="flex items-center">
+            <div className="text-[#00FFFF] font-bold">🎁 Special Promotions Available!</div>
+          </div>
+          <button 
+            onClick={() => setLocation('/goto-promotions')} 
+            className="bg-[#00FFFF] text-black rounded px-4 py-1 text-sm font-medium hover:bg-[#00FFFF]/80"
+          >
+            View Promotions
+          </button>
+        </div>
+        
         <div 
           className="relative w-full cursor-pointer" 
           onClick={handleImageClick}

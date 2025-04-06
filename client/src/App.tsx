@@ -15,6 +15,7 @@ import BetSlip from "@/pages/bet-slip";
 import BetSlip2 from "@/pages/bet-slip-2";
 import ConnectWallet from "@/pages/connect-wallet";
 import NotFound from "@/pages/not-found";
+import RedirectToPromotions from "@/pages/redirect-to-promotions";
 import Layout from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/bet-slip-2" component={BetSlip2} />
       <Route path="/connect-wallet" component={ConnectWallet} />
       <Route path="/join" component={Home} />
+      <Route path="/goto-promotions" component={RedirectToPromotions} />
       <Route component={NotFound} />
     </Switch>
   );

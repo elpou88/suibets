@@ -1,42 +1,84 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useLocation } from "wouter";
 import Layout from "@/components/layout/Layout";
-import { ChevronDown, Search } from "lucide-react";
+import { ChevronDown, Search, Check } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { format } from "date-fns";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
+// Interface matching the database Bet schema
 interface BetHistoryEntry {
-  id: string;
-  date: string;
-  eventName: string;
-  selection: string;
-  stake: number;
+  id: number;
+  eventId: number;
+  marketId: number;
+  betAmount: number;
   odds: number;
-  status: 'won' | 'lost' | 'pending';
-  payout?: number;
-  currency: string;
+  prediction: string;
+  potentialPayout: number;
+  status: 'pending' | 'won' | 'lost';
+  result: string | null;
+  payout: number | null;
+  createdAt: string;
+  settledAt: string | null;
+  betType: string;
+  feeCurrency: string;
+  // Event-related data (joined from events table)
+  eventName?: string;
+  homeTeam?: string;
+  awayTeam?: string;
 }
 
 export default function BetHistory() {
-  const [filterStatus, setFilterStatus] = useState<string>("pending");
+  const [filterStatus, setFilterStatus] = useState<'pending' | 'won' | 'lost' | 'all'>("pending");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [bets, setBets] = useState<BetHistoryEntry[]>([]);
-
-  // Function to fetch user's bet history from the API
-  const fetchBetHistory = async () => {
-    try {
-      // In a real implementation, this would call the API
-      // const response = await fetch('/api/bets/user/1');
-      // const data = await response.json();
-      // setBets(data);
-      
-      // For now, using empty state as shown in the design
-    } catch (error) {
-      console.error("Error fetching bet history:", error);
-    }
-  };
+  const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
   
+  // Fetch bet history using TanStack Query
+  const { data: bets = [], isLoading, error, refetch } = useQuery<BetHistoryEntry[]>({
+    queryKey: ['/api/bets/user', user?.id, filterStatus],
+    queryFn: async () => {
+      const url = `/api/bets/user/${user?.id}${filterStatus !== 'all' ? `?status=${filterStatus}` : ''}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch bet history');
+      }
+      return response.json();
+    },
+    enabled: !!user, // Only run the query if user is authenticated
+  });
+  
+  // Update the query whenever the filter changes
   useEffect(() => {
-    fetchBetHistory();
-  }, []);
+    if (user) {
+      refetch();
+    }
+  }, [filterStatus, user, refetch]);
+  
+  // Function to filter bets based on search term only (status filtering happens on server)
+  const filteredBets = useMemo(() => {
+    if (!bets || !Array.isArray(bets)) return [];
+    
+    if (!searchTerm) return bets;
+    
+    // Apply search filter if there's a search term
+    return bets.filter(bet => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        bet.eventName?.toLowerCase().includes(searchLower) ||
+        bet.prediction.toLowerCase().includes(searchLower) ||
+        String(bet.betAmount).includes(searchLower) ||
+        String(bet.odds).includes(searchLower)
+      );
+    });
+  }, [bets, searchTerm]);
 
   return (
     <Layout>
@@ -72,10 +114,48 @@ export default function BetHistory() {
             <div className="flex justify-between mb-8">
               {/* Filter dropdown */}
               <div className="relative inline-block">
-                <button className="bg-gray-100 text-gray-700 text-sm font-normal py-2 px-4 rounded inline-flex items-center">
-                  <span>Pending</span>
-                  <ChevronDown className="h-3.5 w-3.5 ml-1 text-gray-500" />
-                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="bg-gray-100 text-gray-700 text-sm font-normal py-2 px-4 rounded inline-flex items-center">
+                      <span>
+                        {filterStatus === 'pending' ? 'Pending' : 
+                        filterStatus === 'won' ? 'Won' : 
+                        filterStatus === 'lost' ? 'Lost' : 'All'}
+                      </span>
+                      <ChevronDown className="h-3.5 w-3.5 ml-1 text-gray-500" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent className="min-w-[120px]">
+                    <DropdownMenuItem 
+                      className="flex justify-between items-center text-sm cursor-pointer"
+                      onClick={() => setFilterStatus('all')}
+                    >
+                      All
+                      {filterStatus === 'all' && <Check className="h-3.5 w-3.5 ml-2" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="flex justify-between items-center text-sm cursor-pointer"
+                      onClick={() => setFilterStatus('pending')}
+                    >
+                      Pending
+                      {filterStatus === 'pending' && <Check className="h-3.5 w-3.5 ml-2" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="flex justify-between items-center text-sm cursor-pointer"
+                      onClick={() => setFilterStatus('won')}
+                    >
+                      Won
+                      {filterStatus === 'won' && <Check className="h-3.5 w-3.5 ml-2" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      className="flex justify-between items-center text-sm cursor-pointer"
+                      onClick={() => setFilterStatus('lost')}
+                    >
+                      Lost
+                      {filterStatus === 'lost' && <Check className="h-3.5 w-3.5 ml-2" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
               
               {/* Search */}
@@ -86,18 +166,90 @@ export default function BetHistory() {
                 <div className="flex items-center">
                   <input
                     type="text"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
                     placeholder="Search Bet"
                     className="bg-gray-100 pl-9 pr-8 py-1.5 rounded-md text-xs focus:outline-none w-32"
                   />
-                  <ChevronDown className="h-3.5 w-3.5 ml-1 text-gray-400 absolute right-2" />
+                  {searchTerm && (
+                    <button 
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2 text-gray-400 hover:text-gray-600"
+                    >
+                      <span className="sr-only">Clear search</span>
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
             
-            {/* No history state */}
-            <div className="flex justify-center items-center py-6">
-              <p className="text-gray-500 text-sm">No history Available</p>
-            </div>
+            {isLoading ? (
+              <div className="flex justify-center items-center py-6">
+                <div className="animate-spin w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+              </div>
+            ) : error ? (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-red-500 text-sm">Error loading bet history. Please try again.</p>
+              </div>
+            ) : !isAuthenticated ? (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-gray-500 text-sm">Please connect your wallet to view bet history</p>
+              </div>
+            ) : filteredBets.length > 0 ? (
+              <div className="space-y-4">
+                {filteredBets.map((bet) => (
+                  <div key={bet.id} className="border border-gray-200 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <div>
+                        <span className="text-xs text-gray-500">
+                          {format(new Date(bet.createdAt), 'MMM dd, yyyy • h:mm a')}
+                        </span>
+                      </div>
+                      <div className={`text-xs font-medium px-2 py-0.5 rounded ${
+                        bet.status === 'won' ? 'bg-green-100 text-green-800' : 
+                        bet.status === 'lost' ? 'bg-red-100 text-red-800' : 
+                        'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {bet.status.charAt(0).toUpperCase() + bet.status.slice(1)}
+                      </div>
+                    </div>
+                    
+                    <div className="mb-2">
+                      <h3 className="font-medium text-sm">{bet.eventName || `Event #${bet.eventId}`}</h3>
+                      <p className="text-xs text-gray-600">{bet.prediction}</p>
+                    </div>
+                    
+                    <div className="flex justify-between text-xs">
+                      <div>
+                        <span className="text-gray-500">Stake:</span>
+                        <span className="font-medium ml-1">
+                          {bet.betAmount} {bet.feeCurrency}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">Odds:</span>
+                        <span className="font-medium ml-1">{bet.odds.toFixed(2)}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-500">
+                          {bet.status === 'won' ? 'Payout:' : 'Potential:'}
+                        </span>
+                        <span className="font-medium ml-1">
+                          {bet.status === 'won' && bet.payout 
+                            ? `${bet.payout} ${bet.feeCurrency}` 
+                            : `${bet.potentialPayout} ${bet.feeCurrency}`}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex justify-center items-center py-6">
+                <p className="text-gray-500 text-sm">No history Available</p>
+              </div>
+            )}
           </div>
         </div>
         

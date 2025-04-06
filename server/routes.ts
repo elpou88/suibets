@@ -306,9 +306,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/bets/user/:userId", async (req: Request, res: Response) => {
     try {
       const userId = Number(req.params.userId);
-      const bets = await storage.getBets(userId);
+      const status = req.query.status as string | undefined;
+      
+      let bets = await storage.getBets(userId);
+      
+      // Filter by status if it's provided and not 'all'
+      if (status && status !== 'all') {
+        bets = bets.filter(bet => bet.status === status);
+      }
+      
       res.json(bets);
     } catch (error) {
+      console.error("Error fetching bets:", error);
       res.status(500).json({ message: "Failed to fetch bets" });
     }
   });

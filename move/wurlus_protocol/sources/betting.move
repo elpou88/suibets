@@ -1,238 +1,242 @@
 module wurlus_protocol::betting {
-    use std::string::{String};
-    use sui::object::{Self, ID, UID};
+    use std::string::{Self, String};
+    use std::vector;
+    use sui::object::{Self, UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
     use sui::event;
     use sui::table::{Self, Table};
-    use wurlus_protocol::wurlus_protocol::{Self, WurlusProtocol, AdminCap};
+    use wurlus_protocol::market::{Self, Market, Outcome, MarketOwnerCap};
 
-    // Error codes
-    const EInsufficientBalance: u64 = 1;
-    const EInvalidBetAmount: u64 = 2;
-    const EEventNotFound: u64 = 3;
-    const ENotAdmin: u64 = 4;
-    const EInvalidMarket: u64 = 5;
-    const EInvalidOdds: u64 = 6;
-    const EMarketClosed: u64 = 7;
-    const EBetAlreadySettled: u64 = 8;
-    const EInvalidEventTime: u64 = 9;
+    // Errors
+    const EInsufficientBalance: u64 = 0;
+    const EMarketClosed: u64 = 1;
+    const EInvalidOutcome: u64 = 2;
+    const EBetAlreadySettled: u64 = 3;
+    const ENotMarketOwner: u64 = 4;
+    const EInvalidBetAmount: u64 = 5;
 
-    // Status constants
-    const STATUS_PENDING: u8 = 0;
+    // Bet status
+    const STATUS_ACTIVE: u8 = 0;
     const STATUS_WON: u8 = 1;
     const STATUS_LOST: u8 = 2;
     const STATUS_REFUNDED: u8 = 3;
-    const STATUS_CANCELED: u8 = 4;
 
-    // Bet data structure
-    struct BettingRecord has key {
+    // Bet structure
+    struct Bet has key {
         id: UID,
-        user: address,
-        bets: Table<ID, BetDetails>,
-        active_bets: u64,
-        settled_bets: u64,
-        total_wagered: u64,
-        total_won: u64,
-        total_fees_paid: u64,
+        bettor: address,
+        market_id: ID,
+        outcome_id: ID,
+        amount: u64,
+        odds: u64, // Multiplied by 100 for precision (e.g., 2.50 = 250)
+        potential_payout: u64,
+        status: u8,
+        placed_at: u64,
+        settled_at: Option<u64>,
+        tx_hash: String,
+        platform_fee: u64,
+        network_fee: u64
     }
 
-    // Individual bet details
-    struct BetDetails has store {
+    // Bet Receipt given to users
+    struct BetReceipt has key, store {
+        id: UID,
         bet_id: ID,
-        event_id: ID,
-        market_id: ID,
-        outcome: String,
+        bettor: address,
+        market_name: String,
+        outcome_name: String,
         amount: u64,
         odds: u64,
-        potential_win: u64,
-        status: u8,
-        created_at: u64,
-        settled_at: Option<u64>,
+        potential_payout: u64,
+        placed_at: u64,
+        status: u8
     }
 
-    // Events emitted by the betting module
+    // Events
     struct BetPlaced has copy, drop {
         bet_id: ID,
-        user: address,
-        event_id: ID,
+        bettor: address,
         market_id: ID,
-        outcome: String,
+        outcome_id: ID,
         amount: u64,
         odds: u64,
-        potential_win: u64,
-        timestamp: u64,
+        potential_payout: u64,
+        placed_at: u64
     }
 
     struct BetSettled has copy, drop {
         bet_id: ID,
-        user: address,
-        amount: u64,
-        won_amount: u64,
+        bettor: address,
         status: u8,
-        timestamp: u64,
+        payout: u64,
+        settled_at: u64
     }
 
-    // Initialize a user's betting record
-    public entry fun initialize_betting_record(ctx: &mut TxContext) {
-        let record = BettingRecord {
-            id: object::new(ctx),
-            user: tx_context::sender(ctx),
-            bets: table::new(ctx),
-            active_bets: 0,
-            settled_bets: 0,
-            total_wagered: 0,
-            total_won: 0,
-            total_fees_paid: 0,
-        };
-
-        transfer::transfer(record, tx_context::sender(ctx));
-    }
-
-    // Place a bet on a market outcome
+    // Place a bet on a specific outcome
     public entry fun place_bet(
-        protocol: &mut WurlusProtocol,
-        record: &mut BettingRecord,
-        event_id: ID,
-        market_id: ID,
-        outcome: String,
-        payment: Coin<SUI>,
+        market: &Market,
+        outcome_id: ID,
+        coin: Coin<SUI>,
         ctx: &mut TxContext
     ) {
-        // Ensure the user owns the betting record
-        assert!(record.user == tx_context::sender(ctx), 0);
+        // Checks
+        assert!(market::is_open(market), EMarketClosed);
+        assert!(market::has_outcome(market, outcome_id), EInvalidOutcome);
         
-        // Get the coin value
-        let amount = coin::value(&payment);
+        let bettor = tx_context::sender(ctx);
+        let amount = coin::value(&coin);
         assert!(amount > 0, EInvalidBetAmount);
         
-        // Call the wurlus protocol to place the bet
-        let (bet_id, odds, potential_win) = wurlus_protocol::place_bet_internal(
-            protocol, 
-            event_id, 
-            market_id, 
-            outcome, 
-            payment, 
-            ctx
-        );
+        // Get outcome details
+        let (outcome_name, odds) = market::get_outcome_details(market, outcome_id);
         
-        // Add bet to the user's betting record
-        let bet_details = BetDetails {
-            bet_id,
-            event_id,
-            market_id,
-            outcome,
-            amount,
+        // Calculate potential payout and fees
+        let platform_fee = amount / 20; // 5% platform fee
+        let network_fee = amount / 100; // 1% network fee
+        let bet_amount = amount - platform_fee - network_fee;
+        let potential_payout = (bet_amount * odds) / 100;
+        
+        // Transfer funds to market's liquidity pool
+        market::add_to_liquidity_pool(market, coin);
+        
+        // Create bet object
+        let current_time = tx_context::epoch(ctx);
+        let tx_hash = string::utf8(b"sui_tx_");
+        
+        let bet_id = object::new(ctx);
+        let bet_uid = object::uid_to_inner(&bet_id);
+        
+        let bet = Bet {
+            id: bet_id,
+            bettor,
+            market_id: market::get_id(market),
+            outcome_id,
+            amount: bet_amount,
             odds,
-            potential_win,
-            status: STATUS_PENDING,
-            created_at: tx_context::epoch(ctx),
+            potential_payout,
+            status: STATUS_ACTIVE,
+            placed_at: current_time,
             settled_at: option::none(),
+            tx_hash,
+            platform_fee,
+            network_fee
         };
         
-        table::add(&mut record.bets, bet_id, bet_details);
-        
-        // Update betting record stats
-        record.active_bets = record.active_bets + 1;
-        record.total_wagered = record.total_wagered + amount;
-        
-        // Emit bet placed event
-        event::emit(BetPlaced {
-            bet_id,
-            user: tx_context::sender(ctx),
-            event_id,
-            market_id,
-            outcome,
-            amount,
+        // Create receipt for bettor
+        let receipt = BetReceipt {
+            id: object::new(ctx),
+            bet_id: object::uid_to_inner(&bet.id),
+            bettor,
+            market_name: market::get_name(market),
+            outcome_name,
+            amount: bet_amount,
             odds,
-            potential_win,
-            timestamp: tx_context::epoch(ctx),
+            potential_payout,
+            placed_at: current_time,
+            status: STATUS_ACTIVE
+        };
+        
+        // Transfer receipt to bettor
+        transfer::transfer(receipt, bettor);
+        
+        // Store bet in global storage
+        transfer::share_object(bet);
+        
+        // Emit event
+        event::emit(BetPlaced {
+            bet_id: bet_uid,
+            bettor,
+            market_id: market::get_id(market),
+            outcome_id,
+            amount: bet_amount,
+            odds,
+            potential_payout,
+            placed_at: current_time
         });
     }
 
-    // Update a bet's status after settlement (admin only)
-    public entry fun update_bet_settlement(
-        _: &AdminCap,
-        record: &mut BettingRecord,
-        bet_id: ID,
-        is_won: bool,
-        payout_amount: u64,
+    // Settle a bet (called by market owner after outcome is determined)
+    public entry fun settle_bet(
+        bet: &mut Bet,
+        market_cap: &MarketOwnerCap,
+        winning_outcome_id: Option<ID>,
         ctx: &mut TxContext
     ) {
-        // Ensure the bet exists in the record
-        assert!(table::contains(&record.bets, bet_id), EInvalidBetAmount);
-        let bet = table::borrow_mut(&mut record.bets, bet_id);
+        // Verify caller is the market owner
+        assert!(market::is_market_owner(market_cap, bet.market_id), ENotMarketOwner);
         
-        // Ensure the bet is not already settled
-        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
+        // Verify bet hasn't been settled already
+        assert!(bet.status == STATUS_ACTIVE, EBetAlreadySettled);
         
-        // Update bet status
-        if (is_won) {
-            bet.status = STATUS_WON;
-            record.total_won = record.total_won + payout_amount;
+        let current_time = tx_context::epoch(ctx);
+        let payout = 0;
+        
+        // Determine bet result
+        if (option::is_some(&winning_outcome_id)) {
+            let winner = option::borrow(&winning_outcome_id);
+            if (*winner == bet.outcome_id) {
+                // Bet won
+                bet.status = STATUS_WON;
+                payout = bet.potential_payout;
+                
+                // In a real implementation, transfer funds from market's liquidity pool
+                // to bettor, but this requires more complex handling
+            } else {
+                // Bet lost
+                bet.status = STATUS_LOST;
+            }
         } else {
-            bet.status = STATUS_LOST;
-        };
+            // Market canceled - refund
+            bet.status = STATUS_REFUNDED;
+            payout = bet.amount;
+        }
         
-        bet.settled_at = option::some(tx_context::epoch(ctx));
+        bet.settled_at = option::some(current_time);
         
-        // Update record stats
-        record.active_bets = record.active_bets - 1;
-        record.settled_bets = record.settled_bets + 1;
-        
-        // Emit bet settled event
+        // Emit event
         event::emit(BetSettled {
-            bet_id,
-            user: record.user,
-            amount: bet.amount,
-            won_amount: if (is_won) { payout_amount } else { 0 },
+            bet_id: object::uid_to_inner(&bet.id),
+            bettor: bet.bettor,
             status: bet.status,
-            timestamp: tx_context::epoch(ctx),
+            payout,
+            settled_at: current_time
         });
     }
 
-    // Get a user's bet details
-    public fun get_bet_details(record: &BettingRecord, bet_id: ID): (
-        ID, // event_id
-        ID, // market_id
-        String, // outcome
-        u64, // amount
-        u64, // odds
-        u64, // potential_win
-        u8,  // status
-        u64, // created_at
-        Option<u64> // settled_at
+    // Claim bet winnings (to be implemented)
+    public entry fun claim_winnings(
+        bet: &Bet,
+        ctx: &mut TxContext
     ) {
-        let bet = table::borrow(&record.bets, bet_id);
-        (
-            bet.event_id,
-            bet.market_id,
-            bet.outcome,
-            bet.amount,
-            bet.odds,
-            bet.potential_win,
-            bet.status,
-            bet.created_at,
-            bet.settled_at
-        )
+        // This would be implemented to allow users to claim their winnings
+        // by presenting their BetReceipt and matching it against settled bets
     }
 
-    // Get a user's betting stats
-    public fun get_betting_stats(record: &BettingRecord): (
-        u64, // active_bets
-        u64, // settled_bets
-        u64, // total_wagered
-        u64, // total_won
-        u64  // total_fees_paid
-    ) {
-        (
-            record.active_bets,
-            record.settled_bets,
-            record.total_wagered,
-            record.total_won,
-            record.total_fees_paid
-        )
+    // View functions
+    public fun get_bet_status(bet: &Bet): u8 {
+        bet.status
+    }
+    
+    public fun get_potential_payout(bet: &Bet): u64 {
+        bet.potential_payout
+    }
+    
+    public fun get_bet_amount(bet: &Bet): u64 {
+        bet.amount
+    }
+    
+    public fun get_bet_odds(bet: &Bet): u64 {
+        bet.odds
+    }
+    
+    public fun is_bet_settled(bet: &Bet): bool {
+        bet.status != STATUS_ACTIVE
+    }
+
+    public fun get_bettor(bet: &Bet): address {
+        bet.bettor
     }
 }

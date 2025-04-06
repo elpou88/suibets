@@ -2,22 +2,34 @@ import { pgTable, text, serial, integer, boolean, timestamp, real, json } from "
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Core app tables
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   email: text("email"),
-  walletAddress: text("wallet_address"),
+  // Seal pattern for wallet security - store fingerprint not actual address
+  walletAddress: text("wallet_address").unique(), // Encrypted wallet address
+  walletFingerprint: text("wallet_fingerprint").unique(), // Hash fingerprint of wallet address
   walletType: text("wallet_type").default("Sui"),
   balance: real("balance").default(0),
-  createdAt: timestamp("created_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow(),
+  // Wurlus protocol integration
+  wurlusProfileId: text("wurlus_profile_id"), // Blockchain profile ID
+  wurlusRegistered: boolean("wurlus_registered").default(false),
+  wurlusProfileCreatedAt: timestamp("wurlus_profile_created_at"),
+  lastLoginAt: timestamp("last_login_at")
 });
 
 export const sports = pgTable("sports", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
-  icon: text("icon")
+  icon: text("icon"),
+  // Wurlus protocol integration
+  wurlusSportId: text("wurlus_sport_id"), // Blockchain sport ID
+  isActive: boolean("is_active").default(true),
+  providerId: text("provider_id") // ID of the data provider
 });
 
 export const events = pgTable("events", {
@@ -34,24 +46,104 @@ export const events = pgTable("events", {
   isLive: boolean("is_live").default(false),
   score: text("score"),
   status: text("status").default("upcoming"),
-  metadata: json("metadata")
+  metadata: json("metadata"),
+  // Wurlus protocol integration
+  wurlusEventId: text("wurlus_event_id"), // Blockchain event ID
+  wurlusMarketIds: text("wurlus_market_ids").array(), // Associated market IDs
+  createdOnChain: boolean("created_on_chain").default(false),
+  eventHash: text("event_hash"), // Hash identifier from blockchain
+  providerId: text("provider_id") // ID of the data provider
+});
+
+export const markets = pgTable("markets", {
+  id: serial("id").primaryKey(),
+  eventId: integer("event_id").references(() => events.id),
+  name: text("name").notNull(),
+  marketType: text("market_type").notNull(), // e.g., moneyline, over/under, etc.
+  status: text("status").default("open"),
+  // Wurlus protocol integration
+  wurlusMarketId: text("wurlus_market_id").notNull().unique(), // Blockchain market ID
+  createdAt: timestamp("created_at").defaultNow(),
+  settledAt: timestamp("settled_at"),
+  creatorAddress: text("creator_address"), // Admin address that created it
+  liquidityPool: real("liquidity_pool").default(0), // Amount in the market's liquidity pool
+  transactionHash: text("transaction_hash") // Transaction hash for market creation
+});
+
+export const outcomes = pgTable("outcomes", {
+  id: serial("id").primaryKey(),
+  marketId: integer("market_id").references(() => markets.id),
+  name: text("name").notNull(),
+  odds: real("odds").notNull(),
+  probability: real("probability"), // Calculated probability
+  status: text("status").default("active"),
+  // Wurlus protocol integration
+  wurlusOutcomeId: text("wurlus_outcome_id").notNull().unique(), // Blockchain outcome ID
+  transactionHash: text("transaction_hash"), // Transaction hash for outcome creation
+  isWinner: boolean("is_winner").default(false)
 });
 
 export const bets = pgTable("bets", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
   eventId: integer("event_id").references(() => events.id),
+  marketId: integer("market_id").references(() => markets.id),
+  outcomeId: integer("outcome_id").references(() => outcomes.id),
   betAmount: real("bet_amount").notNull(),
   odds: real("odds").notNull(),
   prediction: text("prediction").notNull(),
-  market: text("market").notNull(), // Market ID from Wurlus protocol
-  selection: text("selection").notNull(), // Selection/outcome ID from Wurlus protocol
+  potentialPayout: real("potential_payout").notNull(),
   status: text("status").default("pending"),
   result: text("result"),
   payout: real("payout"),
-  txHash: text("tx_hash"), // Transaction hash from blockchain
+  settledAt: timestamp("settled_at"),
   createdAt: timestamp("created_at").defaultNow(),
-  settledAt: timestamp("settled_at")
+  // Wurlus protocol integration
+  wurlusBetId: text("wurlus_bet_id"), // Blockchain bet ID
+  txHash: text("tx_hash"), // Transaction hash for bet placement
+  platformFee: real("platform_fee"), // Platform fee in SUI
+  networkFee: real("network_fee"), // Network fee in SUI
+  feeCurrency: text("fee_currency").default("SUI") // Currency of fees
+});
+
+// Wurlus Protocol specific tables
+export const wurlusStaking = pgTable("wurlus_staking", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  walletAddress: text("wallet_address").notNull(),
+  amountStaked: real("amount_staked").notNull(),
+  stakingDate: timestamp("staking_date").defaultNow(),
+  unstakingDate: timestamp("unstaking_date"),
+  isActive: boolean("is_active").default(true),
+  txHash: text("tx_hash"), // Transaction hash for staking
+  lockedUntil: timestamp("locked_until"), // Timestamp when tokens can be unstaked
+  rewardRate: real("reward_rate"), // Current reward rate
+  accumulatedRewards: real("accumulated_rewards").default(0) // Total rewards accumulated
+});
+
+export const wurlusDividends = pgTable("wurlus_dividends", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  walletAddress: text("wallet_address").notNull(),
+  periodStart: timestamp("period_start").notNull(),
+  periodEnd: timestamp("period_end").notNull(),
+  dividendAmount: real("dividend_amount").notNull(),
+  status: text("status").default("pending"), // pending, available, claimed
+  claimedAt: timestamp("claimed_at"),
+  claimTxHash: text("claim_tx_hash"), // Transaction hash for claiming
+  platformFee: real("platform_fee") // Platform fee taken on dividends
+});
+
+export const wurlus_wallet_operations = pgTable("wurlus_wallet_operations", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  walletAddress: text("wallet_address").notNull(),
+  operationType: text("operation_type").notNull(), // deposit, withdraw, bet, win, stake, unstake, claim
+  amount: real("amount").notNull(),
+  txHash: text("tx_hash").notNull(),
+  status: text("status").default("completed"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  metadata: json("metadata") // Additional operation details
 });
 
 export const promotions = pgTable("promotions", {
@@ -67,7 +159,10 @@ export const promotions = pgTable("promotions", {
   rolloverCasino: real("rollover_casino"),
   startDate: timestamp("start_date"),
   endDate: timestamp("end_date"),
-  isActive: boolean("is_active").default(true)
+  isActive: boolean("is_active").default(true),
+  // Wurlus protocol integration
+  wurlusPromotionId: text("wurlus_promotion_id"), // If this promotion exists on-chain
+  smartContractAddress: text("smart_contract_address") // Address of promotion smart contract
 });
 
 export const notifications = pgTable("notifications", {
@@ -76,7 +171,11 @@ export const notifications = pgTable("notifications", {
   title: text("title").notNull(),
   message: text("message").notNull(),
   isRead: boolean("is_read").default(false),
-  createdAt: timestamp("created_at").defaultNow()
+  createdAt: timestamp("created_at").defaultNow(),
+  // Wurlus protocol integration
+  relatedTxHash: text("related_tx_hash"), // If notification is related to a blockchain tx
+  notificationType: text("notification_type").default("app"), // app, blockchain, system
+  priority: text("priority").default("normal") // high, normal, low
 });
 
 // Insert Schemas
@@ -85,15 +184,23 @@ export const insertUserSchema = createInsertSchema(users)
     username: true,
     password: true,
     email: true,
-    walletAddress: true,
+    walletAddress: true, 
+    walletFingerprint: true,
     walletType: true
   })
-  .partial({ password: true }); // Make password optional for wallet-based users
+  .partial({ 
+    password: true, // Make password optional for wallet-based users
+    walletAddress: true, // Wallet address might be encrypted later
+    walletFingerprint: true // Fingerprint is generated from the wallet address
+  });
 
 export const insertSportSchema = createInsertSchema(sports).pick({
   name: true,
   slug: true,
-  icon: true
+  icon: true,
+  wurlusSportId: true,
+  isActive: true,
+  providerId: true
 });
 
 export const insertEventSchema = createInsertSchema(events).pick({
@@ -109,20 +216,77 @@ export const insertEventSchema = createInsertSchema(events).pick({
   isLive: true,
   score: true,
   status: true,
-  metadata: true
+  metadata: true,
+  wurlusEventId: true,
+  createdOnChain: true,
+  providerId: true
+});
+
+export const insertMarketSchema = createInsertSchema(markets).pick({
+  eventId: true,
+  name: true,
+  marketType: true,
+  status: true,
+  wurlusMarketId: true,
+  creatorAddress: true,
+  liquidityPool: true,
+  transactionHash: true
+});
+
+export const insertOutcomeSchema = createInsertSchema(outcomes).pick({
+  marketId: true,
+  name: true,
+  odds: true,
+  probability: true,
+  status: true,
+  wurlusOutcomeId: true,
+  transactionHash: true
 });
 
 export const insertBetSchema = createInsertSchema(bets)
   .pick({
     userId: true,
     eventId: true,
+    marketId: true,
+    outcomeId: true,
     betAmount: true,
     odds: true,
     prediction: true,
-    market: true,
-    selection: true,
-    txHash: true
+    potentialPayout: true,
+    wurlusBetId: true,
+    txHash: true,
+    platformFee: true,
+    networkFee: true
   });
+
+export const insertWurlusStakingSchema = createInsertSchema(wurlusStaking).pick({
+  userId: true,
+  walletAddress: true,
+  amountStaked: true,
+  stakingDate: true,
+  txHash: true,
+  lockedUntil: true,
+  rewardRate: true
+});
+
+export const insertWurlusDividendSchema = createInsertSchema(wurlusDividends).pick({
+  userId: true,
+  walletAddress: true,
+  periodStart: true,
+  periodEnd: true,
+  dividendAmount: true,
+  status: true
+});
+
+export const insertWurlusWalletOperationSchema = createInsertSchema(wurlus_wallet_operations).pick({
+  userId: true,
+  walletAddress: true,
+  operationType: true,
+  amount: true,
+  txHash: true,
+  status: true,
+  metadata: true
+});
 
 export const insertPromotionSchema = createInsertSchema(promotions).pick({
   title: true,
@@ -136,13 +300,18 @@ export const insertPromotionSchema = createInsertSchema(promotions).pick({
   rolloverCasino: true,
   startDate: true,
   endDate: true,
-  isActive: true
+  isActive: true,
+  wurlusPromotionId: true,
+  smartContractAddress: true
 });
 
 export const insertNotificationSchema = createInsertSchema(notifications).pick({
   userId: true,
   title: true,
-  message: true
+  message: true,
+  relatedTxHash: true,
+  notificationType: true,
+  priority: true
 });
 
 // Type Exports
@@ -155,8 +324,23 @@ export type Sport = typeof sports.$inferSelect;
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
 
+export type InsertMarket = z.infer<typeof insertMarketSchema>;
+export type Market = typeof markets.$inferSelect;
+
+export type InsertOutcome = z.infer<typeof insertOutcomeSchema>;
+export type Outcome = typeof outcomes.$inferSelect;
+
 export type InsertBet = z.infer<typeof insertBetSchema>;
 export type Bet = typeof bets.$inferSelect;
+
+export type InsertWurlusStaking = z.infer<typeof insertWurlusStakingSchema>;
+export type WurlusStaking = typeof wurlusStaking.$inferSelect;
+
+export type InsertWurlusDividend = z.infer<typeof insertWurlusDividendSchema>;
+export type WurlusDividend = typeof wurlusDividends.$inferSelect;
+
+export type InsertWurlusWalletOperation = z.infer<typeof insertWurlusWalletOperationSchema>;
+export type WurlusWalletOperation = typeof wurlus_wallet_operations.$inferSelect;
 
 export type InsertPromotion = z.infer<typeof insertPromotionSchema>;
 export type Promotion = typeof promotions.$inferSelect;

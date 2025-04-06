@@ -119,29 +119,37 @@ export default function Sidebar() {
 
         {/* Sports categories */}
         {sports.map((sport) => (
-          <a 
-            key={sport.id} 
-            href={`/sport/${sport.slug}`} 
-            className="block"
-            onClick={(e) => {
-              e.preventDefault();
-              console.log(`Navigating to sport: ${sport.slug}`);
-              window.location.href = `/sport/${sport.slug}`;
-            }}
+          <div 
+            key={sport.id}
+            className="block relative"
           >
             <div
-              className={`flex items-center px-4 py-3 mx-2 rounded cursor-pointer ${
+              className={`flex items-center px-4 py-3 mx-2 rounded cursor-pointer transition-all duration-200 ${
                 activeSport === sport.slug 
                   ? 'bg-primary text-black' 
-                  : 'text-white hover:bg-[#112225]'
+                  : 'text-white hover:bg-cyan-600 hover:text-black'
               }`}
+              onClick={() => {
+                console.log(`Clicking on sport: ${sport.slug}`);
+                // Add a small delay to ensure the UI updates
+                setTimeout(() => {
+                  console.log(`Navigating to sport: ${sport.slug}`);
+                  window.location.href = `/sport/${sport.slug}`;
+                }, 100);
+              }}
+              style={{
+                // Add highlight effect
+                boxShadow: activeSport === sport.slug ? '0 0 10px #00FFFF' : 'none',
+                position: 'relative',
+                zIndex: 10
+              }}
             >
               <div className="w-8 h-8 mr-3 flex items-center justify-center">
                 {getSportIcon(sport.slug)}
               </div>
               <span className={activeSport === sport.slug ? 'font-semibold' : ''}>{sport.name}</span>
             </div>
-          </a>
+          </div>
         ))}
       </div>
     </div>

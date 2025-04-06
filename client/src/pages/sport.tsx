@@ -1,5 +1,4 @@
-import { useParams } from "wouter";
-import Layout from "@/components/layout/Layout";
+import { useParams, useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
@@ -7,7 +6,19 @@ import { SettingsModal } from "@/components/modals/SettingsModal";
 
 export default function Sport() {
   const params = useParams();
-  const sportSlug = params.slug || '';
+  const [location] = useLocation();
+  
+  // Extract sport slug from URL path directly
+  const urlPath = location;
+  const urlMatch = urlPath.match(/\/sport\/([^\/]+)/);
+  const sportSlug = urlMatch ? urlMatch[1] : params.slug || '';
+  
+  console.log("DIRECT URL EXTRACTION:", { 
+    urlPath, 
+    urlMatch,
+    extractedSlug: urlMatch ? urlMatch[1] : null,
+    paramsSlug: params.slug
+  });
   
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);

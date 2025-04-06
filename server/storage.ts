@@ -6,7 +6,10 @@ import {
   promotions, type Promotion, type InsertPromotion,
   notifications, type Notification, type InsertNotification,
   parlays, type Parlay, type InsertParlay,
-  betLegs, type BetLeg, type InsertBetLeg
+  betLegs, type BetLeg, type InsertBetLeg,
+  markets, type Market, type InsertMarket,
+  marketTypes, type MarketType, type InsertMarketType,
+  outcomes, type Outcome, type InsertOutcome
 } from "@shared/schema";
 
 export interface IStorage {
@@ -49,6 +52,13 @@ export interface IStorage {
   createNotification(notification: InsertNotification): Promise<Notification>;
   markNotificationAsRead(id: number): Promise<Notification | undefined>;
   markAllNotificationsAsRead(userId: number): Promise<void>;
+  
+  // Market Types methods
+  getMarketTypes(sportId?: number, isActive?: boolean): Promise<MarketType[]>;
+  getMarketType(id: number): Promise<MarketType | undefined>;
+  getMarketTypeByCode(code: string): Promise<MarketType | undefined>;
+  createMarketType(marketType: InsertMarketType): Promise<MarketType>;
+  updateMarketType(id: number, marketType: Partial<MarketType>): Promise<MarketType | undefined>;
   
   // Markets methods
   getMarkets(eventId?: number): Promise<Market[]>;
@@ -109,6 +119,7 @@ export class MemStorage implements IStorage {
   private bets: Map<number, Bet>;
   private promotions: Map<number, Promotion>;
   private notifications: Map<number, Notification>;
+  private marketTypes: Map<number, MarketType>;
   private markets: Map<number, Market>;
   private outcomes: Map<number, Outcome>;
   private stakings: Map<number, WurlusStaking>;
@@ -122,6 +133,7 @@ export class MemStorage implements IStorage {
   private betIdCounter: number;
   private promotionIdCounter: number;
   private notificationIdCounter: number;
+  private marketTypeIdCounter: number;
   private marketIdCounter: number;
   private outcomeIdCounter: number;
   private stakingIdCounter: number;
@@ -137,6 +149,7 @@ export class MemStorage implements IStorage {
     this.bets = new Map();
     this.promotions = new Map();
     this.notifications = new Map();
+    this.marketTypes = new Map();
     this.markets = new Map();
     this.outcomes = new Map();
     this.stakings = new Map();
@@ -150,6 +163,7 @@ export class MemStorage implements IStorage {
     this.betIdCounter = 1;
     this.promotionIdCounter = 1;
     this.notificationIdCounter = 1;
+    this.marketTypeIdCounter = 1;
     this.marketIdCounter = 1;
     this.outcomeIdCounter = 1;
     this.stakingIdCounter = 1;
@@ -160,6 +174,8 @@ export class MemStorage implements IStorage {
 
     // Initialize default sports
     this.initializeDefaultSports();
+    // Initialize default market types
+    this.initializeDefaultMarketTypes();
     // Initialize sample promotions
     this.initializeDefaultPromotions();
     // Initialize sample events
@@ -221,6 +237,93 @@ export class MemStorage implements IStorage {
     ];
 
     defaultPromotions.forEach(promotion => this.createPromotion(promotion));
+  }
+
+  private initializeDefaultMarketTypes() {
+    const defaultMarketTypes: InsertMarketType[] = [
+      {
+        name: "Match Result",
+        code: "1X2",
+        description: "Bet on the outcome of the match (home win, draw, away win)",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 1
+      },
+      {
+        name: "Both Teams To Score",
+        code: "BTTS",
+        description: "Bet on whether both teams will score in the match",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 2
+      },
+      {
+        name: "Over/Under",
+        code: "OU",
+        description: "Bet on the total number of goals/points scored in the match",
+        sportId: null, // All sports
+        isActive: true,
+        displayOrder: 3
+      },
+      {
+        name: "Correct Score",
+        code: "CS",
+        description: "Bet on the exact final score of the match",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 4
+      },
+      {
+        name: "First Goalscorer",
+        code: "FGS",
+        description: "Bet on which player will score the first goal of the match",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 5
+      },
+      {
+        name: "Anytime Goalscorer",
+        code: "AGS",
+        description: "Bet on whether a player will score a goal at any time during the match",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 6
+      },
+      {
+        name: "Double Chance",
+        code: "DC",
+        description: "Bet on two of the three possible outcomes (home win or draw, away win or draw, home win or away win)",
+        sportId: 1, // Football
+        isActive: true,
+        displayOrder: 7
+      },
+      {
+        name: "Handicap",
+        code: "HDP",
+        description: "Bet on the outcome after a virtual advantage is given to one team",
+        sportId: null, // All sports
+        isActive: true,
+        displayOrder: 8
+      },
+      {
+        name: "Winner",
+        code: "ML",
+        description: "Bet on which player/team will win the match/tournament",
+        sportId: null, // All sports
+        isActive: true,
+        displayOrder: 9
+      },
+      {
+        name: "Total Points",
+        code: "TP",
+        description: "Bet on the total number of points scored by a team or in the match",
+        sportId: 2, // Basketball
+        isActive: true,
+        displayOrder: 10
+      }
+    ];
+
+    defaultMarketTypes.forEach(marketType => this.createMarketType(marketType));
   }
 
   private initializeDefaultEvents() {
@@ -358,6 +461,47 @@ export class MemStorage implements IStorage {
     const sport: Sport = { ...insertSport, id };
     this.sports.set(id, sport);
     return sport;
+  }
+
+  // Market Types methods
+  async getMarketTypes(sportId?: number, isActive?: boolean): Promise<MarketType[]> {
+    let marketTypes = Array.from(this.marketTypes.values());
+    
+    if (sportId !== undefined) {
+      marketTypes = marketTypes.filter(type => type.sportId === sportId || type.sportId === null);
+    }
+    
+    if (isActive !== undefined) {
+      marketTypes = marketTypes.filter(type => type.isActive === isActive);
+    }
+    
+    return marketTypes.sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+  }
+  
+  async getMarketType(id: number): Promise<MarketType | undefined> {
+    return this.marketTypes.get(id);
+  }
+  
+  async getMarketTypeByCode(code: string): Promise<MarketType | undefined> {
+    return Array.from(this.marketTypes.values()).find(
+      (marketType) => marketType.code === code
+    );
+  }
+  
+  async createMarketType(insertMarketType: InsertMarketType): Promise<MarketType> {
+    const id = this.marketTypeIdCounter++;
+    const marketType: MarketType = { ...insertMarketType, id };
+    this.marketTypes.set(id, marketType);
+    return marketType;
+  }
+  
+  async updateMarketType(id: number, marketTypeData: Partial<MarketType>): Promise<MarketType | undefined> {
+    const marketType = this.marketTypes.get(id);
+    if (!marketType) return undefined;
+    
+    const updatedMarketType = { ...marketType, ...marketTypeData };
+    this.marketTypes.set(id, updatedMarketType);
+    return updatedMarketType;
   }
 
   // Events methods
@@ -866,6 +1010,7 @@ import { db } from "./db";
 import { eq, and, desc, asc, or, isNull } from "drizzle-orm";
 import {
   markets, type Market, type InsertMarket,
+  marketTypes, type MarketType, type InsertMarketType,
   outcomes, type Outcome, type InsertOutcome,
   wurlusStaking, type WurlusStaking, type InsertWurlusStaking,
   wurlusDividends, type WurlusDividend, type InsertWurlusDividend,
@@ -873,6 +1018,142 @@ import {
 } from "@shared/schema";
 
 export class DatabaseStorage implements IStorage {
+  private async initializeDefaultSportsIfEmpty() {
+    const existingSports = await db.select().from(sports);
+    if (existingSports.length === 0) {
+      const defaultSports: InsertSport[] = [
+        {
+          name: "Football",
+          slug: "football",
+          icon: "⚽",
+          isActive: true
+        },
+        {
+          name: "Basketball",
+          slug: "basketball",
+          icon: "🏀",
+          isActive: true
+        },
+        {
+          name: "Tennis",
+          slug: "tennis",
+          icon: "🎾",
+          isActive: true
+        }
+      ];
+      
+      for (const sport of defaultSports) {
+        await db.insert(sports).values(sport);
+      }
+    }
+  }
+  
+  private async initializeDefaultMarketTypesIfEmpty() {
+    const existingMarketTypes = await db.select().from(marketTypes);
+    if (existingMarketTypes.length === 0) {
+      const defaultMarketTypes: InsertMarketType[] = [
+        {
+          name: "Match Result",
+          code: "1X2",
+          description: "Bet on the outcome of the match (home win, draw, away win)",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 1
+        },
+        {
+          name: "Both Teams To Score",
+          code: "BTTS",
+          description: "Bet on whether both teams will score in the match",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 2
+        },
+        {
+          name: "Over/Under",
+          code: "OU",
+          description: "Bet on the total number of goals/points scored in the match",
+          sportId: null, // All sports
+          isActive: true,
+          displayOrder: 3
+        },
+        {
+          name: "Correct Score",
+          code: "CS",
+          description: "Bet on the exact final score of the match",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 4
+        },
+        {
+          name: "First Goalscorer",
+          code: "FGS",
+          description: "Bet on which player will score the first goal of the match",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 5
+        },
+        {
+          name: "Anytime Goalscorer",
+          code: "AGS",
+          description: "Bet on whether a player will score a goal at any time during the match",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 6
+        },
+        {
+          name: "Double Chance",
+          code: "DC",
+          description: "Bet on two of the three possible outcomes (home win or draw, away win or draw, home win or away win)",
+          sportId: 1, // Football
+          isActive: true,
+          displayOrder: 7
+        },
+        {
+          name: "Handicap",
+          code: "HDP",
+          description: "Bet on the outcome after a virtual advantage is given to one team",
+          sportId: null, // All sports
+          isActive: true,
+          displayOrder: 8
+        },
+        {
+          name: "Winner",
+          code: "ML",
+          description: "Bet on which player/team will win the match/tournament",
+          sportId: null, // All sports
+          isActive: true,
+          displayOrder: 9
+        },
+        {
+          name: "Total Points",
+          code: "TP",
+          description: "Bet on the total number of points scored by a team or in the match",
+          sportId: 2, // Basketball
+          isActive: true,
+          displayOrder: 10
+        }
+      ];
+      
+      for (const marketType of defaultMarketTypes) {
+        await db.insert(marketTypes).values(marketType);
+      }
+    }
+  }
+  
+  constructor() {
+    // Initialize default data if needed
+    // We need to do this asynchronously but can't make the constructor async
+    // so we wrap it in a self-executing async function
+    (async () => {
+      try {
+        await this.initializeDefaultSportsIfEmpty();
+        await this.initializeDefaultMarketTypesIfEmpty();
+      } catch (error) {
+        console.error("Error initializing default data:", error);
+      }
+    })();
+  }
+  
   // User methods
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -926,6 +1207,45 @@ export class DatabaseStorage implements IStorage {
   async createSport(insertSport: InsertSport): Promise<Sport> {
     const [sport] = await db.insert(sports).values(insertSport).returning();
     return sport;
+  }
+
+  // Market Types methods
+  async getMarketTypes(sportId?: number, isActive?: boolean): Promise<MarketType[]> {
+    let query = db.select().from(marketTypes);
+    
+    if (sportId !== undefined) {
+      query = query.where(or(eq(marketTypes.sportId, sportId), isNull(marketTypes.sportId)));
+    }
+    
+    if (isActive !== undefined) {
+      query = query.where(eq(marketTypes.isActive, isActive));
+    }
+    
+    return await query.orderBy(asc(marketTypes.displayOrder));
+  }
+  
+  async getMarketType(id: number): Promise<MarketType | undefined> {
+    const [marketType] = await db.select().from(marketTypes).where(eq(marketTypes.id, id));
+    return marketType;
+  }
+  
+  async getMarketTypeByCode(code: string): Promise<MarketType | undefined> {
+    const [marketType] = await db.select().from(marketTypes).where(eq(marketTypes.code, code));
+    return marketType;
+  }
+  
+  async createMarketType(marketType: InsertMarketType): Promise<MarketType> {
+    const [result] = await db.insert(marketTypes).values(marketType).returning();
+    return result;
+  }
+  
+  async updateMarketType(id: number, marketTypeData: Partial<MarketType>): Promise<MarketType | undefined> {
+    const [updatedMarketType] = await db
+      .update(marketTypes)
+      .set(marketTypeData)
+      .where(eq(marketTypes.id, id))
+      .returning();
+    return updatedMarketType;
   }
 
   // Events methods

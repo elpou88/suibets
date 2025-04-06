@@ -46,6 +46,9 @@ export async function seedDb() {
     // Seed sports data
     await seedSports();
     
+    // Seed market types data
+    await seedMarketTypes();
+    
     // Seed promotions data
     await seedPromotions();
     
@@ -153,6 +156,84 @@ async function seedSports() {
     console.log(`Seeded ${sportsData.length} sports`);
   } catch (error) {
     console.error('Error seeding sports data:', error);
+    throw error;
+  }
+}
+
+/**
+ * Seed market types data
+ */
+async function seedMarketTypes() {
+  try {
+    // Check if market types already exist
+    const existingMarketTypes = await db.select().from(schema.marketTypes);
+    
+    if (existingMarketTypes.length > 0) {
+      console.log(`Found ${existingMarketTypes.length} existing market types, skipping seed`);
+      return;
+    }
+    
+    console.log('Seeding market types data...');
+    
+    // Default market types data
+    const marketTypesData = [
+      {
+        code: "MONEYLINE",
+        name: "Money Line",
+        description: "Bet on the outcome of a match - home win, draw, or away win",
+        category: "main",
+        isActive: true,
+        displayOrder: 1,
+        createdAt: new Date()
+      },
+      {
+        code: "OVER_UNDER",
+        name: "Over/Under",
+        description: "Bet on whether the total score will be over or under a specified value",
+        category: "main",
+        isActive: true,
+        requiresNumericValue: true,
+        displayOrder: 2,
+        createdAt: new Date()
+      },
+      {
+        code: "CORRECT_SCORE",
+        name: "Correct Score",
+        description: "Bet on the exact final score of a match",
+        category: "props",
+        isActive: true,
+        requiresScoreSelection: true,
+        displayOrder: 3,
+        createdAt: new Date()
+      },
+      {
+        code: "FIRST_SCORER",
+        name: "First Scorer",
+        description: "Bet on which player will score the first goal/point",
+        category: "props",
+        isActive: true,
+        requiresPlayerSelection: true,
+        displayOrder: 4,
+        createdAt: new Date()
+      },
+      {
+        code: "HANDICAP",
+        name: "Handicap",
+        description: "Bet with a handicap applied to the favorite team",
+        category: "main",
+        isActive: true,
+        requiresNumericValue: true,
+        displayOrder: 5,
+        createdAt: new Date()
+      }
+    ];
+    
+    // Insert market types data
+    await db.insert(schema.marketTypes).values(marketTypesData);
+    
+    console.log(`Seeded ${marketTypesData.length} market types`);
+  } catch (error) {
+    console.error('Error initializing default data:', error);
     throw error;
   }
 }

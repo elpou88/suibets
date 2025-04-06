@@ -58,9 +58,13 @@ export const events = pgTable("events", {
 export const markets = pgTable("markets", {
   id: serial("id").primaryKey(),
   eventId: integer("event_id").references(() => events.id),
+  marketTypeId: integer("market_type_id").references(() => marketTypes.id), // Reference to market type
   name: text("name").notNull(),
-  marketType: text("market_type").notNull(), // e.g., moneyline, over/under, etc.
+  marketType: text("market_type").notNull(), // e.g., moneyline, over/under, etc. (kept for backwards compatibility)
   status: text("status").default("open"),
+  // Market-specific parameters
+  parameters: json("parameters"), // Additional configuration for this specific market
+  displayOrder: integer("display_order").default(0), // Order to display in UI
   // Wurlus protocol integration
   wurlusMarketId: text("wurlus_market_id").notNull().unique(), // Blockchain market ID
   createdAt: timestamp("created_at").defaultNow(),
@@ -70,6 +74,28 @@ export const markets = pgTable("markets", {
   transactionHash: text("transaction_hash") // Transaction hash for market creation
 });
 
+// Market types table to manage different bet types across sports
+export const marketTypes = pgTable("market_types", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(), // Unique identifier (e.g., "OVER_UNDER", "CORRECT_SCORE")
+  name: text("name").notNull(), // Display name
+  sportId: integer("sport_id").references(() => sports.id), // Sport this market type applies to (null = all sports)
+  description: text("description"), // Detailed explanation of the bet type
+  parameters: json("parameters"), // Additional parameters needed (e.g., points for over/under)
+  displayOrder: integer("display_order").default(0), // Order to display in UI
+  isActive: boolean("is_active").default(true),
+  // Parameters for special markets
+  requiresPlayerSelection: boolean("requires_player_selection").default(false), // For player-specific bets
+  requiresScoreSelection: boolean("requires_score_selection").default(false), // For correct score bets
+  requiresTimeSelection: boolean("requires_time_selection").default(false), // For time-specific bets
+  requiresNumericValue: boolean("requires_numeric_value").default(false), // For over/under bets
+  defaultValue: real("default_value"), // Default value for numeric markets
+  valueUnit: text("value_unit"), // Unit for the value (points, goals, etc.)
+  // Sports-specific categorization
+  category: text("category"), // E.g., "main", "props", "specials"
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 export const outcomes = pgTable("outcomes", {
   id: serial("id").primaryKey(),
   marketId: integer("market_id").references(() => markets.id),
@@ -77,6 +103,11 @@ export const outcomes = pgTable("outcomes", {
   odds: real("odds").notNull(),
   probability: real("probability"), // Calculated probability
   status: text("status").default("active"),
+  // For special markets
+  playerName: text("player_name"), // For player-specific outcomes (goal scorers)
+  numericValue: real("numeric_value"), // For over/under lines
+  scoreValue: text("score_value"), // For correct score outcomes
+  handicap: real("handicap"), // For handicap betting
   // Wurlus protocol integration
   wurlusOutcomeId: text("wurlus_outcome_id").notNull().unique(), // Blockchain outcome ID
   transactionHash: text("transaction_hash"), // Transaction hash for outcome creation
@@ -273,13 +304,33 @@ export const insertEventSchema = createInsertSchema(events).pick({
 
 export const insertMarketSchema = createInsertSchema(markets).pick({
   eventId: true,
+  marketTypeId: true,
   name: true,
   marketType: true,
   status: true,
+  parameters: true,
+  displayOrder: true,
   wurlusMarketId: true,
   creatorAddress: true,
   liquidityPool: true,
   transactionHash: true
+});
+
+export const insertMarketTypeSchema = createInsertSchema(marketTypes).pick({
+  code: true,
+  name: true,
+  sportId: true,
+  description: true,
+  parameters: true,
+  displayOrder: true,
+  isActive: true,
+  requiresPlayerSelection: true,
+  requiresScoreSelection: true,
+  requiresTimeSelection: true,
+  requiresNumericValue: true,
+  defaultValue: true,
+  valueUnit: true,
+  category: true
 });
 
 export const insertOutcomeSchema = createInsertSchema(outcomes).pick({
@@ -288,6 +339,12 @@ export const insertOutcomeSchema = createInsertSchema(outcomes).pick({
   odds: true,
   probability: true,
   status: true,
+  // Special market fields
+  playerName: true,
+  numericValue: true,
+  scoreValue: true,
+  handicap: true,
+  // Blockchain fields
   wurlusOutcomeId: true,
   transactionHash: true
 });
@@ -397,6 +454,9 @@ export type Sport = typeof sports.$inferSelect;
 
 export type InsertEvent = z.infer<typeof insertEventSchema>;
 export type Event = typeof events.$inferSelect;
+
+export type InsertMarketType = z.infer<typeof insertMarketTypeSchema>;
+export type MarketType = typeof marketTypes.$inferSelect;
 
 export type InsertMarket = z.infer<typeof insertMarketSchema>;
 export type Market = typeof markets.$inferSelect;

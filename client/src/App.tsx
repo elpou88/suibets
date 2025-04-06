@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 
 import Home from "@/pages/home";
 import Match from "@/pages/match";
+import MatchDetail from "@/pages/match-detail";
 import Promotions from "@/pages/promotions";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/sports" component={Home} />
       <Route path="/live" component={Home} />
       <Route path="/match/:id" component={Match} />
+      <Route path="/match-detail/:id" component={MatchDetail} />
       <Route path="/promotions" component={Promotions} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/settings" component={Settings} />

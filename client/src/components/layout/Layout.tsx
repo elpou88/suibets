@@ -1,10 +1,8 @@
 import { ReactNode } from "react";
 import Navbar from "./Navbar";
-import Sidebar from "./Sidebar";
-import MobileSidebar from "./MobileSidebar";
 import Footer from "./Footer";
 import { useMobile } from "@/hooks/use-mobile";
-import { Grid2X2, Home, User, Menu } from "lucide-react";
+import { Grid2X2, Home, User } from "lucide-react";
 import { BiFootball } from "react-icons/bi";
 
 interface LayoutProps {
@@ -16,11 +14,7 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar - only visible on non-mobile */}
-      {!isMobile && <Sidebar />}
-
-      {/* Mobile Sidebar - only visible on mobile */}
-      {isMobile && <MobileSidebar />}
+      {/* Sidebar has been removed as it was duplicating what's in the images */}
       
       {/* Mobile Bottom Navigation */}
       {isMobile && (

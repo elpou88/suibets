@@ -6,7 +6,7 @@ export default function Match() {
     <Layout>
       <div className="w-full min-h-screen flex flex-col">
         <img 
-          src="/images/Sports 2 (2).png" 
+          src="/images/Sports 3 (2).png" 
           alt="Match Details" 
           className="w-full h-full object-contain"
         />

@@ -3,7 +3,10 @@
  * 
  * This service handles interaction with the Sui blockchain using Sui Move language.
  * It implements the wurlus protocol for sports betting based on Wal.app documentation.
- * Reference: https://docs.wal.app/usage/interacting.html
+ * References:
+ * - https://docs.wal.app/usage/interacting.html
+ * - https://docs.wal.app/dev-guide/costs.html
+ * - https://docs.wal.app/dev-guide/storage.html
  */
 
 // Define the key Sui Move contract types and interfaces
@@ -403,6 +406,198 @@ export class SuiMoveService {
     } catch (error) {
       console.error(`[SuiMove] Error claiming winnings: ${error}`);
       throw new Error(`Failed to claim winnings: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new market for an event
+   * Admin function
+   * 
+   * @param adminWallet Admin wallet address
+   * @param eventId Event ID
+   * @param marketName Market name (e.g., "Match Winner")
+   * @returns Promise resolving to market ID
+   */
+  async createMarket(
+    adminWallet: string,
+    eventId: string,
+    marketName: string
+  ): Promise<string> {
+    try {
+      const transaction: SuiMoveTransaction = {
+        sender: adminWallet,
+        packageObjectId: this.packageId,
+        module: this.moduleNames.market,
+        function: 'create_market',
+        typeArguments: [],
+        arguments: [
+          this.protocolObjectId,
+          eventId,
+          marketName
+        ],
+        gasBudget: 12000
+      };
+
+      console.log(`[SuiMove] Creating market for event ${eventId}`);
+      
+      // Mock market ID
+      const marketId = `market_${Math.floor(Math.random() * 10000)}`;
+      return marketId;
+    } catch (error) {
+      console.error(`[SuiMove] Error creating market: ${error}`);
+      throw new Error(`Failed to create market: ${error}`);
+    }
+  }
+
+  /**
+   * Create a new outcome for a market
+   * Admin function
+   * 
+   * @param adminWallet Admin wallet address
+   * @param marketId Market ID
+   * @param outcomeName Outcome name (e.g., "Home Win")
+   * @param oddsValue Odds value (e.g., 2.5)
+   * @returns Promise resolving to outcome ID
+   */
+  async createOutcome(
+    adminWallet: string,
+    marketId: string,
+    outcomeName: string,
+    oddsValue: number
+  ): Promise<string> {
+    try {
+      // Convert odds to protocol format (integer representation)
+      const oddsInProtocolFormat = Math.floor(oddsValue * 100).toString();
+      
+      const transaction: SuiMoveTransaction = {
+        sender: adminWallet,
+        packageObjectId: this.packageId,
+        module: this.moduleNames.odds,
+        function: 'create_outcome',
+        typeArguments: [],
+        arguments: [
+          this.protocolObjectId,
+          marketId,
+          outcomeName,
+          oddsInProtocolFormat
+        ],
+        gasBudget: 12000
+      };
+
+      console.log(`[SuiMove] Creating outcome for market ${marketId}`);
+      
+      // Mock outcome ID
+      const outcomeId = `outcome_${Math.floor(Math.random() * 10000)}`;
+      return outcomeId;
+    } catch (error) {
+      console.error(`[SuiMove] Error creating outcome: ${error}`);
+      throw new Error(`Failed to create outcome: ${error}`);
+    }
+  }
+
+  /**
+   * Settle a market based on results
+   * Admin function
+   * 
+   * @param adminWallet Admin wallet address
+   * @param marketId Market ID
+   * @param winningOutcomeId Winning outcome ID
+   * @returns Promise resolving to transaction hash
+   */
+  async settleMarket(
+    adminWallet: string,
+    marketId: string,
+    winningOutcomeId: string
+  ): Promise<string> {
+    try {
+      const transaction: SuiMoveTransaction = {
+        sender: adminWallet,
+        packageObjectId: this.packageId,
+        module: this.moduleNames.market,
+        function: 'settle_market',
+        typeArguments: [],
+        arguments: [
+          this.protocolObjectId,
+          marketId,
+          winningOutcomeId
+        ],
+        gasBudget: 20000
+      };
+
+      console.log(`[SuiMove] Settling market ${marketId} with winning outcome ${winningOutcomeId}`);
+      
+      // Mock transaction hash
+      const txHash = `0x${Array.from({length: 64}, () => 
+        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      
+      return txHash;
+    } catch (error) {
+      console.error(`[SuiMove] Error settling market: ${error}`);
+      throw new Error(`Failed to settle market: ${error}`);
+    }
+  }
+
+  /**
+   * Get user's protocol registration status
+   * 
+   * @param walletAddress User wallet address
+   * @returns Promise resolving to boolean indicating registration status
+   */
+  async getUserRegistrationStatus(walletAddress: string): Promise<boolean> {
+    try {
+      console.log(`[SuiMove] Checking registration status for wallet ${walletAddress}`);
+      
+      // In production, this would check if the user has a storage object
+      // associated with their address using the Sui SDK.
+      // const userObjects = await suiClient.getOwnedObjects({
+      //   owner: walletAddress,
+      //   filter: {
+      //     StructType: `${this.packageId}::user_registry::UserProfile`
+      //   }
+      // });
+      // return userObjects.data.length > 0;
+      
+      // Mock result
+      return true;
+    } catch (error) {
+      console.error(`[SuiMove] Error checking user registration: ${error}`);
+      return false;
+    }
+  }
+
+  /**
+   * Get user's dividend information
+   * 
+   * @param walletAddress User wallet address
+   * @returns Promise resolving to user dividend data
+   */
+  async getUserDividends(walletAddress: string): Promise<{
+    availableDividends: number;
+    claimedDividends: number;
+    stakingAmount: number;
+    lastClaimTime: number;
+  }> {
+    try {
+      console.log(`[SuiMove] Getting dividend info for wallet ${walletAddress}`);
+      
+      // In production, this would query the user's dividend state object
+      // and return the actual values.
+      
+      // Mock data
+      return {
+        availableDividends: Math.random() * 5,
+        claimedDividends: Math.random() * 10,
+        stakingAmount: Math.random() * 100,
+        lastClaimTime: Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
+      };
+    } catch (error) {
+      console.error(`[SuiMove] Error getting user dividends: ${error}`);
+      return {
+        availableDividends: 0,
+        claimedDividends: 0,
+        stakingAmount: 0,
+        lastClaimTime: 0
+      };
     }
   }
 }

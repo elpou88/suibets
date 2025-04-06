@@ -46,8 +46,8 @@ export default function Navbar() {
         <div 
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
           onClick={() => {
-            console.log('Navigating directly to promotions page');
-            setLocation('/promotions');
+            console.log('Trying direct HTML approach');
+            window.location.href = '/promotions-direct.html';
           }}
         >
           Promotions

@@ -84,7 +84,13 @@ export default function Sidebar() {
     <div className="hidden md:flex flex-col w-64 bg-[#09181B] text-white">
       {/* Logo */}
       <div className="py-6 px-6 flex items-center">
-        <span className="sui-logo">SuiBets</span>
+        <Link href="/">
+          <img 
+            src="/logo/suibets-logo.svg" 
+            alt="SuiBets Logo" 
+            className="h-8"
+          />
+        </Link>
       </div>
       
       {/* Main navigation */}

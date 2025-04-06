@@ -53,6 +53,17 @@ export default function Navbar() {
         </Link>
       </div>
       
+      {/* Logo in center - only visible on mobile */}
+      <div className="md:hidden absolute left-1/2 transform -translate-x-1/2">
+        <Link href="/">
+          <img 
+            src="/logo/suibets-logo.svg" 
+            alt="SuiBets Logo" 
+            className="h-8"
+          />
+        </Link>
+      </div>
+      
       <div className="flex items-center space-x-4">
         {isAuthenticated ? (
           <>

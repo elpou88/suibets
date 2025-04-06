@@ -97,7 +97,13 @@ export default function MobileSidebar() {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="py-6 px-6 flex items-center">
-            <span className="sui-logo">SuiBets</span>
+            <Link href="/" onClick={() => handleNavigation('/')}>
+              <img 
+                src="/logo/suibets-logo.svg" 
+                alt="SuiBets Logo" 
+                className="h-8"
+              />
+            </Link>
           </div>
           
           {/* Navigation */}

@@ -103,11 +103,6 @@ export const outcomes = pgTable("outcomes", {
   odds: real("odds").notNull(),
   probability: real("probability"), // Calculated probability
   status: text("status").default("active"),
-  // For special markets
-  playerName: text("player_name"), // For player-specific outcomes (goal scorers)
-  numericValue: real("numeric_value"), // For over/under lines
-  scoreValue: text("score_value"), // For correct score outcomes
-  handicap: real("handicap"), // For handicap betting
   // Wurlus protocol integration
   wurlusOutcomeId: text("wurlus_outcome_id").notNull().unique(), // Blockchain outcome ID
   transactionHash: text("transaction_hash"), // Transaction hash for outcome creation
@@ -339,14 +334,10 @@ export const insertOutcomeSchema = createInsertSchema(outcomes).pick({
   odds: true,
   probability: true,
   status: true,
-  // Special market fields
-  playerName: true,
-  numericValue: true,
-  scoreValue: true,
-  handicap: true,
   // Blockchain fields
   wurlusOutcomeId: true,
-  transactionHash: true
+  transactionHash: true,
+  isWinner: true
 });
 
 export const insertBetSchema = createInsertSchema(bets)

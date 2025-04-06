@@ -1,274 +1,192 @@
 /**
- * Security Service for Wal.app integration
+ * SecurityService for Wal.app integration
  * Based on Wal.app data security documentation: https://docs.wal.app/dev-guide/data-security.html
  * 
- * This service handles encryption, hashing, and secure storage of sensitive data
- * according to Wal.app security standards.
+ * This service handles encryption, password hashing, and other security features
+ * to protect user data and follow Wal.app security guidelines.
  */
+
 import crypto from 'crypto';
 import { config } from '../config';
 
-export class SecurityService {
-  private readonly algorithm = 'aes-256-gcm';
-  private readonly ivLength = 16; // 16 bytes for GCM mode
-  private readonly saltLength = 64; // 64 bytes for key derivation
-  private readonly tagLength = 16; // 16 bytes for authentication tag
-  private readonly keyLength = 32; // 32 bytes (256 bits) for AES-256
-  private readonly iterations = 100000; // Iterations for PBKDF2
+export interface EncryptionResult {
+  iv: string;
+  encryptedData: string;
+}
 
-  // Default secret key from environment variable or configuration
-  private readonly secretKey: string;
+export class SecurityService {
+  private encryptionKey: Buffer;
+  private algorithm = 'aes-256-cbc';
+  private passwordSalt: string;
 
   constructor() {
-    // Use environment variable or fallback to config
-    this.secretKey = process.env.WAL_ENCRYPTION_KEY || 
-                     config.security?.encryptionKey || 
-                     'default-key-replace-in-production';
+    // Get encryption key from config, or generate one if not available
+    const key = config.security?.encryptionKey || this.generateSecureRandomKey();
+    this.encryptionKey = Buffer.from(key, 'hex');
     
-    if (this.secretKey === 'default-key-replace-in-production') {
-      console.warn('[SecurityService] Warning: Using default encryption key. This is not secure for production use.');
-    }
+    // Get password salt from config, or generate one if not available
+    this.passwordSalt = config.security?.passwordSalt || this.generateSalt();
   }
 
   /**
-   * Generate a cryptographically secure key from password and salt using PBKDF2
-   * @param password Password to derive key from
-   * @param salt Salt for key derivation
-   * @returns Derived key as Buffer
+   * Generate a cryptographically secure random key
+   * @returns A hex string representing the key
    */
-  private deriveKey(password: string, salt: Buffer): Buffer {
-    return crypto.pbkdf2Sync(
-      password,
-      salt,
-      this.iterations,
-      this.keyLength,
-      'sha512'
-    );
+  private generateSecureRandomKey(): string {
+    // Generate a 32-byte (256-bit) random key for AES-256
+    return crypto.randomBytes(32).toString('hex');
   }
 
   /**
-   * Encrypt sensitive data using AES-256-GCM with a random IV
-   * Following Wal.app security recommendations for encrypting wallet-related data
-   * 
-   * @param data Data to encrypt
-   * @param customKey Optional custom encryption key
-   * @returns Encrypted data as hex string with IV and authentication tag
+   * Generate a random salt for password hashing
+   * @returns A hex string representing the salt
    */
-  encrypt(data: string, customKey?: string): string {
+  private generateSalt(): string {
+    return crypto.randomBytes(16).toString('hex');
+  }
+
+  /**
+   * Encrypt sensitive data using AES-256-CBC
+   * @param data The plaintext data to encrypt
+   * @returns EncryptionResult containing IV and encrypted data
+   */
+  public encrypt(data: string): EncryptionResult {
     try {
-      // Generate a random salt for key derivation
-      const salt = crypto.randomBytes(this.saltLength);
+      // Generate a random initialization vector (IV)
+      const iv = crypto.randomBytes(16);
       
-      // Generate a random initialization vector
-      const iv = crypto.randomBytes(this.ivLength);
-      
-      // Derive encryption key from password and salt
-      const key = this.deriveKey(customKey || this.secretKey, salt);
-      
-      // Create cipher with key and IV
-      const cipher = crypto.createCipheriv(this.algorithm, key, iv);
+      // Create cipher using the encryption key and IV
+      const cipher = crypto.createCipheriv(this.algorithm, this.encryptionKey, iv);
       
       // Encrypt the data
       let encrypted = cipher.update(data, 'utf8', 'hex');
       encrypted += cipher.final('hex');
       
-      // Get the authentication tag
-      const authTag = cipher.getAuthTag();
-      
-      // Combine salt, IV, encrypted data, and authentication tag
-      const result = Buffer.concat([
-        salt,
-        iv,
-        Buffer.from(encrypted, 'hex'),
-        authTag
-      ]).toString('hex');
-      
-      return result;
+      return {
+        iv: iv.toString('hex'),
+        encryptedData: encrypted
+      };
     } catch (error) {
-      console.error('[SecurityService] Encryption error:', error);
+      console.error('Encryption error:', error);
       throw new Error('Failed to encrypt data');
     }
   }
 
   /**
-   * Decrypt data that was encrypted with the encrypt method
-   * 
-   * @param encryptedData Encrypted data as hex string
-   * @param customKey Optional custom encryption key
-   * @returns Decrypted data as string
+   * Decrypt data that was encrypted using the encrypt method
+   * @param encryptedData The encrypted data
+   * @param iv The initialization vector used for encryption
+   * @returns The decrypted plaintext
    */
-  decrypt(encryptedData: string, customKey?: string): string {
+  public decrypt(encryptedData: string, iv: string): string {
     try {
-      // Convert hex string to buffer
-      const data = Buffer.from(encryptedData, 'hex');
+      // Convert the IV from hex to Buffer
+      const ivBuffer = Buffer.from(iv, 'hex');
       
-      // Extract components
-      const salt = data.subarray(0, this.saltLength);
-      const iv = data.subarray(this.saltLength, this.saltLength + this.ivLength);
-      const authTag = data.subarray(data.length - this.tagLength);
-      const encrypted = data.subarray(
-        this.saltLength + this.ivLength,
-        data.length - this.tagLength
-      );
-      
-      // Derive key from password and salt
-      const key = this.deriveKey(customKey || this.secretKey, salt);
-      
-      // Create decipher
-      const decipher = crypto.createDecipheriv(this.algorithm, key, iv);
-      decipher.setAuthTag(authTag);
+      // Create decipher using the encryption key and IV
+      const decipher = crypto.createDecipheriv(this.algorithm, this.encryptionKey, ivBuffer);
       
       // Decrypt the data
-      let decrypted = decipher.update(encrypted.toString('hex'), 'hex', 'utf8');
+      let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
       
       return decrypted;
     } catch (error) {
-      console.error('[SecurityService] Decryption error:', error);
+      console.error('Decryption error:', error);
       throw new Error('Failed to decrypt data');
     }
   }
 
   /**
-   * Hash data using SHA-512 (Wal.app recommended for non-password data)
-   * 
-   * @param data Data to hash
-   * @returns Hashed data as hex string
+   * Hash a password using PBKDF2 (Password-Based Key Derivation Function 2)
+   * @param password The plaintext password to hash
+   * @returns The password hash as a hex string
    */
-  hashData(data: string): string {
-    return crypto.createHash('sha512').update(data).digest('hex');
-  }
-
-  /**
-   * Hash password using bcrypt-compatible algorithm
-   * Not using actual bcrypt library to avoid external dependencies
-   * This is a simplified implementation following Wal.app security standards
-   * 
-   * @param password Password to hash
-   * @returns Hashed password
-   */
-  hashPassword(password: string): string {
-    // Generate a random salt for password hashing
-    const salt = crypto.randomBytes(16).toString('hex');
-    
-    // Use PBKDF2 with high iteration count for password hashing
-    const hash = crypto.pbkdf2Sync(
-      password,
-      salt,
-      210000, // Higher iterations for password hashing
-      64,     // 64 bytes output (512 bits)
-      'sha512'
-    ).toString('hex');
-    
-    // Return hash and salt together with separator for later verification
-    return `${hash}:${salt}`;
-  }
-
-  /**
-   * Verify password against a hashed password
-   * 
-   * @param password Password to verify
-   * @param hashedPassword Hashed password from hashPassword
-   * @returns Boolean indicating whether password is correct
-   */
-  verifyPassword(password: string, hashedPassword: string): boolean {
+  public hashPassword(password: string): string {
     try {
-      // Split hash and salt
-      const [hash, salt] = hashedPassword.split(':');
-      
-      // Hash the input password with the same salt
-      const inputHash = crypto.pbkdf2Sync(
+      // Using PBKDF2 with 10000 iterations and SHA-512 hash
+      const hash = crypto.pbkdf2Sync(
         password,
-        salt,
-        210000,
-        64,
+        this.passwordSalt,
+        10000, // Iterations
+        64,    // Key length
         'sha512'
-      ).toString('hex');
+      );
       
-      // Compare hashes using constant-time comparison
+      return hash.toString('hex');
+    } catch (error) {
+      console.error('Password hashing error:', error);
+      throw new Error('Failed to hash password');
+    }
+  }
+
+  /**
+   * Verify a password against a stored hash
+   * @param password The plaintext password to verify
+   * @param storedHash The stored password hash
+   * @returns True if the password matches, false otherwise
+   */
+  public verifyPassword(password: string, storedHash: string): boolean {
+    try {
+      // Hash the input password using the same method
+      const hash = this.hashPassword(password);
+      
+      // Compare the hashes using a timing-safe comparison function
       return crypto.timingSafeEqual(
         Buffer.from(hash, 'hex'),
-        Buffer.from(inputHash, 'hex')
+        Buffer.from(storedHash, 'hex')
       );
     } catch (error) {
-      console.error('[SecurityService] Password verification error:', error);
+      console.error('Password verification error:', error);
       return false;
     }
   }
 
   /**
-   * Generate a cryptographically secure random token
-   * Used for API keys, session tokens, etc.
-   * 
-   * @param length Length of token in bytes (default: 32)
-   * @returns Random token as hex string
+   * Generate a secure random token for CSRF protection or session IDs
+   * @param length The length of the token in bytes (default: 32)
+   * @returns A secure random token as a hex string
    */
-  generateToken(length = 32): string {
+  public generateSecureToken(length: number = 32): string {
     return crypto.randomBytes(length).toString('hex');
   }
 
   /**
-   * Securely compare two strings in constant time
-   * Protects against timing attacks
-   * 
-   * @param a First string
-   * @param b Second string
-   * @returns Boolean indicating whether strings are equal
+   * Validate the structure and format of a wallet address
+   * @param walletAddress The wallet address to validate
+   * @returns True if the wallet address is valid, false otherwise
    */
-  secureCompare(a: string, b: string): boolean {
-    try {
-      return crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b));
-    } catch (error) {
-      // Length mismatch or other error
-      return false;
-    }
+  public validateWalletAddress(walletAddress: string): boolean {
+    // Basic format check for Sui wallet addresses
+    // Sui addresses are 0x followed by 32-64 hex characters
+    const walletRegex = /^0x[a-fA-F0-9]{32,64}$/;
+    return walletRegex.test(walletAddress);
   }
 
   /**
-   * Sanitize data for safe storage and display
-   * Removes potentially dangerous characters
-   * 
-   * @param input Input string to sanitize
+   * Sanitize input data to prevent XSS attacks
+   * @param input The input string to sanitize
    * @returns Sanitized string
    */
-  sanitizeInput(input: string): string {
-    // Replace potentially dangerous characters with HTML entities
+  public sanitizeInput(input: string): string {
+    // Basic XSS prevention by replacing potentially dangerous characters
     return input
-      .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;')
+      .replace(/'/g, '&#x27;')
       .replace(/\//g, '&#x2F;');
   }
 
   /**
-   * Securely wipe sensitive data from memory
-   * This is a best-effort attempt, as JavaScript garbage collection
-   * may retain copies of data elsewhere in memory
-   * 
-   * @param data Reference to data to wipe
+   * Create a SHA-256 hash of the provided data
+   * @param data The data to hash
+   * @returns SHA-256 hash as a hex string
    */
-  wipeData(data: any): void {
-    if (typeof data === 'string') {
-      // Overwrite string with random data
-      for (let i = 0; i < data.length; i++) {
-        data = data.substring(0, i) + 
-               String.fromCharCode(Math.floor(Math.random() * 94) + 32) + 
-               data.substring(i + 1);
-      }
-    } else if (data instanceof Buffer) {
-      // Fill buffer with random data
-      crypto.randomFillSync(data);
-    } else if (typeof data === 'object' && data !== null) {
-      // Recursively wipe all properties
-      Object.keys(data).forEach(key => {
-        this.wipeData(data[key]);
-        delete data[key];
-      });
-    }
+  public sha256Hash(data: string): string {
+    return crypto.createHash('sha256').update(data).digest('hex');
   }
 }
 
-// Export a singleton instance
+// Export a singleton instance of the service
 export const securityService = new SecurityService();

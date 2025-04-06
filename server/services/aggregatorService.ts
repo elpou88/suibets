@@ -233,7 +233,7 @@ export class AggregatorService {
         headers['Authorization'] = `Bearer ${provider.apiKey}`;
         // Add additional security if specified in Wal.app documentation
         headers['X-Timestamp'] = Date.now().toString();
-        headers['X-Signature'] = securityService.hashData(
+        headers['X-Signature'] = securityService.sha256Hash(
           `${provider.apiKey}:${headers['X-Timestamp']}`
         );
       }

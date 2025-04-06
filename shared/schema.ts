@@ -8,6 +8,7 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   email: text("email"),
   walletAddress: text("wallet_address"),
+  walletType: text("wallet_type").default("Sui"),
   balance: real("balance").default(0),
   createdAt: timestamp("created_at").defaultNow()
 });
@@ -84,7 +85,8 @@ export const insertUserSchema = createInsertSchema(users)
     username: true,
     password: true,
     email: true,
-    walletAddress: true
+    walletAddress: true,
+    walletType: true
   })
   .partial({ password: true }); // Make password optional for wallet-based users
 

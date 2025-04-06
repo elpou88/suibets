@@ -281,6 +281,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
+      // Validate wallet address format using securityService
+      if (!securityService.validateWalletAddress(address)) {
+        return res.status(400).json({ 
+          message: "Invalid wallet address format", 
+          details: "Wallet address must be a valid Sui address" 
+        });
+      }
+      
+      // Sanitize inputs to prevent XSS
+      const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
+      
       // Use the Sui Move service for wurlus protocol integration
       const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
 
@@ -296,10 +307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (!user) {
         // Create a new user if the wallet address doesn't exist
+        // Generate a unique username with a secure random suffix for additional security
+        const randomSuffix = securityService.generateSecureToken(4);
+        const username = `user_${address.substring(0, 8)}_${randomSuffix}`;
+        
         const newUser = {
-          username: `user_${address.substring(0, 8)}`,
+          username: username,
           walletAddress: address,
-          walletType: walletType || 'Sui',
+          walletType: sanitizedWalletType,
           createdAt: new Date()
         };
         
@@ -326,7 +341,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user = await storage.updateUser(user.id, { balance });
       }
       
-      res.json(user);
+      // Generate a secure session token
+      const sessionToken = securityService.generateSecureToken();
+      
+      // Return user data with session token, but exclude sensitive data
+      // Make sure user exists before accessing its properties
+      if (!user) {
+        return res.status(500).json({ 
+          message: "Failed to retrieve user data after connection" 
+        });
+      }
+      
+      const safeUserData = {
+        id: user.id,
+        username: user.username,
+        walletAddress: user.walletAddress,
+        walletType: user.walletType || 'Sui', // Provide default if not set
+        balance: user.balance || 0,           // Provide default if not set
+        sessionToken: sessionToken
+      };
+      
+      res.json(safeUserData);
     } catch (error) {
       console.error("Error connecting wallet:", error);
       res.status(500).json({ message: "Failed to connect wallet" });

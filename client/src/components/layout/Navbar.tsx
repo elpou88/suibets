@@ -44,14 +44,16 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions"
-          className="relative px-3 py-1"
+          href={process.env.NODE_ENV === 'development' ? '/promotions-image.png' : '/promotions-image.png'}
+          className="block"
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = '/promotions-image.png';
+            console.log('Clicking on Promotions');
+          }}
         >
-          <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
+          <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
-            {location === "/promotions" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
           </div>
         </a>
       </div>

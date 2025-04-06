@@ -114,20 +114,12 @@ export default function Sidebar() {
       {/* Sports navigation - matching the design in the screenshot */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
         {sports.map((sport) => (
-          <div 
+          <a 
             key={sport.id}
-            onClick={() => {
-              console.log(`Clicking on sport: ${sport.slug}`);
-              
-              // Use direct navigation immediately
-              if (sport.slug === 'upcoming') {
-                window.location.href = '/';
-              } else {
-                // Force a hard navigation to ensure it works
-                const url = `/sport/${sport.slug}`;
-                console.log(`Directly navigating to: ${url}`);
-                window.location.href = url;
-              }
+            href={sport.slug === 'upcoming' ? '/' : `/sport/${sport.slug}`}
+            className="block"
+            onClick={(e) => {
+              console.log(`Clicking on ${sport.name} (${sport.slug})`);
             }}
           >
             <div
@@ -146,7 +138,7 @@ export default function Sidebar() {
                 {sport.name}
               </span>
             </div>
-          </div>
+          </a>
         ))}
       </div>
     </div>

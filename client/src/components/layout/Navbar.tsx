@@ -43,23 +43,11 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <a 
-          href="/promotions"
-          className="block"
-          onClick={(e) => {
-            e.preventDefault();
-            // Use the correct promotions image from client/public
-            const win = window.open('/promotions-image.png', '_self');
-            if (win) {
-              win.focus();
-            }
-            console.log('Opening Promotions image directly');
-          }}
-        >
+        <Link href="/promotions" className="block">
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
           </div>
-        </a>
+        </Link>
       </div>
       
       {/* Logo in center - only visible on mobile */}

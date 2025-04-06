@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
+import sportImages from '@/data/sportImages';
 
 /**
  * Sport page that displays a full-screen image based on the sport slug
@@ -27,26 +28,10 @@ export default function Sport() {
     setLocation('/');
   };
 
-  // Get the appropriate image based on the sport slug
+  // Get the appropriate image based on the sport slug using imported sportImages
   const getSportImage = () => {
-    // Define mapping from sport slug to image path
-    const imagePaths: Record<string, string> = {
-      'football': '/images/Sports 1 (2).png',
-      'basketball': '/images/Sports 2 (2).png',
-      'baseball': '/images/Sports 3 (2).png',
-      'hockey': '/images/Sports 4 (2).png',
-      'tennis': '/images/image_1743932705622.png',
-      'boxing': '/images/image_1743932891440.png',
-      'ufc': '/images/image_1743932923834.png',
-      'golf': '/images/image_1743933050735.png',
-      'esports': '/images/image_1743933103859.png',
-      'cricket': '/images/image_1743933557700.png',
-      'racing': '/images/image_1743947434959.png',
-      // Default image if sport doesn't match
-      'default': '/images/Sports 1 (2).png'
-    };
-    
-    return imagePaths[sportSlug] || imagePaths.default;
+    const sportImage = sportImages.find(sport => sport.slug === sportSlug);
+    return sportImage ? sportImage.imagePath : '/images/Sports 1 (2).png';
   };
 
   if (loading) {

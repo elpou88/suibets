@@ -12,57 +12,57 @@ interface SportImage {
 const sportImages: SportImage[] = [
   {
     slug: 'football',
-    imagePath: '/images/Sports 1 (2).png',
+    imagePath: '/images/Football_Original.png',
     title: 'Football'
   },
   {
     slug: 'basketball',
-    imagePath: '/images/Sports 2 (2).png',
+    imagePath: '/images/Basketball_Original.png',
     title: 'Basketball'
   },
   {
     slug: 'baseball',
-    imagePath: '/images/Sports 3 (2).png',
+    imagePath: '/images/Baseball_Original.png',
     title: 'Baseball'
   },
   {
     slug: 'hockey',
-    imagePath: '/images/Hockey_No_Highlight.png',
+    imagePath: '/images/Hockey_Original.png',
     title: 'Hockey'
   },
   {
     slug: 'tennis',
-    imagePath: '/images/image_1743932705622.png',
+    imagePath: '/images/Tennis_Original.png',
     title: 'Tennis'
   },
   {
     slug: 'boxing',
-    imagePath: '/images/image_1743932891440.png',
+    imagePath: '/images/Boxing_Original.png',
     title: 'Boxing'
   },
   {
     slug: 'ufc',
-    imagePath: '/images/image_1743932923834.png',
+    imagePath: '/images/UFC_Original.png',
     title: 'UFC'
   },
   {
     slug: 'golf',
-    imagePath: '/images/image_1743933050735.png',
+    imagePath: '/images/Golf_Original.png',
     title: 'Golf'
   },
   {
     slug: 'esports',
-    imagePath: '/images/Esports_No_Highlight.png',
+    imagePath: '/images/Sports_Home_No_Highlight.png',
     title: 'Esports'
   },
   {
     slug: 'cricket',
-    imagePath: '/images/image_1743933557700.png',
+    imagePath: '/images/Cricket_Original.png',
     title: 'Cricket'
   },
   {
     slug: 'racing',
-    imagePath: '/images/image_1743947434959.png',
+    imagePath: '/images/Racing_Original.png',
     title: 'Racing'
   }
 ];

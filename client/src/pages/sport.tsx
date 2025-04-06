@@ -101,18 +101,17 @@ export default function Sport() {
   console.log('Sport page loaded for:', sportSlug);
 
   return (
-    <Layout>
-      <div className="w-full min-h-screen flex flex-col">
-        <div 
-          className="relative w-full cursor-pointer" 
-          onClick={handleImageClick}
-        >
-          <img 
-            src={getSportImage()} 
-            alt={`${sportSlug} Sport Details`} 
-            className="w-full h-full object-contain pointer-events-none"
-          />
-        </div>
+    <div className="w-full min-h-screen">
+      <div 
+        className="relative w-full h-screen cursor-pointer" 
+        onClick={handleImageClick}
+      >
+        <img 
+          src={getSportImage()} 
+          alt={`${sportSlug} Sport Details`} 
+          className="w-full h-full object-cover pointer-events-none"
+          style={{ maxWidth: '100vw', height: '100vh' }}
+        />
       </div>
       
       <ConnectWalletModal 
@@ -129,6 +128,6 @@ export default function Sport() {
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)} 
       />
-    </Layout>
+    </div>
   );
 }

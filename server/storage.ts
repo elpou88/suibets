@@ -4,7 +4,9 @@ import {
   events, type Event, type InsertEvent, 
   bets, type Bet, type InsertBet, 
   promotions, type Promotion, type InsertPromotion,
-  notifications, type Notification, type InsertNotification
+  notifications, type Notification, type InsertNotification,
+  parlays, type Parlay, type InsertParlay,
+  betLegs, type BetLeg, type InsertBetLeg
 } from "@shared/schema";
 
 export interface IStorage {
@@ -80,6 +82,24 @@ export interface IStorage {
   // Wallet operations methods
   getWalletOperations(walletAddress: string, operationType?: string): Promise<WurlusWalletOperation[]>;
   createWalletOperation(operation: InsertWurlusWalletOperation): Promise<WurlusWalletOperation>;
+  
+  // Parlay methods
+  getParlays(userId: number): Promise<Parlay[]>;
+  getParlay(id: number): Promise<Parlay | undefined>;
+  createParlay(parlay: InsertParlay): Promise<Parlay>;
+  updateParlay(id: number, parlay: Partial<Parlay>): Promise<Parlay | undefined>;
+  calculateCashOutAmount(parlayId: number): Promise<number>;
+  cashOutParlay(parlayId: number): Promise<Parlay | undefined>;
+  
+  // Bet Leg methods
+  getBetLegs(parlayId: number): Promise<BetLeg[]>;
+  getBetLeg(id: number): Promise<BetLeg | undefined>;
+  createBetLeg(betLeg: InsertBetLeg): Promise<BetLeg>;
+  updateBetLeg(id: number, betLeg: Partial<BetLeg>): Promise<BetLeg | undefined>;
+  
+  // Cash-out methods for single bets
+  calculateSingleBetCashOutAmount(betId: number): Promise<number>;
+  cashOutSingleBet(betId: number): Promise<Bet | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -94,6 +114,8 @@ export class MemStorage implements IStorage {
   private stakings: Map<number, WurlusStaking>;
   private dividends: Map<number, WurlusDividend>;
   private walletOperations: Map<number, WurlusWalletOperation>;
+  private parlays: Map<number, Parlay>;
+  private betLegs: Map<number, BetLeg>;
   private userIdCounter: number;
   private sportIdCounter: number;
   private eventIdCounter: number;
@@ -105,6 +127,8 @@ export class MemStorage implements IStorage {
   private stakingIdCounter: number;
   private dividendIdCounter: number;
   private walletOperationIdCounter: number;
+  private parlayIdCounter: number;
+  private betLegIdCounter: number;
 
   constructor() {
     this.users = new Map();
@@ -118,6 +142,8 @@ export class MemStorage implements IStorage {
     this.stakings = new Map();
     this.dividends = new Map();
     this.walletOperations = new Map();
+    this.parlays = new Map();
+    this.betLegs = new Map();
     this.userIdCounter = 1;
     this.sportIdCounter = 1;
     this.eventIdCounter = 1;
@@ -129,6 +155,8 @@ export class MemStorage implements IStorage {
     this.stakingIdCounter = 1;
     this.dividendIdCounter = 1;
     this.walletOperationIdCounter = 1;
+    this.parlayIdCounter = 1;
+    this.betLegIdCounter = 1;
 
     // Initialize default sports
     this.initializeDefaultSports();
@@ -680,6 +708,158 @@ export class MemStorage implements IStorage {
     this.walletOperations.set(id, operation);
     return operation;
   }
+  
+  // Parlay methods
+  async getParlays(userId: number): Promise<Parlay[]> {
+    return Array.from(this.parlays.values())
+      .filter(parlay => parlay.userId === userId)
+      .sort((a, b) => {
+        const aTime = a.createdAt?.getTime() || 0;
+        const bTime = b.createdAt?.getTime() || 0;
+        return bTime - aTime; // Sort by createdAt in descending order
+      });
+  }
+  
+  async getParlay(id: number): Promise<Parlay | undefined> {
+    return this.parlays.get(id);
+  }
+  
+  async createParlay(insertParlay: InsertParlay): Promise<Parlay> {
+    const id = this.parlayIdCounter++;
+    const now = new Date();
+    const parlay: Parlay = {
+      ...insertParlay,
+      id,
+      createdAt: now,
+      status: 'pending',
+      settledAt: null,
+      cashOutAvailable: false,
+      cashOutAmount: null,
+      cashOutAt: null
+    };
+    this.parlays.set(id, parlay);
+    return parlay;
+  }
+  
+  async updateParlay(id: number, parlayData: Partial<Parlay>): Promise<Parlay | undefined> {
+    const parlay = this.parlays.get(id);
+    if (!parlay) return undefined;
+    
+    const updatedParlay = { ...parlay, ...parlayData };
+    this.parlays.set(id, updatedParlay);
+    return updatedParlay;
+  }
+  
+  async calculateCashOutAmount(parlayId: number): Promise<number> {
+    const parlay = this.parlays.get(parlayId);
+    if (!parlay) throw new Error("Parlay not found");
+    
+    // For MemStorage implementation, we'll return a simple percentage of the potential payout
+    // based on the current time relative to when the parlay was created
+    const now = new Date().getTime();
+    const createdAt = parlay.createdAt?.getTime() || now;
+    const timeFactor = Math.min(1, (now - createdAt) / (24 * 60 * 60 * 1000)); // max 1 day
+    
+    // Calculate cash out amount as a percentage of potential payout, decreasing over time
+    const cashOutPercentage = Math.max(0.5, 0.9 - (0.4 * timeFactor));
+    const cashOutAmount = parlay.potentialPayout * cashOutPercentage;
+    
+    // Never allow cash out for less than half the bet amount
+    return Math.max(parlay.betAmount * 0.5, cashOutAmount);
+  }
+  
+  async cashOutParlay(parlayId: number): Promise<Parlay | undefined> {
+    const parlay = this.parlays.get(parlayId);
+    if (!parlay) return undefined;
+    
+    const cashOutAmount = await this.calculateCashOutAmount(parlayId);
+    const now = new Date();
+    
+    const updatedParlay: Parlay = {
+      ...parlay,
+      status: 'cashed_out',
+      cashOutAmount,
+      cashOutAt: now,
+      cashOutAvailable: false,
+      settledAt: now
+    };
+    
+    this.parlays.set(parlayId, updatedParlay);
+    return updatedParlay;
+  }
+  
+  // Bet Leg methods
+  async getBetLegs(parlayId: number): Promise<BetLeg[]> {
+    return Array.from(this.betLegs.values()).filter(
+      (betLeg) => betLeg.parlayId === parlayId
+    );
+  }
+  
+  async getBetLeg(id: number): Promise<BetLeg | undefined> {
+    return this.betLegs.get(id);
+  }
+  
+  async createBetLeg(insertBetLeg: InsertBetLeg): Promise<BetLeg> {
+    const id = this.betLegIdCounter++;
+    const betLeg: BetLeg = {
+      ...insertBetLeg,
+      id,
+      status: 'pending',
+      createdAt: new Date(),
+      settledAt: null,
+      result: null
+    };
+    this.betLegs.set(id, betLeg);
+    return betLeg;
+  }
+  
+  async updateBetLeg(id: number, betLegData: Partial<BetLeg>): Promise<BetLeg | undefined> {
+    const betLeg = this.betLegs.get(id);
+    if (!betLeg) return undefined;
+    
+    const updatedBetLeg = { ...betLeg, ...betLegData };
+    this.betLegs.set(id, updatedBetLeg);
+    return updatedBetLeg;
+  }
+  
+  // Cash-out methods for single bets
+  async calculateSingleBetCashOutAmount(betId: number): Promise<number> {
+    const bet = this.bets.get(betId);
+    if (!bet) throw new Error("Bet not found");
+    
+    // Similar to parlay cash out calculation but for single bets
+    const now = new Date().getTime();
+    const createdAt = bet.createdAt?.getTime() || now;
+    const timeFactor = Math.min(1, (now - createdAt) / (24 * 60 * 60 * 1000)); // max 1 day
+    
+    // Calculate cash out amount as a percentage of potential payout, decreasing over time
+    const cashOutPercentage = Math.max(0.6, 0.95 - (0.35 * timeFactor));
+    const cashOutAmount = bet.potentialPayout * cashOutPercentage;
+    
+    // Never allow cash out for less than half the bet amount
+    return Math.max(bet.betAmount * 0.5, cashOutAmount);
+  }
+  
+  async cashOutSingleBet(betId: number): Promise<Bet | undefined> {
+    const bet = this.bets.get(betId);
+    if (!bet) return undefined;
+    
+    const cashOutAmount = await this.calculateSingleBetCashOutAmount(betId);
+    const now = new Date();
+    
+    const updatedBet: Bet = {
+      ...bet,
+      status: 'cashed_out',
+      cashOutAmount,
+      cashOutAt: now,
+      cashOutAvailable: false,
+      settledAt: now,
+      payout: cashOutAmount
+    };
+    
+    this.bets.set(betId, updatedBet);
+    return updatedBet;
+  }
 }
 
 import { db } from "./db";
@@ -1048,6 +1228,156 @@ export class DatabaseStorage implements IStorage {
   async createWalletOperation(insertOperation: InsertWurlusWalletOperation): Promise<WurlusWalletOperation> {
     const [operation] = await db.insert(wurlus_wallet_operations).values(insertOperation).returning();
     return operation;
+  }
+  
+  // Parlay methods
+  async getParlays(userId: number): Promise<Parlay[]> {
+    return await db
+      .select()
+      .from(parlays)
+      .where(eq(parlays.userId, userId))
+      .orderBy(desc(parlays.createdAt));
+  }
+  
+  async getParlay(id: number): Promise<Parlay | undefined> {
+    const [parlay] = await db.select().from(parlays).where(eq(parlays.id, id));
+    return parlay;
+  }
+  
+  async createParlay(insertParlay: InsertParlay): Promise<Parlay> {
+    const [parlay] = await db.insert(parlays).values(insertParlay).returning();
+    return parlay;
+  }
+  
+  async updateParlay(id: number, parlayData: Partial<Parlay>): Promise<Parlay | undefined> {
+    const [updatedParlay] = await db
+      .update(parlays)
+      .set(parlayData)
+      .where(eq(parlays.id, id))
+      .returning();
+    return updatedParlay;
+  }
+  
+  async calculateCashOutAmount(parlayId: number): Promise<number> {
+    const [parlay] = await db.select().from(parlays).where(eq(parlays.id, parlayId));
+    if (!parlay) throw new Error("Parlay not found");
+    
+    // Get all legs of this parlay
+    const legs = await db.select().from(betLegs).where(eq(betLegs.parlayId, parlayId));
+    
+    // Calculate cash out amount based on legs status and current time
+    const now = new Date().getTime();
+    const createdAt = parlay.createdAt?.getTime() || now;
+    const timeFactor = Math.min(1, (now - createdAt) / (24 * 60 * 60 * 1000)); // max 1 day
+    
+    // Start with a high percentage for quick cash outs, decreasing over time
+    let cashOutPercentage = Math.max(0.5, 0.9 - (0.4 * timeFactor));
+    
+    // Adjust percentage based on legs status
+    const pendingLegs = legs.filter(leg => leg.status === 'pending');
+    const wonLegs = legs.filter(leg => leg.result === 'won');
+    
+    // If some legs already won, increase the cash out value
+    if (wonLegs.length > 0) {
+      cashOutPercentage = Math.min(0.95, cashOutPercentage + (wonLegs.length / legs.length * 0.3));
+    }
+    
+    // If most legs are still pending, reduce the cash out value
+    if (pendingLegs.length / legs.length > 0.7) {
+      cashOutPercentage = Math.max(0.5, cashOutPercentage - 0.1);
+    }
+    
+    const cashOutAmount = parlay.potentialPayout * cashOutPercentage;
+    
+    // Never allow cash out for less than half the bet amount
+    return Math.max(parlay.betAmount * 0.5, cashOutAmount);
+  }
+  
+  async cashOutParlay(parlayId: number): Promise<Parlay | undefined> {
+    const parlay = await this.getParlay(parlayId);
+    if (!parlay) return undefined;
+    
+    const cashOutAmount = await this.calculateCashOutAmount(parlayId);
+    const now = new Date();
+    
+    const [updatedParlay] = await db
+      .update(parlays)
+      .set({
+        status: 'cashed_out',
+        cashOutAmount,
+        cashOutAt: now,
+        cashOutAvailable: false,
+        settledAt: now
+      })
+      .where(eq(parlays.id, parlayId))
+      .returning();
+    
+    return updatedParlay;
+  }
+  
+  // Bet Leg methods
+  async getBetLegs(parlayId: number): Promise<BetLeg[]> {
+    return await db.select().from(betLegs).where(eq(betLegs.parlayId, parlayId));
+  }
+  
+  async getBetLeg(id: number): Promise<BetLeg | undefined> {
+    const [betLeg] = await db.select().from(betLegs).where(eq(betLegs.id, id));
+    return betLeg;
+  }
+  
+  async createBetLeg(insertBetLeg: InsertBetLeg): Promise<BetLeg> {
+    const [betLeg] = await db.insert(betLegs).values(insertBetLeg).returning();
+    return betLeg;
+  }
+  
+  async updateBetLeg(id: number, betLegData: Partial<BetLeg>): Promise<BetLeg | undefined> {
+    const [updatedBetLeg] = await db
+      .update(betLegs)
+      .set(betLegData)
+      .where(eq(betLegs.id, id))
+      .returning();
+    return updatedBetLeg;
+  }
+  
+  // Cash-out methods for single bets
+  async calculateSingleBetCashOutAmount(betId: number): Promise<number> {
+    const [bet] = await db.select().from(bets).where(eq(bets.id, betId));
+    if (!bet) throw new Error("Bet not found");
+    
+    // Similar to parlay cash out calculation but for single bets
+    const now = new Date().getTime();
+    const createdAt = bet.createdAt?.getTime() || now;
+    const timeFactor = Math.min(1, (now - createdAt) / (24 * 60 * 60 * 1000)); // max 1 day
+    
+    // Calculate cash out amount as a percentage of potential payout, decreasing over time
+    const cashOutPercentage = Math.max(0.6, 0.95 - (0.35 * timeFactor));
+    const cashOutAmount = bet.potentialPayout * cashOutPercentage;
+    
+    // Never allow cash out for less than half the bet amount
+    return Math.max(bet.betAmount * 0.5, cashOutAmount);
+  }
+  
+  async cashOutSingleBet(betId: number): Promise<Bet | undefined> {
+    const bet = await this.getBet(betId);
+    if (!bet) return undefined;
+    
+    const cashOutAmount = await this.calculateSingleBetCashOutAmount(betId);
+    const now = new Date();
+    
+    const [updatedBet] = await db
+      .update(bets)
+      .set({
+        status: 'cashed_out',
+        cashOutAmount,
+        cashOutAt: now,
+        cashOutAvailable: false,
+        settledAt: now,
+        payout: cashOutAmount
+      })
+      .where(eq(bets.id, betId))
+      .returning();
+    
+    return updatedBet;
   }
 }
 

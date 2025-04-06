@@ -98,12 +98,61 @@ export const bets = pgTable("bets", {
   payout: real("payout"),
   settledAt: timestamp("settled_at"),
   createdAt: timestamp("created_at").defaultNow(),
+  // Bet type
+  betType: text("bet_type").default("single"), // single, parlay
+  // Cash-out options
+  cashOutAvailable: boolean("cash_out_available").default(false),
+  cashOutAmount: real("cash_out_amount"),
+  cashOutAt: timestamp("cash_out_at"),
+  // Parlay related
+  parlayId: integer("parlay_id").references(() => parlays.id),
   // Wurlus protocol integration
   wurlusBetId: text("wurlus_bet_id"), // Blockchain bet ID
   txHash: text("tx_hash"), // Transaction hash for bet placement
   platformFee: real("platform_fee"), // Platform fee in SUI
   networkFee: real("network_fee"), // Network fee in SUI
   feeCurrency: text("fee_currency").default("SUI") // Currency of fees
+});
+
+// Parlay bets (combines multiple bets into one wager)
+export const parlays = pgTable("parlays", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => users.id),
+  betAmount: real("bet_amount").notNull(),
+  totalOdds: real("total_odds").notNull(),
+  potentialPayout: real("potential_payout").notNull(),
+  status: text("status").default("pending"),
+  result: text("result"),
+  payout: real("payout"),
+  settledAt: timestamp("settled_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  // Cash-out options
+  cashOutAvailable: boolean("cash_out_available").default(false),
+  cashOutAmount: real("cash_out_amount"),
+  cashOutAt: timestamp("cash_out_at"),
+  // Wurlus protocol integration
+  wurlusParlayId: text("wurlus_parlay_id"), // Blockchain parlay ID
+  txHash: text("tx_hash"), // Transaction hash for parlay placement
+  platformFee: real("platform_fee"), // Platform fee in SUI
+  networkFee: real("network_fee"), // Network fee in SUI
+  feeCurrency: text("fee_currency").default("SUI") // Currency of fees
+});
+
+// Bet legs (individual bets within a parlay)
+export const betLegs = pgTable("bet_legs", {
+  id: serial("id").primaryKey(),
+  parlayId: integer("parlay_id").references(() => parlays.id),
+  eventId: integer("event_id").references(() => events.id),
+  marketId: integer("market_id").references(() => markets.id),
+  outcomeId: integer("outcome_id").references(() => outcomes.id),
+  odds: real("odds").notNull(),
+  prediction: text("prediction").notNull(),
+  status: text("status").default("pending"),
+  result: text("result"),
+  createdAt: timestamp("created_at").defaultNow(),
+  // Wurlus protocol integration 
+  wurlusLegId: text("wurlus_leg_id"), // Blockchain leg ID
+  isWinner: boolean("is_winner").default(false)
 });
 
 // Wurlus Protocol specific tables
@@ -253,10 +302,13 @@ export const insertBetSchema = createInsertSchema(bets)
     odds: true,
     prediction: true,
     potentialPayout: true,
+    betType: true,
+    parlayId: true,
     wurlusBetId: true,
     txHash: true,
     platformFee: true,
-    networkFee: true
+    networkFee: true,
+    feeCurrency: true
   });
 
 export const insertWurlusStakingSchema = createInsertSchema(wurlusStaking).pick({
@@ -314,6 +366,28 @@ export const insertNotificationSchema = createInsertSchema(notifications).pick({
   priority: true
 });
 
+export const insertParlaySchema = createInsertSchema(parlays).pick({
+  userId: true,
+  betAmount: true,
+  totalOdds: true,
+  potentialPayout: true,
+  wurlusParlayId: true,
+  txHash: true,
+  platformFee: true,
+  networkFee: true,
+  feeCurrency: true
+});
+
+export const insertBetLegSchema = createInsertSchema(betLegs).pick({
+  parlayId: true,
+  eventId: true,
+  marketId: true,
+  outcomeId: true,
+  odds: true,
+  prediction: true,
+  wurlusLegId: true
+});
+
 // Type Exports
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -347,6 +421,12 @@ export type Promotion = typeof promotions.$inferSelect;
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+export type InsertParlay = z.infer<typeof insertParlaySchema>;
+export type Parlay = typeof parlays.$inferSelect;
+
+export type InsertBetLeg = z.infer<typeof insertBetLegSchema>;
+export type BetLeg = typeof betLegs.$inferSelect;
 
 // Wallet type for Sui
 export type WalletType = 'Sui' | 'Suiet' | 'Nightly' | 'WalletConnect';

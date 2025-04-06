@@ -1,15 +1,10 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as schema from '../shared/schema';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-
-const execPromise = promisify(exec);
 
 /**
- * This script will push the schema to the database.
- * Run with: npx tsx scripts/db-push.ts
+ * This script will initialize the database with our tables and seed data.
+ * Run with: npx tsx scripts/init-db.ts
  */
 async function main() {
   try {
@@ -19,30 +14,221 @@ async function main() {
       throw new Error('DATABASE_URL environment variable is not defined');
     }
 
-    console.log('Pushing schema to database...');
-
-    // Use drizzle-kit push to create or update tables
-    try {
-      // Run drizzle-kit push as a child process
-      const { stdout, stderr } = await execPromise('npx drizzle-kit push');
-      console.log('Drizzle Push Output:', stdout);
-      if (stderr) {
-        console.error('Drizzle Push Error:', stderr);
-      }
-    } catch (error) {
-      console.error('Error running drizzle-kit push:', error);
-      throw error;
-    }
+    console.log('Connecting to database...');
 
     // Create the database connection
-    const sql = postgres(connectionString, { max: 1 });
+    const sql = postgres(connectionString, { max: 10 });
     const db = drizzle(sql, { schema });
 
-    // Perform post-push operations and create extension
+    // Create extension for UUID generation
+    console.log('Creating extensions...');
     await sql`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`;
-    
 
-    console.log('Schema pushed successfully!');
+    // Create tables directly
+    console.log('Creating tables...');
+    
+    // Create users table
+    await sql`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        username TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        email TEXT,
+        wallet_address TEXT UNIQUE,
+        wallet_fingerprint TEXT UNIQUE,
+        wallet_type TEXT DEFAULT 'Sui',
+        balance REAL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT NOW(),
+        wurlus_profile_id TEXT,
+        wurlus_registered BOOLEAN DEFAULT FALSE,
+        wurlus_profile_created_at TIMESTAMP,
+        last_login_at TIMESTAMP
+      )
+    `;
+
+    // Create sports table
+    await sql`
+      CREATE TABLE IF NOT EXISTS sports (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        slug TEXT NOT NULL UNIQUE,
+        icon TEXT,
+        wurlus_sport_id TEXT,
+        is_active BOOLEAN DEFAULT TRUE,
+        provider_id TEXT
+      )
+    `;
+
+    // Create events table
+    await sql`
+      CREATE TABLE IF NOT EXISTS events (
+        id SERIAL PRIMARY KEY,
+        sport_id INTEGER REFERENCES sports(id),
+        league_name TEXT NOT NULL,
+        league_slug TEXT NOT NULL,
+        home_team TEXT NOT NULL,
+        away_team TEXT NOT NULL,
+        start_time TIMESTAMP NOT NULL,
+        home_odds REAL,
+        draw_odds REAL,
+        away_odds REAL,
+        is_live BOOLEAN DEFAULT FALSE,
+        score TEXT,
+        status TEXT DEFAULT 'upcoming',
+        metadata JSONB,
+        wurlus_event_id TEXT,
+        wurlus_market_ids TEXT[],
+        created_on_chain BOOLEAN DEFAULT FALSE,
+        event_hash TEXT,
+        provider_id TEXT
+      )
+    `;
+
+    // Create markets table
+    await sql`
+      CREATE TABLE IF NOT EXISTS markets (
+        id SERIAL PRIMARY KEY,
+        event_id INTEGER REFERENCES events(id),
+        name TEXT NOT NULL,
+        market_type TEXT NOT NULL,
+        status TEXT DEFAULT 'open',
+        wurlus_market_id TEXT NOT NULL UNIQUE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        settled_at TIMESTAMP,
+        creator_address TEXT,
+        liquidity_pool REAL DEFAULT 0,
+        transaction_hash TEXT
+      )
+    `;
+
+    // Create outcomes table
+    await sql`
+      CREATE TABLE IF NOT EXISTS outcomes (
+        id SERIAL PRIMARY KEY,
+        market_id INTEGER REFERENCES markets(id),
+        name TEXT NOT NULL,
+        odds REAL NOT NULL,
+        probability REAL,
+        status TEXT DEFAULT 'active',
+        wurlus_outcome_id TEXT NOT NULL UNIQUE,
+        transaction_hash TEXT,
+        is_winner BOOLEAN DEFAULT FALSE
+      )
+    `;
+
+    // Create bets table
+    await sql`
+      CREATE TABLE IF NOT EXISTS bets (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        event_id INTEGER REFERENCES events(id),
+        market_id INTEGER REFERENCES markets(id),
+        outcome_id INTEGER REFERENCES outcomes(id),
+        bet_amount REAL NOT NULL,
+        odds REAL NOT NULL,
+        prediction TEXT NOT NULL,
+        potential_payout REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        result TEXT,
+        payout REAL,
+        settled_at TIMESTAMP,
+        created_at TIMESTAMP DEFAULT NOW(),
+        wurlus_bet_id TEXT,
+        tx_hash TEXT,
+        platform_fee REAL,
+        network_fee REAL,
+        fee_currency TEXT DEFAULT 'SUI'
+      )
+    `;
+
+    // Create wurlus_staking table
+    await sql`
+      CREATE TABLE IF NOT EXISTS wurlus_staking (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        wallet_address TEXT NOT NULL,
+        amount_staked REAL NOT NULL,
+        staking_date TIMESTAMP DEFAULT NOW(),
+        unstaking_date TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        tx_hash TEXT,
+        locked_until TIMESTAMP,
+        reward_rate REAL,
+        accumulated_rewards REAL DEFAULT 0
+      )
+    `;
+
+    // Create wurlus_dividends table
+    await sql`
+      CREATE TABLE IF NOT EXISTS wurlus_dividends (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        wallet_address TEXT NOT NULL,
+        period_start TIMESTAMP NOT NULL,
+        period_end TIMESTAMP NOT NULL,
+        dividend_amount REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        claimed_at TIMESTAMP,
+        claim_tx_hash TEXT,
+        platform_fee REAL
+      )
+    `;
+
+    // Create wurlus_wallet_operations table
+    await sql`
+      CREATE TABLE IF NOT EXISTS wurlus_wallet_operations (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        wallet_address TEXT NOT NULL,
+        operation_type TEXT NOT NULL,
+        amount REAL NOT NULL,
+        tx_hash TEXT NOT NULL,
+        status TEXT DEFAULT 'completed',
+        timestamp TIMESTAMP DEFAULT NOW(),
+        metadata JSONB
+      )
+    `;
+
+    // Create promotions table
+    await sql`
+      CREATE TABLE IF NOT EXISTS promotions (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        image_url TEXT,
+        type TEXT NOT NULL,
+        amount REAL,
+        code TEXT,
+        min_deposit REAL,
+        rollover_sports REAL,
+        rollover_casino REAL,
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        is_active BOOLEAN DEFAULT TRUE,
+        wurlus_promotion_id TEXT,
+        smart_contract_address TEXT,
+        requirements TEXT,
+        terms_and_conditions TEXT,
+        max_reward REAL
+      )
+    `;
+
+    // Create notifications table
+    await sql`
+      CREATE TABLE IF NOT EXISTS notifications (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id),
+        title TEXT NOT NULL,
+        message TEXT NOT NULL,
+        is_read BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        related_tx_hash TEXT,
+        notification_type TEXT DEFAULT 'app',
+        priority TEXT DEFAULT 'normal'
+      )
+    `;
+
+    console.log('All tables created successfully!');
 
     // Seed initial data
     await seedSports(db);
@@ -53,7 +239,7 @@ async function main() {
     // Close the database connection
     await sql.end();
   } catch (error) {
-    console.error('Error pushing schema:', error);
+    console.error('Error initializing database:', error);
     process.exit(1);
   }
 }

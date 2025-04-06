@@ -1,339 +1,342 @@
 module wurlus_protocol::user_registry {
-    use std::string::{String};
-    use sui::object::{Self, ID, UID};
+    use std::string::{Self, String};
+    use std::vector;
+    use std::option::{Self, Option};
+    use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
+    use sui::balance::{Self, Balance};
     use sui::event;
     use sui::table::{Self, Table};
     use sui::dynamic_field as df;
-    use wurlus_protocol::wurlus_protocol::{Self, WurlusProtocol};
+    use sui::vec_map::{Self, VecMap};
+    use sui::bag::{Self, Bag};
 
-    // Error codes
-    const EUserAlreadyRegistered: u64 = 1;
-    const EUserNotRegistered: u64 = 2;
-    const EInvalidUsername: u64 = 3;
-    const EInvalidEmailFormat: u64 = 4;
-    const ENotOwner: u64 = 5;
+    // Errors
+    const EUserNotFound: u64 = 0;
+    const EUserAlreadyExists: u64 = 1;
+    const EUsernameTaken: u64 = 2;
+    const ENotAuthorized: u64 = 3;
+    const EInvalidUsername: u64 = 4;
+    const EInvalidEmail: u64 = 5;
+    const EWalletAlreadyConnected: u64 = 6;
 
-    // Capability for User Registry management
-    struct RegistryManagerCap has key {
-        id: UID,
+    // User status constants
+    const STATUS_ACTIVE: u8 = 0;
+    const STATUS_SUSPENDED: u8 = 1;
+    const STATUS_RESTRICTED: u8 = 2;
+
+    // Capability to manage users
+    struct AdminCap has key {
+        id: UID
     }
 
-    // User Registry state object
+    // Capability for users to authenticate themselves
+    struct UserAuthCap has key, store {
+        id: UID,
+        user_id: ID
+    }
+
+    // Registry to store all users
     struct UserRegistry has key {
         id: UID,
-        users_count: u64,
-        username_to_address: Table<String, address>,
-        email_to_address: Table<String, address>,
-        admin: address,
+        users: Table<ID, User>,
+        usernames: Table<String, ID>,
+        version: u64
     }
-
-    // Represents a user profile
-    // Based on Wal.app Sui struct documentation
-    struct UserProfile has key, store {
-        id: UID,
-        owner: address,
+    
+    // User account with personal information
+    struct User has store {
+        id: ID,
         username: String,
-        email: Option<String>,
-        wallet_type: String, // "Sui", "Suiet", "Nightly", "WalletConnect"
+        email: String,
+        status: u8,
+        wallet_address: String,
+        wallet_fingerprint: String,
+        balance: u64,
         created_at: u64,
         last_login: u64,
-        is_active: bool,
+        metadata: Bag // For extensible properties
     }
 
-    // User stats object tied to a profile
-    struct UserStats has key, store {
-        id: UID,
-        profile_id: ID,
-        total_bets: u64,
-        total_wagered: u64,
-        total_won: u64,
-        total_lost: u64,
-        win_rate: u64, // Stored as percentage * 100
-        rank: u64,     // Leaderboard rank
+    // Profile settings, stored as a dynamic field
+    struct UserProfile has store {
+        display_name: String,
+        avatar_url: String,
+        bio: String,
+        preferences: VecMap<String, String>
     }
 
-    // User wallet configuration
-    struct UserWallet has key, store {
-        id: UID,
-        owner: address,
-        preferred_currency: String,
-        auto_claim_winnings: bool,
-        notification_settings: NotificationSettings,
-        bet_limits: BetLimits,
-    }
-
-    // Nested struct for notification settings
-    struct NotificationSettings has store, copy, drop {
-        email_enabled: bool,
-        push_enabled: bool,
-        bet_settlement_notifications: bool,
-        withdrawal_notifications: bool,
-        deposit_notifications: bool,
-        promotion_notifications: bool,
-    }
-
-    // Nested struct for betting limits
-    struct BetLimits has store, copy, drop {
-        daily_limit: u64,
-        weekly_limit: u64,
-        max_bet_amount: u64,
-    }
-
-    // Staking information for a user
-    struct StakingInfo has key, store {
-        id: UID,
-        owner: address,
-        staked_amount: u64,
-        staking_start_time: u64,
-        staking_end_time: u64,
-        rewards_earned: u64,
-        rewards_claimed: u64,
-        is_staking: bool,
+    // Secure storage for sensitive data
+    struct UserSecureStorage has store {
+        password_hash: String, // Encrypted hash stored on-chain
+        mfa_enabled: bool
     }
 
     // Events
     struct UserRegistered has copy, drop {
-        user_address: address,
+        user_id: ID,
         username: String,
-        timestamp: u64,
+        wallet_address: String,
+        created_at: u64
     }
 
-    struct UserProfileUpdated has copy, drop {
-        user_address: address,
-        username: String,
-        timestamp: u64,
+    struct UserUpdated has copy, drop {
+        user_id: ID,
+        updated_fields: vector<String>,
+        updated_at: u64
     }
 
-    struct UserLoggedIn has copy, drop {
-        user_address: address,
-        timestamp: u64,
+    struct WalletConnected has copy, drop {
+        user_id: ID,
+        wallet_address: String,
+        connected_at: u64
     }
 
-    // Initialize the registry - called when publishing the module
+    // Create a new user registry
     fun init(ctx: &mut TxContext) {
-        // Create registry manager capability
-        transfer::transfer(
-            RegistryManagerCap { id: object::new(ctx) },
-            tx_context::sender(ctx)
-        );
-
-        // Create the user registry
+        // Create admin capability
+        let admin_cap = AdminCap {
+            id: object::new(ctx)
+        };
+        
+        // Create user registry
         let registry = UserRegistry {
             id: object::new(ctx),
-            users_count: 0,
-            username_to_address: table::new(ctx),
-            email_to_address: table::new(ctx),
-            admin: tx_context::sender(ctx),
+            users: table::new(ctx),
+            usernames: table::new(ctx),
+            version: 0
         };
-
-        // Share the registry so it can be accessed by anyone
+        
+        // Share registry as a shared object
         transfer::share_object(registry);
+        
+        // Transfer admin cap to transaction sender
+        transfer::transfer(admin_cap, tx_context::sender(ctx));
     }
 
     // Register a new user
     public entry fun register_user(
-        protocol: &WurlusProtocol,
         registry: &mut UserRegistry,
-        username: String,
-        wallet_type: String,
-        email: Option<String>,
+        username: vector<u8>,
+        email: vector<u8>,
+        wallet_address: vector<u8>,
+        password_hash: vector<u8>,
+        current_time: u64,
         ctx: &mut TxContext
     ) {
-        let sender = tx_context::sender(ctx);
+        let username_str = string::utf8(username);
+        let email_str = string::utf8(email);
+        let wallet_addr_str = string::utf8(wallet_address);
         
-        // Check if username already exists
-        assert!(!table::contains(&registry.username_to_address, username), EUserAlreadyRegistered);
+        // Validate username
+        assert!(!string::is_empty(&username_str) && string::length(&username_str) >= 3, EInvalidUsername);
         
-        // Validate username - enforce Wal.app rules (3-20 chars, alphanumeric + underscore)
-        // In a full implementation, add more validation logic
+        // Validate email
+        assert!(!string::is_empty(&email_str) && string::index_of(&email_str, &string::utf8(b"@")) != string::length(&email_str), EInvalidEmail);
         
-        // Register username to address
-        table::add(&mut registry.username_to_address, username, sender);
+        // Check if username is already taken
+        assert!(!table::contains(&registry.usernames, username_str), EUsernameTaken);
         
-        // Register email if provided
-        if (option::is_some(&email)) {
-            let email_value = *option::borrow(&email);
-            // Verify email format (basic check)
-            // In a full implementation, add more validation logic
-            
-            // Add email to registry 
-            table::add(&mut registry.email_to_address, email_value, sender);
+        // Generate wallet fingerprint (simplified version, in real implementation use crypto hashing)
+        let wallet_fingerprint = string::utf8(b"fp_");
+        string::append(&mut wallet_fingerprint, wallet_addr_str);
+        
+        // Create unique ID for user
+        let user_id = object::new(ctx);
+        let user_id_inner = object::uid_to_inner(&user_id);
+        
+        // Create metadata bag for extensible properties
+        let metadata = bag::new(ctx);
+        
+        // Create user object
+        let user = User {
+            id: user_id_inner,
+            username: username_str,
+            email: email_str,
+            status: STATUS_ACTIVE,
+            wallet_address: wallet_addr_str,
+            wallet_fingerprint,
+            balance: 0,
+            created_at: current_time,
+            last_login: current_time,
+            metadata
         };
+        
+        // Add user to registry
+        table::add(&mut registry.users, user_id_inner, user);
+        table::add(&mut registry.usernames, username_str, user_id_inner);
+        
+        // Create and store secure information as a dynamic field
+        let secure_storage = UserSecureStorage {
+            password_hash: string::utf8(password_hash),
+            mfa_enabled: false
+        };
+        
+        // Add secure storage as a dynamic field to the user ID
+        df::add(&mut registry.id, (user_id_inner, b"secure"), secure_storage);
         
         // Create user profile
         let profile = UserProfile {
-            id: object::new(ctx),
-            owner: sender,
-            username,
-            email,
-            wallet_type,
-            created_at: tx_context::epoch(ctx),
-            last_login: tx_context::epoch(ctx),
-            is_active: true,
+            display_name: username_str,
+            avatar_url: string::utf8(b""),
+            bio: string::utf8(b""),
+            preferences: vec_map::empty()
         };
         
-        // Create user stats
-        let stats = UserStats {
+        // Add profile as a dynamic field to the user ID
+        df::add(&mut registry.id, (user_id_inner, b"profile"), profile);
+        
+        // Create user authentication capability
+        let auth_cap = UserAuthCap {
             id: object::new(ctx),
-            profile_id: object::uid_to_inner(&profile.id),
-            total_bets: 0,
-            total_wagered: 0,
-            total_won: 0,
-            total_lost: 0,
-            win_rate: 0,
-            rank: registry.users_count + 1,
+            user_id: user_id_inner
         };
         
-        // Create default wallet settings
-        let wallet = UserWallet {
-            id: object::new(ctx),
-            owner: sender,
-            preferred_currency: string::utf8(b"SUI"),
-            auto_claim_winnings: true,
-            notification_settings: NotificationSettings {
-                email_enabled: true,
-                push_enabled: true,
-                bet_settlement_notifications: true,
-                withdrawal_notifications: true,
-                deposit_notifications: true,
-                promotion_notifications: true,
-            },
-            bet_limits: BetLimits {
-                daily_limit: 1000000000, // 1 SUI = 1,000,000,000 MIST
-                weekly_limit: 5000000000, // 5 SUI = 5,000,000,000 MIST
-                max_bet_amount: 500000000, // 0.5 SUI = 500,000,000 MIST
-            }
-        };
+        // Transfer auth capability to the user
+        transfer::transfer(auth_cap, tx_context::sender(ctx));
         
-        // Create empty staking info
-        let staking_info = StakingInfo {
-            id: object::new(ctx),
-            owner: sender,
-            staked_amount: 0,
-            staking_start_time: 0,
-            staking_end_time: 0,
-            rewards_earned: 0,
-            rewards_claimed: 0,
-            is_staking: false,
-        };
-        
-        // Transfer objects to user
-        transfer::transfer(profile, sender);
-        transfer::transfer(stats, sender);
-        transfer::transfer(wallet, sender);
-        transfer::transfer(staking_info, sender);
-        
-        // Increment user count
-        registry.users_count = registry.users_count + 1;
+        // Delete the temporary UID
+        object::delete(user_id);
         
         // Emit user registered event
         event::emit(UserRegistered {
-            user_address: sender,
-            username,
-            timestamp: tx_context::epoch(ctx),
+            user_id: user_id_inner,
+            username: username_str,
+            wallet_address: wallet_addr_str,
+            created_at: current_time
         });
+        
+        // Increment registry version
+        registry.version = registry.version + 1;
     }
-    
+
+    // Connect a wallet to a user account
+    public entry fun connect_wallet(
+        registry: &mut UserRegistry,
+        auth_cap: &UserAuthCap,
+        wallet_address: vector<u8>,
+        current_time: u64,
+        ctx: &mut TxContext
+    ) {
+        // Verify auth cap belongs to a valid user
+        let user_id = auth_cap.user_id;
+        assert!(table::contains(&registry.users, user_id), EUserNotFound);
+        
+        // Get user
+        let user = table::borrow_mut(&mut registry.users, user_id);
+        
+        // Convert wallet address to string
+        let wallet_addr_str = string::utf8(wallet_address);
+        
+        // Update wallet info
+        user.wallet_address = wallet_addr_str;
+        
+        // Generate new wallet fingerprint (simplified version)
+        let new_fingerprint = string::utf8(b"fp_");
+        string::append(&mut new_fingerprint, wallet_addr_str);
+        user.wallet_fingerprint = new_fingerprint;
+        
+        // Emit wallet connected event
+        event::emit(WalletConnected {
+            user_id,
+            wallet_address: wallet_addr_str,
+            connected_at: current_time
+        });
+        
+        // Increment registry version
+        registry.version = registry.version + 1;
+    }
+
     // Update user profile
     public entry fun update_profile(
-        profile: &mut UserProfile,
-        email: Option<String>,
+        registry: &mut UserRegistry,
+        auth_cap: &UserAuthCap,
+        display_name: vector<u8>,
+        avatar_url: vector<u8>,
+        bio: vector<u8>,
+        current_time: u64,
         ctx: &mut TxContext
     ) {
-        // Ensure only the owner can update their profile
-        assert!(tx_context::sender(ctx) == profile.owner, ENotOwner);
+        // Verify auth cap belongs to a valid user
+        let user_id = auth_cap.user_id;
+        assert!(table::contains(&registry.users, user_id), EUserNotFound);
         
-        // Update email if provided
-        if (option::is_some(&email)) {
-            profile.email = email;
-        };
+        // Get user's profile
+        assert!(df::exists_with_type<(ID, vector<u8>), UserProfile>(&registry.id, (user_id, b"profile")), EUserNotFound);
+        let profile = df::borrow_mut<(ID, vector<u8>), UserProfile>(&mut registry.id, (user_id, b"profile"));
         
-        // Emit user profile updated event
-        event::emit(UserProfileUpdated {
-            user_address: profile.owner,
-            username: profile.username,
-            timestamp: tx_context::epoch(ctx),
+        // Update profile fields
+        profile.display_name = string::utf8(display_name);
+        profile.avatar_url = string::utf8(avatar_url);
+        profile.bio = string::utf8(bio);
+        
+        // Prepare updated fields list
+        let updated_fields = vector[
+            string::utf8(b"display_name"),
+            string::utf8(b"avatar_url"),
+            string::utf8(b"bio")
+        ];
+        
+        // Emit user updated event
+        event::emit(UserUpdated {
+            user_id,
+            updated_fields,
+            updated_at: current_time
         });
+        
+        // Increment registry version
+        registry.version = registry.version + 1;
     }
-    
-    // Log in user (update last login time)
-    public entry fun login_user(
-        profile: &mut UserProfile,
+
+    // Administrative function to suspend a user
+    public entry fun suspend_user(
+        registry: &mut UserRegistry,
+        admin_cap: &AdminCap,
+        user_id: ID,
         ctx: &mut TxContext
     ) {
-        // Ensure only the owner can log in
-        assert!(tx_context::sender(ctx) == profile.owner, ENotOwner);
+        // Verify user exists
+        assert!(table::contains(&registry.users, user_id), EUserNotFound);
         
-        // Update last login time
-        profile.last_login = tx_context::epoch(ctx);
+        // Get user
+        let user = table::borrow_mut(&mut registry.users, user_id);
         
-        // Emit user logged in event
-        event::emit(UserLoggedIn {
-            user_address: profile.owner,
-            timestamp: tx_context::epoch(ctx),
-        });
-    }
-    
-    // Check if user is registered
-    public fun is_registered(
-        registry: &UserRegistry,
-        username: String
-    ): bool {
-        table::contains(&registry.username_to_address, username)
-    }
-    
-    // Get user address by username
-    public fun get_address_by_username(
-        registry: &UserRegistry,
-        username: String
-    ): address {
-        assert!(table::contains(&registry.username_to_address, username), EUserNotRegistered);
-        *table::borrow(&registry.username_to_address, username)
-    }
-    
-    // Update notification settings
-    public entry fun update_notification_settings(
-        wallet: &mut UserWallet,
-        email_enabled: bool,
-        push_enabled: bool,
-        bet_settlement_notifications: bool,
-        withdrawal_notifications: bool,
-        deposit_notifications: bool,
-        promotion_notifications: bool,
-        ctx: &mut TxContext
-    ) {
-        // Ensure only the owner can update settings
-        assert!(tx_context::sender(ctx) == wallet.owner, ENotOwner);
+        // Update status
+        user.status = STATUS_SUSPENDED;
         
-        wallet.notification_settings = NotificationSettings {
-            email_enabled,
-            push_enabled,
-            bet_settlement_notifications,
-            withdrawal_notifications,
-            deposit_notifications,
-            promotion_notifications,
-        };
+        // Increment registry version
+        registry.version = registry.version + 1;
     }
-    
-    // Update bet limits
-    public entry fun update_bet_limits(
-        wallet: &mut UserWallet,
-        daily_limit: u64,
-        weekly_limit: u64,
-        max_bet_amount: u64,
-        ctx: &mut TxContext
-    ) {
-        // Ensure only the owner can update limits
-        assert!(tx_context::sender(ctx) == wallet.owner, ENotOwner);
+
+    // Get user information (read-only)
+    public fun get_user_info(registry: &UserRegistry, user_id: ID): (String, String, u8, u64) {
+        assert!(table::contains(&registry.users, user_id), EUserNotFound);
         
-        wallet.bet_limits = BetLimits {
-            daily_limit,
-            weekly_limit,
-            max_bet_amount,
-        };
+        let user = table::borrow(&registry.users, user_id);
+        (user.username, user.email, user.status, user.balance)
+    }
+
+    // Check if a username is available
+    public fun is_username_available(registry: &UserRegistry, username: String): bool {
+        !table::contains(&registry.usernames, username)
+    }
+
+    // Get user by username
+    public fun get_user_id_by_username(registry: &UserRegistry, username: String): ID {
+        assert!(table::contains(&registry.usernames, username), EUserNotFound);
+        *table::borrow(&registry.usernames, username)
+    }
+
+    // Get user by auth capability
+    public fun get_user_id_from_auth(auth_cap: &UserAuthCap): ID {
+        auth_cap.user_id
+    }
+
+    // Get registry version
+    public fun get_version(registry: &UserRegistry): u64 {
+        registry.version
     }
 }

@@ -1,459 +1,349 @@
 module wurlus_protocol::wurlus_protocol {
-    use std::string::{String};
-    use sui::object::{Self, ID, UID};
+    use std::string::{Self, String};
+    use std::vector;
+    use std::option::{Self, Option};
+    use sui::object::{Self, UID, ID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
     use sui::coin::{Self, Coin};
     use sui::sui::SUI;
+    use sui::balance::{Self, Balance};
     use sui::event;
     use sui::table::{Self, Table};
+    use sui::dynamic_field as df;
+    use sui::object_bag::{Self, ObjectBag};
+    use sui::dynamic_object_field as dof;
+    use wurlus_protocol::market::{Self, Market, MarketOwnerCap};
+    use wurlus_protocol::user_registry::{Self, UserRegistry, UserAuthCap};
 
-    // Error codes
-    const EInsufficientBalance: u64 = 1;
-    const EInvalidBetAmount: u64 = 2;
-    const EEventNotFound: u64 = 3;
-    const ENotAdmin: u64 = 4;
-    const EInvalidMarket: u64 = 5;
-    const EInvalidOdds: u64 = 6;
-    const EMarketClosed: u64 = 7;
-    const EBetAlreadySettled: u64 = 8;
-    const EInvalidEventTime: u64 = 9;
+    // Errors
+    const EInsufficientFunds: u64 = 0;
+    const EInvalidAmount: u64 = 1;
+    const EUnauthorized: u64 = 2;
+    const EInvalidMarket: u64 = 3;
+    const EInvalidOutcome: u64 = 4;
+    const EMarketNotActive: u64 = 5;
+    const EInvalidBlob: u64 = 6;
+    const EBlobNotFound: u64 = 7;
 
-    // Status enums
-    const STATUS_PENDING: u8 = 0;
-    const STATUS_WON: u8 = 1;
-    const STATUS_LOST: u8 = 2;
-    const STATUS_REFUNDED: u8 = 3;
-    const STATUS_CANCELED: u8 = 4;
-
-    // Market types
-    const MARKET_MONEYLINE: u8 = 1;
-    const MARKET_SPREAD: u8 = 2;
-    const MARKET_TOTAL: u8 = 3;
-    const MARKET_PROP: u8 = 4;
-
-    // Admin capability for managing the protocol
-    struct AdminCap has key {
+    // Protocol state
+    struct Protocol has key {
         id: UID,
-    }
-
-    // Protocol settings and state
-    struct WurlusProtocol has key {
-        id: UID,
+        treasury: Balance<SUI>,
+        staking_pool: Balance<SUI>,
         admin: address,
-        fee_percentage: u64,
-        total_volume: u64,
-        total_bets: u64,
-        treasury: u64,
-        events: Table<ID, SportEvent>,
-        bets: Table<ID, Bet>,
-        markets: Table<ID, Market>,
+        paused: bool,
+        version: u64,
+        fee_rate: u64, // In basis points (e.g., 250 = 2.5%)
+        blobs: ObjectBag, // For storing dynamic/large objects
+        active_markets: u64
     }
 
-    // User wallet data
-    struct UserWallet has key {
+    // Admin capability
+    struct AdminCap has key {
+        id: UID
+    }
+
+    // Blob to store large/complex data according to WAL docs pattern
+    struct Blob has key, store {
         id: UID,
         owner: address,
-        bets: vector<ID>,
-        total_wagered: u64,
-        total_won: u64,
-        total_lost: u64,
+        blob_type: String,
+        created_at: u64,
+        updated_at: u64
     }
 
-    // Sport event data structure
-    struct SportEvent has store {
-        id: UID,
-        sport_id: u64,
-        name: String,
-        description: String,
-        start_time: u64,
-        end_time: u64,
-        status: u8,
-        home_team: String,
-        away_team: String,
-        result: Option<String>,
-        is_live: bool,
+    // Type-specific blob data
+    struct AggregatedOddsData has store {
         markets: vector<ID>,
-        created_at: u64,
+        odds_data: vector<u8>, // JSON serialized odds data
+        last_updated: u64
     }
 
-    // Market data structure
-    struct Market has store {
-        id: UID,
-        event_id: ID,
-        market_type: u8,
-        name: String,
-        description: String,
-        outcomes: vector<Outcome>,
-        status: u8,
-        volume: u64,
-        created_at: u64,
+    struct LeaderboardData has store {
+        users: vector<ID>,
+        scores: vector<u64>,
+        last_updated: u64
     }
 
-    // Outcome within a market
-    struct Outcome has store, drop {
-        name: String,
-        odds: u64, // Stored as odds * 100 to handle decimals
-        result: Option<bool>,
+    // Events
+    struct ProtocolInitialized has copy, drop {
+        admin: address,
+        fee_rate: u64,
+        initialized_at: u64
     }
 
-    // Bet placed by a user
-    struct Bet has store {
-        id: UID,
-        user: address,
-        event_id: ID,
-        market_id: ID,
-        outcome: String,
-        amount: u64,
-        odds: u64,
-        potential_win: u64,
-        status: u8,
-        created_at: u64,
-        settled_at: Option<u64>,
-    }
-
-    // Events emitted by the protocol
-    struct BetPlaced has copy, drop {
-        bet_id: ID,
-        user: address,
-        event_id: ID,
-        market_id: ID,
-        outcome: String,
-        amount: u64,
-        odds: u64,
-        potential_win: u64,
-        timestamp: u64,
-    }
-
-    struct BetSettled has copy, drop {
-        bet_id: ID,
-        user: address,
-        amount: u64,
-        won_amount: u64,
-        status: u8,
-        timestamp: u64,
-    }
-
-    struct WalletConnected has copy, drop {
-        user: address,
-        timestamp: u64,
-    }
-
-    struct EventCreated has copy, drop {
-        event_id: ID,
-        name: String,
-        sport_id: u64,
-        start_time: u64,
-        timestamp: u64,
+    struct ProtocolFeeUpdated has copy, drop {
+        old_fee_rate: u64,
+        new_fee_rate: u64,
+        updated_at: u64
     }
 
     struct MarketCreated has copy, drop {
         market_id: ID,
-        event_id: ID,
-        market_type: u8,
-        name: String,
-        timestamp: u64,
+        creator: address,
+        created_at: u64
     }
 
-    // Initialize the protocol - called when publishing the module
+    struct BlobCreated has copy, drop {
+        blob_id: ID,
+        owner: address,
+        blob_type: String,
+        created_at: u64
+    }
+
+    struct BlobUpdated has copy, drop {
+        blob_id: ID,
+        blob_type: String,
+        updated_at: u64
+    }
+
+    // Initialize protocol
     fun init(ctx: &mut TxContext) {
-        // Create and transfer admin capability to the deployer
-        transfer::transfer(
-            AdminCap { id: object::new(ctx) },
-            tx_context::sender(ctx)
-        );
-
-        // Create the main protocol object
-        let protocol = WurlusProtocol {
+        let sender = tx_context::sender(ctx);
+        let protocol = Protocol {
             id: object::new(ctx),
-            admin: tx_context::sender(ctx),
-            fee_percentage: 300, // 3% fee
-            total_volume: 0,
-            total_bets: 0,
-            treasury: 0,
-            events: table::new(ctx),
-            bets: table::new(ctx),
-            markets: table::new(ctx),
+            treasury: balance::zero(),
+            staking_pool: balance::zero(),
+            admin: sender,
+            paused: false,
+            version: 1,
+            fee_rate: 250, // 2.5% default fee
+            blobs: object_bag::new(ctx),
+            active_markets: 0
         };
-
-        // Share the protocol object so it can be accessed by anyone
-        transfer::share_object(protocol);
-    }
-
-    // Connect a wallet to the protocol
-    public entry fun connect_wallet(ctx: &mut TxContext) {
-        // Create a user wallet object
-        let wallet = UserWallet {
-            id: object::new(ctx),
-            owner: tx_context::sender(ctx),
-            bets: vector::empty(),
-            total_wagered: 0,
-            total_won: 0,
-            total_lost: 0,
-        };
-
-        // Transfer the wallet object to the user
-        transfer::transfer(wallet, tx_context::sender(ctx));
-
-        // Emit event for wallet connection
-        event::emit(WalletConnected {
-            user: tx_context::sender(ctx),
-            timestamp: tx_context::epoch(ctx),
-        });
-    }
-
-    // Create a sports event (admin only)
-    public entry fun create_event(
-        _: &AdminCap,
-        protocol: &mut WurlusProtocol,
-        sport_id: u64,
-        name: String,
-        description: String,
-        start_time: u64,
-        home_team: String,
-        away_team: String,
-        ctx: &mut TxContext
-    ) {
-        // Ensure the caller is the admin
-        assert!(tx_context::sender(ctx) == protocol.admin, ENotAdmin);
-
-        // Ensure start time is in the future
-        assert!(start_time > tx_context::epoch(ctx), EInvalidEventTime);
-
-        // Create the event object
-        let event_id = object::new(ctx);
-        let event = SportEvent {
-            id: event_id,
-            sport_id,
-            name,
-            description,
-            start_time,
-            end_time: 0, // Will be set when the event is settled
-            status: STATUS_PENDING,
-            home_team,
-            away_team,
-            result: option::none(),
-            is_live: false,
-            markets: vector::empty(),
-            created_at: tx_context::epoch(ctx),
-        };
-
-        // Add the event to the protocol
-        let event_id = object::uid_to_inner(&event.id);
-        table::add(&mut protocol.events, event_id, event);
-
-        // Emit event created event
-        event::emit(EventCreated {
-            event_id,
-            name,
-            sport_id,
-            start_time,
-            timestamp: tx_context::epoch(ctx),
-        });
-    }
-
-    // Create a market for an event (admin only)
-    public entry fun create_market(
-        _: &AdminCap,
-        protocol: &mut WurlusProtocol,
-        event_id: ID,
-        market_type: u8,
-        name: String,
-        description: String,
-        outcome_names: vector<String>,
-        outcome_odds: vector<u64>,
-        ctx: &mut TxContext
-    ) {
-        // Ensure the caller is the admin
-        assert!(tx_context::sender(ctx) == protocol.admin, ENotAdmin);
-
-        // Ensure the event exists
-        assert!(table::contains(&protocol.events, event_id), EEventNotFound);
-
-        // Ensure market type is valid
-        assert!(
-            market_type == MARKET_MONEYLINE || 
-            market_type == MARKET_SPREAD || 
-            market_type == MARKET_TOTAL || 
-            market_type == MARKET_PROP, 
-            EInvalidMarket
-        );
-
-        // Create outcomes
-        let outcomes = vector::empty<Outcome>();
-        let i = 0;
-        let len = vector::length(&outcome_names);
         
-        while (i < len) {
-            vector::push_back(&mut outcomes, Outcome {
-                name: *vector::borrow(&outcome_names, i),
-                odds: *vector::borrow(&outcome_odds, i),
-                result: option::none(),
-            });
-            i = i + 1;
+        // Create admin capability
+        let admin_cap = AdminCap {
+            id: object::new(ctx)
         };
+        
+        // Emit initialization event
+        event::emit(ProtocolInitialized {
+            admin: sender,
+            fee_rate: protocol.fee_rate,
+            initialized_at: tx_context::epoch(ctx)
+        });
+        
+        // Share protocol as a shared object
+        transfer::share_object(protocol);
+        
+        // Transfer admin cap to sender
+        transfer::transfer(admin_cap, sender);
+    }
 
-        // Create the market object
-        let market_id = object::new(ctx);
-        let market = Market {
-            id: market_id,
-            event_id,
-            market_type,
-            name,
-            description,
-            outcomes,
-            status: STATUS_PENDING,
-            volume: 0,
-            created_at: tx_context::epoch(ctx),
+    // Update protocol fee rate (admin only)
+    public entry fun update_fee_rate(
+        protocol: &mut Protocol,
+        admin_cap: &AdminCap,
+        new_fee_rate: u64,
+        ctx: &mut TxContext
+    ) {
+        // Verify admin
+        assert!(protocol.admin == tx_context::sender(ctx), EUnauthorized);
+        
+        // Store old fee rate for event
+        let old_fee_rate = protocol.fee_rate;
+        
+        // Update fee rate
+        protocol.fee_rate = new_fee_rate;
+        
+        // Increment version
+        protocol.version = protocol.version + 1;
+        
+        // Emit event
+        event::emit(ProtocolFeeUpdated {
+            old_fee_rate,
+            new_fee_rate,
+            updated_at: tx_context::epoch(ctx)
+        });
+    }
+
+    // Create a blob for storing large/complex data
+    public entry fun create_blob(
+        protocol: &mut Protocol,
+        auth_cap: &UserAuthCap,
+        blob_type: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let sender = tx_context::sender(ctx);
+        let blob_type_str = string::utf8(blob_type);
+        let current_time = tx_context::epoch(ctx);
+        
+        // Create blob object
+        let blob = Blob {
+            id: object::new(ctx),
+            owner: sender,
+            blob_type: blob_type_str,
+            created_at: current_time,
+            updated_at: current_time
         };
+        
+        let blob_id = object::id(&blob);
+        
+        // Add blob to protocol
+        object_bag::add(&mut protocol.blobs, blob_id, blob);
+        
+        // Emit event
+        event::emit(BlobCreated {
+            blob_id,
+            owner: sender,
+            blob_type: blob_type_str,
+            created_at: current_time
+        });
+    }
 
-        // Add the market to the protocol
-        let market_id = object::uid_to_inner(&market.id);
-        table::add(&mut protocol.markets, market_id, market);
+    // Update blob data
+    public entry fun update_odds_blob(
+        protocol: &mut Protocol,
+        auth_cap: &UserAuthCap,
+        blob_id: ID,
+        markets: vector<ID>,
+        odds_data: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        // Verify blob exists
+        assert!(object_bag::contains(&protocol.blobs, blob_id), EBlobNotFound);
+        
+        // Get the blob
+        let blob = object_bag::borrow_mut(&mut protocol.blobs, blob_id);
+        
+        // Verify caller is blob owner
+        assert!(blob.owner == tx_context::sender(ctx), EUnauthorized);
+        
+        // Verify blob type
+        assert!(string::utf8(b"odds") == blob.blob_type, EInvalidBlob);
+        
+        // Current time
+        let current_time = tx_context::epoch(ctx);
+        
+        // Update blob timestamp
+        blob.updated_at = current_time;
+        
+        // Create or update odds data
+        let key = string::utf8(b"odds_data");
+        
+        // Check if data already exists
+        if (df::exists_with_type<String, AggregatedOddsData>(&mut blob.id, key)) {
+            // Update existing data
+            let data = df::borrow_mut<String, AggregatedOddsData>(&mut blob.id, key);
+            data.markets = markets;
+            data.odds_data = odds_data;
+            data.last_updated = current_time;
+        } else {
+            // Create new data
+            let data = AggregatedOddsData {
+                markets,
+                odds_data,
+                last_updated: current_time
+            };
+            df::add(&mut blob.id, key, data);
+        }
+        
+        // Emit event
+        event::emit(BlobUpdated {
+            blob_id,
+            blob_type: blob.blob_type,
+            updated_at: current_time
+        });
+    }
 
-        // Add market ID to the event's markets vector
-        let event = table::borrow_mut(&mut protocol.events, event_id);
-        vector::push_back(&mut event.markets, market_id);
+    // Update leaderboard blob
+    public entry fun update_leaderboard_blob(
+        protocol: &mut Protocol,
+        auth_cap: &UserAuthCap,
+        blob_id: ID,
+        users: vector<ID>,
+        scores: vector<u64>,
+        ctx: &mut TxContext
+    ) {
+        // Verify blob exists
+        assert!(object_bag::contains(&protocol.blobs, blob_id), EBlobNotFound);
+        
+        // Get the blob
+        let blob = object_bag::borrow_mut(&mut protocol.blobs, blob_id);
+        
+        // Verify caller is blob owner
+        assert!(blob.owner == tx_context::sender(ctx), EUnauthorized);
+        
+        // Verify blob type
+        assert!(string::utf8(b"leaderboard") == blob.blob_type, EInvalidBlob);
+        
+        // Verify vectors have same length
+        assert!(vector::length(&users) == vector::length(&scores), EInvalidAmount);
+        
+        // Current time
+        let current_time = tx_context::epoch(ctx);
+        
+        // Update blob timestamp
+        blob.updated_at = current_time;
+        
+        // Create or update leaderboard data
+        let key = string::utf8(b"leaderboard_data");
+        
+        // Check if data already exists
+        if (df::exists_with_type<String, LeaderboardData>(&mut blob.id, key)) {
+            // Update existing data
+            let data = df::borrow_mut<String, LeaderboardData>(&mut blob.id, key);
+            data.users = users;
+            data.scores = scores;
+            data.last_updated = current_time;
+        } else {
+            // Create new data
+            let data = LeaderboardData {
+                users,
+                scores,
+                last_updated: current_time
+            };
+            df::add(&mut blob.id, key, data);
+        }
+        
+        // Emit event
+        event::emit(BlobUpdated {
+            blob_id,
+            blob_type: blob.blob_type,
+            updated_at: current_time
+        });
+    }
 
-        // Emit market created event
+    // Register a market with the protocol
+    public entry fun register_market(
+        protocol: &mut Protocol,
+        market_id: ID,
+        market_owner_cap: &MarketOwnerCap,
+        ctx: &mut TxContext
+    ) {
+        // Verify market owner
+        assert!(market::is_market_owner(market_owner_cap, market_id), EUnauthorized);
+        
+        // Increment active markets count
+        protocol.active_markets = protocol.active_markets + 1;
+        
+        // Emit event
         event::emit(MarketCreated {
             market_id,
-            event_id,
-            market_type,
-            name,
-            timestamp: tx_context::epoch(ctx),
+            creator: tx_context::sender(ctx),
+            created_at: tx_context::epoch(ctx)
         });
     }
 
-    // Place a bet on a market outcome
-    public entry fun place_bet(
-        protocol: &mut WurlusProtocol,
-        event_id: ID,
-        market_id: ID,
-        outcome: String,
-        payment: Coin<SUI>,
-        ctx: &mut TxContext
-    ) {
-        // Ensure the event exists and is still open
-        assert!(table::contains(&protocol.events, event_id), EEventNotFound);
-        let event = table::borrow(&protocol.events, event_id);
-        assert!(event.status == STATUS_PENDING, EMarketClosed);
-        
-        // Ensure the market exists and is still open
-        assert!(table::contains(&protocol.markets, market_id), EInvalidMarket);
-        let market = table::borrow_mut(&mut protocol.markets, market_id);
-        assert!(market.status == STATUS_PENDING, EMarketClosed);
-        
-        // Get the coin value
-        let amount = coin::value(&payment);
-        assert!(amount > 0, EInvalidBetAmount);
-        
-        // Find the outcome and get the odds
-        let odds = 0;
-        let i = 0;
-        let len = vector::length(&market.outcomes);
-        
-        while (i < len) {
-            let outcome_obj = vector::borrow(&market.outcomes, i);
-            if (outcome_obj.name == outcome) {
-                odds = outcome_obj.odds;
-                break
-            };
-            i = i + 1;
-        };
-        
-        assert!(odds > 0, EInvalidOdds);
-        
-        // Calculate potential winnings
-        let potential_win = amount * odds / 100;
-        
-        // Create the bet
-        let bet_id = object::new(ctx);
-        let bet = Bet {
-            id: bet_id,
-            user: tx_context::sender(ctx),
-            event_id,
-            market_id,
-            outcome,
-            amount,
-            odds,
-            potential_win,
-            status: STATUS_PENDING,
-            created_at: tx_context::epoch(ctx),
-            settled_at: option::none(),
-        };
-        
-        // Add the bet to the protocol
-        let bet_id = object::uid_to_inner(&bet.id);
-        table::add(&mut protocol.bets, bet_id, bet);
-        
-        // Update market volume
-        market.volume = market.volume + amount;
-        
-        // Update protocol stats
-        protocol.total_volume = protocol.total_volume + amount;
-        protocol.total_bets = protocol.total_bets + 1;
-        
-        // Calculate fee
-        let fee = amount * protocol.fee_percentage / 10000;
-        protocol.treasury = protocol.treasury + fee;
-        
-        // Deposit the payment to the protocol treasury
-        // In a real implementation, would use escrow or similar mechanism
-        transfer::public_transfer(payment, protocol.admin);
-        
-        // Emit bet placed event
-        event::emit(BetPlaced {
-            bet_id,
-            user: tx_context::sender(ctx),
-            event_id,
-            market_id,
-            outcome,
-            amount,
-            odds,
-            potential_win,
-            timestamp: tx_context::epoch(ctx),
-        });
+    // Get protocol fee rate
+    public fun get_fee_rate(protocol: &Protocol): u64 {
+        protocol.fee_rate
     }
 
-    // Settle a bet (admin only)
-    public entry fun settle_bet(
-        _: &AdminCap,
-        protocol: &mut WurlusProtocol,
-        bet_id: ID,
-        is_won: bool,
-        ctx: &mut TxContext
-    ) {
-        // Ensure the caller is the admin
-        assert!(tx_context::sender(ctx) == protocol.admin, ENotAdmin);
-        
-        // Ensure the bet exists
-        assert!(table::contains(&protocol.bets, bet_id), EInvalidBetAmount);
-        let bet = table::borrow_mut(&mut protocol.bets, bet_id);
-        
-        // Ensure the bet is not already settled
-        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
-        
-        // Update bet status
-        if (is_won) {
-            bet.status = STATUS_WON;
-        } else {
-            bet.status = STATUS_LOST;
-        };
-        
-        bet.settled_at = option::some(tx_context::epoch(ctx));
-        
-        // Calculate payout amount (in a real implementation, would transfer tokens)
-        let payout_amount = if (is_won) { bet.potential_win } else { 0 };
-        
-        // Emit bet settled event
-        event::emit(BetSettled {
-            bet_id,
-            user: bet.user,
-            amount: bet.amount,
-            won_amount: payout_amount,
-            status: bet.status,
-            timestamp: tx_context::epoch(ctx),
-        });
+    // Check if protocol is paused
+    public fun is_paused(protocol: &Protocol): bool {
+        protocol.paused
+    }
+
+    // Get active markets count
+    public fun get_active_markets(protocol: &Protocol): u64 {
+        protocol.active_markets
+    }
+
+    // Get protocol version
+    public fun get_version(protocol: &Protocol): u64 {
+        protocol.version
     }
 }

@@ -1,57 +1,26 @@
-import { useParams, useLocation } from "wouter";
-import { useState, useEffect } from "react";
-import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
-import { NotificationsModal } from "@/components/modals/NotificationsModal";
-import { SettingsModal } from "@/components/modals/SettingsModal";
+import { useEffect, useState } from 'react';
+import { useRoute, useLocation } from 'wouter';
 
+/**
+ * Sport page that displays a full-screen image based on the sport slug
+ */
 export default function Sport() {
-  const params = useParams();
-  const [location] = useLocation();
+  // Extract the sport slug from the URL
+  const [, params] = useRoute('/sport/:slug*');
+  const sportSlug = params?.slug || '';
+  const [, setLocation] = useLocation();
+  const [loading, setLoading] = useState(true);
   
-  // Extract sport slug from URL path directly and more reliably
-  const urlPath = window.location.pathname;
-  const urlMatch = urlPath.match(/\/sport\/([^\/]+)/);
-  const sportSlug = urlMatch ? urlMatch[1] : params.slug || '';
-  
-  // Force a log of the current URL to ensure we're getting it right
-  console.log("CURRENT LOCATION:", {
-    windowPath: window.location.pathname,
-    urlPath,
-    urlMatch,
-    sportSlug,
-    params
-  });
-  
-  console.log("DIRECT URL EXTRACTION:", { 
-    urlPath, 
-    urlMatch,
-    extractedSlug: urlMatch ? urlMatch[1] : null,
-    paramsSlug: params.slug
-  });
-  
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  
+  // Log the loaded sport for debugging
   useEffect(() => {
     console.log('Sport page mounted with slug:', sportSlug);
     console.log('Current URL:', window.location.href);
     console.log('Params:', params);
-    
-    // Alert to debug
-    if (!sportSlug) {
-      console.error('NO SPORT SLUG DETECTED!');
-    } else {
-      console.log('SPORT PAGE LOADED SUCCESSFULLY FOR:', sportSlug);
-      
-      // Force image preloading
-      const img = new Image();
-      img.src = getSportImage();
-    }
+    setLoading(false);
   }, [sportSlug, params]);
-  
-  // Function to handle clicks on the image that should navigate
-  const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
+
+  // Function to handle clicks on the sport page image for navigation
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -60,149 +29,58 @@ export default function Sport() {
     const xPercent = (x / rect.width) * 100;
     const yPercent = (y / rect.height) * 100;
     
-    console.log(`Clicked at position: x=${xPercent}%, y=${yPercent}%`);
+    console.log('Clicked at:', xPercent, yPercent);
     
-    // Define clickable areas (approximate percentages)
-    if (yPercent < 10) { // Top navigation bar area
-      if (xPercent > 82 && xPercent < 92) { // Join Now button
-        navigateTo("/join");
-        return;
-      }
-      if (xPercent > 92) { // Connect Wallet button
-        setIsWalletModalOpen(true);
-        return;
-      }
-      
-      // Bell icon (notifications)
-      if (xPercent > 76 && xPercent < 80) {
-        setIsNotificationsModalOpen(true);
-        return;
-      }
-      
-      // Settings icon
-      if (xPercent > 80 && xPercent < 84) {
-        setIsSettingsModalOpen(true);
-        return;
-      }
-      
-      // Sports, Live, Promotions tabs
-      if (xPercent > 50 && xPercent < 60) {
-        navigateTo("/");
-        return;
-      }
-      if (xPercent > 60 && xPercent < 70) {
-        navigateTo("/live");
-        return;
-      }
-      if (xPercent > 70 && xPercent < 76) {
-        navigateTo("/promotions");
+    if (yPercent < 15) {
+      // Clicked on navigation area at top
+      if (xPercent < 20) {
+        // Clicked on back/home
+        setLocation('/');
         return;
       }
     }
     
-    // Bet slip and match details areas
-    if (yPercent > 45 && yPercent < 85) {
-      if (xPercent > 80) { // Bet slip area on the right
-        navigateTo("/bet-slip");
-        return;
-      }
-    }
-    
-    // Back button (top left of match details)
-    if (yPercent > 10 && yPercent < 15 && xPercent < 10) {
-      navigateTo("/");
+    // Match detail links in the lower part of the page
+    if (yPercent > 30) {
+      setLocation(`/match/1`);
       return;
     }
   };
-  
-  // Helper function to navigate with better debugging
-  const navigateTo = (path: string) => {
-    console.log(`Navigating to: ${path}`);
-    // Use both methods for maximum compatibility
-    window.location.href = path;
-  };
 
-  // Choose the correct image based on the sport
+  // Get the appropriate image based on the sport slug
   const getSportImage = () => {
-    console.log("Getting image for sport:", sportSlug);
+    // Define mapping from sport slug to image path
+    const imagePaths: Record<string, string> = {
+      'football': '/images/Sports 1 (2).png',
+      'basketball': '/images/Sports 2 (2).png',
+      'baseball': '/images/Sports 3 (2).png',
+      'hockey': '/images/Sports 4 (2).png',
+      'tennis': '/images/image_1743932705622.png',
+      'boxing': '/images/image_1743932891440.png',
+      'ufc': '/images/image_1743932923834.png',
+      'golf': '/images/image_1743933050735.png',
+      'esports': '/images/image_1743933103859.png',
+      'cricket': '/images/image_1743933557700.png',
+      'racing': '/images/image_1743947434959.png',
+      // Default image if sport doesn't match
+      'default': '/images/Sports 1 (2).png'
+    };
     
-    let imagePath = "";
-    switch(sportSlug) {
-      case 'football':
-        imagePath = "/images/Sports 1 (2).png";
-        break;
-      case 'basketball':
-        imagePath = "/images/Sports 2 (2).png";
-        break;
-      case 'tennis':
-        imagePath = "/images/Sports 3 (2).png";
-        break;
-      case 'baseball':
-        imagePath = "/images/Sports 4 (2).png";
-        break;
-      case 'boxing':
-        imagePath = "/images/Sports 1 (2).png";
-        break;
-      case 'hockey':
-        imagePath = "/images/Sports 2 (2).png";
-        break;
-      case 'esports':
-        imagePath = "/images/Sports 1 (2).png";
-        break;
-      case 'mma-ufc':
-        imagePath = "/images/Sports 2 (2).png";
-        break;
-      case 'volleyball':
-        imagePath = "/images/Sports 3 (2).png";
-        break;
-      case 'table-tennis':
-        imagePath = "/images/Sports 4 (2).png";
-        break;
-      case 'rugby-league':
-        imagePath = "/images/Sports 1 (2).png";
-        break;
-      case 'rugby-union':
-        imagePath = "/images/Sports 2 (2).png";
-        break;
-      case 'cricket':
-        imagePath = "/images/Sports 3 (2).png";
-        break;
-      case 'horse-racing':
-        imagePath = "/images/Sports 4 (2).png";
-        break;
-      default:
-        imagePath = "/images/Sports 1 (2).png";
-    }
-    
-    console.log("Selected image path:", imagePath);
-    return imagePath;
+    return imagePaths[sportSlug] || imagePaths.default;
   };
 
-  console.log('Sport page loaded for:', sportSlug);
+  if (loading) {
+    return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
+  }
 
-  // Each sport should just display the exact image assigned to it - full screen
+  // Simply display the full-screen sport image with click handler
   return (
-    <div className="w-full min-h-screen">
+    <div className="w-full h-screen">
       <img 
         src={getSportImage()} 
-        alt={`${sportSlug} Sport Details`} 
-        className="w-full h-screen object-cover"
-        style={{ maxWidth: '100vw', height: '100vh' }}
-      />
-      
-      <ConnectWalletModal 
-        isOpen={isWalletModalOpen} 
-        onClose={() => setIsWalletModalOpen(false)} 
-      />
-      
-      <NotificationsModal 
-        isOpen={isNotificationsModalOpen} 
-        onClose={() => setIsNotificationsModalOpen(false)} 
-      />
-      
-      <SettingsModal 
-        isOpen={isSettingsModalOpen} 
-        onClose={() => setIsSettingsModalOpen(false)} 
+        alt={`${sportSlug} Sport`} 
+        className="w-full h-full object-contain cursor-pointer"
+        onClick={handleImageClick}
       />
     </div>
   );

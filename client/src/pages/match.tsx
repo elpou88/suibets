@@ -1,5 +1,4 @@
 import { useLocation, useRoute } from "wouter";
-import Layout from "@/components/layout/Layout";
 import { useState, useEffect } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
@@ -94,18 +93,16 @@ export default function Match() {
   };
 
   return (
-    <Layout>
-      <div className="w-full min-h-screen flex flex-col">
-        <div 
-          className="relative w-full cursor-pointer" 
-          onClick={handleImageClick}
-        >
-          <img 
-            src={imageSrc} 
-            alt="Match Details" 
-            className="w-full h-full object-contain pointer-events-none"
-          />
-        </div>
+    <div className="w-full min-h-screen flex flex-col">
+      <div 
+        className="relative w-full cursor-pointer" 
+        onClick={handleImageClick}
+      >
+        <img 
+          src={imageSrc} 
+          alt="Match Details" 
+          className="w-full h-full object-contain pointer-events-none"
+        />
       </div>
       
       <ConnectWalletModal 
@@ -122,6 +119,6 @@ export default function Match() {
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)} 
       />
-    </Layout>
+    </div>
   );
 }

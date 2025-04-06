@@ -48,12 +48,12 @@ export default function Navbar() {
           className="block"
           onClick={(e) => {
             e.preventDefault();
-            // Try the direct approach the user wants
-            const win = window.open('/promotions-image.png', '_self');
+            // Using the same approach as Esports
+            const win = window.open('/attached_assets/image_1743933557700.png', '_self');
             if (win) {
               win.focus();
             }
-            console.log('Clicked on Promotions');
+            console.log('Opening Promotions image directly');
           }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">

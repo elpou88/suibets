@@ -44,16 +44,21 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions"
+          href="#"
           className="block"
           onClick={(e) => {
             e.preventDefault();
-            // Exact same approach that works for Esports
-            const win = window.open('/attached_assets/Promotions (2).png', '_self');
-            if (win) {
-              win.focus();
-            }
-            console.log('Opening Promotions image directly');
+            console.log('Opening Promotions image directly - with delay');
+            
+            // Add a small delay before navigation
+            setTimeout(() => {
+              try {
+                window.location.href = '/attached_assets/Promotions (2).png';
+                console.log('Navigation executed');
+              } catch (error) {
+                console.error('Navigation failed:', error);
+              }
+            }, 100);
           }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">

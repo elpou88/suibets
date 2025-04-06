@@ -136,13 +136,36 @@ export const BettingProvider = ({ children }: BettingProviderProps) => {
       // Clear selected bets after successful placement
       clearBets();
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error placing bet:', error);
-      toast({
-        title: "Failed to Place Bet",
-        description: "There was an error placing your bet. Please try again.",
-        variant: "destructive",
-      });
+      
+      // Handle specific error types
+      if (error.isInsufficientFunds) {
+        toast({
+          title: "Insufficient Funds",
+          description: "You don't have enough balance to place this bet. Please deposit more funds.",
+          variant: "destructive",
+        });
+      } else if (error.isNetworkError) {
+        toast({
+          title: "Network Error",
+          description: "Connection issue with the blockchain network. Please try again later.",
+          variant: "destructive",
+        });
+      } else if (error.isAuthError) {
+        toast({
+          title: "Authentication Error",
+          description: "Please reconnect your wallet and try again.",
+          variant: "destructive",
+        });
+      } else {
+        // Generic error message as fallback
+        toast({
+          title: "Failed to Place Bet",
+          description: error.message || "There was an error placing your bet. Please try again.",
+          variant: "destructive",
+        });
+      }
       return false;
     }
   };

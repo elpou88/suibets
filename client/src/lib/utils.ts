@@ -5,8 +5,14 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(value: number, currency: string = "$SUIBETS") {
-  return `${value.toLocaleString()} ${currency}`;
+export function formatCurrency(value: number, currency: string = "SBETS") {
+  // Use 4 decimal places for SUI (smaller value) and 2 for SBETS
+  const decimals = currency === "SUI" ? 4 : 2;
+  const formattedValue = value.toLocaleString(undefined, {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals
+  });
+  return `${formattedValue} ${currency}`;
 }
 
 export function formatOdds(odds: number) {

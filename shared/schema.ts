@@ -12,7 +12,9 @@ export const users = pgTable("users", {
   walletAddress: text("wallet_address").unique(), // Encrypted wallet address
   walletFingerprint: text("wallet_fingerprint").unique(), // Hash fingerprint of wallet address
   walletType: text("wallet_type").default("Sui"),
-  balance: real("balance").default(0),
+  balance: real("balance").default(0), // Legacy field for backward compatibility
+  suiBalance: real("sui_balance").default(0),
+  sbetsBalance: real("sbets_balance").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   // Wurlus protocol integration
   wurlusProfileId: text("wurlus_profile_id"), // Blockchain profile ID
@@ -261,12 +263,16 @@ export const insertUserSchema = createInsertSchema(users)
     email: true,
     walletAddress: true, 
     walletFingerprint: true,
-    walletType: true
+    walletType: true,
+    suiBalance: true,
+    sbetsBalance: true
   })
   .partial({ 
     password: true, // Make password optional for wallet-based users
     walletAddress: true, // Wallet address might be encrypted later
-    walletFingerprint: true // Fingerprint is generated from the wallet address
+    walletFingerprint: true, // Fingerprint is generated from the wallet address
+    suiBalance: true, // Balances are initialized with defaults
+    sbetsBalance: true
   });
 
 export const insertSportSchema = createInsertSchema(sports).pick({

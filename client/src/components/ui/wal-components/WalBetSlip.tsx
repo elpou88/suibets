@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { X, Trash2, AlertTriangle, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { WalConnect } from './WalConnect';
+import { formatCurrency } from '@/lib/utils';
 
 // Types based on Wal.app documentation
 export interface BetSelection {
@@ -111,8 +112,13 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
       return;
     }
 
-    if (amountValue > (user.balance || 0)) {
-      setError('Insufficient balance');
+    // Check balance based on selected currency
+    const userBalance = selectedCurrency === 'SUI' 
+      ? (user.suiBalance !== undefined ? user.suiBalance : user.balance || 0)
+      : (user.sbetsBalance !== undefined ? user.sbetsBalance : 0);
+      
+    if (amountValue > userBalance) {
+      setError(`Insufficient ${selectedCurrency} balance`);
       return;
     }
 
@@ -180,13 +186,10 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
     }
   };
 
-  const formatCurrency = (value: number) => {
-    // Format with appropriate symbols and precision
-    if (selectedCurrency === 'SUI') {
-      return `${value.toFixed(4)} SUI`;
-    } else {
-      return `${value.toFixed(2)} SBETS`;
-    }
+  // Import formatCurrency from utils to avoid code duplication
+  const formatBetCurrency = (value: number) => {
+    // Use the imported formatCurrency function from utils.ts
+    return formatCurrency(value, selectedCurrency);
   };
 
   return (
@@ -287,20 +290,20 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
               <div className="space-y-2 mt-4">
                 <div className="flex justify-between text-sm">
                   <span>Potential Winnings:</span>
-                  <span className="font-medium">{formatCurrency(potentialWinnings)}</span>
+                  <span className="font-medium">{formatBetCurrency(potentialWinnings)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Platform Fee (5%):</span>
-                  <span>{formatCurrency(betFees.platformFee)}</span>
+                  <span>{formatBetCurrency(betFees.platformFee)}</span>
                 </div>
                 <div className="flex justify-between text-sm text-muted-foreground">
                   <span>Network Fee (1%):</span>
-                  <span>{formatCurrency(betFees.networkFee)}</span>
+                  <span>{formatBetCurrency(betFees.networkFee)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm font-medium">
                   <span>Total:</span>
-                  <span>{formatCurrency(parseFloat(amount))}</span>
+                  <span>{formatBetCurrency(parseFloat(amount))}</span>
                 </div>
               </div>
             )}
@@ -335,8 +338,27 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
         )}
         
         {user && (
-          <div className="text-xs text-center text-muted-foreground">
-            Balance: {formatCurrency(user.balance || 0)}
+          <div className="text-xs text-center text-muted-foreground space-y-1">
+            <div className="flex justify-between px-4">
+              <span>SUI Balance:</span>
+              <span className="font-medium">
+                {formatCurrency(
+                  // @ts-ignore - User schema has been updated with these fields but TypeScript definition might be outdated
+                  user.suiBalance !== undefined ? user.suiBalance : 0, 
+                  "SUI"
+                )}
+              </span>
+            </div>
+            <div className="flex justify-between px-4">
+              <span>SBETS Balance:</span>
+              <span className="font-medium">
+                {formatCurrency(
+                  // @ts-ignore - User schema has been updated with these fields but TypeScript definition might be outdated
+                  user.sbetsBalance !== undefined ? user.sbetsBalance : 0, 
+                  "SBETS"
+                )}
+              </span>
+            </div>
           </div>
         )}
       </CardFooter>

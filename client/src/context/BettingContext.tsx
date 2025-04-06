@@ -3,7 +3,7 @@ import { BettingContextType, SelectedBet } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { calculatePotentialWinnings } from '@/lib/utils';
+import { calculatePotentialWinnings, calculateParlayOdds } from '@/lib/utils';
 
 const BettingContext = createContext<BettingContextType>({
   selectedBets: [],
@@ -78,23 +78,51 @@ export const BettingProvider = ({ children }: BettingProviderProps) => {
     }
 
     try {
-      // For each selected bet, create a bet in the system
-      for (const bet of selectedBets) {
-        if (bet.stake <= 0) continue;
-
-        await apiRequest('POST', '/api/bets', {
+      // If more than one bet, create a parlay (accumulator)
+      if (selectedBets.length > 1) {
+        // Calculate total odds for parlay
+        const parlaySelections = selectedBets.map(bet => ({ odds: bet.odds }));
+        const totalOdds = calculateParlayOdds(parlaySelections);
+        
+        // Create a single parlay bet with all selections
+        const response = await apiRequest('POST', '/api/parlays', {
           userId: user.id,
-          eventId: bet.eventId,
-          betAmount: bet.stake,
-          odds: bet.odds,
-          prediction: bet.selectionName,
+          betAmount: betAmount,
+          totalOdds: totalOdds,
+          potentialPayout: calculatePotentialWinnings(betAmount, totalOdds),
+          legs: selectedBets.map(bet => ({
+            eventId: bet.eventId,
+            marketId: bet.marketId || 1, // Default marketId if not provided
+            odds: bet.odds,
+            prediction: bet.selectionName,
+            outcomeId: bet.outcomeId || null,
+          }))
+        });
+        
+        toast({
+          title: "Parlay Bet Placed Successfully",
+          description: `Your parlay bet with ${selectedBets.length} selections has been placed`,
+        });
+      } else {
+        // Place individual bets
+        for (const bet of selectedBets) {
+          if (bet.stake <= 0) continue;
+
+          await apiRequest('POST', '/api/bets', {
+            userId: user.id,
+            eventId: bet.eventId,
+            betAmount: bet.stake,
+            odds: bet.odds,
+            prediction: bet.selectionName,
+            potentialPayout: calculatePotentialWinnings(bet.stake, bet.odds)
+          });
+        }
+        
+        toast({
+          title: "Bet Placed Successfully",
+          description: "Your bet has been placed",
         });
       }
-
-      toast({
-        title: "Bet Placed Successfully",
-        description: "Your bet has been placed",
-      });
 
       // Clear selected bets after successful placement
       clearBets();
@@ -112,10 +140,16 @@ export const BettingProvider = ({ children }: BettingProviderProps) => {
 
   const totalStake = selectedBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
   
-  const potentialWinnings = selectedBets.reduce(
-    (sum, bet) => sum + calculatePotentialWinnings(bet.stake || 0, bet.odds),
-    0
-  );
+  // Calculate potential winnings differently for parlays vs. single bets
+  const potentialWinnings = selectedBets.length > 1 
+    ? calculatePotentialWinnings(
+        totalStake,
+        calculateParlayOdds(selectedBets.map(bet => ({ odds: bet.odds })))
+      )
+    : selectedBets.reduce(
+        (sum, bet) => sum + calculatePotentialWinnings(bet.stake || 0, bet.odds),
+        0
+      );
 
   return (
     <BettingContext.Provider

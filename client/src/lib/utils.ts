@@ -25,7 +25,29 @@ export function shortenAddress(address: string, chars: number = 4): string {
 }
 
 export function calculatePotentialWinnings(stake: number, odds: number): number {
-  return stake * odds;
+  // Ensure we handle edge cases with proper validation
+  if (isNaN(stake) || stake <= 0 || isNaN(odds) || odds <= 0) {
+    return 0;
+  }
+  // Round to 2 decimal places to avoid floating point issues
+  return Math.round((stake * odds) * 100) / 100;
+}
+
+export function calculateParlayOdds(selections: { odds: number }[]): number {
+  if (!selections || selections.length === 0) {
+    return 0;
+  }
+  
+  // Multiply all odds together for parlay calculation
+  const totalOdds = selections.reduce((acc, selection) => {
+    const odds = selection.odds || 0;
+    // Skip invalid odds
+    if (odds <= 0) return acc;
+    return acc * odds;
+  }, 1);
+  
+  // Round to 2 decimal places for consistency
+  return Math.round(totalOdds * 100) / 100;
 }
 
 export const WALLET_TYPES = [

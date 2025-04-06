@@ -370,7 +370,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create each leg of the parlay
         for (const leg of legs) {
-          await storage.createBetLeg({
+          await storage.createParlayLeg({
             parlayId: parlay.id,
             eventId: leg.eventId,
             marketId: leg.marketId,
@@ -422,7 +422,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Create each leg of the parlay
         for (const leg of legs) {
-          await storage.createBetLeg({
+          await storage.createParlayLeg({
             parlayId: parlay.id,
             eventId: leg.eventId,
             marketId: leg.marketId,

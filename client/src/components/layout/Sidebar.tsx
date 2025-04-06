@@ -99,16 +99,13 @@ export default function Sidebar() {
 
   return (
     <div className="flex flex-col w-64 bg-[#09151A] text-white h-full">
-      {/* Logo & Collapse button - matching the screenshot */}
+      {/* Logo only - removed arrow as requested */}
       <div className="py-4 px-4 flex items-center justify-between border-b border-[#123040]">
         <img 
           src="/logo/suibets-logo.svg" 
           alt="SuiBets Logo" 
           className="h-8"
         />
-        <button className="text-white">
-          <ChevronLeft size={20} />
-        </button>
       </div>
       
       {/* Sports navigation - matching the design in the screenshot */}

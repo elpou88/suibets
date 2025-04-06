@@ -27,6 +27,8 @@ export interface SelectedBet {
   odds: number;
   stake: number;
   market: string;
+  marketId?: number; // Added for proper parlay creation
+  outcomeId?: number; // Added for proper outcome reference
 }
 
 export interface ConnectWalletModalProps {

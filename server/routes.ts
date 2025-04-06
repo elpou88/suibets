@@ -4,7 +4,8 @@ import { storage } from "./storage";
 import { SportsApi } from "./services/sportsApi";
 import { SuiService } from "./services/sui";
 import { SuiMoveService } from "./services/suiMoveService";
-import config from "./config";
+import { securityService } from "./services/securityService";
+import { config } from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {

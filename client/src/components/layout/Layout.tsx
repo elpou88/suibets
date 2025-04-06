@@ -20,7 +20,7 @@ export default function Layout({ children }: LayoutProps) {
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-[#09181B] text-white z-30 flex justify-around p-2 border-t border-[#112225]">
           <button className="p-2 flex flex-col items-center justify-center">
-            <Home className="h-6 w-6 text-primary" />
+            <Home className="h-6 w-6 text-[#00FFFF]" />
             <span className="text-xs mt-1">Home</span>
           </button>
           <button className="p-2 flex flex-col items-center justify-center">

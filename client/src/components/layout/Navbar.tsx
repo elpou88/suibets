@@ -27,27 +27,27 @@ export default function Navbar() {
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
       <div className="flex space-x-8">
         <Link href="/">
-          <div className={`relative px-3 py-1 ${location === "/" ? "text-primary" : "text-white hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Sports
             {location === "/" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
             )}
           </div>
         </Link>
         <Link href="/?live=true">
-          <div className={`relative px-3 py-1 flex items-center ${location === "/?live=true" ? "text-primary" : "text-white hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 flex items-center ${location === "/?live=true" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Live 
             <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
             {location === "/?live=true" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
             )}
           </div>
         </Link>
         <Link href="/promotions">
-          <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-primary" : "text-white hover:text-primary"}`}>
+          <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Promotions
             {location === "/promotions" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-primary"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
             )}
           </div>
         </Link>
@@ -70,7 +70,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-primary hover:bg-[#112225]"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
               onClick={() => setIsNotificationsModalOpen(true)}
             >
               <Bell className="h-5 w-5" />
@@ -79,7 +79,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-primary hover:bg-[#112225]"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="h-5 w-5" />
@@ -87,7 +87,7 @@ export default function Navbar() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2 border-primary text-primary hover:bg-primary hover:text-white">
+                <Button variant="outline" className="ml-2 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black">
                   {user?.walletAddress && shortenAddress(user.walletAddress)}
                 </Button>
               </DropdownMenuTrigger>

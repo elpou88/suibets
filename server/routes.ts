@@ -312,6 +312,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch bets" });
     }
   });
+  
+  // Cash out a single bet
+  app.post("/api/bets/:betId/cash-out", async (req: Request, res: Response) => {
+    try {
+      const betId = parseInt(req.params.betId);
+      const { userId, walletAddress, currency = 'SUI' } = req.body;
+      
+      if (isNaN(betId)) {
+        return res.status(400).json({ message: 'Invalid bet ID' });
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: 'Wallet address is required' });
+      }
+      
+      // Check if the bet is eligible for cash out
+      const bet = await storage.getBet(betId);
+      if (!bet) {
+        return res.status(404).json({ message: 'Bet not found' });
+      }
+      
+      if (bet.userId !== userId) {
+        return res.status(403).json({ message: 'Bet does not belong to this user' });
+      }
+      
+      if (bet.status !== 'pending') {
+        return res.status(400).json({ message: `Bet is not eligible for cash out. Status: ${bet.status}` });
+      }
+      
+      try {
+        // Calculate the cash out amount
+        const cashOutAmount = await storage.calculateSingleBetCashOutAmount(betId);
+        if (!cashOutAmount) {
+          return res.status(400).json({ message: 'Cash out is not available for this bet' });
+        }
+        
+        // Process the cash out using the SuiMoveService for blockchain integration
+        const txHash = await suiMoveService.cashOutSingleBet(userId, walletAddress, betId, currency);
+        
+        if (!txHash) {
+          return res.status(500).json({ message: 'Failed to process cash out' });
+        }
+        
+        // Attempt to update the bet using our error-handling cashOutSingleBet method
+        try {
+          await storage.cashOutSingleBet(betId);
+        } catch (dbError: any) {
+          console.warn('Error updating bet in database, but blockchain transaction completed:', dbError.message);
+          // We'll still continue since the blockchain transaction was successful
+        }
+        
+        // Get the updated bet details
+        const updatedBet = await storage.getBet(betId);
+        
+        res.json({ 
+          success: true, 
+          message: 'Bet successfully cashed out',
+          transactionHash: txHash,
+          bet: updatedBet,
+          amount: cashOutAmount,
+          currency
+        });
+      } catch (innerError: any) {
+        // Handle specific database schema errors
+        if (innerError.message && innerError.message.includes('column') && innerError.message.includes('does not exist')) {
+          console.error('Database schema error during cash out:', innerError.message);
+          return res.status(500).json({ 
+            message: 'Database schema issue detected. Cash out operation could not be completed. Please contact support.',
+            error: 'SCHEMA_ERROR'
+          });
+        }
+        throw innerError; // Re-throw for the outer catch block
+      }
+    } catch (error: any) {
+      console.error('Error cashing out bet:', error);
+      res.status(500).json({ message: error.message || 'Failed to process cash out' });
+    }
+  });
+  
+  // Cash out a parlay bet
+  app.post("/api/parlays/:parlayId/cash-out", async (req: Request, res: Response) => {
+    try {
+      const parlayId = parseInt(req.params.parlayId);
+      const { userId, walletAddress, currency = 'SUI' } = req.body;
+      
+      if (isNaN(parlayId)) {
+        return res.status(400).json({ message: 'Invalid parlay ID' });
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: 'User ID is required' });
+      }
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: 'Wallet address is required' });
+      }
+      
+      // Check if the parlay is eligible for cash out
+      const parlay = await storage.getParlay(parlayId);
+      if (!parlay) {
+        return res.status(404).json({ message: 'Parlay not found' });
+      }
+      
+      if (parlay.userId !== userId) {
+        return res.status(403).json({ message: 'Parlay does not belong to this user' });
+      }
+      
+      if (parlay.status !== 'pending') {
+        return res.status(400).json({ message: `Parlay is not eligible for cash out. Status: ${parlay.status}` });
+      }
+      
+      try {
+        // Calculate the cash out amount
+        const cashOutAmount = await storage.calculateCashOutAmount(parlayId);
+        if (!cashOutAmount) {
+          return res.status(400).json({ message: 'Cash out is not available for this parlay' });
+        }
+        
+        // Process the cash out using the SuiMoveService for blockchain integration
+        const txHash = await suiMoveService.cashOutParlay(userId, walletAddress, parlayId, currency);
+        
+        if (!txHash) {
+          return res.status(500).json({ message: 'Failed to process parlay cash out' });
+        }
+        
+        // Attempt to update the parlay using our error-handling cashOutParlay method
+        try {
+          await storage.cashOutParlay(parlayId);
+        } catch (dbError: any) {
+          console.warn('Error updating parlay in database, but blockchain transaction completed:', dbError.message);
+          // We'll still continue since the blockchain transaction was successful
+        }
+        
+        // Get the updated parlay details
+        const updatedParlay = await storage.getParlay(parlayId);
+        
+        res.json({ 
+          success: true, 
+          message: 'Parlay successfully cashed out',
+          transactionHash: txHash,
+          parlay: updatedParlay,
+          amount: cashOutAmount,
+          currency
+        });
+      } catch (innerError: any) {
+        // Handle specific database schema errors
+        if (innerError.message && innerError.message.includes('column') && innerError.message.includes('does not exist')) {
+          console.error('Database schema error during parlay cash out:', innerError.message);
+          return res.status(500).json({ 
+            message: 'Database schema issue detected. Cash out operation could not be completed. Please contact support.',
+            error: 'SCHEMA_ERROR'
+          });
+        }
+        throw innerError; // Re-throw for the outer catch block
+      }
+    } catch (error: any) {
+      console.error('Error cashing out parlay:', error);
+      res.status(500).json({ message: error.message || 'Failed to process parlay cash out' });
+    }
+  });
 
   // Notifications routes
   app.get("/api/notifications/user/:userId", async (req: Request, res: Response) => {

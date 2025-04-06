@@ -108,11 +108,11 @@ export default function Navbar() {
         ) : (
           <>
             <Link href="/join">
-              <Button variant="outline" className="border-primary text-primary hover:bg-primary/20 font-medium">
+              <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
                 Join Now
               </Button>
             </Link>
-            <Button className="bg-primary hover:bg-primary/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
+            <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
               Connect Wallet
             </Button>
           </>

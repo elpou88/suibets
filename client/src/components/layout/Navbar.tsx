@@ -44,11 +44,9 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href={process.env.NODE_ENV === 'development' ? '/promotions-image.png' : '/promotions-image.png'}
+          href="/promotions-image.png"
           className="block"
           onClick={(e) => {
-            e.preventDefault();
-            window.location.href = '/promotions-image.png';
             console.log('Clicking on Promotions');
           }}
         >

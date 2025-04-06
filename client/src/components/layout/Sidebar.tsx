@@ -98,36 +98,50 @@ export default function Sidebar() {
       {/* Main navigation */}
       <div className="flex-grow overflow-y-auto scrollbar-hidden space-y-1">
         {/* Upcoming */}
-        <div 
-          className={`flex items-center px-4 py-3 mx-2 rounded cursor-pointer ${
-            activeSport === 'upcoming' 
-              ? 'bg-primary text-black' 
-              : 'text-white hover:bg-[#112225]'
-          }`}
-          onClick={() => window.location.href = '/'}
-        >
-          <div className="w-8 h-8 mr-3 flex items-center justify-center">
-            <Grid2X2 className="h-5 w-5" />
-          </div>
-          <span className={activeSport === 'upcoming' ? 'font-semibold' : ''}>Upcoming</span>
-        </div>
-
-        {/* Sports categories */}
-        {sports.map((sport) => (
-          <div
-            key={sport.id}
+        <a href="/" className="block">
+          <div 
             className={`flex items-center px-4 py-3 mx-2 rounded cursor-pointer ${
-              activeSport === sport.slug 
+              activeSport === 'upcoming' 
                 ? 'bg-primary text-black' 
                 : 'text-white hover:bg-[#112225]'
             }`}
-            onClick={() => window.location.href = `/sport/${sport.slug}`}
+            onClick={(e) => {
+              e.preventDefault();
+              window.location.href = '/';
+            }}
           >
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
-              {getSportIcon(sport.slug)}
+              <Grid2X2 className="h-5 w-5" />
             </div>
-            <span className={activeSport === sport.slug ? 'font-semibold' : ''}>{sport.name}</span>
+            <span className={activeSport === 'upcoming' ? 'font-semibold' : ''}>Upcoming</span>
           </div>
+        </a>
+
+        {/* Sports categories */}
+        {sports.map((sport) => (
+          <a 
+            key={sport.id} 
+            href={`/sport/${sport.slug}`} 
+            className="block"
+            onClick={(e) => {
+              e.preventDefault();
+              console.log(`Navigating to sport: ${sport.slug}`);
+              window.location.href = `/sport/${sport.slug}`;
+            }}
+          >
+            <div
+              className={`flex items-center px-4 py-3 mx-2 rounded cursor-pointer ${
+                activeSport === sport.slug 
+                  ? 'bg-primary text-black' 
+                  : 'text-white hover:bg-[#112225]'
+              }`}
+            >
+              <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                {getSportIcon(sport.slug)}
+              </div>
+              <span className={activeSport === sport.slug ? 'font-semibold' : ''}>{sport.name}</span>
+            </div>
+          </a>
         ))}
       </div>
     </div>

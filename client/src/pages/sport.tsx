@@ -17,6 +17,17 @@ export default function Sport() {
     console.log('Sport page mounted with slug:', sportSlug);
     console.log('Current URL:', window.location.href);
     console.log('Params:', params);
+    
+    // Alert to debug
+    if (!sportSlug) {
+      console.error('NO SPORT SLUG DETECTED!');
+    } else {
+      console.log('SPORT PAGE LOADED SUCCESSFULLY FOR:', sportSlug);
+      
+      // Force image preloading
+      const img = new Image();
+      img.src = getSportImage();
+    }
   }, [sportSlug, params]);
   
   // Function to handle clicks on the image that should navigate
@@ -29,10 +40,12 @@ export default function Sport() {
     const xPercent = (x / rect.width) * 100;
     const yPercent = (y / rect.height) * 100;
     
+    console.log(`Clicked at position: x=${xPercent}%, y=${yPercent}%`);
+    
     // Define clickable areas (approximate percentages)
     if (yPercent < 10) { // Top navigation bar area
       if (xPercent > 82 && xPercent < 92) { // Join Now button
-        window.location.href = "/join";
+        navigateTo("/join");
         return;
       }
       if (xPercent > 92) { // Connect Wallet button
@@ -54,15 +67,15 @@ export default function Sport() {
       
       // Sports, Live, Promotions tabs
       if (xPercent > 50 && xPercent < 60) {
-        window.location.href = "/";
+        navigateTo("/");
         return;
       }
       if (xPercent > 60 && xPercent < 70) {
-        window.location.href = "/live";
+        navigateTo("/live");
         return;
       }
       if (xPercent > 70 && xPercent < 76) {
-        window.location.href = "/promotions";
+        navigateTo("/promotions");
         return;
       }
     }
@@ -70,32 +83,55 @@ export default function Sport() {
     // Bet slip and match details areas
     if (yPercent > 45 && yPercent < 85) {
       if (xPercent > 80) { // Bet slip area on the right
-        window.location.href = "/bet-slip";
+        navigateTo("/bet-slip");
         return;
       }
     }
     
     // Back button (top left of match details)
     if (yPercent > 10 && yPercent < 15 && xPercent < 10) {
-      window.location.href = "/";
+      navigateTo("/");
       return;
     }
+  };
+  
+  // Helper function to navigate with better debugging
+  const navigateTo = (path: string) => {
+    console.log(`Navigating to: ${path}`);
+    // Use both methods for maximum compatibility
+    window.location.href = path;
   };
 
   // Choose the correct image based on the sport
   const getSportImage = () => {
+    console.log("Getting image for sport:", sportSlug);
+    
+    let imagePath = "";
     switch(sportSlug) {
       case 'football':
-        return "/images/Sports 1 (2).png";
+        imagePath = "/images/Sports 1 (2).png";
+        break;
       case 'basketball':
-        return "/images/Sports 2 (2).png";
+        imagePath = "/images/Sports 2 (2).png";
+        break;
       case 'tennis':
-        return "/images/Sports 3 (2).png";
+        imagePath = "/images/Sports 3 (2).png";
+        break;
       case 'baseball':
-        return "/images/Sports 4 (2).png";
+        imagePath = "/images/Sports 4 (2).png";
+        break;
+      case 'soccer':
+        imagePath = "/images/Sports 1 (2).png";
+        break;
+      case 'hockey':
+        imagePath = "/images/Sports 2 (2).png";
+        break;
       default:
-        return "/images/Sports 1 (2).png";
+        imagePath = "/images/Sports 1 (2).png";
     }
+    
+    console.log("Selected image path:", imagePath);
+    return imagePath;
   };
 
   console.log('Sport page loaded for:', sportSlug);

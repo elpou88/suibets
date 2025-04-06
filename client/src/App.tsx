@@ -20,11 +20,13 @@ import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
 
 function Router() {
+  console.log("Router initialized");
+  
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/sports" component={Home} />
-      <Route path="/sport/:slug" component={Sport} />
+      <Route path="/sport/:slug*" component={Sport} />
       <Route path="/live" component={Home} />
       <Route path="/match/:id" component={Match} />
       <Route path="/match-detail/:id" component={MatchDetail} />

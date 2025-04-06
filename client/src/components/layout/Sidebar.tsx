@@ -117,6 +117,17 @@ export default function Sidebar() {
             className="block"
             onClick={(e) => {
               console.log(`Clicking on ${sport.name} (${sport.slug})`);
+              
+              // Special handling for Esports - similar to what we did for Promotions
+              if (sport.slug === 'esports') {
+                e.preventDefault();
+                const win = window.open('/attached_assets/image_1743933557700.png', '_self');
+                if (win) {
+                  win.focus();
+                }
+                console.log('Opening Esports image directly');
+                return;
+              }
             }}
           >
             <div

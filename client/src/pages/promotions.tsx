@@ -22,11 +22,11 @@ const Promotions: React.FC = () => {
         <img src="/logo/suibets-logo.svg" alt="SuiBets Logo" className="h-8" />
       </div>
       
-      <div className="max-w-[800px] mx-auto p-6">
+      <div className="max-w-full mx-auto p-0">
         <img 
-          src="/attached_assets/Promotions (2).png" 
+          src="/promotions-image.png" 
           alt="Promotions" 
-          className="w-full rounded-lg shadow-lg"
+          className="w-full h-auto"
         />
       </div>
     </div>

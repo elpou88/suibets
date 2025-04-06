@@ -43,18 +43,11 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <div 
-          className="block cursor-pointer"
-          onClick={() => {
-            console.log('Opening Promotions image directly');
-            // Direct approach with the image in public folder
-            window.location.href = '/promotions-image.png';
-          }}
-        >
+        <Link href="/promotions">
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions
           </div>
-        </div>
+        </Link>
       </div>
       
       {/* Logo in center - only visible on mobile */}

@@ -11,6 +11,7 @@ export default function Sport() {
   const [sportImage, setSportImage] = useState<string | null>(null);
   const [sportTitle, setSportTitle] = useState<string>('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
   
   // Get the sport slug from the URL path
   const pathname = window.location.pathname;
@@ -24,6 +25,7 @@ export default function Sport() {
   useEffect(() => {
     setLoading(true);
     setErrorMessage(null);
+    setImageError(false);
     
     // Find the matching sport image
     const matchingSport = sportImages.find(sport => sport.slug === sportSlug);
@@ -45,9 +47,15 @@ export default function Sport() {
     setLoading(false);
   }, [sportSlug]);
 
+  // Handle image loading error
+  const handleImageError = () => {
+    console.error(`Failed to load image for ${sportTitle}`);
+    setImageError(true);
+    setSportImage('/images/Sports 1 (2).png'); // Fallback to football image
+  };
+
   // Function to handle clicks on the sport page image for navigation
-  // This time using more specific regions like the home page
-  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement | HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
@@ -77,19 +85,64 @@ export default function Sport() {
   };
 
   if (loading) {
-    return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gray-900 text-white">
+        <div className="text-xl">Loading {sportTitle || 'Sport'} Page...</div>
+      </div>
+    );
   }
 
-  // Display the full-screen sport image with click handler
+  // Display sport information if we can't show the image
+  const renderSportInfo = () => (
+    <div 
+      className="w-full h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-800 to-gray-900 text-white p-4 cursor-pointer"
+      onClick={handleImageClick}
+    >
+      <h1 className="text-4xl font-bold mb-4">{sportTitle}</h1>
+      <p className="text-xl mb-8">Click anywhere to view available matches</p>
+      
+      <div className="w-full max-w-md bg-gray-800 rounded-lg p-4 mb-8">
+        <h2 className="text-2xl font-semibold mb-4">Available Markets</h2>
+        <ul className="space-y-2">
+          <li className="flex justify-between">
+            <span>Match Winner</span>
+            <span className="text-green-400">✓</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Over/Under</span>
+            <span className="text-green-400">✓</span>
+          </li>
+          <li className="flex justify-between">
+            <span>Point Spread</span>
+            <span className="text-green-400">✓</span>
+          </li>
+          <li className="flex justify-between">
+            <span>First Scorer</span>
+            <span className="text-green-400">✓</span>
+          </li>
+        </ul>
+      </div>
+      
+      <button 
+        className="bg-primary hover:bg-primary/80 text-white px-8 py-3 rounded-md text-lg font-medium"
+        onClick={() => setLocation('/')}
+      >
+        Return to Home
+      </button>
+    </div>
+  );
+
+  // Display either the image or sport info fallback
   return (
-    <div className="w-full h-screen bg-black">
-      {sportImage ? (
+    <div className="w-full h-screen bg-gray-900">
+      {sportImage && !imageError ? (
         <>
           <img 
             src={sportImage} 
             alt={`${sportTitle} Sport`} 
             className="w-full h-full object-contain cursor-pointer"
             onClick={handleImageClick}
+            onError={handleImageError}
           />
           {errorMessage && (
             <div className="absolute top-5 left-0 right-0 mx-auto text-center bg-red-500 text-white p-2 rounded-md w-4/5 max-w-md">
@@ -97,19 +150,7 @@ export default function Sport() {
             </div>
           )}
         </>
-      ) : (
-        <div className="w-full h-screen flex items-center justify-center text-white">
-          <div className="text-center">
-            <div className="mb-4 text-xl">No image found for "{sportSlug}"</div>
-            <button 
-              className="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded"
-              onClick={() => setLocation('/')}
-            >
-              Return to Home
-            </button>
-          </div>
-        </div>
-      )}
+      ) : renderSportInfo()}
     </div>
   );
 }

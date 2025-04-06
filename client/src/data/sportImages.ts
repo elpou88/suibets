@@ -1,6 +1,7 @@
 /**
  * Sport image mapping
  * Maps sport slugs to their respective image paths
+ * Using the available images in public/images directory
  */
 
 interface SportImage {
@@ -70,40 +71,40 @@ const sportImages: SportImage[] = [
     imagePath: '/images/image_1743947434959.png',
     title: 'Racing'
   },
-  // Added missing sports from database
+  // Added missing sports from database using available images
   {
     slug: 'volleyball',
-    imagePath: '/images/image_1743951361428.png', // Using available image from assets
+    imagePath: '/images/Sports 3 (2).png', // Using baseball image as fallback
     title: 'Volleyball'
   },
   {
     slug: 'table-tennis',
-    imagePath: '/images/image_1743954076007.png', // Using available image from assets
+    imagePath: '/images/Sports 2 (2).png', // Using basketball image as fallback
     title: 'Table Tennis'
   },
   {
     slug: 'rugby-league',
-    imagePath: '/images/image_1743954855073.png', // Using available image from assets
+    imagePath: '/images/Sports 1 (2).png', // Using football image as fallback
     title: 'Rugby League'
   },
   {
     slug: 'rugby-union',
-    imagePath: '/images/image_1743954855073.png', // Using available image from assets
+    imagePath: '/images/Sports 1 (2).png', // Using football image as fallback
     title: 'Rugby Union'
   },
   {
     slug: 'horse-racing',
-    imagePath: '/images/image_1743947434959.png', // Using racing image from assets
+    imagePath: '/images/image_1743947434959.png', // Using racing image
     title: 'Horse Racing'
   },
   {
     slug: 'greyhounds',
-    imagePath: '/images/image_1743947434959.png', // Using racing image from assets
+    imagePath: '/images/image_1743947434959.png', // Using racing image
     title: 'Greyhounds'
   },
   {
     slug: 'afl',
-    imagePath: '/images/image_1743933557700.png', // Using available image from assets
+    imagePath: '/images/Sports 1 (2).png', // Using football image as fallback
     title: 'AFL'
   }
 ];

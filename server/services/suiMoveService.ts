@@ -30,6 +30,114 @@ export interface SuiMoveObject {
   content: any;
 }
 
+/**
+ * Sui struct definitions based on Wal.app documentation
+ * https://docs.wal.app/dev-guide/sui-struct.html
+ */
+
+// User-related structs
+
+export interface WalUserProfile {
+  id: string;
+  owner: string;
+  username: string;
+  avatar_url: string | null;
+  created_at: number;
+  updated_at: number;
+  balance: string; // Balance in MIST (as string)
+  staked_amount: string; // Staked amount in MIST (as string)
+  total_bets: number;
+  total_won: number;
+  total_lost: number;
+}
+
+export interface WalWallet {
+  id: string;
+  owner: string;
+  balance: string; // Balance in MIST (as string)
+  created_at: number;
+}
+
+// Betting-related structs
+
+export interface WalBet {
+  id: string;
+  owner: string;
+  market_id: string;
+  outcome_id: string;
+  amount: string; // Bet amount in MIST (as string)
+  potential_payout: string; // Potential payout in MIST (as string)
+  odds: number; // Odds as a decimal number * 100 (e.g., 2.5 = 250)
+  status: 'pending' | 'won' | 'lost' | 'voided';
+  placed_at: number;
+  settled_at: number | null;
+  platform_fee: string; // Platform fee in MIST (as string)
+  network_fee: string; // Network fee in MIST (as string)
+}
+
+export interface WalMarket {
+  id: string;
+  event_id: string;
+  name: string;
+  status: 'open' | 'closed' | 'settled' | 'cancelled';
+  outcomes: WalOutcome[];
+  created_at: number;
+  updated_at: number;
+  settled_at: number | null;
+  winning_outcome_id: string | null;
+}
+
+export interface WalOutcome {
+  id: string;
+  market_id: string;
+  name: string;
+  odds: number; // Odds as a decimal number * 100 (e.g., 2.5 = 250)
+  status: 'active' | 'settled_win' | 'settled_lose' | 'voided';
+}
+
+export interface WalEvent {
+  id: string;
+  name: string;
+  description: string;
+  start_time: number;
+  sport_id: string;
+  status: 'upcoming' | 'live' | 'completed' | 'cancelled';
+  markets: WalMarket[];
+  created_at: number;
+  updated_at: number;
+}
+
+export interface WalSport {
+  id: string;
+  name: string;
+  slug: string;
+  active: boolean;
+}
+
+// Staking-related structs
+
+export interface WalStake {
+  id: string;
+  owner: string;
+  amount: string; // Staked amount in MIST (as string)
+  rewards: string; // Rewards amount in MIST (as string)
+  start_time: number;
+  end_time: number;
+  duration_days: number;
+  platform_fee: string; // Platform fee in MIST (as string)
+  claimed: boolean;
+  status: 'active' | 'ended' | 'claimed';
+}
+
+export interface WalReward {
+  id: string;
+  owner: string;
+  stake_id: string;
+  amount: string; // Reward amount in MIST (as string)
+  platform_fee: string; // Platform fee in MIST (as string)
+  claimed_at: number | null;
+}
+
 export type SuiMoveOwner = {
   AddressOwner: string;
 } | {
@@ -320,7 +428,7 @@ export class SuiMoveService {
    * @param walletAddress User's wallet address
    * @returns Promise resolving to array of bet objects
    */
-  async getUserBets(walletAddress: string): Promise<WurlusBet[]> {
+  async getUserBets(walletAddress: string): Promise<WalBet[]> {
     try {
       console.log(`[SuiMove] Getting bet history for wallet ${walletAddress}`);
       
@@ -337,10 +445,55 @@ export class SuiMoveService {
       //     showContent: true
       //   }
       // });
-      // Then it would transform those objects into WurlusBet format
       
-      // Return empty array for testing
-      return [];
+      // Then it would transform those objects into WalBet format according to
+      // Wal.app Sui struct documentation (https://docs.wal.app/dev-guide/sui-struct.html)
+      
+      // Example of how we would process the response in production:
+      // const bets: WalBet[] = response.data.map(item => {
+      //   const content = item.data.content;
+      //   return {
+      //     id: item.data.objectId,
+      //     owner: walletAddress,
+      //     market_id: content.fields.market_id,
+      //     outcome_id: content.fields.outcome_id,
+      //     amount: content.fields.amount,
+      //     potential_payout: content.fields.potential_payout,
+      //     odds: parseInt(content.fields.odds),
+      //     status: content.fields.status,
+      //     placed_at: parseInt(content.fields.placed_at),
+      //     settled_at: content.fields.settled_at ? parseInt(content.fields.settled_at) : null,
+      //     platform_fee: content.fields.platform_fee,
+      //     network_fee: content.fields.network_fee
+      //   };
+      // });
+      
+      // Mock data for testing
+      const mockBets: WalBet[] = Array(3).fill(0).map((_, i) => {
+        const now = Date.now();
+        const amount = Math.floor(Math.random() * 50 * 1e9).toString(); // Random amount in MIST
+        const platformFee = Math.floor(parseInt(amount) * 0.05).toString(); // 5% platform fee
+        const networkFee = Math.floor(parseInt(amount) * 0.01).toString(); // 1% network fee
+        const odds = Math.floor((1.5 + Math.random() * 3) * 100); // Odds between 1.5 and 4.5, multiplied by 100
+        const potentialPayout = Math.floor(parseInt(amount) * (odds / 100)).toString();
+        
+        return {
+          id: `0x${Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          owner: walletAddress,
+          market_id: `0x${Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          outcome_id: `0x${Array.from({length: 32}, () => Math.floor(Math.random() * 16).toString(16)).join('')}`,
+          amount,
+          potential_payout: potentialPayout,
+          odds,
+          status: ['pending', 'won', 'lost'][Math.floor(Math.random() * 3)] as 'pending' | 'won' | 'lost',
+          placed_at: now - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000), // Random time in the last week
+          settled_at: Math.random() > 0.3 ? now - Math.floor(Math.random() * 3 * 24 * 60 * 60 * 1000) : null, // 70% chance of being settled
+          platform_fee: platformFee,
+          network_fee: networkFee
+        };
+      });
+      
+      return mockBets;
     } catch (error) {
       console.error(`[SuiMove] Error getting user bets: ${error}`);
       return [];
@@ -714,8 +867,8 @@ export class SuiMoveService {
   }
   
   /**
-   * Stake tokens in the Wurlus protocol
-   * Following Wal.app staking documentation
+   * Stake tokens in the Wurlus protocol following Wal.app staking documentation
+   * Using WalStake struct based on Wal.app documentation (https://docs.wal.app/dev-guide/sui-struct.html)
    * 
    * @param walletAddress User wallet address
    * @param amount Amount to stake in SUI tokens
@@ -773,11 +926,29 @@ export class SuiMoveService {
       //     data: transaction
       //   }
       // });
-      // return txResult.digest;
+      
+      // In production, we'd extract the created WalStake object from the transaction receipt
+      // const stakeObject = txResult.created.find(item => 
+      //   item.type.startsWith(`${this.network.packageId}::wurlus_protocol::WalStake`));
+      // const stakeId = stakeObject?.reference?.objectId;
       
       // Mock transaction hash for development
       const txHash = `0x${Array.from({length: 64}, () => 
         Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      
+      // In a real implementation, we would also create a WalStake object with proper values
+      // const stake: WalStake = {
+      //   id: stakeId,
+      //   owner: walletAddress,
+      //   amount: amountInMist.toString(),
+      //   rewards: "0",
+      //   start_time: Date.now(),
+      //   end_time: Date.now() + (periodDays * 24 * 60 * 60 * 1000),
+      //   duration_days: periodDays,
+      //   platform_fee: platformFee.toString(),
+      //   claimed: false,
+      //   status: 'active'
+      // };
       
       return txHash;
     } catch (error) {

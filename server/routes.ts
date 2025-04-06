@@ -43,7 +43,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events/:id", async (req: Request, res: Response) => {
     try {
+      // Ensure id is a valid number
       const id = Number(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid event ID format" });
+      }
+      
       const event = await storage.getEvent(id);
       
       if (!event) {
@@ -52,6 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.json(event);
     } catch (error) {
+      console.error("Error fetching event:", error);
       res.status(500).json({ message: "Failed to fetch event" });
     }
   });
@@ -103,8 +110,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/bets", async (req: Request, res: Response) => {
     try {
       const validatedData = insertBetSchema.parse(req.body);
+      
+      // Ensure both userId and eventId are valid numbers
+      if (typeof validatedData.userId !== 'number' || isNaN(validatedData.userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+      
+      if (typeof validatedData.eventId !== 'number' && isNaN(Number(validatedData.eventId))) {
+        return res.status(400).json({ message: "Invalid event ID format" });
+      }
+      
+      // Convert eventId to number if needed
+      const eventId = typeof validatedData.eventId === 'number' 
+        ? validatedData.eventId 
+        : Number(validatedData.eventId);
+        
       const user = await storage.getUser(validatedData.userId);
-      const event = await storage.getEvent(validatedData.eventId);
+      const event = await storage.getEvent(eventId);
       
       if (!user) {
         return res.status(404).json({ message: "User not found" });
@@ -131,9 +153,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Make sure wallet address exists, use a default if not available
         const walletAddress = user.walletAddress || "0x0000000000000000000000000000000000000000";
         
+        // We already have the eventId from above, no need to recalculate it
+        
         const txHash = await suiMoveService.placeBet(
           walletAddress,
-          validatedData.eventId,
+          eventId,
           validatedData.market,
           validatedData.selection,
           validatedData.betAmount,
@@ -494,16 +518,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { walletAddress } = req.params;
       
       if (!walletAddress) {
-        return res.status(400).json({ message: "Wallet address is required" });
+        return res.status(400).json({ 
+          success: false,
+          message: "Wallet address is required" 
+        });
       }
       
       const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const bets = await suiMoveService.getUserBets(walletAddress);
       
+      // Format bets with human-readable values for frontend display
+      const formattedBets = bets.map(bet => {
+        // Convert MIST string values to SUI numeric values
+        const amountSui = parseFloat((parseInt(bet.amount) / 1e9).toFixed(9));
+        const potentialPayoutSui = parseFloat((parseInt(bet.potential_payout) / 1e9).toFixed(9));
+        const platformFeeSui = parseFloat((parseInt(bet.platform_fee) / 1e9).toFixed(9));
+        const networkFeeSui = parseFloat((parseInt(bet.network_fee) / 1e9).toFixed(9));
+        const oddsDecimal = (bet.odds / 100).toFixed(2);
+        
+        return {
+          ...bet,
+          // Add formatted display values for UI
+          display: {
+            amount: `${amountSui} SUI`,
+            potential_payout: `${potentialPayoutSui} SUI`,
+            platform_fee: `${platformFeeSui} SUI`,
+            network_fee: `${networkFeeSui} SUI`,
+            odds: oddsDecimal,
+            placed_at: new Date(bet.placed_at).toISOString(),
+            settled_at: bet.settled_at ? new Date(bet.settled_at).toISOString() : null,
+            status_formatted: bet.status.charAt(0).toUpperCase() + bet.status.slice(1) // Capitalize status
+          }
+        };
+      });
+      
       res.json({ 
         success: true,
         walletAddress,
-        bets
+        bets: formattedBets
       });
     } catch (error) {
       console.error("Error fetching bet history:", error);

@@ -55,15 +55,7 @@ export default function Sport() {
 
   // Simply display the full-screen sport image with click handler
   return (
-    <div className="w-full h-screen relative">
-      {/* Back button */}
-      <button 
-        className="absolute top-4 left-4 z-10 bg-black bg-opacity-50 text-white px-4 py-2 rounded-md"
-        onClick={() => setLocation('/')}
-      >
-        Back to Home
-      </button>
-      
+    <div className="w-full h-screen">
       <img 
         src={getSportImage()} 
         alt={`${sportSlug} Sport`} 

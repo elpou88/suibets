@@ -44,8 +44,13 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions-page.html" 
+          href="/promo" 
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
+          onClick={(e) => {
+            console.log("Promotions link clicked");
+            // We'll use the server route for promotions
+            // No need to preventDefault as the server will handle this route
+          }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
             Promotions

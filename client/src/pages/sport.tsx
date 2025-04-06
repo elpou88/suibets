@@ -180,19 +180,15 @@ export default function Sport() {
 
   console.log('Sport page loaded for:', sportSlug);
 
+  // Each sport should just display the exact image assigned to it - full screen
   return (
     <div className="w-full min-h-screen">
-      <div 
-        className="relative w-full h-screen cursor-pointer" 
-        onClick={handleImageClick}
-      >
-        <img 
-          src={getSportImage()} 
-          alt={`${sportSlug} Sport Details`} 
-          className="w-full h-full object-cover pointer-events-none"
-          style={{ maxWidth: '100vw', height: '100vh' }}
-        />
-      </div>
+      <img 
+        src={getSportImage()} 
+        alt={`${sportSlug} Sport Details`} 
+        className="w-full h-screen object-cover"
+        style={{ maxWidth: '100vw', height: '100vh' }}
+      />
       
       <ConnectWalletModal 
         isOpen={isWalletModalOpen} 

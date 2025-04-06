@@ -97,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Betting routes
+  // Betting routes with Sui Move blockchain integration
   app.post("/api/bets", async (req: Request, res: Response) => {
     try {
       const validatedData = insertBetSchema.parse(req.body);
@@ -116,16 +116,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
-      // Create the bet
-      const bet = await storage.createBet(validatedData);
+      // Import the Sui Move service for wurlus protocol integration
+      const { SuiMoveService } = await import('./services/suiMoveService');
+      const suiMoveService = new SuiMoveService();
       
-      // Update user balance
-      await storage.updateUser(user.id, { 
-        balance: user.balance - validatedData.betAmount 
-      });
-      
-      res.status(201).json(bet);
+      try {
+        // Place bet on blockchain using Sui Move
+        console.log(`Placing bet using Sui Move for user ${user.id}`);
+        const txHash = await suiMoveService.placeBet(
+          user.walletAddress,
+          validatedData.eventId,
+          validatedData.market,
+          validatedData.selection,
+          validatedData.betAmount,
+          validatedData.odds
+        );
+        
+        console.log(`Bet placed on blockchain, tx: ${txHash}`);
+        
+        // Add transaction hash to the bet data
+        const betWithTx = {
+          ...validatedData,
+          transactionHash: txHash
+        };
+        
+        // Create the bet in our storage
+        const bet = await storage.createBet(betWithTx);
+        
+        // Update user balance
+        await storage.updateUser(user.id, { 
+          balance: user.balance - validatedData.betAmount 
+        });
+        
+        // Create notification for bet placement
+        const notification = {
+          userId: user.id,
+          title: "Bet Placed Successfully",
+          message: `Your bet of ${validatedData.betAmount} on ${event.name} has been placed successfully.`,
+          type: "bet",
+          isRead: false,
+          createdAt: new Date()
+        };
+        
+        await storage.createNotification(notification);
+        
+        res.status(201).json(bet);
+      } catch (blockchainError) {
+        console.error("Blockchain betting error:", blockchainError);
+        res.status(500).json({ message: "Failed to place bet on blockchain" });
+      }
     } catch (error) {
+      console.error("Betting error:", error);
       res.status(400).json({ message: "Invalid bet data" });
     }
   });
@@ -194,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Sui Blockchain integration routes
+  // Sui Blockchain integration routes with Sui Move language integration
   app.post("/api/wallet/connect", async (req: Request, res: Response) => {
     try {
       const { address, walletType } = req.body;
@@ -203,19 +244,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
+      // Import the Sui Move service for wurlus protocol integration
+      const { SuiMoveService } = await import('./services/suiMoveService');
+      const suiMoveService = new SuiMoveService();
+
+      // Connect wallet to wurlus protocol using Sui Move
+      console.log(`Connecting wallet ${address} to Wurlus protocol`);
+      const connected = await suiMoveService.connectWallet(address);
+      
+      if (!connected) {
+        return res.status(400).json({ message: "Failed to connect wallet to Wurlus protocol" });
+      }
+      
       let user = await storage.getUserByWalletAddress(address);
       
       if (!user) {
         // Create a new user if the wallet address doesn't exist
-        user = await storage.createUser({
+        const newUser = {
           username: `user_${address.substring(0, 8)}`,
-          password: `pw_${Math.random().toString(36).substring(2, 10)}`,
-          walletAddress: address
-        });
+          walletAddress: address,
+          walletType: walletType || 'Sui',
+          createdAt: new Date()
+        };
+        
+        user = await storage.createUser(newUser);
+        
+        // Create welcome notification
+        const notification = {
+          userId: user.id,
+          title: "Welcome to SuiBets",
+          message: "Your wallet has been connected to the Wurlus protocol on the Sui blockchain.",
+          type: "system",
+          isRead: false,
+          createdAt: new Date()
+        };
+        
+        await storage.createNotification(notification);
+      }
+      
+      // Get wallet balance from Sui blockchain via Sui Move
+      const balance = await suiMoveService.getWalletBalance(address);
+      
+      // Update user with balance from blockchain
+      if (user.balance !== balance) {
+        user = await storage.updateUser(user.id, { balance });
       }
       
       res.json(user);
     } catch (error) {
+      console.error("Error connecting wallet:", error);
       res.status(500).json({ message: "Failed to connect wallet" });
     }
   });

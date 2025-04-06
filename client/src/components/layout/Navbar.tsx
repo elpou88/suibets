@@ -46,8 +46,9 @@ export default function Navbar() {
         <a 
           href="/promotions-image.png"
           className="block"
-          onClick={(e) => {
+          onClick={() => {
             console.log('Clicking on Promotions');
+            window.location.href = "/promotions-image.png";
           }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">

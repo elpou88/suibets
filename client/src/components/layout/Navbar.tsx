@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function Navbar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const { user, isAuthenticated, disconnectWallet } = useAuth();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
@@ -43,11 +43,15 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <Link href="/promotions">
-          <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">
-            Promotions
-          </div>
-        </Link>
+        <div 
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
+          onClick={() => {
+            console.log('Navigating directly to promotions page');
+            setLocation('/promotions');
+          }}
+        >
+          Promotions
+        </div>
       </div>
       
       {/* Logo in center - only visible on mobile */}

@@ -44,13 +44,10 @@ export default function Navbar() {
           </div>
         </Link>
         <div 
-          onClick={() => window.open('/promotions', '_self')}
-          className={`relative px-3 py-1 cursor-pointer ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}
+          onClick={() => { window.location.href = '/promo.html'; }}
+          className={`relative px-3 py-1 cursor-pointer text-white hover:text-[#00FFFF]`}
         >
           Promotions
-          {location === "/promotions" && (
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-          )}
         </div>
       </div>
       

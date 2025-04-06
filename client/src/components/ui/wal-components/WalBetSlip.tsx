@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useWal } from './WalProvider';
+import { useBetting } from '@/context/BettingContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -35,12 +36,14 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
   onClear
 }) => {
   const { user, refreshUserData } = useWal();
+  const { addBet } = useBetting();
   const [selections, setSelections] = useState<BetSelection[]>(initialSelections);
   const [amount, setAmount] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [potentialWinnings, setPotentialWinnings] = useState<number>(0);
   const [betFees, setBetFees] = useState({ platformFee: 0, networkFee: 0 });
+  const [selectedCurrency, setSelectedCurrency] = useState<'SUI' | 'SBETS'>('SUI');
 
   // Clear error when selections or amount changes
   useEffect(() => {
@@ -117,19 +120,43 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
     setError(null);
 
     try {
-      // For multiple selections, we're creating a parlay bet
-      // But for simplicity, we'll handle the first selection for now
-      // This would need to be extended for true parlay support
+      // Check if we're using the betting context
+      if (selections.length === 1 && addBet) {
+        // Add the bet to the betting context
+        const selection = selections[0];
+        addBet({
+          id: `${selection.eventId}-${selection.marketId}-${selection.outcomeId}`,
+          eventId: parseInt(selection.eventId),
+          eventName: selection.eventName,
+          selectionName: selection.outcomeName,
+          odds: selection.odds,
+          stake: amountValue,
+          market: selection.marketName,
+          marketId: parseInt(selection.marketId),
+          outcomeId: parseInt(selection.outcomeId),
+          currency: selectedCurrency // Include selected currency
+        });
+        
+        // Clear the bet slip after adding to context
+        handleClearBetSlip();
+        return;
+      }
+      
+      // If not using context, handle direct API call for a single bet
       const selection = selections[0];
 
-      const response = await axios.post('/api/bets', {
+      // Send to currency-specific endpoint based on user selection
+      const endpoint = selectedCurrency === 'SUI' ? '/api/bets/sui' : '/api/bets/sbets';
+      
+      const response = await axios.post(endpoint, {
         userId: user.id,
         walletAddress: user.walletAddress,
         eventId: selection.eventId,
         marketId: selection.marketId,
         outcomeId: selection.outcomeId,
-        amount: amountValue,
-        odds: selection.odds
+        betAmount: amountValue, // Using betAmount to match backend expectation
+        odds: selection.odds,
+        feeCurrency: selectedCurrency // Include currency for backend processing
       });
 
       if (response.data.success) {
@@ -154,7 +181,7 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
   };
 
   const formatCurrency = (value: number) => {
-    return value.toFixed(4) + ' SUI';
+    return value.toFixed(4) + ' ' + selectedCurrency;
   };
 
   return (
@@ -216,7 +243,14 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
-                <span className="text-sm whitespace-nowrap">SUI</span>
+                <select 
+                  className="bg-background border rounded px-2 py-1 text-sm"
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value as 'SUI' | 'SBETS')}
+                >
+                  <option value="SUI">SUI</option>
+                  <option value="SBETS">SBETS</option>
+                </select>
               </div>
             </div>
 

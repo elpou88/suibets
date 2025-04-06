@@ -29,6 +29,7 @@ export interface SelectedBet {
   market: string;
   marketId?: number; // Added for proper parlay creation
   outcomeId?: number; // Added for proper outcome reference
+  currency?: 'SUI' | 'SBETS'; // Added to support multiple currencies
 }
 
 export interface ConnectWalletModalProps {

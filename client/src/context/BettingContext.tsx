@@ -84,12 +84,17 @@ export const BettingProvider = ({ children }: BettingProviderProps) => {
         const parlaySelections = selectedBets.map(bet => ({ odds: bet.odds }));
         const totalOdds = calculateParlayOdds(parlaySelections);
         
+        // Determine if we're using SUI or SBETS for this parlay
+        const feeCurrency = selectedBets[0].currency || 'SUI';
+        const parlayCurrencyEndpoint = feeCurrency === 'SUI' ? '/api/parlays/sui' : '/api/parlays/sbets';
+        
         // Create a single parlay bet with all selections
-        const response = await apiRequest('POST', '/api/parlays', {
+        const response = await apiRequest('POST', parlayCurrencyEndpoint, {
           userId: user.id,
           betAmount: betAmount,
           totalOdds: totalOdds,
           potentialPayout: calculatePotentialWinnings(betAmount, totalOdds),
+          feeCurrency: feeCurrency,
           legs: selectedBets.map(bet => ({
             eventId: bet.eventId,
             marketId: bet.marketId || 1, // Default marketId if not provided
@@ -108,13 +113,17 @@ export const BettingProvider = ({ children }: BettingProviderProps) => {
         for (const bet of selectedBets) {
           if (bet.stake <= 0) continue;
 
-          await apiRequest('POST', '/api/bets', {
+          const feeCurrency = bet.currency || 'SUI';
+          const betEndpoint = feeCurrency === 'SUI' ? '/api/bets/sui' : '/api/bets/sbets';
+          
+          await apiRequest('POST', betEndpoint, {
             userId: user.id,
             eventId: bet.eventId,
             betAmount: bet.stake,
             odds: bet.odds,
             prediction: bet.selectionName,
-            potentialPayout: calculatePotentialWinnings(bet.stake, bet.odds)
+            potentialPayout: calculatePotentialWinnings(bet.stake, bet.odds),
+            feeCurrency: feeCurrency
           });
         }
         

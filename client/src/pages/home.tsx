@@ -1,9 +1,9 @@
 import { useLocation } from "wouter";
-import Layout from "@/components/layout/Layout";
+import HomeLayout from "@/components/layout/HomeLayout";
 
 export default function Home() {
   return (
-    <Layout>
+    <HomeLayout>
       <div className="w-full min-h-screen flex flex-col">
         <img 
           src="/images/Sports_1_NoHighlight.png" 
@@ -11,6 +11,6 @@ export default function Home() {
           className="w-full h-full object-contain"
         />
       </div>
-    </Layout>
+    </HomeLayout>
   );
 }

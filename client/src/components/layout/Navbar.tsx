@@ -44,12 +44,9 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promo" 
+          href="/promotions-page.html" 
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
-          onClick={(e) => {
-            e.preventDefault();
-            window.location.href = '/promo';
-          }}
+          target="_self"
         >
           Promotions
         </a>

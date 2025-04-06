@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotions - SuiBets</title>
+    <link rel="icon" type="image/svg+xml" href="/logo/suibets-logo.svg" />
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            background-color: #030c0e;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        
+        .promotions-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            justify-content: flex-start;
+            align-items: center;
+        }
+        
+        .header {
+            width: 100%;
+            background-color: #030c0e;
+            height: 60px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-sizing: border-box;
+            border-bottom: 1px solid #0a1f25;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        
+        .back-button {
+            color: #00FFFF;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            margin-right: 20px;
+            cursor: pointer;
+        }
+        
+        .back-button:hover {
+            opacity: 0.8;
+        }
+        
+        .title {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .logo {
+            height: 40px;
+        }
+        
+        .content {
+            flex: 1;
+            width: 100%;
+            max-width: 1200px;
+            overflow-y: auto;
+            padding: 20px 10px;
+            box-sizing: border-box;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+        }
+        
+        .promotion-image {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 768px) {
+            .promotion-image {
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="promotions-container">
+        <div class="header">
+            <div class="header-left">
+                <a href="/" class="back-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Back
+                </a>
+                <div class="title">Promotions</div>
+            </div>
+            <a href="/">
+                <img src="/logo/suibets-logo.svg" alt="SuiBets Logo" class="logo">
+            </a>
+        </div>
+        
+        <div class="content">
+            <img src="/images/promotions.png" alt="Current Promotions" class="promotion-image">
+        </div>
+    </div>
+    
+    <script>
+        // Simple script to handle the back button
+        document.querySelector('.back-button').addEventListener('click', function(e) {
+            e.preventDefault();
+            window.history.back();
+        });
+    </script>
+</body>
+</html>

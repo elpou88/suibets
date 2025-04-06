@@ -38,7 +38,9 @@ export default function Sidebar() {
     if (path === '/') {
       setActiveSport('upcoming');
     } else if (path.startsWith('/sport/')) {
-      setActiveSport(path.replace('/sport/', ''));
+      const sportSlug = path.replace('/sport/', '');
+      setActiveSport(sportSlug);
+      console.log('Sport slug detected in URL:', sportSlug);
     }
   }, [location]);
 

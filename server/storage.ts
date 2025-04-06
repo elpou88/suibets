@@ -52,6 +52,7 @@ export interface IStorage {
   getMarkets(eventId?: number): Promise<Market[]>;
   getMarket(id: number): Promise<Market | undefined>;
   getMarketByWurlusId(wurlusMarketId: string): Promise<Market | undefined>;
+  getMarketByNameAndEventId(name: string, eventId: number): Promise<Market | undefined>;
   createMarket(market: InsertMarket): Promise<Market>;
   updateMarket(id: number, market: Partial<Market>): Promise<Market | undefined>;
   
@@ -59,6 +60,7 @@ export interface IStorage {
   getOutcomes(marketId: number): Promise<Outcome[]>;
   getOutcome(id: number): Promise<Outcome | undefined>;
   getOutcomeByWurlusId(wurlusOutcomeId: string): Promise<Outcome | undefined>;
+  getOutcomeByNameAndMarketId(name: string, marketId: number): Promise<Outcome | undefined>;
   createOutcome(outcome: InsertOutcome): Promise<Outcome>;
   updateOutcome(id: number, outcome: Partial<Outcome>): Promise<Outcome | undefined>;
   
@@ -499,6 +501,12 @@ export class MemStorage implements IStorage {
     );
   }
   
+  async getMarketByNameAndEventId(name: string, eventId: number): Promise<Market | undefined> {
+    return Array.from(this.markets.values()).find(
+      (market) => market.name === name && market.eventId === eventId
+    );
+  }
+  
   async createMarket(insertMarket: InsertMarket): Promise<Market> {
     const id = this.marketIdCounter++;
     const market: Market = { ...insertMarket, id };
@@ -529,6 +537,12 @@ export class MemStorage implements IStorage {
   async getOutcomeByWurlusId(wurlusOutcomeId: string): Promise<Outcome | undefined> {
     return Array.from(this.outcomes.values()).find(
       (outcome) => outcome.wurlusOutcomeId === wurlusOutcomeId
+    );
+  }
+  
+  async getOutcomeByNameAndMarketId(name: string, marketId: number): Promise<Outcome | undefined> {
+    return Array.from(this.outcomes.values()).find(
+      (outcome) => outcome.name === name && outcome.marketId === marketId
     );
   }
   
@@ -893,6 +907,16 @@ export class DatabaseStorage implements IStorage {
     const [market] = await db.select().from(markets).where(eq(markets.wurlusMarketId, wurlusMarketId));
     return market;
   }
+  
+  async getMarketByNameAndEventId(name: string, eventId: number): Promise<Market | undefined> {
+    const [market] = await db.select().from(markets).where(
+      and(
+        eq(markets.name, name),
+        eq(markets.eventId, eventId)
+      )
+    );
+    return market;
+  }
 
   async createMarket(insertMarket: InsertMarket): Promise<Market> {
     const [market] = await db.insert(markets).values(insertMarket).returning();
@@ -920,6 +944,16 @@ export class DatabaseStorage implements IStorage {
 
   async getOutcomeByWurlusId(wurlusOutcomeId: string): Promise<Outcome | undefined> {
     const [outcome] = await db.select().from(outcomes).where(eq(outcomes.wurlusOutcomeId, wurlusOutcomeId));
+    return outcome;
+  }
+  
+  async getOutcomeByNameAndMarketId(name: string, marketId: number): Promise<Outcome | undefined> {
+    const [outcome] = await db.select().from(outcomes).where(
+      and(
+        eq(outcomes.name, name),
+        eq(outcomes.marketId, marketId)
+      )
+    );
     return outcome;
   }
 

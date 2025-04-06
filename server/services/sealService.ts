@@ -14,22 +14,36 @@ export class SealService {
   constructor() {
     // In production, these should be set via environment variables
     // and stored securely
-    const encryptionKeyBase64 = process.env.SEAL_ENCRYPTION_KEY || 
-      'YourSecureBase64EncodedEncryptionKey=='; // Replace with actual key in production
+    let encryptionKeyBase64 = process.env.SEAL_ENCRYPTION_KEY;
+    let hmacKeyBase64 = process.env.SEAL_HMAC_KEY;
     
-    const hmacKeyBase64 = process.env.SEAL_HMAC_KEY || 
-      'YourSecureBase64EncodedHmacKey=='; // Replace with actual key in production
+    // If keys are not provided in environment variables, generate random ones
+    // Note: In production, you should set these as environment variables
+    // so they remain consistent across restarts
+    if (!encryptionKeyBase64) {
+      const randomEncryptionKey = crypto.randomBytes(32);
+      encryptionKeyBase64 = randomEncryptionKey.toString('base64');
+      console.log('WARNING: Generated random encryption key for development. In production, set SEAL_ENCRYPTION_KEY environment variable.');
+    }
+    
+    if (!hmacKeyBase64) {
+      const randomHmacKey = crypto.randomBytes(64);
+      hmacKeyBase64 = randomHmacKey.toString('base64');
+      console.log('WARNING: Generated random HMAC key for development. In production, set SEAL_HMAC_KEY environment variable.');
+    }
     
     this.encryptionKey = Buffer.from(encryptionKeyBase64, 'base64');
     this.hmacKey = Buffer.from(hmacKeyBase64, 'base64');
     
     // Ensure keys have proper lengths
     if (this.encryptionKey.length !== 32) { // 256 bits
-      throw new Error('Encryption key must be 32 bytes (256 bits)');
+      this.encryptionKey = crypto.randomBytes(32);
+      console.log('WARNING: Encryption key was invalid. Generated a new random key.');
     }
     
     if (this.hmacKey.length !== 64) { // 512 bits
-      throw new Error('HMAC key must be 64 bytes (512 bits)');
+      this.hmacKey = crypto.randomBytes(64);
+      console.log('WARNING: HMAC key was invalid. Generated a new random key.');
     }
   }
   

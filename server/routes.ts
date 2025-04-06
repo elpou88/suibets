@@ -109,17 +109,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Betting routes with Sui Move blockchain integration
-  app.post("/api/bets", async (req: Request, res: Response) => {
+  
+  // Bet with SUI tokens
+  app.post("/api/bets/sui", async (req: Request, res: Response) => {
     try {
       const validatedData = insertBetSchema.parse(req.body);
       
-      // Ensure both userId and eventId are valid numbers
+      // Ensure userId, eventId, and wallet address are present
       if (typeof validatedData.userId !== 'number' || isNaN(validatedData.userId)) {
         return res.status(400).json({ message: "Invalid user ID format" });
       }
       
       if (typeof validatedData.eventId !== 'number' && isNaN(Number(validatedData.eventId))) {
         return res.status(400).json({ message: "Invalid event ID format" });
+      }
+      
+      // Check for required bet parameters
+      if (!validatedData.prediction || !validatedData.odds || !validatedData.betAmount) {
+        return res.status(400).json({ 
+          message: "Missing required bet parameters", 
+          details: "prediction, odds, and betAmount are required"
+        });
       }
       
       // Convert eventId to number if needed
@@ -138,6 +148,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
       
+      // Ensure user has wallet address
+      if (!user.walletAddress) {
+        return res.status(400).json({ message: "User has no wallet connected" });
+      }
+      
       // Ensure user.balance is treated as 0 if null
       const userBalance = user.balance ?? 0;
       
@@ -145,66 +160,146 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
-      // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      // Use the Sui Move service for wurlus protocol integration and place bet with SUI tokens
+      const txHash = await suiMoveService.placeBetWithSui(
+        user.id,
+        user.walletAddress,
+        eventId,
+        validatedData.marketName || "Match result", // Default market name
+        validatedData.prediction,
+        validatedData.betAmount,
+        validatedData.odds
+      );
       
-      try {
-        // Place bet on blockchain using Sui Move
-        console.log(`Placing bet using Sui Move for user ${user.id}`);
+      if (!txHash) {
+        return res.status(500).json({ message: "Failed to place bet on blockchain" });
+      }
+      
+      // Return success response
+      res.json({
+        success: true,
+        txHash,
+        message: `Successfully placed bet of ${validatedData.betAmount} SUI on ${validatedData.prediction}`,
+        currency: "SUI"
+      });
+    } catch (error) {
+      console.error("Error placing SUI bet:", error);
+      res.status(500).json({ message: "Failed to place bet with SUI" });
+    }
+  });
+  
+  // Bet with SBETS tokens
+  app.post("/api/bets/sbets", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertBetSchema.parse(req.body);
+      
+      // Ensure userId, eventId, and wallet address are present
+      if (typeof validatedData.userId !== 'number' || isNaN(validatedData.userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+      
+      if (typeof validatedData.eventId !== 'number' && isNaN(Number(validatedData.eventId))) {
+        return res.status(400).json({ message: "Invalid event ID format" });
+      }
+      
+      // Check for required bet parameters
+      if (!validatedData.prediction || !validatedData.odds || !validatedData.betAmount) {
+        return res.status(400).json({ 
+          message: "Missing required bet parameters", 
+          details: "prediction, odds, and betAmount are required"
+        });
+      }
+      
+      // Convert eventId to number if needed
+      const eventId = typeof validatedData.eventId === 'number' 
+        ? validatedData.eventId 
+        : Number(validatedData.eventId);
         
-        // Make sure wallet address exists, use a default if not available
-        const walletAddress = user.walletAddress || "0x0000000000000000000000000000000000000000";
-        
-        // We already have the eventId from above, no need to recalculate it
-        
-        const txHash = await suiMoveService.placeBet(
-          walletAddress,
-          eventId,
-          validatedData.market,
-          validatedData.selection,
-          validatedData.betAmount,
-          validatedData.odds
-        );
-        
-        console.log(`Bet placed on blockchain, tx: ${txHash}`);
-        
-        // Add transaction hash to the bet data
-        const betWithTx = {
-          ...validatedData,
-          txHash: txHash
-        };
-        
-        // Create the bet in our storage
-        const bet = await storage.createBet(betWithTx);
-        
-        // Update user balance - using the userBalance variable we defined earlier
-        await storage.updateUser(user.id, { 
-          balance: userBalance - validatedData.betAmount 
+      const user = await storage.getUser(validatedData.userId);
+      const event = await storage.getEvent(eventId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      // Ensure user has wallet address
+      if (!user.walletAddress) {
+        return res.status(400).json({ message: "User has no wallet connected" });
+      }
+      
+      // We don't check SBETS balance here since that's maintained on the blockchain
+      // and will be verified when the actual transaction is executed
+      
+      // Use the Sui Move service for wurlus protocol integration and place bet with SBETS tokens
+      const txHash = await suiMoveService.placeBetWithSbets(
+        user.id,
+        user.walletAddress,
+        eventId,
+        validatedData.marketName || "Match result", // Default market name
+        validatedData.prediction,
+        validatedData.betAmount,
+        validatedData.odds
+      );
+      
+      if (!txHash) {
+        return res.status(500).json({ message: "Failed to place bet on blockchain" });
+      }
+      
+      // Return success response
+      res.json({
+        success: true,
+        txHash,
+        message: `Successfully placed bet of ${validatedData.betAmount} SBETS on ${validatedData.prediction}`,
+        currency: "SBETS",
+        tokenAddress: "0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS"
+      });
+    } catch (error) {
+      console.error("Error placing SBETS bet:", error);
+      res.status(500).json({ message: "Failed to place bet with SBETS tokens" });
+    }
+  });
+  
+  // Legacy endpoint for backward compatibility
+  app.post("/api/bets", async (req: Request, res: Response) => {
+    try {
+      const validatedData = insertBetSchema.parse(req.body);
+      
+      // Check if currency is specified
+      const currency = validatedData.feeCurrency || 'SUI';
+      
+      // Redirect to the appropriate endpoint based on currency
+      if (currency.toUpperCase() === 'SBETS') {
+        // Forward to SBETS endpoint
+        const response = await fetch(`${req.protocol}://${req.get('host')}/api/bets/sbets`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(req.body),
         });
         
-        // Create notification for bet placement
-        // Use homeTeam vs awayTeam as event description
-        const eventDescription = `${event.homeTeam} vs ${event.awayTeam}`;
+        const data = await response.json();
+        return res.status(response.status).json(data);
+      } else {
+        // Default to SUI endpoint
+        const response = await fetch(`${req.protocol}://${req.get('host')}/api/bets/sui`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(req.body),
+        });
         
-        const notification = {
-          userId: user.id,
-          title: "Bet Placed Successfully",
-          message: `Your bet of ${validatedData.betAmount} on ${eventDescription} has been placed successfully.`,
-          type: "bet",
-          isRead: false,
-          createdAt: new Date()
-        };
-        
-        await storage.createNotification(notification);
-        
-        res.status(201).json(bet);
-      } catch (blockchainError) {
-        console.error("Blockchain betting error:", blockchainError);
-        res.status(500).json({ message: "Failed to place bet on blockchain" });
+        const data = await response.json();
+        return res.status(response.status).json(data);
       }
     } catch (error) {
-      console.error("Betting error:", error);
-      res.status(400).json({ message: "Invalid bet data" });
+      console.error("Error placing bet:", error);
+      res.status(500).json({ message: "Failed to place bet" });
     }
   });
 

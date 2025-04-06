@@ -43,14 +43,16 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <Link href="/promotions">
-          <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
-            Promotions
-            {location === "/promotions" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
-          </div>
-        </Link>
+        <a 
+          href="/promo" 
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
+          onClick={(e) => {
+            e.preventDefault();
+            window.location.href = '/promo';
+          }}
+        >
+          Promotions
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

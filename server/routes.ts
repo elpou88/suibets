@@ -15,6 +15,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
   
+  // Special route for promotions page outside of React router
+  app.get("/promo", (req, res) => {
+    res.sendFile('promo.html', { root: './client/public' });
+  });
+  
   // Initialize services
   const sportsApi = new SportsApi();
   const suiService = new SuiService();

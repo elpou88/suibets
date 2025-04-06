@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { SportsApi } from "./services/sportsApi";
 import { SuiService } from "./services/sui";
 import { SuiMoveService } from "./services/suiMoveService";
+import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -118,7 +119,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       
       try {
         // Place bet on blockchain using Sui Move
@@ -245,7 +246,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
 
       // Connect wallet to wurlus protocol using Sui Move
       console.log(`Connecting wallet ${address} to Wurlus protocol`);
@@ -306,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Use the Sui Move service for wurlus protocol integration
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       
       // Connect to the Wurlus protocol using Sui Move
       const connected = await suiMoveService.connectWallet(walletAddress);
@@ -341,7 +342,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const isRegistered = await suiMoveService.getUserRegistrationStatus(walletAddress);
       
       res.json({ 
@@ -367,7 +368,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const dividends = await suiMoveService.getUserDividends(walletAddress);
       
       res.json({ 
@@ -396,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const txHash = await suiMoveService.claimWinnings(walletAddress, betId);
       
       res.json({ 
@@ -423,7 +424,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const bets = await suiMoveService.getUserBets(walletAddress);
       
       res.json({ 
@@ -454,7 +455,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const marketId = await suiMoveService.createMarket(adminWallet, eventId, marketName);
       
       res.json({ 
@@ -484,7 +485,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const outcomeId = await suiMoveService.createOutcome(
         adminWallet, 
         marketId, 
@@ -520,7 +521,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const suiMoveService = new SuiMoveService();
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const txHash = await suiMoveService.settleMarket(
         adminWallet, 
         marketId, 

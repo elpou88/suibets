@@ -142,6 +142,10 @@ export class SuiMoveService {
     console.log(`Network URL: ${this.network.url}`);
     console.log(`Package ID: ${this.network.packageId}`);
     console.log(`Protocol Object ID: ${this.network.protocolObjectId}`);
+    
+    // Initialize connection to Sui blockchain if needed
+    // In a production environment, we would initialize the Sui client here
+    // const suiClient = new SuiClient({ url: this.network.url });
   }
   
   /**
@@ -168,11 +172,11 @@ export class SuiMoveService {
       // Following Wal.app documentation for wallet connection
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.userRegistry,
         function: 'register_user',
         typeArguments: [],
-        arguments: [this.protocolObjectId],
+        arguments: [this.network.protocolObjectId],
         gasBudget: 10000
       };
 
@@ -252,12 +256,12 @@ export class SuiMoveService {
       
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.betting,
         function: 'place_bet',
         typeArguments: [],
         arguments: [
-          this.protocolObjectId, // Protocol object ID
+          this.network.protocolObjectId, // Protocol object ID
           eventId.toString(),    // Event ID
           marketId,              // Market ID
           outcomeId,             // Outcome ID
@@ -306,7 +310,7 @@ export class SuiMoveService {
       // const response = await walClient.getOwnedObjects({
       //   owner: walletAddress,
       //   filter: {
-      //     StructType: `${this.packageId}::betting::Bet`
+      //     StructType: `${this.network.packageId}::betting::Bet`
       //   },
       //   options: {
       //     showContent: true
@@ -343,12 +347,12 @@ export class SuiMoveService {
       // Following Wal.app documentation for event creation
       const transaction: SuiMoveTransaction = {
         sender: adminWallet,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.event,
         function: 'create_event',
         typeArguments: [],
         arguments: [
-          this.protocolObjectId, // Protocol object ID
+          this.network.protocolObjectId, // Protocol object ID
           eventName,
           eventDescription,
           startTime.toString(),
@@ -442,7 +446,7 @@ export class SuiMoveService {
       // Following Wal.app documentation for claiming winnings
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.betting,
         function: 'claim_winnings',
         typeArguments: [],
@@ -482,12 +486,12 @@ export class SuiMoveService {
     try {
       const transaction: SuiMoveTransaction = {
         sender: adminWallet,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.market,
         function: 'create_market',
         typeArguments: [],
         arguments: [
-          this.protocolObjectId,
+          this.network.protocolObjectId,
           eventId,
           marketName
         ],
@@ -527,12 +531,12 @@ export class SuiMoveService {
       
       const transaction: SuiMoveTransaction = {
         sender: adminWallet,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.odds,
         function: 'create_outcome',
         typeArguments: [],
         arguments: [
-          this.protocolObjectId,
+          this.network.protocolObjectId,
           marketId,
           outcomeName,
           oddsInProtocolFormat
@@ -568,12 +572,12 @@ export class SuiMoveService {
     try {
       const transaction: SuiMoveTransaction = {
         sender: adminWallet,
-        packageObjectId: this.packageId,
+        packageObjectId: this.network.packageId,
         module: this.moduleNames.market,
         function: 'settle_market',
         typeArguments: [],
         arguments: [
-          this.protocolObjectId,
+          this.network.protocolObjectId,
           marketId,
           winningOutcomeId
         ],
@@ -608,7 +612,7 @@ export class SuiMoveService {
       // const userObjects = await suiClient.getOwnedObjects({
       //   owner: walletAddress,
       //   filter: {
-      //     StructType: `${this.packageId}::user_registry::UserProfile`
+      //     StructType: `${this.network.packageId}::user_registry::UserProfile`
       //   }
       // });
       // return userObjects.data.length > 0;

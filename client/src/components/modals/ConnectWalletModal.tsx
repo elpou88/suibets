@@ -23,18 +23,34 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       setConnectionStep('connecting');
       setConnecting(true);
       
-      // In a real application, this would connect to the actual wallet
-      // and get the real wallet address
-      const mockAddress = `0x${Math.random().toString(36).substring(2, 15)}`;
+      // This function would use the official Sui wallet adapter to connect
+      // For development purposes, we'll simulate a successful connection
+      // In production, this would use the Sui wallet adapter:
+      // See: https://docs.sui.io/build/wallet-adapter
+      
+      // Example implementation (commented out as we don't have the actual adapter):
+      // const wallet = getWallet(walletId);
+      // if (!wallet) throw new Error("Selected wallet not available");
+      // await wallet.connect();
+      // const address = await wallet.getAddress();
+      
+      // For demo purposes, create a simulated wallet address
+      // In production, this would be the actual address from the connected wallet
+      const walletAddress = `0x${Array.from({length: 40}, () => 
+        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      
+      console.log(`Connecting wallet: ${walletId}, address: ${walletAddress}`);
       
       // Check if this wallet is already registered with the Wurlus protocol
-      const isRegistered = await checkRegistrationStatus(mockAddress);
+      const isRegistered = await checkRegistrationStatus(walletAddress);
+      console.log(`Wallet registration status: ${isRegistered}`);
       
       if (!isRegistered) {
         setConnectionStep('registering');
+        console.log(`Registering wallet with Wurlus protocol`);
         
         // Register the wallet with the Wurlus protocol
-        const connected = await connectToWurlusProtocol(mockAddress);
+        const connected = await connectToWurlusProtocol(walletAddress);
         
         if (!connected) {
           toast({
@@ -54,7 +70,7 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       }
       
       // Connect the wallet with the application
-      await connectWallet(mockAddress, walletId as any);
+      await connectWallet(walletAddress, walletId as any);
       
       toast({
         title: "Wallet Connected",

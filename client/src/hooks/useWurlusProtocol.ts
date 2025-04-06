@@ -336,6 +336,45 @@ export function useWurlusProtocol() {
     }
   };
 
+  /**
+   * Stake tokens in the Wurlus protocol
+   * @param walletAddress The wallet address
+   * @param amount Amount to stake
+   * @param period Staking period in days
+   * @returns Promise resolving to transaction hash
+   */
+  const stakeTokens = async (
+    walletAddress: string,
+    amount: number,
+    period: number
+  ): Promise<string | null> => {
+    if (!walletAddress) {
+      setError('Wallet address is required');
+      return null;
+    }
+    
+    setError(null);
+    
+    try {
+      // This would make an API call to stake tokens in the Wurlus protocol
+      // For now, we'll simulate a successful staking operation
+      console.log(`Staking ${amount} tokens for ${period} days from wallet ${walletAddress}`);
+      
+      // In a real implementation, this would call an API endpoint
+      // that would interact with the Wurlus protocol
+      
+      // Mock transaction hash for development
+      const txHash = `0x${Array.from({length: 64}, () => 
+        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      
+      return txHash;
+    } catch (error) {
+      console.error('Error staking tokens:', error);
+      setError('Failed to stake tokens');
+      return null;
+    }
+  };
+
   return {
     // Connection & registration
     connectToWurlusProtocol,
@@ -349,6 +388,9 @@ export function useWurlusProtocol() {
     getUserBets,
     getWalletBets,
     getDividends,
+    
+    // Staking operations
+    stakeTokens,
     
     // Status indicators
     connecting,

@@ -1,162 +1,180 @@
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { apiRequest } from '@/lib/queryClient';
-import { useToast } from '@/hooks/use-toast';
+import { queryClient } from '@/lib/queryClient';
 
-interface WurlusProtocolHook {
-  isConnected: boolean;
-  isConnecting: boolean;
-  connectToProtocol: () => Promise<boolean>;
-  placeBet: (
-    eventId: number,
-    marketId: string,
-    selection: string,
-    amount: number,
-    odds: number
-  ) => Promise<{ success: boolean; txHash?: string; error?: string }>;
-  getUserBets: () => Promise<any[]>;
-  error: string | null;
+export interface WurlusBet {
+  id: string;
+  eventId: string;
+  marketId: string;
+  outcomeId: string;
+  amount: number;
+  potentialPayout: number;
+  odds: number;
+  status: 'pending' | 'won' | 'lost' | 'void';
+  placedAt: number;
+  settledAt: number | null;
+  txHash: string;
+}
+
+export interface WurlusEvent {
+  id: string;
+  name: string;
+  description: string;
+  startTime: number;
+  sportId: string;
+  markets: WurlusMarket[];
+  status: 'upcoming' | 'live' | 'completed' | 'cancelled';
+}
+
+export interface WurlusMarket {
+  id: string;
+  name: string;
+  outcomes: WurlusOutcome[];
+  status: 'open' | 'closed' | 'settled';
+}
+
+export interface WurlusOutcome {
+  id: string;
+  name: string;
+  odds: number;
+  status: 'active' | 'settled_win' | 'settled_lose' | 'voided';
 }
 
 /**
- * Custom hook for interacting with the Wurlus protocol on Sui blockchain
- * This handles all the blockchain interactions through our backend proxy
+ * Hook to interact with the Wurlus protocol on the Sui blockchain
+ * Based on Wal.app documentation: https://docs.wal.app/usage/interacting.html
  */
-export default function useWurlusProtocol(): WurlusProtocolHook {
-  const { user, isAuthenticated } = useAuth();
-  const [isConnecting, setIsConnecting] = useState(false);
+export function useWurlusProtocol() {
+  const { user } = useAuth();
+  const [connecting, setConnecting] = useState(false);
+  const [placingBet, setPlacingBet] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { toast } = useToast();
 
   /**
-   * Connect the user's wallet to the Wurlus protocol
-   * This is handled through the backend which makes the actual blockchain call
+   * Connect wallet to Wurlus protocol
+   * @param walletAddress The wallet address to connect
    */
-  const connectToProtocol = useCallback(async (): Promise<boolean> => {
-    if (!isAuthenticated || !user) {
-      setError('You must connect your wallet first');
-      return false;
-    }
-
-    setIsConnecting(true);
+  const connectToWurlusProtocol = async (walletAddress: string): Promise<boolean> => {
+    setConnecting(true);
     setError(null);
-
+    
     try {
-      // The wallet connect API already handles the protocol connection
-      // This is just an extra verification step
-      const response = await apiRequest('/api/wurlus/connect', {
+      const response = await fetch('/api/wurlus/connect', {
         method: 'POST',
-        body: JSON.stringify({
-          walletAddress: user.walletAddress
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress })
       });
-
-      if (!response.success) {
-        throw new Error(response.message || 'Failed to connect to Wurlus protocol');
+      
+      const data = await response.json();
+      
+      if (!data.success) {
+        setError(data.message || 'Failed to connect to Wurlus protocol');
+        return false;
       }
-
-      toast({
-        title: "Connected to Wurlus Protocol",
-        description: "Your wallet is now connected to the Wurlus betting protocol on Sui blockchain",
-      });
-
+      
       return true;
-    } catch (err: any) {
-      const errorMessage = err.message || 'Error connecting to Wurlus protocol';
-      setError(errorMessage);
-      toast({
-        variant: "destructive",
-        title: "Connection Failed",
-        description: errorMessage,
-      });
+    } catch (error) {
+      console.error('Error connecting to Wurlus protocol:', error);
+      setError('Failed to connect to Wurlus protocol');
       return false;
     } finally {
-      setIsConnecting(false);
+      setConnecting(false);
     }
-  }, [isAuthenticated, user, toast]);
+  };
 
   /**
    * Place a bet using the Wurlus protocol
-   * This is handled through our backend API which interacts with the blockchain
+   * @param eventId Event ID
+   * @param marketId Market ID
+   * @param outcomeId Outcome ID
+   * @param amount Bet amount
+   * @param odds Odds value
    */
-  const placeBet = useCallback(async (
+  const placeBet = async (
     eventId: number,
     marketId: string,
-    selection: string,
+    outcomeId: string,
     amount: number,
-    odds: number
-  ) => {
-    if (!isAuthenticated || !user) {
-      return { 
-        success: false, 
-        error: 'You must connect your wallet first' 
-      };
+    odds: number,
+    prediction: string
+  ): Promise<string | null> => {
+    if (!user?.id) {
+      setError('You must be logged in to place a bet');
+      return null;
     }
-
+    
+    setPlacingBet(true);
+    setError(null);
+    
     try {
-      const response = await apiRequest('/api/bets', {
+      const response = await fetch('/api/bets', {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
           eventId,
           betAmount: amount,
           odds,
+          prediction,
           market: marketId,
-          selection,
-          timestamp: new Date()
+          selection: outcomeId
         })
       });
-
-      if (!response.id) {
-        throw new Error(response.message || 'Failed to place bet');
+      
+      const data = await response.json();
+      
+      if (!data.id) {
+        setError(data.message || 'Failed to place bet');
+        return null;
       }
-
-      toast({
-        title: "Bet Placed Successfully",
-        description: `Your bet of $${amount} has been placed.`,
+      
+      // Invalidate bets query cache to refresh bet list
+      queryClient.invalidateQueries({
+        queryKey: ['/api/bets/user', user.id],
       });
-
-      return { 
-        success: true, 
-        txHash: response.transactionHash 
-      };
-    } catch (err: any) {
-      const errorMessage = err.message || 'Error placing bet';
-      toast({
-        variant: "destructive",
-        title: "Bet Failed",
-        description: errorMessage,
-      });
-      return { success: false, error: errorMessage };
+      
+      return data.txHash;
+    } catch (error) {
+      console.error('Error placing bet:', error);
+      setError('Failed to place bet');
+      return null;
+    } finally {
+      setPlacingBet(false);
     }
-  }, [isAuthenticated, user, toast]);
+  };
 
   /**
    * Get bets for the current user
    */
-  const getUserBets = useCallback(async () => {
-    if (!isAuthenticated || !user) {
+  const getUserBets = async (): Promise<WurlusBet[]> => {
+    if (!user?.id) {
       return [];
     }
-
+    
     try {
-      const response = await apiRequest(`/api/bets/user/${user.id}`, {
-        method: 'GET'
+      const response = await fetch(`/api/bets/user/${user.id}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
       });
-
-      return response || [];
+      
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+      
+      return await response.json();
     } catch (error) {
       console.error('Error fetching user bets:', error);
+      setError('Failed to fetch bet history');
       return [];
     }
-  }, [isAuthenticated, user]);
+  };
 
   return {
-    isConnected: !!user?.walletAddress,
-    isConnecting,
-    connectToProtocol,
+    connectToWurlusProtocol,
     placeBet,
     getUserBets,
-    error
+    connecting,
+    placingBet,
+    error,
   };
 }

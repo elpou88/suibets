@@ -43,7 +43,12 @@ const sportImages: SportImage[] = [
   {
     slug: 'ufc',
     imagePath: '/images/image_1743932923834.png',
-    title: 'UFC'
+    title: 'UFC/MMA'
+  },
+  {
+    slug: 'mma-ufc',
+    imagePath: '/images/image_1743932923834.png',
+    title: 'UFC/MMA'
   },
   {
     slug: 'golf',

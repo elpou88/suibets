@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { SportsApi } from "./services/sportsApi";
 import { SuiService } from "./services/sui";
+import { SuiMoveService } from "./services/suiMoveService";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -116,8 +117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
-      // Import the Sui Move service for wurlus protocol integration
-      const { SuiMoveService } = await import('./services/suiMoveService');
+      // Use the Sui Move service for wurlus protocol integration
       const suiMoveService = new SuiMoveService();
       
       try {
@@ -137,7 +137,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Add transaction hash to the bet data
         const betWithTx = {
           ...validatedData,
-          transactionHash: txHash
+          txHash: txHash
         };
         
         // Create the bet in our storage
@@ -244,8 +244,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      // Import the Sui Move service for wurlus protocol integration
-      const { SuiMoveService } = await import('./services/suiMoveService');
+      // Use the Sui Move service for wurlus protocol integration
       const suiMoveService = new SuiMoveService();
 
       // Connect wallet to wurlus protocol using Sui Move
@@ -306,8 +305,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
-      // Import the Sui Move service for wurlus protocol integration
-      const { SuiMoveService } = await import('./services/suiMoveService');
+      // Use the Sui Move service for wurlus protocol integration
       const suiMoveService = new SuiMoveService();
       
       // Connect to the Wurlus protocol using Sui Move

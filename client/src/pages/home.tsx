@@ -1,36 +1,11 @@
-import { useLocation, Link } from "wouter";
+import { useLocation } from "wouter";
 import HomeLayout from "@/components/layout/HomeLayout";
 import { useState } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
-
-// Function to determine which sport was clicked based on position
-function getSportSlugFromPosition(xPercent: number, yPercent: number): string {
-  // First row of sports (top section)
-  if (yPercent > 48 && yPercent < 55) {
-    if (xPercent < 33) return "football";
-    if (xPercent < 66) return "basketball";
-    return "baseball";
-  }
-  
-  // Second row of sports (middle section)
-  if (yPercent >= 55 && yPercent < 62) {
-    if (xPercent < 33) return "hockey";
-    if (xPercent < 66) return "tennis";
-    return "golf";
-  }
-  
-  // Third row of sports (bottom section)
-  if (yPercent >= 62 && yPercent < 75) {
-    if (xPercent < 33) return "esports";
-    if (xPercent < 66) return "boxing";
-    return "mma-ufc";
-  }
-  
-  // Default fallback
-  return "football";
-}
+import sportImages from '@/data/sportImages';
 
 export default function Home() {
+  const [, setLocation] = useLocation();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
 
   // Function to handle clicks on the image that should navigate
@@ -51,50 +26,52 @@ export default function Home() {
       return;
     }
     
-    // Handle sport navigation - use direct links for most reliable navigation
-    // Just use some predefined zones on the screen
+    // Handle sport navigation in a more reliable way using setLocation
     
     // Top row of sports
     if (yPercent >= 48 && yPercent < 55) {
       if (xPercent < 33) {
-        window.open('/sport/football', '_self');
+        setLocation('/sport/football');
         return;
       }
       if (xPercent < 66) {
-        window.open('/sport/basketball', '_self');
+        setLocation('/sport/basketball');
         return;
       }
-      window.open('/sport/baseball', '_self');
+      setLocation('/sport/baseball');
       return;
     }
     
     // Second row of sports
     if (yPercent >= 55 && yPercent < 62) {
       if (xPercent < 33) {
-        window.open('/sport/hockey', '_self');
+        setLocation('/sport/hockey');
         return;
       }
       if (xPercent < 66) {
-        window.open('/sport/tennis', '_self');
+        setLocation('/sport/tennis');
         return;
       }
-      window.open('/sport/golf', '_self');
+      setLocation('/sport/golf');
       return;
     }
     
     // Third row of sports
     if (yPercent >= 62 && yPercent < 75) {
       if (xPercent < 33) {
-        window.open('/sport/esports', '_self');
+        setLocation('/sport/esports');
         return;
       }
       if (xPercent < 66) {
-        window.open('/sport/boxing', '_self');
+        setLocation('/sport/boxing');
         return;
       }
-      window.open('/sport/ufc', '_self');
+      setLocation('/sport/ufc');
       return;
     }
+    
+    // Default case
+    console.log('Click not in a defined sport region');
   };
 
   return (

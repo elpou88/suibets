@@ -8,6 +8,8 @@ import sportImages from '@/data/sportImages';
 export default function Sport() {
   const [, setLocation] = useLocation();
   const [loading, setLoading] = useState(true);
+  const [sportImage, setSportImage] = useState<string | null>(null);
+  const [sportTitle, setSportTitle] = useState<string>('');
   
   // Get the sport slug from the URL path
   const pathname = window.location.pathname;
@@ -19,6 +21,23 @@ export default function Sport() {
   console.log('Full pathname:', pathname);
   
   useEffect(() => {
+    setLoading(true);
+    
+    // Find the matching sport image
+    const matchingSport = sportImages.find(sport => sport.slug === sportSlug);
+    console.log('Matching sport:', matchingSport);
+    
+    if (matchingSport) {
+      console.log('Found matching sport image:', matchingSport.imagePath);
+      setSportImage(matchingSport.imagePath);
+      setSportTitle(matchingSport.title);
+    } else {
+      console.log('No matching sport found for slug:', sportSlug);
+      // Default to football if no match found
+      setSportImage('/images/Sports 1 (2).png');
+      setSportTitle('Football');
+    }
+    
     setLoading(false);
   }, [sportSlug]);
 
@@ -28,12 +47,6 @@ export default function Sport() {
     setLocation('/');
   };
 
-  // Get the appropriate image based on the sport slug using imported sportImages
-  const getSportImage = () => {
-    const sportImage = sportImages.find(sport => sport.slug === sportSlug);
-    return sportImage ? sportImage.imagePath : '/images/Sports 1 (2).png';
-  };
-
   if (loading) {
     return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
   }
@@ -41,12 +54,18 @@ export default function Sport() {
   // Simply display the full-screen sport image with click handler
   return (
     <div className="w-full h-screen">
-      <img 
-        src={getSportImage()} 
-        alt={`${sportSlug} Sport`} 
-        className="w-full h-full object-contain cursor-pointer"
-        onClick={handleImageClick}
-      />
+      {sportImage ? (
+        <img 
+          src={sportImage} 
+          alt={`${sportTitle} Sport`} 
+          className="w-full h-full object-contain cursor-pointer"
+          onClick={handleImageClick}
+        />
+      ) : (
+        <div className="w-full h-screen flex items-center justify-center">
+          No image found for {sportSlug}
+        </div>
+      )}
     </div>
   );
 }

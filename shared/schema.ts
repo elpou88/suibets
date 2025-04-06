@@ -43,10 +43,14 @@ export const bets = pgTable("bets", {
   betAmount: real("bet_amount").notNull(),
   odds: real("odds").notNull(),
   prediction: text("prediction").notNull(),
+  market: text("market").notNull(), // Market ID from Wurlus protocol
+  selection: text("selection").notNull(), // Selection/outcome ID from Wurlus protocol
   status: text("status").default("pending"),
   result: text("result"),
   payout: real("payout"),
-  createdAt: timestamp("created_at").defaultNow()
+  txHash: text("tx_hash"), // Transaction hash from blockchain
+  createdAt: timestamp("created_at").defaultNow(),
+  settledAt: timestamp("settled_at")
 });
 
 export const promotions = pgTable("promotions", {
@@ -75,12 +79,14 @@ export const notifications = pgTable("notifications", {
 });
 
 // Insert Schemas
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-  email: true,
-  walletAddress: true
-});
+export const insertUserSchema = createInsertSchema(users)
+  .pick({
+    username: true,
+    password: true,
+    email: true,
+    walletAddress: true
+  })
+  .partial({ password: true }); // Make password optional for wallet-based users
 
 export const insertSportSchema = createInsertSchema(sports).pick({
   name: true,
@@ -104,13 +110,17 @@ export const insertEventSchema = createInsertSchema(events).pick({
   metadata: true
 });
 
-export const insertBetSchema = createInsertSchema(bets).pick({
-  userId: true,
-  eventId: true,
-  betAmount: true,
-  odds: true,
-  prediction: true
-});
+export const insertBetSchema = createInsertSchema(bets)
+  .pick({
+    userId: true,
+    eventId: true,
+    betAmount: true,
+    odds: true,
+    prediction: true,
+    market: true,
+    selection: true,
+    txHash: true
+  });
 
 export const insertPromotionSchema = createInsertSchema(promotions).pick({
   title: true,

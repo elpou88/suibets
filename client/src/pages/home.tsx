@@ -121,22 +121,9 @@ export default function Home() {
     console.log('Click not in a defined sport region');
   };
 
-  const goToPromotionsPage = () => {
-    window.location.href = '/promotions';
-  };
-
   return (
     <HomeLayout>
       <div className="w-full min-h-screen flex flex-col">
-        {/* Add a direct button for promotions */}
-        <div className="bg-gray-800 p-3 flex justify-center">
-          <button 
-            onClick={goToPromotionsPage}
-            className="bg-cyan-500 text-white px-6 py-2 rounded-md font-bold hover:bg-cyan-600"
-          >
-            View Promotions
-          </button>
-        </div>
         
         <div 
           className="relative w-full cursor-pointer" 

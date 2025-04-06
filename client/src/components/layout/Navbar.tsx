@@ -48,8 +48,8 @@ export default function Navbar() {
           className="block"
           onClick={(e) => {
             e.preventDefault();
-            // Using the same approach as Esports
-            const win = window.open('/attached_assets/image_1743933557700.png', '_self');
+            // Use the correct promotions image from client/public
+            const win = window.open('/promotions-image.png', '_self');
             if (win) {
               win.focus();
             }

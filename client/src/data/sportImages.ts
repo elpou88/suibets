@@ -69,6 +69,42 @@ const sportImages: SportImage[] = [
     slug: 'racing',
     imagePath: '/images/image_1743947434959.png',
     title: 'Racing'
+  },
+  // Added missing sports from database
+  {
+    slug: 'volleyball',
+    imagePath: '/images/image_1743951361428.png', // Using available image from assets
+    title: 'Volleyball'
+  },
+  {
+    slug: 'table-tennis',
+    imagePath: '/images/image_1743954076007.png', // Using available image from assets
+    title: 'Table Tennis'
+  },
+  {
+    slug: 'rugby-league',
+    imagePath: '/images/image_1743954855073.png', // Using available image from assets
+    title: 'Rugby League'
+  },
+  {
+    slug: 'rugby-union',
+    imagePath: '/images/image_1743954855073.png', // Using available image from assets
+    title: 'Rugby Union'
+  },
+  {
+    slug: 'horse-racing',
+    imagePath: '/images/image_1743947434959.png', // Using racing image from assets
+    title: 'Horse Racing'
+  },
+  {
+    slug: 'greyhounds',
+    imagePath: '/images/image_1743947434959.png', // Using racing image from assets
+    title: 'Greyhounds'
+  },
+  {
+    slug: 'afl',
+    imagePath: '/images/image_1743933557700.png', // Using available image from assets
+    title: 'AFL'
   }
 ];
 

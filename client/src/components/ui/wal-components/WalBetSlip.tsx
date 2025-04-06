@@ -181,7 +181,12 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
   };
 
   const formatCurrency = (value: number) => {
-    return value.toFixed(4) + ' ' + selectedCurrency;
+    // Format with appropriate symbols and precision
+    if (selectedCurrency === 'SUI') {
+      return `${value.toFixed(4)} SUI`;
+    } else {
+      return `${value.toFixed(2)} SBETS`;
+    }
   };
 
   return (
@@ -243,14 +248,38 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
                 />
-                <select 
-                  className="bg-background border rounded px-2 py-1 text-sm"
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value as 'SUI' | 'SBETS')}
-                >
-                  <option value="SUI">SUI</option>
-                  <option value="SBETS">SBETS</option>
-                </select>
+              </div>
+              
+              <div className="mt-3">
+                <Label htmlFor="currency-selector">Select Currency</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Button
+                    type="button"
+                    variant={selectedCurrency === 'SUI' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center ${selectedCurrency === 'SUI' ? 'bg-primary text-primary-foreground border-2 border-primary' : 'hover:border-primary'}`}
+                    onClick={() => setSelectedCurrency('SUI')}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 mr-2 rounded-full bg-blue-500 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-white">S</span>
+                      </div>
+                      <span className="font-medium">SUI</span>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={selectedCurrency === 'SBETS' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center ${selectedCurrency === 'SBETS' ? 'bg-primary text-primary-foreground border-2 border-primary' : 'hover:border-primary'}`}
+                    onClick={() => setSelectedCurrency('SBETS')}
+                  >
+                    <div className="flex items-center">
+                      <div className="w-4 h-4 mr-2 rounded-full bg-green-500 flex items-center justify-center">
+                        <span className="text-[8px] font-bold text-white">SB</span>
+                      </div>
+                      <span className="font-medium">SBETS</span>
+                    </div>
+                  </Button>
+                </div>
               </div>
             </div>
 

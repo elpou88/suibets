@@ -44,11 +44,12 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions-image.png"
+          href="/promotions-page.html"
           className="block"
-          onClick={() => {
-            console.log('Clicking on Promotions');
-            window.location.href = "/promotions-image.png";
+          onClick={(e) => {
+            e.preventDefault(); // Prevent default behavior
+            window.open('/promotions-page.html', '_blank'); // Open in new tab
+            console.log('Clicked on Promotions');
           }}
         >
           <div className="relative px-3 py-1 text-white hover:text-[#00FFFF]">

@@ -16,11 +16,11 @@ export default function Layout({ children }: LayoutProps) {
 
   return (
     <div className="flex min-h-screen">
-      {/* Desktop Sidebar */}
-      <Sidebar />
+      {/* Desktop Sidebar - only visible on non-mobile */}
+      {!isMobile && <Sidebar />}
 
-      {/* Mobile Sidebar */}
-      <MobileSidebar />
+      {/* Mobile Sidebar - only visible on mobile */}
+      {isMobile && <MobileSidebar />}
       
       {/* Mobile Bottom Navigation */}
       {isMobile && (

@@ -81,7 +81,7 @@ export default function Sidebar() {
   };
 
   return (
-    <div className="hidden md:flex flex-col w-64 bg-[#09181B] text-white">
+    <div className="flex flex-col w-64 bg-[#09181B] text-white">
       {/* Logo */}
       <div className="py-6 px-6 flex items-center">
         <Link href="/">

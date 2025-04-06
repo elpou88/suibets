@@ -114,7 +114,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
       
-      if (user.balance < validatedData.betAmount) {
+      // Ensure user.balance is treated as 0 if null
+      const userBalance = user.balance ?? 0;
+      
+      if (userBalance < validatedData.betAmount) {
         return res.status(400).json({ message: "Insufficient balance" });
       }
       
@@ -124,8 +127,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         // Place bet on blockchain using Sui Move
         console.log(`Placing bet using Sui Move for user ${user.id}`);
+        
+        // Make sure wallet address exists, use a default if not available
+        const walletAddress = user.walletAddress || "0x0000000000000000000000000000000000000000";
+        
         const txHash = await suiMoveService.placeBet(
-          user.walletAddress,
+          walletAddress,
           validatedData.eventId,
           validatedData.market,
           validatedData.selection,
@@ -144,16 +151,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create the bet in our storage
         const bet = await storage.createBet(betWithTx);
         
-        // Update user balance
+        // Update user balance - using the userBalance variable we defined earlier
         await storage.updateUser(user.id, { 
-          balance: user.balance - validatedData.betAmount 
+          balance: userBalance - validatedData.betAmount 
         });
         
         // Create notification for bet placement
+        // Use homeTeam vs awayTeam as event description
+        const eventDescription = `${event.homeTeam} vs ${event.awayTeam}`;
+        
         const notification = {
           userId: user.id,
           title: "Bet Placed Successfully",
-          message: `Your bet of ${validatedData.betAmount} on ${event.name} has been placed successfully.`,
+          message: `Your bet of ${validatedData.betAmount} on ${eventDescription} has been placed successfully.`,
           type: "bet",
           isRead: false,
           createdAt: new Date()
@@ -371,10 +381,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
       const dividends = await suiMoveService.getUserDividends(walletAddress);
       
+      // Format dates for better readability in the response
+      const formattedDividends = {
+        ...dividends,
+        // Format times as ISO strings for better client-side handling
+        lastClaimTime: new Date(dividends.lastClaimTime).toISOString(),
+        stakingStartTime: new Date(dividends.stakingStartTime).toISOString(),
+        stakingEndTime: new Date(dividends.stakingEndTime).toISOString(),
+        // Add display values for better user experience
+        displayValues: {
+          availableDividends: dividends.availableDividends.toFixed(4) + ' SUI',
+          claimedDividends: dividends.claimedDividends.toFixed(4) + ' SUI',
+          stakingAmount: dividends.stakingAmount.toFixed(4) + ' SUI',
+          totalRewards: dividends.totalRewards.toFixed(4) + ' SUI',
+          platformFees: dividends.platformFees.toFixed(4) + ' SUI',
+          feePercentage: '10%' // Based on Wal.app cost documentation
+        }
+      };
+      
       res.json({ 
         success: true,
         walletAddress,
-        ...dividends
+        ...formattedDividends
       });
     } catch (error) {
       console.error("Error fetching dividend information:", error);

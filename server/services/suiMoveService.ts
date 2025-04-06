@@ -254,6 +254,25 @@ export class SuiMoveService {
       // Convert amount to MIST (smallest SUI unit) - 1 SUI = 10^9 MIST
       const amountInMist = amount * 1000000000;
       
+      // Calculate fees based on Wal.app cost documentation
+      // https://docs.wal.app/dev-guide/costs.html
+      const platformFeePercentage = 0.05; // 5% platform fee
+      const networkFeePercentage = 0.01; // 1% network fee
+      const totalFeePercentage = platformFeePercentage + networkFeePercentage;
+      
+      // Calculate fee amounts
+      const platformFee = Math.floor(amountInMist * platformFeePercentage);
+      const networkFee = Math.floor(amountInMist * networkFeePercentage);
+      const totalFee = platformFee + networkFee;
+      
+      // Amount after fees
+      const betAmountAfterFees = amountInMist - totalFee;
+      
+      console.log(`[SuiMove] Bet amount: ${amountInMist} MIST`);
+      console.log(`[SuiMove] Platform fee (5%): ${platformFee} MIST`);
+      console.log(`[SuiMove] Network fee (1%): ${networkFee} MIST`);
+      console.log(`[SuiMove] Bet amount after fees: ${betAmountAfterFees} MIST`);
+      
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
         packageObjectId: this.network.packageId,
@@ -265,7 +284,9 @@ export class SuiMoveService {
           eventId.toString(),    // Event ID
           marketId,              // Market ID
           outcomeId,             // Outcome ID
-          amountInMist.toString(), // Amount in MIST
+          amountInMist.toString(), // Full amount in MIST (fees are calculated internally by protocol)
+          platformFee.toString(), // Platform fee
+          networkFee.toString(),  // Network fee
         ],
         gasBudget: 10000
       };
@@ -636,6 +657,11 @@ export class SuiMoveService {
     claimedDividends: number;
     stakingAmount: number;
     lastClaimTime: number;
+    // Add additional fields based on Wal.app cost documentation
+    stakingStartTime: number;
+    stakingEndTime: number;
+    totalRewards: number;
+    platformFees: number;
   }> {
     try {
       console.log(`[SuiMove] Getting dividend info for wallet ${walletAddress}`);
@@ -643,12 +669,34 @@ export class SuiMoveService {
       // In production, this would query the user's dividend state object
       // and return the actual values.
       
-      // Mock data
+      // Generate consistent mock data for demonstration purposes
+      const now = Date.now();
+      const stakingAmount = Math.random() * 100;
+      const totalRewards = stakingAmount * 0.15; // 15% total rewards
+      
+      // Calculate platform fee according to Wal.app cost documentation
+      // https://docs.wal.app/dev-guide/costs.html
+      const platformFeePercentage = 0.1; // 10% platform fee on rewards
+      const platformFees = totalRewards * platformFeePercentage;
+      
+      // Calculate available dividends (rewards after platform fees)
+      const availableDividends = totalRewards - platformFees;
+      
+      // Random staking start time in the past (1-30 days)
+      const stakingStartTime = now - Math.floor((1 + Math.random() * 29) * 24 * 60 * 60 * 1000);
+      
+      // Random staking end time in the future (1-30 days)
+      const stakingEndTime = now + Math.floor((1 + Math.random() * 29) * 24 * 60 * 60 * 1000);
+      
       return {
-        availableDividends: Math.random() * 5,
+        availableDividends,
         claimedDividends: Math.random() * 10,
-        stakingAmount: Math.random() * 100,
-        lastClaimTime: Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000)
+        stakingAmount,
+        lastClaimTime: now - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000),
+        stakingStartTime,
+        stakingEndTime,
+        totalRewards,
+        platformFees
       };
     } catch (error) {
       console.error(`[SuiMove] Error getting user dividends: ${error}`);
@@ -656,7 +704,11 @@ export class SuiMoveService {
         availableDividends: 0,
         claimedDividends: 0,
         stakingAmount: 0,
-        lastClaimTime: 0
+        lastClaimTime: 0,
+        stakingStartTime: 0,
+        stakingEndTime: 0,
+        totalRewards: 0,
+        platformFees: 0
       };
     }
   }
@@ -681,6 +733,21 @@ export class SuiMoveService {
       // Convert amount to MIST (smallest SUI unit) - 1 SUI = 10^9 MIST
       const amountInMist = amount * 1000000000;
       
+      // Calculate fees based on Wal.app cost documentation
+      // https://docs.wal.app/dev-guide/costs.html
+      // Staking has platform fee but no network fee according to docs
+      const platformFeePercentage = 0.02; // 2% platform fee for staking
+      
+      // Calculate fee amount
+      const platformFee = Math.floor(amountInMist * platformFeePercentage);
+      
+      // Amount after fees
+      const stakeAmountAfterFees = amountInMist - platformFee;
+      
+      console.log(`[SuiMove] Stake amount: ${amountInMist} MIST`);
+      console.log(`[SuiMove] Platform fee (2%): ${platformFee} MIST`);
+      console.log(`[SuiMove] Stake amount after fees: ${stakeAmountAfterFees} MIST`);
+      
       // Following Wal.app documentation for staking
       const transaction: SuiMoveTransaction = {
         sender: walletAddress,
@@ -690,8 +757,9 @@ export class SuiMoveService {
         typeArguments: [],
         arguments: [
           this.network.protocolObjectId,
-          amountInMist.toString(),
-          periodDays.toString()
+          amountInMist.toString(),   // Full amount in MIST
+          platformFee.toString(),    // Platform fee
+          periodDays.toString()      // Staking period in days
         ],
         gasBudget: 10000
       };

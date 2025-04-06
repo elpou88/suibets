@@ -131,11 +131,35 @@ export default function Sport() {
       case 'baseball':
         imagePath = "/images/Sports 4 (2).png";
         break;
-      case 'soccer':
+      case 'boxing':
         imagePath = "/images/Sports 1 (2).png";
         break;
       case 'hockey':
         imagePath = "/images/Sports 2 (2).png";
+        break;
+      case 'esports':
+        imagePath = "/images/Sports 1 (2).png";
+        break;
+      case 'mma-ufc':
+        imagePath = "/images/Sports 2 (2).png";
+        break;
+      case 'volleyball':
+        imagePath = "/images/Sports 3 (2).png";
+        break;
+      case 'table-tennis':
+        imagePath = "/images/Sports 4 (2).png";
+        break;
+      case 'rugby-league':
+        imagePath = "/images/Sports 1 (2).png";
+        break;
+      case 'rugby-union':
+        imagePath = "/images/Sports 2 (2).png";
+        break;
+      case 'cricket':
+        imagePath = "/images/Sports 3 (2).png";
+        break;
+      case 'horse-racing':
+        imagePath = "/images/Sports 4 (2).png";
         break;
       default:
         imagePath = "/images/Sports 1 (2).png";

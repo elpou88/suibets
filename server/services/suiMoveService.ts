@@ -79,11 +79,51 @@ export interface WurlusBet {
   txHash: string;
 }
 
+// Network options for Sui blockchain based on Wal.app documentation
+export type SuiNetwork = 'mainnet' | 'testnet' | 'devnet' | 'localnet';
+
+export interface SuiNetworkConfig {
+  name: SuiNetwork;
+  url: string;
+  packageId: string;
+  protocolObjectId: string;
+  faucetUrl?: string;
+}
+
 // Main service class for interacting with Sui blockchain using Wurlus protocol
 export class SuiMoveService {
-  // Package IDs from Wal.app documentation
-  private readonly packageId: string = '0x52d7c5de2a03d1e2d7b69fe5def0e876561e04860d17f8d5c7f6c2caa4e132fc';
-  private readonly protocolObjectId: string = '0xfd5783bd2ec65a132f23ea30f693fc1e35d3043aa9501b5f85c71d8da5ac5178';
+  // Network configurations based on Wal.app documentation
+  private readonly networks: Record<SuiNetwork, SuiNetworkConfig> = {
+    mainnet: {
+      name: 'mainnet',
+      url: 'https://fullnode.mainnet.sui.io:443',
+      packageId: '0x52d7c5de2a03d1e2d7b69fe5def0e876561e04860d17f8d5c7f6c2caa4e132fc',
+      protocolObjectId: '0xfd5783bd2ec65a132f23ea30f693fc1e35d3043aa9501b5f85c71d8da5ac5178'
+    },
+    testnet: {
+      name: 'testnet',
+      url: 'https://fullnode.testnet.sui.io:443',
+      packageId: '0x52d7c5de2a03d1e2d7b69fe5def0e876561e04860d17f8d5c7f6c2caa4e132fc',
+      protocolObjectId: '0xfd5783bd2ec65a132f23ea30f693fc1e35d3043aa9501b5f85c71d8da5ac5178',
+      faucetUrl: 'https://faucet.testnet.sui.io/gas'
+    },
+    devnet: {
+      name: 'devnet',
+      url: 'https://fullnode.devnet.sui.io:443',
+      packageId: '0x52d7c5de2a03d1e2d7b69fe5def0e876561e04860d17f8d5c7f6c2caa4e132fc',
+      protocolObjectId: '0xfd5783bd2ec65a132f23ea30f693fc1e35d3043aa9501b5f85c71d8da5ac5178',
+      faucetUrl: 'https://faucet.devnet.sui.io/gas'
+    },
+    localnet: {
+      name: 'localnet',
+      url: 'http://127.0.0.1:9000',
+      packageId: '0x52d7c5de2a03d1e2d7b69fe5def0e876561e04860d17f8d5c7f6c2caa4e132fc',
+      protocolObjectId: '0xfd5783bd2ec65a132f23ea30f693fc1e35d3043aa9501b5f85c71d8da5ac5178'
+    }
+  };
+  
+  // Current network settings
+  private network: SuiNetworkConfig;
   
   // Module names based on Wal.app protocol structure
   private readonly moduleNames = {
@@ -96,8 +136,24 @@ export class SuiMoveService {
     userRegistry: 'user_registry'
   };
 
-  constructor() {
-    console.log('Initializing SuiMoveService with Wurlus Protocol using Wal.app integration');
+  constructor(network: SuiNetwork = 'testnet') {
+    this.network = this.networks[network];
+    console.log(`Initializing SuiMoveService with Wurlus Protocol on ${network}`);
+    console.log(`Network URL: ${this.network.url}`);
+    console.log(`Package ID: ${this.network.packageId}`);
+    console.log(`Protocol Object ID: ${this.network.protocolObjectId}`);
+  }
+  
+  /**
+   * Switch the network being used
+   * @param network Network to switch to
+   */
+  setNetwork(network: SuiNetwork): void {
+    this.network = this.networks[network];
+    console.log(`Switched to ${network} network`);
+    console.log(`Network URL: ${this.network.url}`);
+    console.log(`Package ID: ${this.network.packageId}`);
+    console.log(`Protocol Object ID: ${this.network.protocolObjectId}`);
   }
 
   /**

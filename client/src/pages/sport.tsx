@@ -8,10 +8,19 @@ export default function Sport() {
   const params = useParams();
   const [location] = useLocation();
   
-  // Extract sport slug from URL path directly
-  const urlPath = location;
+  // Extract sport slug from URL path directly and more reliably
+  const urlPath = window.location.pathname;
   const urlMatch = urlPath.match(/\/sport\/([^\/]+)/);
   const sportSlug = urlMatch ? urlMatch[1] : params.slug || '';
+  
+  // Force a log of the current URL to ensure we're getting it right
+  console.log("CURRENT LOCATION:", {
+    windowPath: window.location.pathname,
+    urlPath,
+    urlMatch,
+    sportSlug,
+    params
+  });
   
   console.log("DIRECT URL EXTRACTION:", { 
     urlPath, 

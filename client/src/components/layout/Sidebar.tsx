@@ -118,16 +118,16 @@ export default function Sidebar() {
             key={sport.id}
             onClick={() => {
               console.log(`Clicking on sport: ${sport.slug}`);
-              setActiveSport(sport.slug);
               
-              // Use direct navigation for better compatibility
-              setTimeout(() => {
-                if (sport.slug === 'upcoming') {
-                  window.location.href = '/';
-                } else {
-                  window.location.href = `/sport/${sport.slug}`;
-                }
-              }, 50);
+              // Use direct navigation immediately
+              if (sport.slug === 'upcoming') {
+                window.location.href = '/';
+              } else {
+                // Force a hard navigation to ensure it works
+                const url = `/sport/${sport.slug}`;
+                console.log(`Directly navigating to: ${url}`);
+                window.location.href = url;
+              }
             }}
           >
             <div

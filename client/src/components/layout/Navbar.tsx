@@ -43,14 +43,17 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <Link href="/promotions">
+        <a 
+          href="/promotions"
+          className="relative px-3 py-1"
+        >
           <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Promotions
             {location === "/promotions" && (
               <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
             )}
           </div>
-        </Link>
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

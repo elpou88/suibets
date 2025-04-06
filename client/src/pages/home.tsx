@@ -105,7 +105,7 @@ export default function Home() {
           onClick={handleImageClick}
         >
           <img 
-            src="/images/Sports_Home_No_Highlight.png" 
+            src="/images/Sports_Home_Original.png" 
             alt="Sports Home" 
             className="w-full h-full object-contain pointer-events-none"
           />

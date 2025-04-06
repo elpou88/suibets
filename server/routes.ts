@@ -385,6 +385,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Stake tokens in the Wurlus protocol
+  app.post("/api/wurlus/stake", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, amount, periodDays } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Wallet address is required" 
+        });
+      }
+      
+      if (amount <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Amount must be greater than 0" 
+        });
+      }
+      
+      if (periodDays <= 0) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Staking period must be greater than 0 days" 
+        });
+      }
+      
+      const suiMoveService = new SuiMoveService(config.blockchain.defaultNetwork);
+      const txHash = await suiMoveService.stakeTokens(walletAddress, amount, periodDays);
+      
+      res.json({ 
+        success: true,
+        walletAddress,
+        amount,
+        periodDays,
+        txHash
+      });
+    } catch (error) {
+      console.error("Error staking tokens:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to stake tokens" 
+      });
+    }
+  });
+  
   // Claim winnings from a bet
   app.post("/api/wurlus/claim-winnings", async (req: Request, res: Response) => {
     try {

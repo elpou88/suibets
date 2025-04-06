@@ -20,53 +20,100 @@ export default function Home() {
     
     console.log('Clicked at position:', xPercent, yPercent);
     
+    // Define clickable regions with more precise coordinates
+    // These coordinates are based on the Sports 1 image layout
+    
     // Connect wallet button in top right corner
-    if (yPercent < 12 && xPercent > 90) {
+    if (yPercent < 12 && xPercent > 85) {
+      console.log('Clicked connect wallet button');
       setIsWalletModalOpen(true);
       return;
     }
     
-    // Handle sport navigation in a more reliable way using setLocation
+    // Sport navigation with updated coordinates
     
-    // Top row of sports
-    if (yPercent >= 48 && yPercent < 55) {
+    // First row - Football, Basketball, Baseball
+    if (yPercent >= 30 && yPercent < 43) {
       if (xPercent < 33) {
+        console.log('Navigating to Football');
         setLocation('/sport/football');
         return;
       }
       if (xPercent < 66) {
+        console.log('Navigating to Basketball');
         setLocation('/sport/basketball');
         return;
       }
+      console.log('Navigating to Baseball');
       setLocation('/sport/baseball');
       return;
     }
     
-    // Second row of sports
-    if (yPercent >= 55 && yPercent < 62) {
+    // Second row - Hockey, Tennis, Golf
+    if (yPercent >= 43 && yPercent < 56) {
       if (xPercent < 33) {
+        console.log('Navigating to Hockey');
         setLocation('/sport/hockey');
         return;
       }
       if (xPercent < 66) {
+        console.log('Navigating to Tennis');
         setLocation('/sport/tennis');
         return;
       }
+      console.log('Navigating to Golf');
       setLocation('/sport/golf');
       return;
     }
     
-    // Third row of sports
-    if (yPercent >= 62 && yPercent < 75) {
+    // Third row - Esports, Boxing, UFC/MMA
+    if (yPercent >= 56 && yPercent < 68) {
       if (xPercent < 33) {
+        console.log('Navigating to Esports');
         setLocation('/sport/esports');
         return;
       }
       if (xPercent < 66) {
+        console.log('Navigating to Boxing');
         setLocation('/sport/boxing');
         return;
       }
-      setLocation('/sport/ufc');
+      console.log('Navigating to UFC/MMA');
+      setLocation('/sport/mma-ufc');
+      return;
+    }
+    
+    // Bottom row - Cricket, Racing
+    if (yPercent >= 68 && yPercent < 80) {
+      if (xPercent < 50) {
+        console.log('Navigating to Cricket');
+        setLocation('/sport/cricket');
+        return;
+      }
+      console.log('Navigating to Racing');
+      setLocation('/sport/racing');
+      return;
+    }
+    
+    // Navigation buttons in bottom section
+    if (yPercent >= 85) {
+      if (xPercent < 30) {
+        console.log('Navigating to Home');
+        setLocation('/');
+        return;
+      }
+      if (xPercent < 50) {
+        console.log('Navigating to Live Events');
+        setLocation('/live');
+        return;
+      }
+      if (xPercent < 70) {
+        console.log('Navigating to Bet Slip');
+        setLocation('/bet-slip');
+        return;
+      }
+      console.log('Navigating to User Profile');
+      setLocation('/settings');
       return;
     }
     

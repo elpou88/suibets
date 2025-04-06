@@ -10,6 +10,7 @@ export default function Sport() {
   const [loading, setLoading] = useState(true);
   const [sportImage, setSportImage] = useState<string | null>(null);
   const [sportTitle, setSportTitle] = useState<string>('');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   // Get the sport slug from the URL path
   const pathname = window.location.pathname;
@@ -22,6 +23,7 @@ export default function Sport() {
   
   useEffect(() => {
     setLoading(true);
+    setErrorMessage(null);
     
     // Find the matching sport image
     const matchingSport = sportImages.find(sport => sport.slug === sportSlug);
@@ -33,6 +35,8 @@ export default function Sport() {
       setSportTitle(matchingSport.title);
     } else {
       console.log('No matching sport found for slug:', sportSlug);
+      setErrorMessage(`No sport found for "${sportSlug}"`);
+      
       // Default to football if no match found
       setSportImage('/images/Sports 1 (2).png');
       setSportTitle('Football');
@@ -42,8 +46,33 @@ export default function Sport() {
   }, [sportSlug]);
 
   // Function to handle clicks on the sport page image for navigation
-  const handleImageClick = () => {
-    // Navigate back to home page
+  // This time using more specific regions like the home page
+  const handleImageClick = (e: React.MouseEvent<HTMLImageElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Percentage positions
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+    
+    console.log('Sport page clicked at position:', xPercent, yPercent);
+    
+    // Top left back button area (approximately where back buttons usually are)
+    if (yPercent < 15 && xPercent < 15) {
+      console.log('Clicked back/home area');
+      setLocation('/');
+      return;
+    }
+    
+    // Back navigation button at bottom
+    if (yPercent > 85 && xPercent < 30) {
+      console.log('Clicked bottom navigation home button');
+      setLocation('/');
+      return;
+    }
+    
+    // Default - just go back to home
     setLocation('/');
   };
 
@@ -51,19 +80,34 @@ export default function Sport() {
     return <div className="w-full h-screen flex items-center justify-center">Loading...</div>;
   }
 
-  // Simply display the full-screen sport image with click handler
+  // Display the full-screen sport image with click handler
   return (
-    <div className="w-full h-screen">
+    <div className="w-full h-screen bg-black">
       {sportImage ? (
-        <img 
-          src={sportImage} 
-          alt={`${sportTitle} Sport`} 
-          className="w-full h-full object-contain cursor-pointer"
-          onClick={handleImageClick}
-        />
+        <>
+          <img 
+            src={sportImage} 
+            alt={`${sportTitle} Sport`} 
+            className="w-full h-full object-contain cursor-pointer"
+            onClick={handleImageClick}
+          />
+          {errorMessage && (
+            <div className="absolute top-5 left-0 right-0 mx-auto text-center bg-red-500 text-white p-2 rounded-md w-4/5 max-w-md">
+              {errorMessage} - Showing default sport page. Click anywhere to return home.
+            </div>
+          )}
+        </>
       ) : (
-        <div className="w-full h-screen flex items-center justify-center">
-          No image found for {sportSlug}
+        <div className="w-full h-screen flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="mb-4 text-xl">No image found for "{sportSlug}"</div>
+            <button 
+              className="bg-primary hover:bg-primary/80 text-white px-6 py-2 rounded"
+              onClick={() => setLocation('/')}
+            >
+              Return to Home
+            </button>
+          </div>
         </div>
       )}
     </div>

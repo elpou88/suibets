@@ -660,4 +660,61 @@ export class SuiMoveService {
       };
     }
   }
+  
+  /**
+   * Stake tokens in the Wurlus protocol
+   * Following Wal.app staking documentation
+   * 
+   * @param walletAddress User wallet address
+   * @param amount Amount to stake in SUI tokens
+   * @param periodDays Staking period in days
+   * @returns Promise resolving to transaction hash
+   */
+  async stakeTokens(
+    walletAddress: string,
+    amount: number,
+    periodDays: number
+  ): Promise<string> {
+    try {
+      console.log(`[SuiMove] Staking ${amount} tokens for ${periodDays} days from wallet ${walletAddress}`);
+      
+      // Convert amount to MIST (smallest SUI unit) - 1 SUI = 10^9 MIST
+      const amountInMist = amount * 1000000000;
+      
+      // Following Wal.app documentation for staking
+      const transaction: SuiMoveTransaction = {
+        sender: walletAddress,
+        packageObjectId: this.network.packageId,
+        module: this.moduleNames.wurlusProtocol,
+        function: 'stake_tokens',
+        typeArguments: [],
+        arguments: [
+          this.network.protocolObjectId,
+          amountInMist.toString(),
+          periodDays.toString()
+        ],
+        gasBudget: 10000
+      };
+      
+      console.log(`[SuiMove] Staking transaction details: ${JSON.stringify(transaction)}`);
+      
+      // In production, this would execute the transaction:
+      // const txResult = await walClient.signAndExecuteTransaction({
+      //   transaction: {
+      //     kind: 'moveCall',
+      //     data: transaction
+      //   }
+      // });
+      // return txResult.digest;
+      
+      // Mock transaction hash for development
+      const txHash = `0x${Array.from({length: 64}, () => 
+        Math.floor(Math.random() * 16).toString(16)).join('')}`;
+      
+      return txHash;
+    } catch (error) {
+      console.error(`[SuiMove] Error staking tokens: ${error}`);
+      throw new Error(`Failed to stake tokens: ${error}`);
+    }
+  }
 }

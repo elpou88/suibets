@@ -5,6 +5,7 @@ import { SportsApi } from "./services/sportsApi";
 import { SuiService } from "./services/sui";
 import { SuiMoveService } from "./services/suiMoveService";
 import { securityService } from "./services/securityService";
+import { aggregatorService } from "./services/aggregatorService";
 import { config } from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
@@ -666,6 +667,279 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "Failed to settle market" 
+      });
+    }
+  });
+
+  // Aggregator API endpoints based on Wal.app aggregator documentation
+  // Start the odds aggregation service
+  aggregatorService.startRefreshInterval();
+
+  // Get best odds for an event
+  app.get("/api/aggregator/events/:eventId/odds", async (req: Request, res: Response) => {
+    try {
+      const { eventId } = req.params;
+      
+      if (!eventId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Event ID is required" 
+        });
+      }
+      
+      const odds = aggregatorService.getBestOddsForEvent(eventId);
+      
+      res.json({
+        success: true,
+        eventId,
+        odds,
+        timestamp: Date.now(),
+        providersCount: odds.length > 0 ? odds[0].providerIds.length : 0
+      });
+    } catch (error) {
+      console.error("Error fetching aggregated odds:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch aggregated odds" 
+      });
+    }
+  });
+
+  // Get best odds for a market
+  app.get("/api/aggregator/markets/:marketId/odds", async (req: Request, res: Response) => {
+    try {
+      const { marketId } = req.params;
+      
+      if (!marketId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Market ID is required" 
+        });
+      }
+      
+      const odds = aggregatorService.getBestOddsForMarket(marketId);
+      
+      res.json({
+        success: true,
+        marketId,
+        odds,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error("Error fetching market odds:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch market odds" 
+      });
+    }
+  });
+
+  // Get specific outcome odds
+  app.get("/api/aggregator/outcomes", async (req: Request, res: Response) => {
+    try {
+      const { eventId, marketId, outcomeId } = req.query as Record<string, string>;
+      
+      if (!eventId || !marketId || !outcomeId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Event ID, Market ID, and Outcome ID are required" 
+        });
+      }
+      
+      const odds = aggregatorService.getBestOddsForOutcome(eventId, marketId, outcomeId);
+      
+      if (!odds) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Odds not found for the specified outcome" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        eventId,
+        marketId,
+        outcomeId,
+        odds,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error("Error fetching outcome odds:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch outcome odds" 
+      });
+    }
+  });
+
+  // Get aggregator providers status
+  app.get("/api/aggregator/providers", async (req: Request, res: Response) => {
+    try {
+      const providers = aggregatorService.getProvidersStatus();
+      
+      res.json({
+        success: true,
+        providers,
+        timestamp: Date.now(),
+        count: providers.length
+      });
+    } catch (error) {
+      console.error("Error fetching aggregator providers:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch aggregator providers" 
+      });
+    }
+  });
+
+  // Get detailed provider information
+  app.get("/api/aggregator/providers/:providerId", async (req: Request, res: Response) => {
+    try {
+      const { providerId } = req.params;
+      
+      if (!providerId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Provider ID is required" 
+        });
+      }
+      
+      const providerDetails = aggregatorService.getProviderDetails(providerId);
+      
+      if (!providerDetails.provider) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Provider not found" 
+        });
+      }
+      
+      // Remove sensitive information like API keys
+      const safeProvider = {
+        ...providerDetails.provider,
+        apiKey: providerDetails.provider.apiKey ? '[REDACTED]' : undefined
+      };
+      
+      res.json({
+        success: true,
+        provider: safeProvider,
+        status: providerDetails.status,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error("Error fetching provider details:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch provider details" 
+      });
+    }
+  });
+
+  // Toggle provider status
+  app.patch("/api/aggregator/providers/:providerId/toggle", async (req: Request, res: Response) => {
+    try {
+      const { providerId } = req.params;
+      const { enabled } = req.body;
+      
+      if (!providerId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Provider ID is required" 
+        });
+      }
+      
+      if (typeof enabled !== 'boolean') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Enabled status must be a boolean" 
+        });
+      }
+      
+      const success = aggregatorService.setProviderEnabled(providerId, enabled);
+      
+      if (!success) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Provider not found" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        providerId,
+        enabled,
+        message: `Provider ${enabled ? 'enabled' : 'disabled'} successfully`
+      });
+    } catch (error) {
+      console.error("Error toggling provider status:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to toggle provider status" 
+      });
+    }
+  });
+
+  // Update provider weight
+  app.patch("/api/aggregator/providers/:providerId/weight", async (req: Request, res: Response) => {
+    try {
+      const { providerId } = req.params;
+      const { weight } = req.body;
+      
+      if (!providerId) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Provider ID is required" 
+        });
+      }
+      
+      if (typeof weight !== 'number' || weight < 0 || weight > 1) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Weight must be a number between 0 and 1" 
+        });
+      }
+      
+      const success = aggregatorService.setProviderWeight(providerId, weight);
+      
+      if (!success) {
+        return res.status(404).json({ 
+          success: false, 
+          message: "Provider not found" 
+        });
+      }
+      
+      res.json({
+        success: true,
+        providerId,
+        weight,
+        message: "Provider weight updated successfully"
+      });
+    } catch (error) {
+      console.error("Error updating provider weight:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to update provider weight" 
+      });
+    }
+  });
+
+  // Force refresh all odds
+  app.post("/api/aggregator/refresh", async (req: Request, res: Response) => {
+    try {
+      // Start refreshing in the background
+      aggregatorService.refreshAllOdds().catch(error => {
+        console.error("Background odds refresh error:", error);
+      });
+      
+      res.json({
+        success: true,
+        message: "Odds refresh initiated",
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error("Error initiating odds refresh:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to initiate odds refresh" 
       });
     }
   });

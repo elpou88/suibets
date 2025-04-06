@@ -43,14 +43,14 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <a href="/promotions.html" className="no-underline">
+        <Link href="/promotions">
           <div className={`relative px-3 py-1 ${location === "/promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Promotions
             {location === "/promotions" && (
               <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
             )}
           </div>
-        </a>
+        </Link>
       </div>
       
       {/* Logo in center - only visible on mobile */}

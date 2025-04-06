@@ -1,15 +1,19 @@
-import Layout from "@/components/layout/Layout";
+import { useEffect } from 'react';
+import promotionsImage from '@assets/Promotions (2).png';
 
-export default function Promotions() {
+export default function PromotionsPage() {
+  useEffect(() => {
+    // Set page title
+    document.title = 'Promotions | SuiBets';
+  }, []);
+
   return (
-    <Layout>
-      <div className="w-full min-h-screen flex justify-center">
-        <img 
-          src="/images/Promotions (2).png" 
-          alt="Promotions" 
-          className="max-w-full h-auto"
-        />
-      </div>
-    </Layout>
+    <div className="min-h-screen bg-[#09181B] flex flex-col items-center justify-center p-4">
+      <img 
+        src={promotionsImage} 
+        alt="Promotions" 
+        className="max-w-full h-auto"
+      />
+    </div>
   );
 }

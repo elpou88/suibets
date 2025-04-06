@@ -6,7 +6,7 @@ export default function Home() {
     <Layout>
       <div className="w-full min-h-screen flex flex-col">
         <img 
-          src="/images/Sports_Home_Updated.png" 
+          src="/images/Sports_Home_No_Highlight.png" 
           alt="Sports Home" 
           className="w-full h-full object-contain"
         />

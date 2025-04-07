@@ -23,40 +23,9 @@ export default function NavigationBar() {
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  const goToLive = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.open("/live.html", "_blank");
-  };
-
-  const goToPromotions = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.open("/promotions.html", "_blank");
-  };
-
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-6 items-center">
-        <Link href="/">
-          <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
-            Sports
-            {location === "/" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
-          </div>
-        </Link>
-        
-        <a href="/live.html" target="_blank" className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center">
-          Live
-          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </a>
-        
-        <a href="/promotions.html" target="_blank" className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs">
-          Promo
-        </a>
-      </div>
-      
-      {/* Logo in center - only visible on mobile */}
-      <div className="md:hidden absolute left-1/2 transform -translate-x-1/2">
+      <div className="flex space-x-8 items-center">
         <Link href="/">
           <img 
             src="/logo/suibets-logo.svg" 
@@ -64,6 +33,23 @@ export default function NavigationBar() {
             className="h-8"
           />
         </Link>
+        
+        <div className="flex items-center space-x-8">
+          <Link href="/">
+            <div className={`${location === "/" ? "text-[#00FFFF] border-b-2 border-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} pb-1`}>
+              Sports
+            </div>
+          </Link>
+          
+          <a href="/live.html" className="flex items-center text-white hover:text-[#00FFFF]" target="_blank">
+            Live
+            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+          </a>
+          
+          <a href="/promotions.html" className="text-white hover:text-[#00FFFF]" target="_blank">
+            Promotions
+          </a>
+        </div>
       </div>
       
       <div className="flex items-center space-x-4">

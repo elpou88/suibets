@@ -4,7 +4,7 @@ import { useBetting } from '@/context/BettingContext';
 /**
  * Live page that exactly matches the provided image
  */
-export default function Live() {
+export default function LiveNew() {
   const [, setLocation] = useLocation();
   const { addBet } = useBetting();
 

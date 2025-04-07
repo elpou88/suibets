@@ -26,7 +26,7 @@ import Info from "@/pages/info";
 import Community from "@/pages/community";
 import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
-import Live from "@/pages/redirect-to-live";
+import Live from "@/pages/live";
 
 function App() {
   console.log("Starting React application");

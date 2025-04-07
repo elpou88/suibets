@@ -1,80 +1,81 @@
 import { useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useBetting } from '@/context/BettingContext';
 
-// Define LiveEvent type for type safety
-interface LiveEvent {
-  id: number;
-  homeTeam: string;
-  awayTeam: string;
-  score: string;
-  time: string;
-  sport: string;
-}
-
+/**
+ * Live page that exactly matches the provided image
+ */
 export default function LivePage() {
   const [, setLocation] = useLocation();
-  
-  // Mock live events data
-  const mockLiveEvents: LiveEvent[] = [
-    { id: 1, homeTeam: "Real Madrid", awayTeam: "Barcelona", score: "2-1", time: "65:20", sport: "Soccer" },
-    { id: 2, homeTeam: "Lakers", awayTeam: "Nets", score: "89-92", time: "Q3 4:15", sport: "Basketball" },
-    { id: 3, homeTeam: "Chiefs", awayTeam: "Bills", score: "21-17", time: "3Q 8:45", sport: "American Football" },
-    { id: 4, homeTeam: "Yankees", awayTeam: "Red Sox", score: "3-2", time: "7th", sport: "Baseball" },
-  ];
-  
-  // Fetch live events data
-  const { data: liveEvents = mockLiveEvents, isLoading } = useQuery<LiveEvent[]>({
-    queryKey: ['/api/events', { status: 'live' }],
-    // If no data is returned or an error occurs, fallback to mock data
-  });
-  
+  const { addBet } = useBetting();
+
+  // Function to handle bet selection
+  const handleBetClick = (player: string, odds: number, type: string) => {
+    addBet({
+      id: `${player}_${type}_${odds}`,
+      eventId: 1, 
+      eventName: `${player}`,
+      market: type,
+      marketId: 1, 
+      selectionName: player,
+      odds: odds,
+      stake: 10,
+      currency: 'SUI'
+    });
+  };
+
   return (
-    <div className="w-full min-h-screen relative">
+    <div className="w-full min-h-screen bg-[#f2f2f2]">
       <img 
-        src="/images/Live (2).png" 
-        alt="Live Events"
-        className="w-full h-full object-contain"
+        src="/live-image.png"
+        alt="Live Betting Page"
+        className="w-full"
+        useMap="#livemap"
       />
       
-      {/* Back button */}
-      <button 
-        onClick={() => setLocation("/")}
-        className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg"
-      >
-        Back to Home
-      </button>
-      
-      {/* Live events overlay */}
-      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">
-        <h2 className="text-2xl font-bold text-white mb-4 text-center">Live Events</h2>
+      <map name="livemap">
+        {/* Navigation links */}
+        <area shape="rect" coords="435,22,468,35" alt="Sports" href="/sports" />
+        <area shape="rect" coords="495,22,514,35" alt="Live" href="/live" />
+        <area shape="rect" coords="553,22,609,35" alt="Promotions" href="/promotions" />
+        <area shape="rect" coords="816,22,861,35" alt="Join Now" href="/join" />
+        <area shape="rect" coords="909,22,970,35" alt="Connect Wallet" href="/connect-wallet" />
         
-        {isLoading ? (
-          <div className="bg-black/70 p-4 rounded-lg">
-            <p className="text-white text-center">Loading live events...</p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {liveEvents.map((event: LiveEvent) => (
-              <div 
-                key={event.id}
-                onClick={() => setLocation(`/live/${event.id}`)}
-                className="bg-black/70 p-4 rounded-lg cursor-pointer hover:bg-black/90 transition"
-              >
-                <div className="flex justify-between items-center">
-                  <div className="text-white">
-                    <div className="text-sm text-gray-400">{event.sport}</div>
-                    <div className="font-semibold">{event.homeTeam} vs {event.awayTeam}</div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold">{event.score}</div>
-                    <div className="text-green-500 text-sm">{event.time}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+        {/* Tennis matches - top row */}
+        <area shape="rect" coords="318,235,365,262" alt="Arthur Fils vs Nuno Borges" 
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="465,235,512,262" alt="Arthur Fils vs Nuno Borges 2"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="618,235,665,262" alt="Arthur Fils vs Nuno Borges 3"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="772,235,819,262" alt="Arthur Fils vs Nuno Borges 4"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="926,235,973,262" alt="Arthur Fils vs Nuno Borges 5"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+          
+        {/* Live tennis matches - Rwanda section */}
+        <area shape="rect" coords="779,371,785,373" alt="Alex M Pujolas"
+          onClick={() => handleBetClick('Alex M Pujolas', 1.07, 'Match Winner')} />
+        <area shape="rect" coords="779,386,785,388" alt="Dominik Kellovsky"
+          onClick={() => handleBetClick('Dominik Kellovsky', 6.96, 'Match Winner')} />
+          
+        {/* Handicap betting options */}
+        <area shape="rect" coords="842,371,857,373" alt="Pujolas Handicap"
+          onClick={() => handleBetClick('Alex M Pujolas -3.5', 1.57, 'Handicap')} />
+        <area shape="rect" coords="842,386,857,388" alt="Kellovsky Handicap"
+          onClick={() => handleBetClick('Dominik Kellovsky +3.5', 2.25, 'Handicap')} />
+          
+        {/* Total betting options */}
+        <area shape="rect" coords="915,371,945,373" alt="Over 22.5"
+          onClick={() => handleBetClick('Over 22.5', 2.20, 'Total')} />
+        <area shape="rect" coords="915,386,945,388" alt="Under 22.5"
+          onClick={() => handleBetClick('Under 22.5', 1.61, 'Total')} />
+          
+        {/* Second match betting options */}
+        <area shape="rect" coords="779,421,785,423" alt="Maximus Jenek"
+          onClick={() => handleBetClick('Maximus Jenek', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="779,436,785,438" alt="Mathys Erhard"
+          onClick={() => handleBetClick('Mathys Erhard', 2.35, 'Match Winner')} />
+      </map>
     </div>
   );
 }

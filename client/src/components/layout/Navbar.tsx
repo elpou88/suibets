@@ -34,34 +34,38 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex ml-28 items-center">
-        {/* Sports link - simple text link */}
-        <a 
-          href="/" 
-          className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer mr-6`}
-        >
-          Sports
-          {location === "/" && (
-            <div className="absolute -bottom-3 left-0 w-full h-1 bg-[#00FFFF]"></div>
-          )}
-        </a>
+    <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex items-center">
+      <div className="flex-1 flex items-center">
+        <div className="w-[120px]"></div> {/* Spacer */}
         
-        {/* Live link - direct text */}
-        <a 
-          href="/live-final.html" 
-          className="flex items-center text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer mr-6"
-        >
-          Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-        </a>
-        
-        {/* Promotions link - direct text */}
-        <a 
-          href="/promotions-final.html" 
-          className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
-        >
-          Promo
-        </a>
+        <div className="flex items-center space-x-10 mx-auto">
+          {/* Sports link - simple text link */}
+          <a 
+            href="/" 
+            className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer`}
+          >
+            Sports
+            {location === "/" && (
+              <div className="absolute -bottom-3 left-0 w-full h-1 bg-[#00FFFF]"></div>
+            )}
+          </a>
+          
+          {/* Live link - direct text */}
+          <a 
+            href="/live-final.html" 
+            className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+          >
+            Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+          </a>
+          
+          {/* Promotions link - direct text */}
+          <a 
+            href="/promotions-final.html" 
+            className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+          >
+            Promo
+          </a>
+        </div>
       </div>
       
       {/* Logo in center - only visible on mobile */}

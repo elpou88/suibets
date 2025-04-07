@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { Sport } from "@/types";
 import { Grid2X2, ChevronLeft, LineChart } from "lucide-react";
 import { 
@@ -39,8 +39,74 @@ const sportsList = [
   { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' }
 ];
 
+interface SportItemProps {
+  sport: {
+    id: number;
+    name: string;
+    slug: string;
+    icon: string;
+  };
+  isActive: boolean;
+  onSportClick: (sport: any, e: React.MouseEvent) => void;
+  getSportIcon: (iconType: string) => JSX.Element;
+}
+
+// Separate component for sport item to help with navigation
+const SportItem = ({ sport, isActive, onSportClick, getSportIcon }: SportItemProps) => {
+  // Special case for esports - use direct link
+  if (sport.slug === 'esports') {
+    return (
+      <a 
+        href="/attached_assets/image_1743933557700.png"
+        className="block"
+      >
+        <div className="flex items-center px-4 py-3 cursor-pointer bg-cyan-400 text-black my-2">
+          <div className="w-8 h-8 mr-3 flex items-center justify-center">
+            {getSportIcon(sport.icon)}
+          </div>
+          <span>{sport.name}</span>
+        </div>
+      </a>
+    );
+  }
+  
+  // For upcoming/home
+  if (sport.slug === 'upcoming') {
+    return (
+      <Link href="/" className="block">
+        <div className={`flex items-center px-4 py-3 cursor-pointer ${
+          isActive ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
+        }`}>
+          <div className="w-8 h-8 mr-3 flex items-center justify-center">
+            {getSportIcon(sport.icon)}
+          </div>
+          <span className={isActive ? 'font-medium' : ''}>
+            {sport.name}
+          </span>
+        </div>
+      </Link>
+    );
+  }
+  
+  // For all other sports
+  return (
+    <Link href={`/sport/${sport.slug}`} className="block">
+      <div className={`flex items-center px-4 py-3 cursor-pointer ${
+        isActive ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
+      }`}>
+        <div className="w-8 h-8 mr-3 flex items-center justify-center">
+          {getSportIcon(sport.icon)}
+        </div>
+        <span className={isActive ? 'font-medium' : ''}>
+          {sport.name}
+        </span>
+      </div>
+    </Link>
+  );
+};
+
 export default function Sidebar() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const [activeSport, setActiveSport] = useState("upcoming");
   
   const { data: apiSports = [] } = useQuery<Sport[]>({
@@ -98,22 +164,10 @@ export default function Sidebar() {
   };
 
   const handleSportClick = (sport: any, e: React.MouseEvent) => {
-    e.preventDefault();
     console.log(`Clicking on ${sport.name} (${sport.slug})`);
     
-    // Special handling for Esports
-    if (sport.slug === 'esports') {
-      window.location.href = '/attached_assets/image_1743933557700.png';
-      console.log('Opening Esports image directly');
-      return;
-    }
-    
-    // Navigation using wouter
-    if (sport.slug === 'upcoming') {
-      setLocation('/');
-    } else {
-      setLocation(`/sport/${sport.slug}`);
-    }
+    // This function is now only used for logging - actual navigation is 
+    // handled by the Link component
   };
 
   return (
@@ -130,28 +184,13 @@ export default function Sidebar() {
       {/* Sports navigation - matching the design in the screenshot */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
         {sports.map((sport) => (
-          <div 
+          <SportItem 
             key={sport.id}
-            className="block"
-          >
-            <div
-              className={`flex items-center px-4 py-3 cursor-pointer ${
-                sport.slug === 'esports' 
-                  ? 'bg-cyan-400 text-black my-2' 
-                  : activeSport === sport.slug 
-                    ? 'text-cyan-400' 
-                    : 'text-white hover:text-cyan-400'
-              }`}
-              onClick={(e) => handleSportClick(sport, e)}
-            >
-              <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                {getSportIcon(sport.icon)}
-              </div>
-              <span className={`${activeSport === sport.slug ? 'font-medium' : ''}`}>
-                {sport.name}
-              </span>
-            </div>
-          </div>
+            sport={sport}
+            isActive={activeSport === sport.slug}
+            onSportClick={handleSportClick}
+            getSportIcon={getSportIcon}
+          />
         ))}
       </div>
     </div>

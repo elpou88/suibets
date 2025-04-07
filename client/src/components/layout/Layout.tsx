@@ -27,34 +27,22 @@ export default function Layout({ children }: LayoutProps) {
       {/* Mobile Bottom Navigation */}
       {isMobile && (
         <div className="fixed bottom-0 left-0 right-0 bg-[#09181B] text-white z-30 flex justify-around p-2 border-t border-[#112225]">
-          <button 
-            className="p-2 flex flex-col items-center justify-center"
-            onClick={() => navigateTo("/")}
-          >
+          <Link href="/" className="p-2 flex flex-col items-center justify-center">
             <Home className="h-6 w-6 text-[#00FFFF]" />
             <span className="text-xs mt-1">Home</span>
-          </button>
-          <button 
-            className="p-2 flex flex-col items-center justify-center"
-            onClick={() => navigateTo("/sports")}
-          >
+          </Link>
+          <Link href="/sports" className="p-2 flex flex-col items-center justify-center">
             <BiFootball className="h-6 w-6" />
             <span className="text-xs mt-1">Sports</span>
-          </button>
-          <button 
-            className="p-2 flex flex-col items-center justify-center"
-            onClick={() => navigateTo("/live")}
-          >
+          </Link>
+          <Link href="/live" className="p-2 flex flex-col items-center justify-center">
             <Grid2X2 className="h-6 w-6" />
             <span className="text-xs mt-1">Live</span>
-          </button>
-          <button 
-            className="p-2 flex flex-col items-center justify-center"
-            onClick={() => navigateTo("/settings")}
-          >
+          </Link>
+          <Link href="/settings" className="p-2 flex flex-col items-center justify-center">
             <User className="h-6 w-6" />
             <span className="text-xs mt-1">Account</span>
-          </button>
+          </Link>
         </div>
       )}
 

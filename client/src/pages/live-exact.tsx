@@ -54,6 +54,15 @@ export default function LiveExact() {
     // Turn on visual debugging to see button positions
     const debugMode = true;
     
+    // Add extra click logging to help with positioning
+    document.addEventListener('click', (e) => {
+      console.log(`Clicked at X: ${e.clientX}, Y: ${e.clientY}`);
+      
+      // Find what element was clicked
+      const element = document.elementFromPoint(e.clientX, e.clientY);
+      console.log("Element clicked:", element);
+    });
+    
     // Create a navigation bar that exactly matches the position in the image
     // The navigation uses EXACT pixel positions from the image we examined
     const navigationBar = document.createElement('div');
@@ -68,15 +77,22 @@ export default function LiveExact() {
     navigationBar.style.zIndex = '1000';
     container.appendChild(navigationBar);
     
-    // Add fixed-position buttons exactly where they appear in the source image
-    // Each button has exact coordinates and dimensions from the image inspection
+    // Instead of manually placing buttons, we'll add a debug overlay with annotations
+    // to visually identify the exact click positions and align with the visible text
     
-    // Create navigation elements with consistent spacing
-    // Our buttons need to be EXACTLY at these positions:
-    // Sports: 471px
-    // Live: 524px
-    // Promotions: 567px
-    // We're using these EXACT pixel positions based on the actual text positions in the image
+    // Create an overlay container for debugging - enabling visual feedback
+    const overlay = document.createElement('div');
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.pointerEvents = 'none'; // Let clicks pass through
+    overlay.style.zIndex = '9999';
+    document.body.appendChild(overlay);
+    
+    // This will help us precisely position our navigation buttons
+    // directly over the text in the image
     
     // Sports button - enhanced for faster click detection
     const sportsButton = document.createElement('button');
@@ -221,10 +237,52 @@ export default function LiveExact() {
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
     console.log('Sports link position: 488px, Live link position: 550px, Promotions link position: 590px');
     
+    // Add visual indicators that appear on top of the navigation elements in the image
+    // These will help us fine-tune the exact positions
+    
+    // Text label for Sports
+    const sportsLabel = document.createElement('div');
+    sportsLabel.textContent = "SPORTS";
+    sportsLabel.style.position = 'absolute';
+    sportsLabel.style.left = '478px';
+    sportsLabel.style.top = '20px';
+    sportsLabel.style.color = 'red';
+    sportsLabel.style.fontWeight = 'bold';
+    sportsLabel.style.fontSize = '10px';
+    sportsLabel.style.pointerEvents = 'none';
+    sportsLabel.style.zIndex = '10000';
+    overlay.appendChild(sportsLabel);
+    
+    // Text label for Live
+    const liveLabel = document.createElement('div');
+    liveLabel.textContent = "LIVE";
+    liveLabel.style.position = 'absolute';
+    liveLabel.style.left = '550px';
+    liveLabel.style.top = '20px';
+    liveLabel.style.color = 'green';
+    liveLabel.style.fontWeight = 'bold';
+    liveLabel.style.fontSize = '10px';
+    liveLabel.style.pointerEvents = 'none';
+    liveLabel.style.zIndex = '10000';
+    overlay.appendChild(liveLabel);
+    
+    // Text label for Promotions
+    const promotionsLabel = document.createElement('div');
+    promotionsLabel.textContent = "PROMOTIONS";
+    promotionsLabel.style.position = 'absolute';
+    promotionsLabel.style.left = '590px';
+    promotionsLabel.style.top = '20px';
+    promotionsLabel.style.color = 'blue';
+    promotionsLabel.style.fontWeight = 'bold';
+    promotionsLabel.style.fontSize = '10px';
+    promotionsLabel.style.pointerEvents = 'none';
+    promotionsLabel.style.zIndex = '10000';
+    overlay.appendChild(promotionsLabel);
+    
     // Add visual outlines to detect any overlapping elements
-    sportsButton.style.outline = debugMode ? '1px solid red' : 'none';
-    liveButton.style.outline = debugMode ? '1px solid green' : 'none';
-    promotionsButton.style.outline = debugMode ? '1px solid blue' : 'none';
+    sportsButton.style.outline = debugMode ? '2px solid red' : 'none';
+    liveButton.style.outline = debugMode ? '2px solid green' : 'none';
+    promotionsButton.style.outline = debugMode ? '2px solid blue' : 'none';
     
     // Clean up function
     return () => {

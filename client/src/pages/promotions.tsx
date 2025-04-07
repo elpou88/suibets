@@ -49,7 +49,7 @@ export default function PromotionsPage() {
     container.appendChild(navContainer);
     
     // Add visual debugging for clickable areas
-    const debugMode = true;
+    const debugMode = false;
     
     // Create a navigation bar that exactly matches the position in the image
     // The navigation uses EXACT pixel positions from the image we examined
@@ -92,11 +92,11 @@ export default function PromotionsPage() {
     };
     navigationBar.appendChild(sportsButton);
     
-    // Live button - located between Sports and Promotions (495-510)
+    // Live button - positioned closer to Sports button
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '495px';
+    liveButton.style.left = '474px';  // Moved closer to Sports
     liveButton.style.top = '22px';
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';

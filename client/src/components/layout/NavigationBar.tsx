@@ -1,5 +1,3 @@
-import FixedNavbar from "@/components/ui/FixedNavbar";
-
 const NavigationBar = () => {
   return (
     <div className="bg-[#09181B] border-b border-[#112225] p-4 flex justify-between items-center">
@@ -7,9 +5,9 @@ const NavigationBar = () => {
         <img src="/logo/suibets-logo.svg" alt="SuiBets Logo" className="h-8 mr-10" />
       </div>
       
-      {/* Using our FixedNavbar component which uses direct DOM manipulation */}
+      {/* Only Sports link in the center */}
       <div className="absolute left-1/2 transform -translate-x-1/2">
-        <FixedNavbar />
+        <a href="/" className="text-[#00FFFF] border-b-2 border-[#00FFFF] pb-1">Sports</a>
       </div>
       
       <div className="flex items-center gap-4">

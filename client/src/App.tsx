@@ -32,6 +32,8 @@ import ImageMapApproach from "@/pages/image-map-approach";
 import PureLive from "@/pages/pure-live";
 import FinalLive from "@/pages/final-live";
 import SimpleLive from "@/pages/simple-live";
+import NewLive from "@/pages/new-live";
+import NewPromotions from "@/pages/new-promotions";
 
 function App() {
   console.log("Starting React application");
@@ -48,7 +50,7 @@ function App() {
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />
                 <Route path="/match-detail/:id" component={MatchDetail} />
-                <Route path="/promotions" component={Promotions} />
+                <Route path="/promotions" component={NewPromotions} />
                 <Route path="/promotions/referral" component={ReferralPage} />
                 <Route path="/notifications" component={Notifications} />
                 <Route path="/settings" component={Settings} />
@@ -63,7 +65,7 @@ function App() {
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />
-                <Route path="/live" component={LiveExact} />
+                <Route path="/live" component={NewLive} />
                 <Route path="/live-old" component={LiveExact} />
                 <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />

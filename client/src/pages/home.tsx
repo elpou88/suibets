@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { useState } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import sportImages from '@/data/sportImages';
+import SportsSidebar from "@/components/layout/SportsSidebar";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -50,8 +51,9 @@ export default function Home() {
       return;
     }
     
-    // Sport navigation with updated coordinates based on the image
-    // Left sidebar menu with sports
+    // Sport navigation handling for the transparent sidebar
+    // We'll leave this code here for backward compatibility but
+    // we also have dedicated clickable regions now
     if (xPercent < 20) {
       // Football
       if (yPercent > 130 && yPercent < 150) {
@@ -229,6 +231,9 @@ export default function Home() {
           alt="Sports Home" 
           className="w-full h-full object-contain pointer-events-none"
         />
+        
+        {/* Overlay the sports sidebar on top of the image */}
+        <SportsSidebar />
       </div>
       
       <ConnectWalletModal 

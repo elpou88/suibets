@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex items-center" style={{ gap: '1rem' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
         <Link href="/">
           <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Sports
@@ -45,36 +45,57 @@ export default function Navbar() {
           </div>
         </Link>
         
-        <div className="flex-none ml-16">
-          <Button
-            size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md text-xs"
+        <div style={{ padding: '0 8px' }}>
+          <button 
             onClick={goToLive}
             style={{ 
-              width: '70px', 
+              backgroundColor: '#00FFFF',
+              color: 'black',
+              border: 'none',
+              fontWeight: 'bold',
+              borderRadius: '4px',
+              fontSize: '12px',
               padding: '4px 12px',
-              position: 'relative',
-              left: '5px'
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '60px'
             }}
           >
-            <div className="flex items-center justify-center w-full">
-              <span>Live</span>
-              <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-            </div>
-          </Button>
+            Live
+            <span style={{ 
+              marginLeft: '4px', 
+              width: '6px', 
+              height: '6px', 
+              backgroundColor: 'red', 
+              borderRadius: '50%', 
+              display: 'inline-block',
+              animation: 'pulse 1.5s infinite'
+            }}></span>
+          </button>
         </div>
         
-        <div className="w-16 flex justify-center">
-          <Button
-            size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs min-w-[60px]"
+        <div style={{ padding: '0 8px' }}>
+          <button
             onClick={goToPromotions}
-            style={{ width: '100%', padding: '4px 8px' }}
+            style={{ 
+              backgroundColor: '#00FFFF',
+              color: 'black',
+              border: 'none',
+              fontWeight: 'bold',
+              borderRadius: '4px',
+              fontSize: '12px',
+              padding: '4px 12px',
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '60px'
+            }}
           >
-            <div className="flex items-center justify-center w-full">
-              <span>Promo</span>
-            </div>
-          </Button>
+            Promo
+          </button>
         </div>
       </div>
       

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
@@ -17,41 +17,53 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export default function NavigationBar() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
   const { user, isAuthenticated, disconnectWallet } = useAuth();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   return (
-    <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-8 items-center">
-        <Link href="/">
+    <div className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
+      {/* Left side with logo */}
+      <div className="flex space-x-3 items-center">
+        <a href="/">
           <img 
             src="/logo/suibets-logo.svg" 
             alt="SuiBets Logo" 
             className="h-8"
           />
-        </Link>
-        
-        <div className="flex items-center space-x-8">
-          <Link href="/">
-            <div className={`${location === "/" ? "text-[#00FFFF] border-b-2 border-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} pb-1`}>
-              Sports
-            </div>
-          </Link>
-          
-          <a href="/live.html" className="flex items-center text-white hover:text-[#00FFFF]" target="_blank">
-            Live
-            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-          </a>
-          
-          <a href="/promotions.html" className="text-white hover:text-[#00FFFF]" target="_blank">
-            Promotions
-          </a>
-        </div>
+        </a>
       </div>
       
+      {/* Center navigation */}
+      <div className="flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
+        <a 
+          href="/" 
+          className={`${location === "/" ? "text-[#00FFFF] border-b-2 border-[#00FFFF]" : "text-white"} pb-1`}
+        >
+          Sports
+        </a>
+        
+        <a 
+          href="/live.html" 
+          className="flex items-center text-white hover:text-[#00FFFF]" 
+          target="_blank"
+        >
+          Live
+          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+        </a>
+        
+        <a 
+          href="/promotions.html" 
+          className="text-white hover:text-[#00FFFF]" 
+          target="_blank"
+        >
+          Promotions
+        </a>
+      </div>
+      
+      {/* Right side with auth buttons */}
       <div className="flex items-center space-x-4">
         {isAuthenticated ? (
           <>
@@ -95,11 +107,9 @@ export default function NavigationBar() {
           </>
         ) : (
           <>
-            <Link href="/join">
-              <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
-                Join Now
-              </Button>
-            </Link>
+            <a href="/join" className="border border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium px-4 py-2 rounded-md">
+              Join Now
+            </a>
             <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
               Connect Wallet
             </Button>
@@ -121,6 +131,6 @@ export default function NavigationBar() {
         isOpen={isSettingsModalOpen} 
         onClose={() => setIsSettingsModalOpen(false)} 
       />
-    </nav>
+    </div>
   );
 }

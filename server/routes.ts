@@ -739,12 +739,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.createNotification(notification);
       }
       
-      // Get wallet balance from Sui blockchain via Sui Move
-      const balance = await suiMoveService.getWalletBalance(address);
-      
-      // Update user with balance from blockchain
-      if (user.balance !== balance) {
-        user = await storage.updateUser(user.id, { balance });
+      try {
+        // Get wallet balance from Sui blockchain via Sui Move
+        const balance = await suiMoveService.getWalletBalance(address);
+        
+        // Update user with balance from blockchain - use suiBalance instead of balance
+        if (user.suiBalance !== balance) {
+          user = await storage.updateUser(user.id, { suiBalance: balance });
+        }
+      } catch (balanceError) {
+        console.warn("Error updating balance, continuing with wallet connection:", balanceError);
+        // Continue with connection even if balance update fails
       }
       
       // Generate a secure session token
@@ -763,7 +768,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         username: user.username,
         walletAddress: user.walletAddress,
         walletType: user.walletType || 'Sui', // Provide default if not set
-        balance: user.balance || 0,           // Provide default if not set
+        suiBalance: user.suiBalance || 0,     // Use suiBalance instead of balance
+        sbetsBalance: user.sbetsBalance || 0, // Include SBETS balance as well
         sessionToken: sessionToken
       };
       

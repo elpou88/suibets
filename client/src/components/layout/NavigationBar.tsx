@@ -1,136 +1,27 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
-import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
-import { NotificationsModal } from "@/components/modals/NotificationsModal";
-import { SettingsModal } from "@/components/modals/SettingsModal";
-import { shortenAddress } from "@/lib/utils";
-import { Bell, Settings, LogOut } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import FixedNavbar from "@/components/ui/FixedNavbar";
 
-export default function NavigationBar() {
-  const [location] = useLocation();
-  const { user, isAuthenticated, disconnectWallet } = useAuth();
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-
+const NavigationBar = () => {
   return (
-    <div className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      {/* Left side with logo */}
-      <div className="flex space-x-3 items-center">
-        <a href="/">
-          <img 
-            src="/logo/suibets-logo.svg" 
-            alt="SuiBets Logo" 
-            className="h-8"
-          />
-        </a>
+    <div className="bg-[#09181B] border-b border-[#112225] p-4 flex justify-between items-center">
+      <div className="flex items-center">
+        <img src="/logo/suibets-logo.svg" alt="SuiBets Logo" className="h-8 mr-10" />
       </div>
       
-      {/* Center navigation */}
-      <div className="flex items-center space-x-8 absolute left-1/2 transform -translate-x-1/2">
-        <a 
-          href="/" 
-          className={`${location === "/" ? "text-[#00FFFF] border-b-2 border-[#00FFFF]" : "text-white"} pb-1`}
-        >
-          Sports
-        </a>
-        
-        <a 
-          href="/live.html" 
-          className="flex items-center text-white hover:text-[#00FFFF]" 
-          target="_blank"
-        >
-          Live
-          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </a>
-        
-        <a 
-          href="/promotions.html" 
-          className="text-white hover:text-[#00FFFF]" 
-          target="_blank"
-        >
-          Promotions
-        </a>
+      {/* Using our FixedNavbar component which uses direct DOM manipulation */}
+      <div className="absolute left-1/2 transform -translate-x-1/2">
+        <FixedNavbar />
       </div>
       
-      {/* Right side with auth buttons */}
-      <div className="flex items-center space-x-4">
-        {isAuthenticated ? (
-          <>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
-              onClick={() => setIsNotificationsModalOpen(true)}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
-              onClick={() => setIsSettingsModalOpen(true)}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black">
-                  {user?.walletAddress && shortenAddress(user.walletAddress)}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
-                <DropdownMenuItem>My Bets</DropdownMenuItem>
-                <DropdownMenuItem>Transactions</DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={disconnectWallet}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Disconnect</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        ) : (
-          <>
-            <a href="/join" className="border border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium px-4 py-2 rounded-md">
-              Join Now
-            </a>
-            <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
-              Connect Wallet
-            </Button>
-          </>
-        )}
+      <div className="flex items-center gap-4">
+        <a href="/join" className="text-[#00FFFF] border border-[#00FFFF] px-4 py-2 rounded hover:bg-[#00FFFF]/10">
+          Join Now
+        </a>
+        <a href="/connect-wallet" className="bg-[#00FFFF] text-black px-4 py-2 rounded hover:bg-[#00FFFF]/90">
+          Connect Wallet
+        </a>
       </div>
-
-      <ConnectWalletModal 
-        isOpen={isWalletModalOpen} 
-        onClose={() => setIsWalletModalOpen(false)} 
-      />
-      
-      <NotificationsModal 
-        isOpen={isNotificationsModalOpen} 
-        onClose={() => setIsNotificationsModalOpen(false)} 
-      />
-      
-      <SettingsModal 
-        isOpen={isSettingsModalOpen} 
-        onClose={() => setIsSettingsModalOpen(false)} 
-      />
     </div>
   );
-}
+};
+
+export default NavigationBar;

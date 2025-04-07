@@ -25,12 +25,12 @@ export default function Navbar() {
 
   const goToLive = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = "/live.new.html";
+    window.location.href = "/live-final.html";
   };
 
   const goToPromotions = (e: React.MouseEvent) => {
     e.preventDefault();
-    window.location.href = "/promotions.new.html";
+    window.location.href = "/promotions-final.html";
   };
 
   return (

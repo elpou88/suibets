@@ -45,22 +45,14 @@ export default function NavigationBar() {
           </div>
         </Link>
         
-        <Button
-          size="sm"
-          className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center"
-          onClick={goToLive}
-        >
+        <a href="/live.html" target="_blank" className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center">
           Live
           <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </Button>
+        </a>
         
-        <Button
-          size="sm"
-          className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs"
-          onClick={goToPromotions}
-        >
+        <a href="/promotions.html" target="_blank" className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs">
           Promo
-        </Button>
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

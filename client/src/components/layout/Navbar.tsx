@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-6 items-center">
+      <div className="flex space-x-8 items-center">
         <Link href="/">
           <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Sports
@@ -45,22 +45,26 @@ export default function Navbar() {
           </div>
         </Link>
         
-        <Button
-          size="sm"
-          className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center"
-          onClick={goToLive}
-        >
-          Live
-          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </Button>
+        <div className="w-16">
+          <Button
+            size="sm"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center w-full justify-center"
+            onClick={goToLive}
+          >
+            Live
+            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+          </Button>
+        </div>
         
-        <Button
-          size="sm"
-          className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs"
-          onClick={goToPromotions}
-        >
-          Promo
-        </Button>
+        <div className="w-16">
+          <Button
+            size="sm"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs w-full justify-center"
+            onClick={goToPromotions}
+          >
+            Promo
+          </Button>
+        </div>
       </div>
       
       {/* Logo in center - only visible on mobile */}

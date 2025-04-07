@@ -26,26 +26,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const walletAddress = localStorage.getItem('wallet_address');
+        // Temporarily clear any stored wallet data to prevent connection errors
+        localStorage.removeItem('wallet_address');
+        localStorage.removeItem('wallet_type');
         
-        if (walletAddress) {
-          const res = await fetch(`/api/users/wallet/${walletAddress}`, {
-            credentials: 'include',
-          });
-          
-          if (res.ok) {
-            const userData = await res.json();
-            setUser(userData);
-          } else {
-            // If user not found but we have wallet address, try to connect again
-            const walletType = localStorage.getItem('wallet_type') as WalletType;
-            if (walletType) {
-              await connectWallet(walletAddress, walletType);
-            } else {
-              localStorage.removeItem('wallet_address');
-            }
-          }
-        }
+        // Skip auto-connection for now to avoid errors
+        // This prevents the wallet connection error on initial load
       } catch (error) {
         console.error('Auth check error:', error);
       } finally {

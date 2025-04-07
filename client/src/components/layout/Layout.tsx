@@ -41,14 +41,13 @@ export default function Layout({ children }: LayoutProps) {
             <BiFootball className="h-6 w-6" />
             <span className="text-xs mt-1">Sports</span>
           </button>
-          <a 
-            href="/live.html"
-            target="_blank"
+          <button 
             className="p-2 flex flex-col items-center justify-center"
+            onClick={() => navigateTo("/live")}
           >
             <Grid2X2 className="h-6 w-6" />
             <span className="text-xs mt-1">Live</span>
-          </a>
+          </button>
           <button 
             className="p-2 flex flex-col items-center justify-center"
             onClick={() => navigateTo("/settings")}

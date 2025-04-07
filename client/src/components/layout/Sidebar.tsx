@@ -40,7 +40,7 @@ const sportsList = [
 ];
 
 export default function Sidebar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [activeSport, setActiveSport] = useState("upcoming");
   
   const { data: apiSports = [] } = useQuery<Sport[]>({
@@ -97,6 +97,25 @@ export default function Sidebar() {
     }
   };
 
+  const handleSportClick = (sport: any, e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log(`Clicking on ${sport.name} (${sport.slug})`);
+    
+    // Special handling for Esports
+    if (sport.slug === 'esports') {
+      window.location.href = '/attached_assets/image_1743933557700.png';
+      console.log('Opening Esports image directly');
+      return;
+    }
+    
+    // Navigation using wouter
+    if (sport.slug === 'upcoming') {
+      setLocation('/');
+    } else {
+      setLocation(`/sport/${sport.slug}`);
+    }
+  };
+
   return (
     <div className="flex flex-col w-64 bg-[#09151A] text-white h-full">
       {/* Logo only - removed arrow as requested */}
@@ -111,24 +130,9 @@ export default function Sidebar() {
       {/* Sports navigation - matching the design in the screenshot */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
         {sports.map((sport) => (
-          <a 
+          <div 
             key={sport.id}
-            href={sport.slug === 'upcoming' ? '/' : `/sport/${sport.slug}`}
             className="block"
-            onClick={(e) => {
-              console.log(`Clicking on ${sport.name} (${sport.slug})`);
-              
-              // Special handling for Esports - similar to what we did for Promotions
-              if (sport.slug === 'esports') {
-                e.preventDefault();
-                const win = window.open('/attached_assets/image_1743933557700.png', '_self');
-                if (win) {
-                  win.focus();
-                }
-                console.log('Opening Esports image directly');
-                return;
-              }
-            }}
           >
             <div
               className={`flex items-center px-4 py-3 cursor-pointer ${
@@ -138,6 +142,7 @@ export default function Sidebar() {
                     ? 'text-cyan-400' 
                     : 'text-white hover:text-cyan-400'
               }`}
+              onClick={(e) => handleSportClick(sport, e)}
             >
               <div className="w-8 h-8 mr-3 flex items-center justify-center">
                 {getSportIcon(sport.icon)}
@@ -146,7 +151,7 @@ export default function Sidebar() {
                 {sport.name}
               </span>
             </div>
-          </a>
+          </div>
         ))}
       </div>
     </div>

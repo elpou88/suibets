@@ -19,14 +19,35 @@ export default function Home() {
     const yPercent = (y / rect.height) * 100;
     
     console.log('Clicked at position:', xPercent, yPercent);
+    console.log('Click coordinates:', Math.round(x), Math.round(y));
     
     // Define clickable regions with more precise coordinates
     // These coordinates are based on the Sports 1 image layout
     
-    // Connect wallet button in top right corner
-    if (yPercent < 12 && xPercent > 85) {
-      console.log('Clicked connect wallet button');
-      setIsWalletModalOpen(true);
+    // Top navigation area - ignore clicks in top navigation
+    if (yPercent < 15) {
+      // Promotions button (top right area)
+      if (xPercent > 55 && xPercent < 65) {
+        console.log('Clicked on Promotions');
+        setLocation('/goto-promotions');
+        return;
+      }
+      
+      // Live button (top center area)
+      if (xPercent > 45 && xPercent < 55) {
+        console.log('Clicked on Live');
+        setLocation('/goto-live');
+        return;
+      }
+      
+      // Connect wallet button in top right corner
+      if (xPercent > 85) {
+        console.log('Clicked connect wallet button');
+        setIsWalletModalOpen(true);
+        return;
+      }
+      
+      // Other top nav clicks - don't show error
       return;
     }
     
@@ -117,8 +138,9 @@ export default function Home() {
       return;
     }
     
-    // Default case
-    console.log('Click not in a defined sport region');
+    // Default case - no need to show error message for clicks outside defined regions
+    // Just log the click coordinates for debugging
+    console.log('Element clicked:', e.currentTarget);
   };
 
   return (

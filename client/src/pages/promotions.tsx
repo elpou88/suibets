@@ -195,14 +195,22 @@ export default function PromotionsPage() {
     joinNow3.href = '/join';
     map.appendChild(joinNow3);
     
-    // Disable all other links to ensure only our navigation buttons work
-    // This helps prevent any conflicts with other elements on the page
-    const links = document.querySelectorAll('a, button');
-    links.forEach(link => {
-      if (link !== sportsButton && link !== liveButton && link !== promotionsButton) {
-        // TypeScript fix: cast to HTMLElement before setting style
-        if (link instanceof HTMLElement) {
-          link.style.pointerEvents = 'none';
+    // Remove EVERYTHING from the page except our navigation buttons
+    // This ensures there are no hidden or conflicting elements
+    const allElements = document.querySelectorAll('*');
+    allElements.forEach(el => {
+      if (el !== navigationBar && 
+          el !== sportsButton && 
+          el !== liveButton && 
+          el !== promotionsButton && 
+          el !== body && 
+          el !== container && 
+          el !== img && 
+          el !== map) {
+        // Remove everything else to start clean
+        if (el.parentNode && el !== document.body && el !== document.documentElement) {
+          console.log('Removing potential interfering element:', el);
+          el.parentNode.removeChild(el);
         }
       }
     });

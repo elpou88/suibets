@@ -29,14 +29,14 @@ export default function Home() {
       // Promotions button (top right area)
       if (xPercent > 55 && xPercent < 65) {
         console.log('Clicked on Promotions');
-        setLocation('/goto-promotions');
+        setLocation('/promotions');
         return;
       }
       
       // Live button (top center area)
       if (xPercent > 45 && xPercent < 55) {
         console.log('Clicked on Live');
-        setLocation('/goto-live');
+        setLocation('/live');
         return;
       }
       
@@ -51,102 +51,177 @@ export default function Home() {
       return;
     }
     
-    // Sport navigation with updated coordinates
-    
-    // First row - Football, Basketball, Baseball
-    if (yPercent >= 30 && yPercent < 43) {
-      if (xPercent < 33) {
+    // Sport navigation with updated coordinates based on the image
+    // Left sidebar menu with sports
+    if (xPercent < 20) {
+      // Football
+      if (yPercent > 130 && yPercent < 150) {
         console.log('Navigating to Football');
         setLocation('/sport/football');
         return;
       }
-      if (xPercent < 66) {
+      // Basketball
+      if (yPercent > 170 && yPercent < 190) {
         console.log('Navigating to Basketball');
         setLocation('/sport/basketball');
         return;
       }
-      console.log('Navigating to Baseball');
-      setLocation('/sport/baseball');
-      return;
-    }
-    
-    // Second row - Hockey, Tennis, Golf
-    if (yPercent >= 43 && yPercent < 56) {
-      if (xPercent < 33) {
-        console.log('Navigating to Hockey');
-        setLocation('/sport/hockey');
-        return;
-      }
-      if (xPercent < 66) {
+      // Tennis
+      if (yPercent > 210 && yPercent < 230) {
         console.log('Navigating to Tennis');
         setLocation('/sport/tennis');
         return;
       }
-      console.log('Navigating to Golf');
-      setLocation('/sport/golf');
-      return;
-    }
-    
-    // Third row - Esports, Boxing, UFC/MMA
-    if (yPercent >= 56 && yPercent < 68) {
-      if (xPercent < 33) {
-        console.log('Navigating to Esports');
-        setLocation('/sport/esports');
+      // Baseball
+      if (yPercent > 250 && yPercent < 270) {
+        console.log('Navigating to Baseball');
+        setLocation('/sport/baseball');
         return;
       }
-      if (xPercent < 66) {
+      // Boxing
+      if (yPercent > 290 && yPercent < 310) {
         console.log('Navigating to Boxing');
         setLocation('/sport/boxing');
         return;
       }
-      console.log('Navigating to UFC/MMA');
-      setLocation('/sport/mma-ufc');
-      return;
-    }
-    
-    // Bottom row - Cricket, Racing
-    if (yPercent >= 68 && yPercent < 80) {
-      if (xPercent < 50) {
+      // Hockey
+      if (yPercent > 330 && yPercent < 350) {
+        console.log('Navigating to Hockey');
+        setLocation('/sport/hockey');
+        return;
+      }
+      // Esports
+      if (yPercent > 370 && yPercent < 390) {
+        console.log('Navigating to Esports');
+        setLocation('/sport/esports');
+        return;
+      }
+      // MMA / UFC
+      if (yPercent > 410 && yPercent < 430) {
+        console.log('Navigating to MMA/UFC');
+        setLocation('/sport/mma-ufc');
+        return;
+      }
+      // Volleyball
+      if (yPercent > 450 && yPercent < 470) {
+        console.log('Navigating to Volleyball');
+        setLocation('/sport/volleyball');
+        return;
+      }
+      // Table Tennis
+      if (yPercent > 490 && yPercent < 510) {
+        console.log('Navigating to Table Tennis');
+        setLocation('/sport/table-tennis');
+        return;
+      }
+      // Rugby League
+      if (yPercent > 530 && yPercent < 550) {
+        console.log('Navigating to Rugby League');
+        setLocation('/sport/rugby-league');
+        return;
+      }
+      // Rugby Union
+      if (yPercent > 570 && yPercent < 590) {
+        console.log('Navigating to Rugby Union');
+        setLocation('/sport/rugby-union');
+        return;
+      }
+      // Cricket
+      if (yPercent > 610 && yPercent < 630) {
         console.log('Navigating to Cricket');
         setLocation('/sport/cricket');
         return;
       }
-      console.log('Navigating to Racing');
-      setLocation('/sport/racing');
+      // Horse Racing
+      if (yPercent > 650 && yPercent < 670) {
+        console.log('Navigating to Horse Racing');
+        setLocation('/sport/horse-racing');
+        return;
+      }
+      // Greyhounds
+      if (yPercent > 690 && yPercent < 710) {
+        console.log('Navigating to Greyhounds');
+        setLocation('/sport/greyhounds');
+        return;
+      }
+      // AFL
+      if (yPercent > 730 && yPercent < 750) {
+        console.log('Navigating to AFL');
+        setLocation('/sport/afl');
+        return;
+      }
+    }
+    
+    // Main content area clicks
+    
+    // Promotion banner (top banner)
+    if (yPercent > 80 && yPercent < 190 && xPercent > 20) {
+      console.log('Clicked on top promotion banner');
+      setLocation('/promotions/referral');
       return;
     }
     
-    // Navigation buttons in bottom section
-    if (yPercent >= 85) {
-      if (xPercent < 30) {
-        console.log('Navigating to Home');
-        setLocation('/');
-        return;
-      }
-      if (xPercent < 50) {
-        console.log('Navigating to Live Events');
-        setLocation('/live');
-        return;
-      }
-      if (xPercent < 70) {
-        console.log('Navigating to Bet Slip');
-        setLocation('/bet-slip');
-        return;
-      }
-      console.log('Navigating to User Profile');
-      setLocation('/settings');
+    // Left promotion box (100% SIGN-UP BONUS)
+    if (yPercent > 220 && yPercent < 330 && xPercent > 20 && xPercent < 50) {
+      console.log('Clicked on left promotion box');
+      setLocation('/promotions/signup-bonus');
       return;
+    }
+    
+    // Right promotion box ($50 RISK-FREE BET)
+    if (yPercent > 220 && yPercent < 330 && xPercent > 50 && xPercent < 80) {
+      console.log('Clicked on right promotion box');
+      setLocation('/promotions/risk-free');
+      return;
+    }
+    
+    // "All promotions" button
+    if (yPercent > 345 && yPercent < 355 && xPercent > 80 && xPercent < 90) {
+      console.log('Clicked on All promotions button');
+      setLocation('/promotions');
+      return;
+    }
+    
+    // Bundesliga matches (multiple rows)
+    if (yPercent > 390 && yPercent < 630 && xPercent > 20 && xPercent < 80) {
+      const row = Math.floor((yPercent - 390) / 24);
+      console.log('Clicked on Bundesliga match row:', row);
+      setLocation(`/event/${row + 1}`);
+      return;
+    }
+    
+    // Footer section clicks
+    if (yPercent > 700) {
+      // Information section
+      if (xPercent > 20 && xPercent < 40) {
+        console.log('Clicked on Information section in footer');
+        setLocation('/info');
+        return;
+      }
+      
+      // Community section
+      if (xPercent > 40 && xPercent < 60) {
+        console.log('Clicked on Community section in footer');
+        setLocation('/community');
+        return;
+      }
+      
+      // Contact Us section
+      if (xPercent > 60 && xPercent < 80) {
+        console.log('Clicked on Contact Us section in footer');
+        setLocation('/contact');
+        return;
+      }
     }
     
     // Default case - no need to show error message for clicks outside defined regions
     // Just log the click coordinates for debugging
-    console.log('Element clicked:', e.currentTarget);
+    console.log('Click in unhandled region');
   };
 
   return (
     <HomeLayout>
       <div className="w-full min-h-screen flex flex-col">
-        
         <div 
           className="relative w-full cursor-pointer" 
           onClick={handleImageClick}

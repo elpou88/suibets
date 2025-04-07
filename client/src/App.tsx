@@ -8,6 +8,7 @@ import Match from "@/pages/match";
 import Sport from "@/pages/sport";
 import MatchDetail from "@/pages/match-detail";
 import Promotions from "@/pages/promotions";
+import ReferralPage from "@/pages/promotions/referral";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
 import BetHistory from "@/pages/bet-history";
@@ -22,6 +23,10 @@ import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
 import { WalProvider } from "@/components/ui/wal-components";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
+import Info from "@/pages/info";
+import Community from "@/pages/community";
+import Contact from "@/pages/contact";
+import LiveEventPage from "@/pages/live/[id]";
 
 function Router() {
   console.log("Router initialized");
@@ -34,6 +39,7 @@ function Router() {
       <Route path="/match/:id" component={Match} />
       <Route path="/match-detail/:id" component={MatchDetail} />
       <Route path="/promotions" component={Promotions} />
+      <Route path="/promotions/referral" component={ReferralPage} />
       <Route path="/notifications" component={Notifications} />
       <Route path="/settings" component={Settings} />
       <Route path="/bet-history" component={BetHistory} />
@@ -43,6 +49,10 @@ function Router() {
       <Route path="/join" component={Home} />
       <Route path="/goto-promotions" component={RedirectToPromotions} />
       <Route path="/goto-live" component={RedirectToLive} />
+      <Route path="/info" component={Info} />
+      <Route path="/community" component={Community} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/live/:id" component={LiveEventPage} />
       <Route component={NotFound} />
     </Switch>
   );

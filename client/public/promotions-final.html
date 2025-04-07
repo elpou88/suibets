@@ -8,45 +8,108 @@
     body, html {
       margin: 0;
       padding: 0;
-      background-color: #000000;
+      background-color: #E7F2F3;
       font-family: sans-serif;
-      overflow: hidden;
+      overflow: auto;
       height: 100%;
       width: 100%;
     }
     
-    .full-image {
-      position: absolute;
+    .content {
+      padding: 0;
+      margin: 0;
+      display: block;
+      width: 100%;
+    }
+    
+    .promotional-banner {
+      width: 100%;
+      max-width: 830px;
+      margin: 0 auto;
+      display: block;
+      padding-top: 20px;
+    }
+    
+    .promotions-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin: 20px 0 15px 70px;
+      color: #000;
+    }
+    
+    .promotions-container {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      padding: 0 50px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .promo-card {
+      width: 250px;
+      background-color: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      color: white;
+    }
+    
+    .promo-image {
+      width: 100%;
+      height: auto;
+    }
+    
+    .promo-details {
+      padding: 15px;
+    }
+    
+    .promo-title {
+      font-weight: bold;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    
+    .promo-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      font-size: 12px;
+    }
+    
+    .promo-list li {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 5px;
+    }
+    
+    .promo-list li::before {
+      content: "•";
+      margin-right: 8px;
+    }
+    
+    .hidden-back {
+      position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      z-index: 10;
-    }
-    
-    .hidden-back {
-      position: absolute;
-      left: 43px;
-      top: 16px;
-      width: 50px;
-      height: 30px;
-      z-index: 20;
-      opacity: 0;
-      cursor: pointer;
+      z-index: -1;
     }
   </style>
 </head>
 <body>
   <a href="/" class="hidden-back"></a>
-  <img src="/images/Promotions (2).png" alt="Promotions" class="full-image">
+  
+  <div class="content">
+    <img src="/images/promotions-full.png" alt="Promotions Content" style="width:100%;">
+  </div>
 
   <script>
-    // Additional click handler for anywhere on the page to return to main app
-    document.addEventListener('click', function(e) {
-      // If not clicking the back button link
-      if (!e.target.closest('.hidden-back')) {
-        window.location.href = '/';
-      }
+    // Make clicking anywhere return to the main app
+    document.addEventListener('click', function() {
+      window.location.href = '/';
     });
   </script>
 </body>

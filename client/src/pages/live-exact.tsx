@@ -54,20 +54,20 @@ export default function LiveExact() {
     // Add visual debugging for clickable areas
     const debugMode = true;
     
-    // Sports button with exact positioning
+    // Sports button with exact positioning based on user's click coordinates
     const sportsButton = document.createElement('div');
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '450px';
-    sportsButton.style.top = '10px';
-    sportsButton.style.width = '42px';
-    sportsButton.style.height = '25px';
+    sportsButton.style.left = '460px';  // Adjusted based on successful click (477)
+    sportsButton.style.top = '15px';    // Adjusted based on successful click (22)
+    sportsButton.style.width = '45px';
+    sportsButton.style.height = '20px';
     sportsButton.style.cursor = 'pointer';
     sportsButton.style.zIndex = '1001';
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.innerHTML = 'Sports';
     sportsButton.style.color = 'transparent';
     sportsButton.style.fontSize = '14px';
-    sportsButton.style.lineHeight = '25px';
+    sportsButton.style.lineHeight = '20px';
     sportsButton.style.textAlign = 'center';
     sportsButton.addEventListener('click', () => {
       console.log('Clicked on Sports button');
@@ -75,20 +75,20 @@ export default function LiveExact() {
     });
     navContainer.appendChild(sportsButton);
     
-    // Live button with exact positioning
+    // Live button with exact positioning based on successful clicks
     const liveButton = document.createElement('div');
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '510px';
-    liveButton.style.top = '10px';
-    liveButton.style.width = '42px';
-    liveButton.style.height = '25px';
+    liveButton.style.left = '520px';  // Adjusted based on click position
+    liveButton.style.top = '15px';    // Adjusted based on click position
+    liveButton.style.width = '35px';
+    liveButton.style.height = '20px';
     liveButton.style.cursor = 'pointer';
     liveButton.style.zIndex = '1001';
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.innerHTML = 'Live';
     liveButton.style.color = 'transparent';
     liveButton.style.fontSize = '14px';
-    liveButton.style.lineHeight = '25px';
+    liveButton.style.lineHeight = '20px';
     liveButton.style.textAlign = 'center';
     liveButton.addEventListener('click', () => {
       console.log('Clicked on Live button');
@@ -96,20 +96,20 @@ export default function LiveExact() {
     });
     navContainer.appendChild(liveButton);
     
-    // Promotions button with exact positioning
+    // Promotions button with exact positioning based on successful click (577,22)
     const promotionsButton = document.createElement('div');
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '570px';
-    promotionsButton.style.top = '10px';
+    promotionsButton.style.left = '560px';  // Adjusted based on successful click (577)
+    promotionsButton.style.top = '15px';    // Adjusted based on successful click (22)
     promotionsButton.style.width = '85px';
-    promotionsButton.style.height = '25px';
+    promotionsButton.style.height = '20px';
     promotionsButton.style.cursor = 'pointer';
     promotionsButton.style.zIndex = '1001';
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.innerHTML = 'Promotions';
     promotionsButton.style.color = 'transparent';
     promotionsButton.style.fontSize = '14px';
-    promotionsButton.style.lineHeight = '25px';
+    promotionsButton.style.lineHeight = '20px';
     promotionsButton.style.textAlign = 'center';
     promotionsButton.addEventListener('click', () => {
       console.log('Clicked on Promotions button');

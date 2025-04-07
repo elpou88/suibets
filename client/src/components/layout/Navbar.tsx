@@ -35,11 +35,11 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-12 items-center">
+      <div className="flex ml-4 items-center">
         {/* Sports link - simple text link */}
         <a 
           href="/" 
-          className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer`}
+          className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer mr-6`}
         >
           Sports
           {location === "/" && (
@@ -50,10 +50,9 @@ export default function Navbar() {
         {/* Live link - direct text */}
         <a 
           href="/live-final.html" 
-          className="flex items-center text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+          className="flex items-center text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer mr-6"
         >
-          <span className="mr-1">Live</span>
-          <span className="inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+          Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
         </a>
         
         {/* Promotions link - direct text */}

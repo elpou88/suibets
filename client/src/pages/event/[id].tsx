@@ -173,14 +173,10 @@ export default function EventPage() {
             </div>
             
             <Tabs defaultValue="match-winner" className="w-full" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="w-full mb-4 flex flex-wrap">
+              <TabsList className="w-full mb-4">
                 <TabsTrigger value="match-winner" className="flex-1">Match Winner</TabsTrigger>
-                <TabsTrigger value="handicap" className="flex-1">Handicap</TabsTrigger>
                 <TabsTrigger value="goals" className="flex-1">Goals</TabsTrigger>
-                <TabsTrigger value="corners" className="flex-1 hidden md:block">Corners</TabsTrigger>
-                <TabsTrigger value="cards" className="flex-1 hidden md:block">Cards</TabsTrigger>
                 <TabsTrigger value="props" className="flex-1">Props</TabsTrigger>
-                <TabsTrigger value="combos" className="flex-1 hidden md:block">Combo Bets</TabsTrigger>
               </TabsList>
               
               <TabsContent value="match-winner">

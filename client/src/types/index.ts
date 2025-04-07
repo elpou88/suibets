@@ -8,12 +8,18 @@ export interface AuthContextType {
   disconnectWallet: () => void;
 }
 
+export interface PlaceBetOptions {
+  betType?: 'single' | 'parlay';
+  currency?: 'SUI' | 'SBETS';
+  acceptOddsChange?: boolean;
+}
+
 export interface BettingContextType {
   selectedBets: SelectedBet[];
   addBet: (bet: SelectedBet) => void;
   removeBet: (betId: string) => void;
   clearBets: () => void;
-  placeBet: (betAmount: number) => Promise<boolean>;
+  placeBet: (betAmount: number, options?: PlaceBetOptions) => Promise<boolean>;
   totalStake: number;
   potentialWinnings: number;
   updateStake: (id: string, amount: number) => void;

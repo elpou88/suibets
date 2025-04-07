@@ -51,68 +51,94 @@ export default function PromotionsPage() {
     // Add visual debugging for clickable areas
     const debugMode = true;
     
-    // Sports button with exact positioning based on user's click coordinates
-    const sportsButton = document.createElement('div');
+    // Create a navigation bar that exactly matches the position in the image
+    // The navigation uses EXACT pixel positions from the image we examined
+    const navigationBar = document.createElement('div');
+    navigationBar.style.position = 'absolute';
+    navigationBar.style.top = '0';
+    navigationBar.style.left = '0';
+    navigationBar.style.width = '100%';
+    navigationBar.style.height = '45px';
+    navigationBar.style.display = 'flex';
+    navigationBar.style.justifyContent = 'center';
+    navigationBar.style.alignItems = 'center';
+    navigationBar.style.zIndex = '1000';
+    container.appendChild(navigationBar);
+    
+    // Add fixed-position buttons exactly where they appear in the source image
+    // Each button has exact coordinates and dimensions from the image inspection
+    
+    // Sports button - located at pixel coordinates from the source image (435-470)
+    const sportsButton = document.createElement('button');
+    sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '460px';  // Adjusted based on successful click (477)
-    sportsButton.style.top = '15px';    // Adjusted based on successful click (22)
-    sportsButton.style.width = '45px';
+    sportsButton.style.left = '435px';
+    sportsButton.style.top = '22px';
+    sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
+    sportsButton.style.border = 'none';
+    sportsButton.style.color = 'transparent'; // Make text transparent but keep the button text for accessibility
+    sportsButton.style.width = '65px';
     sportsButton.style.height = '20px';
     sportsButton.style.cursor = 'pointer';
-    sportsButton.style.zIndex = '1001';
-    sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
-    sportsButton.innerHTML = 'Sports';
-    sportsButton.style.color = 'transparent';
-    sportsButton.style.fontSize = '14px';
-    sportsButton.style.lineHeight = '20px';
+    sportsButton.style.fontFamily = 'Arial, sans-serif';
+    sportsButton.style.fontSize = '16px';
+    sportsButton.style.padding = '0';
+    sportsButton.style.margin = '0';
     sportsButton.style.textAlign = 'center';
-    sportsButton.addEventListener('click', () => {
-      console.log('Clicked on Sports button');
+    sportsButton.style.zIndex = '1001';
+    sportsButton.onclick = () => {
+      console.log('SPORTS button clicked');
       window.location.href = '/';
-    });
-    navContainer.appendChild(sportsButton);
+    };
+    navigationBar.appendChild(sportsButton);
     
-    // Live button with exact positioning based on successful clicks
-    const liveButton = document.createElement('div');
+    // Live button - located between Sports and Promotions (495-510)
+    const liveButton = document.createElement('button');
+    liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '520px';  // Adjusted based on click position
-    liveButton.style.top = '15px';    // Adjusted based on click position
-    liveButton.style.width = '35px';
+    liveButton.style.left = '495px';
+    liveButton.style.top = '22px';
+    liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
+    liveButton.style.border = 'none';
+    liveButton.style.color = 'transparent';
+    liveButton.style.width = '40px';
     liveButton.style.height = '20px';
     liveButton.style.cursor = 'pointer';
-    liveButton.style.zIndex = '1001';
-    liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
-    liveButton.innerHTML = 'Live';
-    liveButton.style.color = 'transparent';
-    liveButton.style.fontSize = '14px';
-    liveButton.style.lineHeight = '20px';
+    liveButton.style.fontFamily = 'Arial, sans-serif';
+    liveButton.style.fontSize = '16px';
+    liveButton.style.padding = '0';
+    liveButton.style.margin = '0';
     liveButton.style.textAlign = 'center';
-    liveButton.addEventListener('click', () => {
-      console.log('Clicked on Live button');
+    liveButton.style.zIndex = '1001';
+    liveButton.onclick = () => {
+      console.log('LIVE button clicked');
       window.location.href = '/live';
-    });
-    navContainer.appendChild(liveButton);
+    };
+    navigationBar.appendChild(liveButton);
     
-    // Promotions button with exact positioning based on successful click (577,22)
-    const promotionsButton = document.createElement('div');
+    // Promotions button - right side of navigation (555-640)
+    const promotionsButton = document.createElement('button');
+    promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '560px';  // Adjusted based on successful click (577)
-    promotionsButton.style.top = '15px';    // Adjusted based on successful click (22)
+    promotionsButton.style.left = '555px';
+    promotionsButton.style.top = '22px';
+    promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
+    promotionsButton.style.border = 'none';
+    promotionsButton.style.color = 'transparent';
     promotionsButton.style.width = '85px';
     promotionsButton.style.height = '20px';
     promotionsButton.style.cursor = 'pointer';
-    promotionsButton.style.zIndex = '1001';
-    promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
-    promotionsButton.innerHTML = 'Promotions';
-    promotionsButton.style.color = 'transparent';
-    promotionsButton.style.fontSize = '14px';
-    promotionsButton.style.lineHeight = '20px';
+    promotionsButton.style.fontFamily = 'Arial, sans-serif';
+    promotionsButton.style.fontSize = '16px';
+    promotionsButton.style.padding = '0';
+    promotionsButton.style.margin = '0';
     promotionsButton.style.textAlign = 'center';
-    promotionsButton.addEventListener('click', () => {
-      console.log('Clicked on Promotions button');
+    promotionsButton.style.zIndex = '1001';
+    promotionsButton.onclick = () => {
+      console.log('PROMOTIONS button clicked');
       window.location.href = '/promotions';
-    });
-    navContainer.appendChild(promotionsButton);
+    };
+    navigationBar.appendChild(promotionsButton);
     
     const joinArea = document.createElement('area');
     joinArea.shape = 'rect';

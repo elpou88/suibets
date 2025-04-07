@@ -42,9 +42,11 @@ body, html {
   border-radius: 4px;
   font-size: 12px;
   margin-right: 32px;
-  display: inline-flex;
-  align-items: center;
+  display: inline-block;
+  text-align: center;
   cursor: pointer;
+  text-decoration: none;
+  min-width: 50px;
 }
 
 .live-dot {
@@ -53,6 +55,9 @@ body, html {
   background-color: red;
   border-radius: 50%;
   margin-left: 4px;
+  display: inline-block;
+  position: relative;
+  top: -1px;
   animation: pulse 1.5s infinite;
 }
 
@@ -71,6 +76,10 @@ body, html {
   border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  text-align: center;
+  min-width: 50px;
 }
 
 .right-nav {

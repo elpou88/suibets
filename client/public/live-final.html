@@ -11,10 +11,10 @@
     <div class="left-nav">
       <a href="/" class="nav-sports">Sports</a>
       <a href="/live-final.html" class="nav-live-btn">
-        Live<span class="live-dot"></span>
+        <span>Live</span><span class="live-dot"></span>
       </a>
       <a href="/promotions-final.html" class="nav-promo-btn">
-        Promo
+        <span>Promo</span>
       </a>
     </div>
     
@@ -27,5 +27,13 @@
   <div class="main-content">
     <img src="/images/live-exact.png" alt="Live Events" class="content-img">
   </div>
+
+  <script>
+    // Add click detection for debugging
+    document.addEventListener('click', function(e) {
+      console.log('Click detected at:', e.clientX, e.clientY);
+      console.log('Element clicked:', e.target);
+    });
+  </script>
 </body>
 </html>

@@ -48,10 +48,10 @@ export default function Navbar() {
         <div className="w-16">
           <Button
             size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs flex items-center w-full justify-center"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs w-full justify-center"
             onClick={goToLive}
           >
-            Live
+            <span>Live</span>
             <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
           </Button>
         </div>
@@ -62,7 +62,7 @@ export default function Navbar() {
             className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs w-full justify-center"
             onClick={goToPromotions}
           >
-            Promo
+            <span>Promo</span>
           </Button>
         </div>
       </div>

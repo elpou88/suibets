@@ -27,32 +27,119 @@ import Info from "@/pages/info";
 import Community from "@/pages/community";
 import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
+import Live from "@/pages/live";
+
+// Wrap each page component with Layout
+const HomePage = () => (
+  <Layout>
+    <Home />
+  </Layout>
+);
+
+const SportPage = ({ params }: { params: any }) => (
+  <Layout>
+    <Sport {...params} />
+  </Layout>
+);
+
+const MatchPage = ({ params }: { params: any }) => (
+  <Layout>
+    <Match {...params} />
+  </Layout>
+);
+
+const LivePage = () => (
+  <Layout>
+    <Live />
+  </Layout>
+);
+
+const LiveEventDetailPage = ({ params }: { params: any }) => (
+  <Layout>
+    <LiveEventPage {...params} />
+  </Layout>
+);
+
+const PromotionsPage = () => (
+  <Layout>
+    <Promotions />
+  </Layout>
+);
+
+const NotificationsPage = () => (
+  <Layout>
+    <Notifications />
+  </Layout>
+);
+
+const SettingsPage = () => (
+  <Layout>
+    <Settings />
+  </Layout>
+);
+
+const BetHistoryPage = () => (
+  <Layout>
+    <BetHistory />
+  </Layout>
+);
+
+const BetSlipPage = () => (
+  <Layout>
+    <BetSlip />
+  </Layout>
+);
+
+const ConnectWalletPage = () => (
+  <Layout>
+    <ConnectWallet />
+  </Layout>
+);
+
+const InfoPage = () => (
+  <Layout>
+    <Info />
+  </Layout>
+);
+
+const CommunityPage = () => (
+  <Layout>
+    <Community />
+  </Layout>
+);
+
+const ContactPage = () => (
+  <Layout>
+    <Contact />
+  </Layout>
+);
 
 function Router() {
   console.log("Router initialized");
   
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/sports" component={Home} />
-      <Route path="/sport/:slug*" component={Sport} />
-      <Route path="/match/:id" component={Match} />
+      <Route path="/" component={HomePage} />
+      <Route path="/sports" component={HomePage} />
+      <Route path="/sport/:slug*" component={SportPage} />
+      <Route path="/match/:id" component={MatchPage} />
       <Route path="/match-detail/:id" component={MatchDetail} />
-      <Route path="/promotions" component={Promotions} />
+      <Route path="/promotions" component={PromotionsPage} />
       <Route path="/promotions/referral" component={ReferralPage} />
-      <Route path="/notifications" component={Notifications} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/bet-history" component={BetHistory} />
-      <Route path="/bet-slip" component={BetSlip} />
+      <Route path="/notifications" component={NotificationsPage} />
+      <Route path="/settings" component={SettingsPage} />
+      <Route path="/bet-history" component={BetHistoryPage} />
+      <Route path="/bet-slip" component={BetSlipPage} />
       <Route path="/bet-slip-2" component={BetSlip2} />
-      <Route path="/connect-wallet" component={ConnectWallet} />
-      <Route path="/join" component={Home} />
+      <Route path="/connect-wallet" component={ConnectWalletPage} />
+      <Route path="/join" component={HomePage} />
       <Route path="/goto-promotions" component={RedirectToPromotions} />
       <Route path="/goto-live" component={RedirectToLive} />
-      <Route path="/info" component={Info} />
-      <Route path="/community" component={Community} />
-      <Route path="/contact" component={Contact} />
-      <Route path="/live/:id" component={LiveEventPage} />
+      <Route path="/info" component={InfoPage} />
+      <Route path="/community" component={CommunityPage} />
+      <Route path="/contact" component={ContactPage} />
+      <Route path="/live" component={LivePage} />
+      <Route path="/live/:id" component={LiveEventDetailPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -10,23 +10,72 @@
       padding: 0;
       background-color: #09181B;
       font-family: sans-serif;
-      overflow: hidden;
+      overflow: auto;
+      color: white;
     }
     
-    .content-img {
+    .header {
+      background-color: #09181B;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 16px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .back-link {
+      color: #00FFFF;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      font-size: 16px;
+    }
+    
+    .back-arrow {
+      margin-right: 8px;
+    }
+    
+    .title {
+      font-size: 20px;
+      font-weight: bold;
+      flex-grow: 1;
+      text-align: center;
+    }
+    
+    .logo {
+      color: #00FFFF;
+      font-size: 18px;
+      font-weight: bold;
+    }
+    
+    .content {
+      padding: 20px;
+    }
+    
+    .promotion-content {
       width: 100%;
-      height: 100vh;
-      display: block;
-      object-fit: cover;
+      max-width: 100%;
     }
   </style>
 </head>
 <body>
-  <img src="/images/Promotions (2).png" alt="Promotions" class="content-img">
+  <div class="header">
+    <a href="/" class="back-link">
+      <span class="back-arrow">←</span>
+      Back
+    </a>
+    <h1 class="title">Promotions</h1>
+    <div class="logo">SuiBets</div>
+  </div>
+  
+  <div class="content">
+    <img src="/images/Promotions (2).png" alt="Promotions" class="promotion-content">
+  </div>
 
   <script>
-    // Make the whole image clickable to return to main app
-    document.addEventListener('click', function() {
+    // Add click handler for the back button
+    document.querySelector('.back-link').addEventListener('click', function(e) {
+      e.preventDefault();
       window.location.href = '/';
     });
   </script>

@@ -42,42 +42,80 @@ export default function LiveExact() {
       console.log(`Click coordinates: ${x},${y}`);
     });
     
-    // Create the clickable areas with exact coordinates from the console logs
-    const sportsArea = document.createElement('area');
-    sportsArea.shape = 'rect';
-    sportsArea.coords = '435,8,480,27'; // Based on click logs
-    sportsArea.alt = 'Sports';
-    sportsArea.href = '/goto-sports';
-    sportsArea.addEventListener('click', (e) => {
-      e.preventDefault();
+    // Create absolute positioned divs for clickable areas - more reliable than image maps
+    const navContainer = document.createElement('div');
+    navContainer.style.position = 'absolute';
+    navContainer.style.top = '0';
+    navContainer.style.left = '0';
+    navContainer.style.width = '100%';
+    navContainer.style.zIndex = '1000';
+    container.appendChild(navContainer);
+    
+    // Add visual debugging for clickable areas
+    const debugMode = true;
+    
+    // Sports button with exact positioning
+    const sportsButton = document.createElement('div');
+    sportsButton.style.position = 'absolute';
+    sportsButton.style.left = '450px';
+    sportsButton.style.top = '10px';
+    sportsButton.style.width = '42px';
+    sportsButton.style.height = '25px';
+    sportsButton.style.cursor = 'pointer';
+    sportsButton.style.zIndex = '1001';
+    sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
+    sportsButton.innerHTML = 'Sports';
+    sportsButton.style.color = 'transparent';
+    sportsButton.style.fontSize = '14px';
+    sportsButton.style.lineHeight = '25px';
+    sportsButton.style.textAlign = 'center';
+    sportsButton.addEventListener('click', () => {
+      console.log('Clicked on Sports button');
       window.location.href = '/';
-      console.log('Clicked on Sports navigation');
     });
-    map.appendChild(sportsArea);
+    navContainer.appendChild(sportsButton);
     
-    const liveArea = document.createElement('area');
-    liveArea.shape = 'rect';
-    liveArea.coords = '495,8,530,27'; // Based on click logs
-    liveArea.alt = 'Live';
-    liveArea.href = '/goto-live';
-    liveArea.addEventListener('click', (e) => {
-      e.preventDefault();
+    // Live button with exact positioning
+    const liveButton = document.createElement('div');
+    liveButton.style.position = 'absolute';
+    liveButton.style.left = '510px';
+    liveButton.style.top = '10px';
+    liveButton.style.width = '42px';
+    liveButton.style.height = '25px';
+    liveButton.style.cursor = 'pointer';
+    liveButton.style.zIndex = '1001';
+    liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
+    liveButton.innerHTML = 'Live';
+    liveButton.style.color = 'transparent';
+    liveButton.style.fontSize = '14px';
+    liveButton.style.lineHeight = '25px';
+    liveButton.style.textAlign = 'center';
+    liveButton.addEventListener('click', () => {
+      console.log('Clicked on Live button');
       window.location.href = '/live';
-      console.log('Clicked on Live navigation');
     });
-    map.appendChild(liveArea);
+    navContainer.appendChild(liveButton);
     
-    const promotionsArea = document.createElement('area');
-    promotionsArea.shape = 'rect';
-    promotionsArea.coords = '550,8,620,28'; // Based on click logs
-    promotionsArea.alt = 'Promotions';
-    promotionsArea.href = '/goto-promotions';
-    promotionsArea.addEventListener('click', (e) => {
-      e.preventDefault();
+    // Promotions button with exact positioning
+    const promotionsButton = document.createElement('div');
+    promotionsButton.style.position = 'absolute';
+    promotionsButton.style.left = '570px';
+    promotionsButton.style.top = '10px';
+    promotionsButton.style.width = '85px';
+    promotionsButton.style.height = '25px';
+    promotionsButton.style.cursor = 'pointer';
+    promotionsButton.style.zIndex = '1001';
+    promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
+    promotionsButton.innerHTML = 'Promotions';
+    promotionsButton.style.color = 'transparent';
+    promotionsButton.style.fontSize = '14px';
+    promotionsButton.style.lineHeight = '25px';
+    promotionsButton.style.textAlign = 'center';
+    promotionsButton.addEventListener('click', () => {
+      console.log('Clicked on Promotions button');
       window.location.href = '/promotions';
-      console.log('Clicked on Promotions navigation');
     });
-    map.appendChild(promotionsArea);
+    navContainer.appendChild(promotionsButton);
     
     const joinArea = document.createElement('area');
     joinArea.shape = 'rect';

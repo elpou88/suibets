@@ -95,11 +95,12 @@ export default function LiveExact() {
     sportsButton.style.zIndex = '1001';
     sportsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('SPORTS button clicked - Fast navigation');
-      // Use direct DOM replacement for faster navigation
+      console.log('SPORTS button clicked - Ultra-fast navigation');
+      // Use history.pushState for faster navigation without page reload
       const homeUrl = '/';
       window.history.pushState({}, '', homeUrl);
-      window.location.replace(homeUrl);
+      // Direct navigation without reload for faster transitions
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
     };
     navigationBar.appendChild(sportsButton);
     
@@ -123,11 +124,12 @@ export default function LiveExact() {
     liveButton.style.zIndex = '1001';
     liveButton.onclick = (e) => {
       e.preventDefault();
-      console.log('LIVE button clicked - Fast navigation');
-      // Use direct DOM replacement for faster navigation
+      console.log('LIVE button clicked - Ultra-fast navigation');
+      // Use history.pushState for faster navigation without page reload
       const liveUrl = '/live';
       window.history.pushState({}, '', liveUrl);
-      window.location.replace(liveUrl);
+      // Direct navigation without reload for faster transitions
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
     };
     navigationBar.appendChild(liveButton);
     
@@ -151,11 +153,12 @@ export default function LiveExact() {
     promotionsButton.style.zIndex = '1001';
     promotionsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('PROMOTIONS button clicked - Fast navigation');
-      // Use direct DOM replacement for faster navigation
+      console.log('PROMOTIONS button clicked - Ultra-fast navigation');
+      // Use history.pushState for faster navigation without page reload
       const promotionsUrl = '/promotions';
       window.history.pushState({}, '', promotionsUrl);
-      window.location.replace(promotionsUrl);
+      // Direct navigation without reload for faster transitions
+      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
     };
     navigationBar.appendChild(promotionsButton);
     

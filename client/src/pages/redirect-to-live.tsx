@@ -24,50 +24,56 @@ export default function RedirectToLive() {
   };
 
   return (
-    <div className="w-full min-h-screen">
+    <div className="w-full min-h-screen bg-[#f2f2f2]">
       <img 
-        src="/images/Live (2).png"
+        src="/images/live-exact-image.png"
         alt="Live Betting Page"
         className="w-full"
         useMap="#livemap"
       />
       
       <map name="livemap">
-        {/* These are clickable regions on the image */}
-        <area shape="rect" coords="200,20,250,40" alt="Sports" href="/sports" />
-        <area shape="rect" coords="300,20,350,40" alt="Live" href="/live" />
-        <area shape="rect" coords="400,20,500,40" alt="Promotions" href="/promotions" />
-        <area shape="rect" coords="750,20,830,40" alt="Join Now" href="/join" />
-        <area shape="rect" coords="840,20,970,40" alt="Connect Wallet" href="/connect-wallet" />
+        {/* Navigation links */}
+        <area shape="rect" coords="435,22,468,35" alt="Sports" href="/sports" />
+        <area shape="rect" coords="495,22,514,35" alt="Live" href="/live" />
+        <area shape="rect" coords="553,22,609,35" alt="Promotions" href="/promotions" />
+        <area shape="rect" coords="816,22,861,35" alt="Join Now" href="/join" />
+        <area shape="rect" coords="909,22,970,35" alt="Connect Wallet" href="/connect-wallet" />
         
-        {/* Tennis matches */}
-        <area shape="rect" coords="100,200,200,250" alt="Tennis Match 1" 
+        {/* Tennis matches - top row */}
+        <area shape="rect" coords="318,235,365,262" alt="Arthur Fils vs Nuno Borges" 
           onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
-        <area shape="rect" coords="220,200,320,250" alt="Tennis Match 2"
-          onClick={() => handleBetClick('Nuno Borges', 2.39, 'Match Winner')} />
+        <area shape="rect" coords="465,235,512,262" alt="Arthur Fils vs Nuno Borges 2"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="618,235,665,262" alt="Arthur Fils vs Nuno Borges 3"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="772,235,819,262" alt="Arthur Fils vs Nuno Borges 4"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
+        <area shape="rect" coords="926,235,973,262" alt="Arthur Fils vs Nuno Borges 5"
+          onClick={() => handleBetClick('Arthur Fils', 1.57, 'Match Winner')} />
           
-        {/* Rwanda Tennis Players */}
-        <area shape="rect" coords="450,370,520,400" alt="Alex M Pujolas"
+        {/* Live tennis matches - Rwanda section */}
+        <area shape="rect" coords="779,371,785,373" alt="Alex M Pujolas"
           onClick={() => handleBetClick('Alex M Pujolas', 1.07, 'Match Winner')} />
-        <area shape="rect" coords="550,370,620,400" alt="Dominik Kellovsky"
+        <area shape="rect" coords="779,386,785,388" alt="Dominik Kellovsky"
           onClick={() => handleBetClick('Dominik Kellovsky', 6.96, 'Match Winner')} />
           
         {/* Handicap betting options */}
-        <area shape="rect" coords="450,400,520,430" alt="Pujolas Handicap"
+        <area shape="rect" coords="842,371,857,373" alt="Pujolas Handicap"
           onClick={() => handleBetClick('Alex M Pujolas -3.5', 1.57, 'Handicap')} />
-        <area shape="rect" coords="550,400,620,430" alt="Kellovsky Handicap"
+        <area shape="rect" coords="842,386,857,388" alt="Kellovsky Handicap"
           onClick={() => handleBetClick('Dominik Kellovsky +3.5', 2.25, 'Handicap')} />
           
         {/* Total betting options */}
-        <area shape="rect" coords="650,370,720,400" alt="Over 22.5"
+        <area shape="rect" coords="915,371,945,373" alt="Over 22.5"
           onClick={() => handleBetClick('Over 22.5', 2.20, 'Total')} />
-        <area shape="rect" coords="750,370,820,400" alt="Under 22.5"
+        <area shape="rect" coords="915,386,945,388" alt="Under 22.5"
           onClick={() => handleBetClick('Under 22.5', 1.61, 'Total')} />
           
         {/* Second match betting options */}
-        <area shape="rect" coords="450,450,520,480" alt="Maximus Jenek"
+        <area shape="rect" coords="779,421,785,423" alt="Maximus Jenek"
           onClick={() => handleBetClick('Maximus Jenek', 1.57, 'Match Winner')} />
-        <area shape="rect" coords="550,450,620,480" alt="Mathys Erhard"
+        <area shape="rect" coords="779,436,785,438" alt="Mathys Erhard"
           onClick={() => handleBetClick('Mathys Erhard', 2.35, 'Match Winner')} />
       </map>
     </div>

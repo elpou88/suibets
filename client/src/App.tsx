@@ -53,6 +53,7 @@ function App() {
                 <Route path="/bet-slip-2" component={BetSlip2} />
                 <Route path="/connect-wallet" component={ConnectWallet} />
                 <Route path="/join" component={Home} />
+                <Route path="/goto-sports" component={Home} />
                 <Route path="/goto-promotions" component={RedirectToPromotions} />
                 <Route path="/goto-live" component={RedirectToLive} />
                 <Route path="/info" component={Info} />

@@ -42,26 +42,41 @@ export default function LiveExact() {
       console.log(`Click coordinates: ${x},${y}`);
     });
     
-    // Create the clickable areas with wider hit areas
+    // Create the clickable areas with exact coordinates from the console logs
     const sportsArea = document.createElement('area');
     sportsArea.shape = 'rect';
-    sportsArea.coords = '435,10,480,35'; // Wider area
+    sportsArea.coords = '435,8,480,27'; // Based on click logs
     sportsArea.alt = 'Sports';
-    sportsArea.href = '/';
+    sportsArea.href = '/goto-sports';
+    sportsArea.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/';
+      console.log('Clicked on Sports navigation');
+    });
     map.appendChild(sportsArea);
     
     const liveArea = document.createElement('area');
     liveArea.shape = 'rect';
-    liveArea.coords = '485,10,525,35'; // Wider area
+    liveArea.coords = '495,8,530,27'; // Based on click logs
     liveArea.alt = 'Live';
-    liveArea.href = '/live';
+    liveArea.href = '/goto-live';
+    liveArea.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/live';
+      console.log('Clicked on Live navigation');
+    });
     map.appendChild(liveArea);
     
     const promotionsArea = document.createElement('area');
     promotionsArea.shape = 'rect';
-    promotionsArea.coords = '545,10,620,35'; // Wider area
+    promotionsArea.coords = '550,8,620,28'; // Based on click logs
     promotionsArea.alt = 'Promotions';
-    promotionsArea.href = '/promotions';
+    promotionsArea.href = '/goto-promotions';
+    promotionsArea.addEventListener('click', (e) => {
+      e.preventDefault();
+      window.location.href = '/promotions';
+      console.log('Clicked on Promotions navigation');
+    });
     map.appendChild(promotionsArea);
     
     const joinArea = document.createElement('area');

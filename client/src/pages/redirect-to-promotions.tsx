@@ -1,19 +1,16 @@
 import { useEffect } from "react";
-import promotionsImg from "@assets/Promotions (2).png";
+import { useLocation } from "wouter";
 
 export default function RedirectToPromotions() {
+  const [, setLocation] = useLocation();
+  
   useEffect(() => {
-    // This can be uncommented when you have a real promotions.html
-    // window.location.href = "/promotions.html";
-  }, []);
-
-  return (
-    <div className="w-full h-screen flex flex-col items-center justify-center bg-[#09181B]">
-      <img 
-        src={promotionsImg} 
-        alt="Promotions" 
-        className="max-w-full h-auto"
-      />
-    </div>
-  );
+    console.log("Redirecting to promotions page");
+    // Redirect to the promotions page with a slight delay to ensure navigation works
+    setTimeout(() => {
+      setLocation("/promotions");
+    }, 100);
+  }, [setLocation]);
+  
+  return <div className="h-screen flex items-center justify-center">Redirecting to promotions...</div>;
 }

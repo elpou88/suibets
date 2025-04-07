@@ -34,15 +34,14 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <Link href="/?live=true">
-          <div className={`relative px-3 py-1 flex items-center ${location === "/?live=true" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
-            Live 
-            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-            {location === "/?live=true" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
-          </div>
-        </Link>
+        <a 
+          href="/live-page.png"
+          target="_blank"
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center"
+        >
+          Live 
+          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+        </a>
         <a 
           href="/promotions-direct.png"
           target="_blank"

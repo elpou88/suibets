@@ -4,35 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Promotions - SuiBets</title>
-  <link rel="stylesheet" href="/css/exact-nav.css">
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background-color: #09181B;
+      font-family: sans-serif;
+      overflow: hidden;
+    }
+    
+    .content-img {
+      width: 100%;
+      height: 100vh;
+      display: block;
+      object-fit: cover;
+    }
+  </style>
 </head>
 <body>
-  <div class="navbar">
-    <div class="left-nav">
-      <a href="/" class="nav-sports">Sports</a>
-      <a href="/live-final.html" class="nav-live-btn" style="position: relative; left: 15px;">
-        <span>Live</span><span class="live-dot"></span>
-      </a>
-      <a href="/promotions-final.html" class="nav-promo-btn">
-        <span>Promo</span>
-      </a>
-    </div>
-    
-    <div class="right-nav">
-      <a href="/join" class="join-btn">Join Now</a>
-      <a href="/connect-wallet" class="wallet-btn">Connect Wallet</a>
-    </div>
-  </div>
-  
-  <div class="main-content">
-    <img src="/images/Promotions (2).png" alt="Promotions" class="content-img">
-  </div>
+  <img src="/images/Promotions (2).png" alt="Promotions" class="content-img">
 
   <script>
-    // Add click detection for debugging
-    document.addEventListener('click', function(e) {
-      console.log('Click detected at:', e.clientX, e.clientY);
-      console.log('Element clicked:', e.target);
+    // Make the whole image clickable to return to main app
+    document.addEventListener('click', function() {
+      window.location.href = '/';
     });
   </script>
 </body>

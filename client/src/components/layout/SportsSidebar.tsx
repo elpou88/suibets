@@ -17,7 +17,7 @@ const SportItem = ({ name, slug, top }: SportItemProps) => {
 
   return (
     <div 
-      className="absolute left-0 px-4 py-1 w-full text-transparent hover:text-transparent hover:bg-blue-900/60 font-medium cursor-pointer transition-all rounded-r"
+      className="absolute left-0 px-4 py-1 w-full text-transparent cursor-pointer"
       style={{ top: `${top}%` }}
       onClick={handleClick}
     >

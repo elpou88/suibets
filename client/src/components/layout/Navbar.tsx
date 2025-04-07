@@ -35,9 +35,10 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+      <div className="flex space-x-8">
+        {/* Sports link */}
         <Link href="/">
-          <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
+          <div className={`text-center relative px-2 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Sports
             {location === "/" && (
               <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
@@ -45,54 +46,22 @@ export default function Navbar() {
           </div>
         </Link>
         
-        <div style={{ padding: '0 8px' }}>
+        {/* Live button */}
+        <div className="text-center">
           <button 
             onClick={goToLive}
-            style={{ 
-              backgroundColor: '#00FFFF',
-              color: 'black',
-              border: 'none',
-              fontWeight: 'bold',
-              borderRadius: '4px',
-              fontSize: '12px',
-              padding: '4px 12px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '60px'
-            }}
+            className="text-center bg-[#00FFFF] text-black font-bold rounded px-3 py-1 text-xs"
           >
             Live
-            <span style={{ 
-              marginLeft: '4px', 
-              width: '6px', 
-              height: '6px', 
-              backgroundColor: 'red', 
-              borderRadius: '50%', 
-              display: 'inline-block',
-              animation: 'pulse 1.5s infinite'
-            }}></span>
+            <span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
           </button>
         </div>
         
-        <div style={{ padding: '0 8px' }}>
+        {/* Promotions button */}
+        <div className="text-center">
           <button
             onClick={goToPromotions}
-            style={{ 
-              backgroundColor: '#00FFFF',
-              color: 'black',
-              border: 'none',
-              fontWeight: 'bold',
-              borderRadius: '4px',
-              fontSize: '12px',
-              padding: '4px 12px',
-              cursor: 'pointer',
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '60px'
-            }}
+            className="text-center bg-[#00FFFF] text-black font-bold rounded px-3 py-1 text-xs"
           >
             Promo
           </button>

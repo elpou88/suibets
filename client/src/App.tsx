@@ -17,6 +17,7 @@ import ConnectWallet from "@/pages/connect-wallet";
 import NotFound from "@/pages/not-found";
 import RedirectToPromotions from "@/pages/redirect-to-promotions";
 import RedirectToLive from "@/pages/redirect-to-live";
+import WurlusOdds from "@/pages/wurlus-odds";
 import Layout from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/join" component={Home} />
       <Route path="/goto-promotions" component={RedirectToPromotions} />
       <Route path="/goto-live" component={RedirectToLive} />
+      <Route path="/wurlus-odds" component={WurlusOdds} />
       <Route component={NotFound} />
     </Switch>
   );

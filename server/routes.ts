@@ -1160,6 +1160,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aggregator API endpoints based on Wal.app aggregator documentation
   // Start the odds aggregation service
   aggregatorService.startRefreshInterval();
+  
+  // Get all available events with odds
+  app.get("/api/wurlus/events", async (req: Request, res: Response) => {
+    try {
+      // Import the mock data provider to get direct event data
+      const { mockSportsDataProvider } = await import('./services/mockSportsDataProvider');
+      
+      // Get all available events
+      const events = mockSportsDataProvider.getEvents();
+      
+      res.json({
+        success: true,
+        events,
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error("Error fetching events:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to fetch events" 
+      });
+    }
+  });
 
   // Get best odds for an event
   app.get("/api/aggregator/events/:eventId/odds", async (req: Request, res: Response) => {

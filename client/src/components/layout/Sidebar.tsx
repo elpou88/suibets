@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { Sport } from "@/types";
-import { Grid2X2, ChevronLeft } from "lucide-react";
+import { Grid2X2, ChevronLeft, LineChart } from "lucide-react";
 import { 
   MdSportsBaseball, 
   MdSportsBasketball, 
@@ -36,7 +36,8 @@ const sportsList = [
   { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
   { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
   { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' }
+  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
+  { id: 16, name: 'Wurlus Odds', slug: 'wurlus-odds', icon: 'linechart', special: true }
 ];
 
 export default function Sidebar() {

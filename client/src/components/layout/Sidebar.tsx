@@ -36,8 +36,7 @@ const sportsList = [
   { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
   { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
   { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
-  { id: 16, name: 'Wurlus Odds', slug: 'wurlus-odds', icon: 'linechart', special: true }
+  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' }
 ];
 
 export default function Sidebar() {

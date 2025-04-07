@@ -717,8 +717,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const randomSuffix = securityService.generateSecureToken(4);
         const username = `user_${address.substring(0, 8)}_${randomSuffix}`;
         
+        // For wallet-based users, generate a random password they never need to use
+        // This satisfies the not-null constraint on the password field
+        const randomPassword = securityService.generateSecureToken(16);
+        
         const newUser = {
           username: username,
+          password: randomPassword, // Add a random password for wallet-based users
           walletAddress: address,
           walletType: sanitizedWalletType,
           createdAt: new Date()

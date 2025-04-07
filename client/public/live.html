@@ -9,12 +9,15 @@
       height: 100%;
       width: 100%;
       overflow: hidden;
-      background-color: #f2f2f2;
+      background-color: #09181B;
     }
     
     img {
       width: 100%;
       height: auto;
+      max-width: 1440px;
+      margin: 0 auto;
+      display: block;
     }
     
     .container {
@@ -24,6 +27,12 @@
       flex-direction: column;
       align-items: center;
     }
+
+    @media (max-width: 1440px) {
+      img {
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -31,10 +40,10 @@
     <img src="/images/live-exact.png" alt="Live Page" usemap="#livemap" />
     
     <map name="livemap">
-      <!-- Navigation links -->
-      <area shape="rect" coords="435,22,468,35" alt="Sports" href="/sports" />
-      <area shape="rect" coords="495,22,514,35" alt="Live" href="/live" />
-      <area shape="rect" coords="553,22,609,35" alt="Promotions" href="/promotions" />
+      <!-- Navigation links - adjusted coordinates based on the actual image -->
+      <area shape="rect" coords="100,22,168,35" alt="Sports" href="/" />
+      <area shape="rect" coords="195,22,230,35" alt="Live" href="/live.html" />
+      <area shape="rect" coords="253,22,309,35" alt="Promotions" href="/promotions.html" />
       <area shape="rect" coords="816,22,861,35" alt="Join Now" href="/join" />
       <area shape="rect" coords="909,22,970,35" alt="Connect Wallet" href="/connect-wallet" />
     </map>

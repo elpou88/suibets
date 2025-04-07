@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-8 items-center">
+      <div className="flex items-center" style={{ gap: '1rem' }}>
         <Link href="/">
           <div className={`relative px-3 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
             Sports
@@ -45,24 +45,30 @@ export default function Navbar() {
           </div>
         </Link>
         
-        <div className="w-16">
+        <div className="flex-none ml-8">
           <Button
             size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs w-full justify-center"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs"
             onClick={goToLive}
+            style={{ width: '60px', padding: '4px 8px' }}
           >
-            <span>Live</span>
-            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+            <div className="flex items-center justify-center w-full">
+              <span>Live</span>
+              <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+            </div>
           </Button>
         </div>
         
-        <div className="w-16">
+        <div className="w-16 flex justify-center">
           <Button
             size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs w-full justify-center"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs min-w-[60px]"
             onClick={goToPromotions}
+            style={{ width: '100%', padding: '4px 8px' }}
           >
-            <span>Promo</span>
+            <div className="flex items-center justify-center w-full">
+              <span>Promo</span>
+            </div>
           </Button>
         </div>
       </div>

@@ -96,25 +96,9 @@ export default function LiveExact() {
     sportsButton.onclick = (e) => {
       e.preventDefault();
       console.log('SPORTS button clicked - Ultra-fast navigation');
-      // Make this more reliable by using multiple navigation methods
-      try {
-        // First redirect with pushState
-        const homeUrl = '/';
-        window.history.pushState({}, '', homeUrl);
-        // Then trigger popstate event for faster transitions
-        window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
-        
-        // Fallback in case that doesn't work - direct location change after a tiny delay
-        setTimeout(() => {
-          if (window.location.pathname !== '/') {
-            console.log('Fallback navigation to Sports');
-            window.location.href = '/';
-          }
-        }, 100);
-      } catch (err) {
-        console.error('Navigation error:', err);
-        window.location.href = '/';
-      }
+      // Go through the goto-sports page which has a reliable redirect mechanism
+      // This is the most reliable method we've found
+      window.location.href = '/goto-sports';
     };
     navigationBar.appendChild(sportsButton);
     

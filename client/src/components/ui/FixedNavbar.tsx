@@ -1,7 +1,9 @@
 import { useEffect, useRef } from 'react';
+import { useLocation } from 'wouter';
 
 const FixedNavbar = () => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [, setLocation] = useLocation();
   
   useEffect(() => {
     if (containerRef.current) {
@@ -26,9 +28,15 @@ const FixedNavbar = () => {
       sportsLink.style.borderBottom = '2px solid #00FFFF';
       sportsLink.style.paddingBottom = '5px';
       
+      // Add click handler for Sports
+      sportsLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        setLocation('/');
+      });
+      
       // Create Live link with red dot
       const liveLink = document.createElement('a');
-      liveLink.href = '/live.html';
+      liveLink.href = '#';
       liveLink.textContent = 'Live';
       liveLink.style.color = 'white';
       liveLink.style.textDecoration = 'none';
@@ -44,23 +52,23 @@ const FixedNavbar = () => {
       
       liveLink.appendChild(redDot);
       
-      // Add an event listener for hard navigation
+      // Add an event listener for router navigation
       liveLink.addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.href = '/live.html';
+        setLocation('/goto-live');
       });
       
       // Create Promotions link
       const promotionsLink = document.createElement('a');
-      promotionsLink.href = '/promotions.html';
+      promotionsLink.href = '#';
       promotionsLink.textContent = 'Promotions';
       promotionsLink.style.color = 'white';
       promotionsLink.style.textDecoration = 'none';
       
-      // Add an event listener for hard navigation
+      // Add an event listener for router navigation
       promotionsLink.addEventListener('click', (e) => {
         e.preventDefault();
-        window.location.href = '/promotions.html';
+        setLocation('/goto-promotions');
       });
       
       // Add all links to container
@@ -71,7 +79,7 @@ const FixedNavbar = () => {
       // Add container to our ref
       containerRef.current.appendChild(navContainer);
     }
-  }, []);
+  }, [setLocation]);
   
   return <div ref={containerRef} className="fixed-navbar-container" />;
 };

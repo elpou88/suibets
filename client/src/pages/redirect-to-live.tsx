@@ -1,14 +1,19 @@
 import { useEffect } from "react";
+import liveImg from "@assets/Live (2).png";
 
 export default function RedirectToLive() {
   useEffect(() => {
-    // Directly navigate to the HTML file
-    window.location.href = "/live.html";
+    // This can be uncommented when you have a real live.html
+    // window.location.href = "/live.html";
   }, []);
 
   return (
-    <div className="w-full h-screen flex items-center justify-center">
-      <p className="text-gray-400">Redirecting to Live...</p>
+    <div className="w-full h-screen flex flex-col items-center justify-center bg-[#09181B]">
+      <img 
+        src={liveImg} 
+        alt="Live" 
+        className="max-w-full h-auto"
+      />
     </div>
   );
 }

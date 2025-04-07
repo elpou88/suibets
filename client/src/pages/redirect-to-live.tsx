@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
-import promotionsImage from "@assets/Promotions (2).png";
+import liveImage from "@assets/Live (2).png";
 
-export default function RedirectToPromotions() {
+export default function RedirectToLive() {
   const [_, navigate] = useLocation();
 
   useEffect(() => {
@@ -45,8 +45,8 @@ export default function RedirectToPromotions() {
   return (
     <div className="w-full h-screen flex items-center justify-center bg-gray-100">
       <img 
-        src={promotionsImage} 
-        alt="Promotions" 
+        src={liveImage} 
+        alt="Live Betting" 
         style={{ 
           maxWidth: '100%', 
           maxHeight: '100vh', 

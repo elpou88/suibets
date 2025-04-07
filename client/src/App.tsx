@@ -16,6 +16,7 @@ import BetSlip2 from "@/pages/bet-slip-2";
 import ConnectWallet from "@/pages/connect-wallet";
 import NotFound from "@/pages/not-found";
 import RedirectToPromotions from "@/pages/redirect-to-promotions";
+import RedirectToLive from "@/pages/redirect-to-live";
 import Layout from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
@@ -29,7 +30,6 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/sports" component={Home} />
       <Route path="/sport/:slug*" component={Sport} />
-      <Route path="/live" component={Home} />
       <Route path="/match/:id" component={Match} />
       <Route path="/match-detail/:id" component={MatchDetail} />
       <Route path="/promotions" component={Promotions} />
@@ -41,6 +41,7 @@ function Router() {
       <Route path="/connect-wallet" component={ConnectWallet} />
       <Route path="/join" component={Home} />
       <Route path="/goto-promotions" component={RedirectToPromotions} />
+      <Route path="/goto-live" component={RedirectToLive} />
       <Route component={NotFound} />
     </Switch>
   );

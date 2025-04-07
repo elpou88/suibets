@@ -34,19 +34,23 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <button 
-          onClick={() => window.open('https://i.imgur.com/1Dt3LS8.png', '_blank')}
-          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center bg-transparent border-0 font-inherit"
-        >
-          Live 
-          <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </button>
-        <button 
-          onClick={() => window.open('https://i.imgur.com/7Xb4s1r.png', '_blank')}
-          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline bg-transparent border-0 font-inherit"
-        >
-          Promotions
-        </button>
+        <Link href="/goto-live">
+          <div className={`relative px-3 py-1 flex items-center ${location === "/goto-live" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
+            Live 
+            <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
+            {location === "/goto-live" && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
+            )}
+          </div>
+        </Link>
+        <Link href="/goto-promotions">
+          <div className={`relative px-3 py-1 ${location === "/goto-promotions" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
+            Promotions
+            {location === "/goto-promotions" && (
+              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
+            )}
+          </div>
+        </Link>
       </div>
       
       {/* Logo in center - only visible on mobile */}

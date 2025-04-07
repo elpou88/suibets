@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex ml-4 items-center">
+      <div className="flex ml-28 items-center">
         {/* Sports link - simple text link */}
         <a 
           href="/" 

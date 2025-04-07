@@ -21,6 +21,7 @@ import Layout from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
 import { WalProvider } from "@/components/ui/wal-components";
+import { SpecialLinks } from "@/components/ui/SpecialLinks";
 
 function Router() {
   console.log("Router initialized");
@@ -54,6 +55,7 @@ function App() {
         <AuthProvider>
           <BettingProvider>
             <Router />
+            <SpecialLinks />
             <Toaster />
           </BettingProvider>
         </AuthProvider>

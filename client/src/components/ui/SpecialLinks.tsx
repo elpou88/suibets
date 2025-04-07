@@ -10,19 +10,21 @@ export function SpecialLinks() {
   };
   
   return (
-    <div className="flex flex-col gap-4 p-4 fixed top-1/4 right-8 z-50">
+    <div className="flex flex-col gap-3 p-2 fixed top-1/3 right-4 z-50">
       <Button
-        className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold py-3 px-6 rounded-lg shadow-lg"
+        size="sm"
+        className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md shadow-md text-xs"
         onClick={openPromoPage}
       >
-        View Promotions
+        Promo
       </Button>
       
       <Button
-        className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold py-3 px-6 rounded-lg shadow-lg"
+        size="sm"
+        className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md shadow-md text-xs"
         onClick={openLivePage}
       >
-        View Live
+        Live
       </Button>
     </div>
   );

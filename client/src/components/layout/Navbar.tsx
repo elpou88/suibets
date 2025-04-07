@@ -44,13 +44,9 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/promotions.html"
+          href="/promotions-direct.png"
           target="_blank"
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline"
-          onClick={(e) => {
-            e.preventDefault();
-            window.open('/promotions.html', '_blank', 'noopener,noreferrer');
-          }}
         >
           Promotions
         </a>

@@ -17,7 +17,7 @@ const SportItem = ({ name, slug, top }: SportItemProps) => {
 
   return (
     <div 
-      className="absolute left-0 px-4 py-1 text-white hover:text-amber-400 font-medium cursor-pointer transition-colors"
+      className="absolute left-0 px-4 py-1 w-full text-transparent hover:text-yellow-500 hover:bg-gray-900/30 font-medium cursor-pointer transition-all rounded-r"
       style={{ top: `${top}%` }}
       onClick={handleClick}
     >
@@ -49,6 +49,9 @@ export default function SportsSidebar() {
 
   return (
     <div className="absolute left-0 top-[100px] bottom-0 w-[15%] z-10 pointer-events-auto">
+      {/* Transparent overlay to make the entire sidebar area interactive */}
+      <div className="absolute inset-0 bg-transparent"></div>
+      
       {sports.map((sport) => (
         <SportItem 
           key={sport.slug}

@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import Layout from "@/components/layout/Layout";
 import { useQuery } from "@tanstack/react-query";
 
 // Define LiveEvent type for type safety
@@ -30,54 +29,52 @@ export default function LivePage() {
   });
   
   return (
-    <Layout>
-      <div className="w-full min-h-screen relative">
-        <img 
-          src="/images/Live (2).png" 
-          alt="Live Events"
-          className="w-full h-full object-contain"
-        />
+    <div className="w-full min-h-screen relative">
+      <img 
+        src="/images/Live (2).png" 
+        alt="Live Events"
+        className="w-full h-full object-contain"
+      />
+      
+      {/* Back button */}
+      <button 
+        onClick={() => setLocation("/")}
+        className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg"
+      >
+        Back to Home
+      </button>
+      
+      {/* Live events overlay */}
+      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">
+        <h2 className="text-2xl font-bold text-white mb-4 text-center">Live Events</h2>
         
-        {/* Back button */}
-        <button 
-          onClick={() => setLocation("/")}
-          className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg"
-        >
-          Back to Home
-        </button>
-        
-        {/* Live events overlay */}
-        <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">
-          <h2 className="text-2xl font-bold text-white mb-4 text-center">Live Events</h2>
-          
-          {isLoading ? (
-            <div className="bg-black/70 p-4 rounded-lg">
-              <p className="text-white text-center">Loading live events...</p>
-            </div>
-          ) : (
-            <div className="grid gap-4">
-              {liveEvents.map((event: LiveEvent) => (
-                <div 
-                  key={event.id}
-                  onClick={() => setLocation(`/live/${event.id}`)}
-                  className="bg-black/70 p-4 rounded-lg cursor-pointer hover:bg-black/90 transition"
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="text-white">
-                      <div className="text-sm text-gray-400">{event.sport}</div>
-                      <div className="font-semibold">{event.homeTeam} vs {event.awayTeam}</div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-bold">{event.score}</div>
-                      <div className="text-green-500 text-sm">{event.time}</div>
-                    </div>
+        {isLoading ? (
+          <div className="bg-black/70 p-4 rounded-lg">
+            <p className="text-white text-center">Loading live events...</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {liveEvents.map((event: LiveEvent) => (
+              <div 
+                key={event.id}
+                onClick={() => setLocation(`/live/${event.id}`)}
+                className="bg-black/70 p-4 rounded-lg cursor-pointer hover:bg-black/90 transition"
+              >
+                <div className="flex justify-between items-center">
+                  <div className="text-white">
+                    <div className="text-sm text-gray-400">{event.sport}</div>
+                    <div className="font-semibold">{event.homeTeam} vs {event.awayTeam}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold">{event.score}</div>
+                    <div className="text-green-500 text-sm">{event.time}</div>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 }

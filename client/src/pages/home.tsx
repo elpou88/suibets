@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import HomeLayout from "@/components/layout/HomeLayout";
 import { useState } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import sportImages from '@/data/sportImages';
@@ -220,24 +219,22 @@ export default function Home() {
   };
 
   return (
-    <HomeLayout>
-      <div className="w-full min-h-screen flex flex-col">
-        <div 
-          className="relative w-full cursor-pointer" 
-          onClick={handleImageClick}
-        >
-          <img 
-            src="/images/Sports 1 (2).png" 
-            alt="Sports Home" 
-            className="w-full h-full object-contain pointer-events-none"
-          />
-        </div>
+    <div className="w-full min-h-screen flex flex-col">
+      <div 
+        className="relative w-full cursor-pointer" 
+        onClick={handleImageClick}
+      >
+        <img 
+          src="/images/Sports 1 (2).png" 
+          alt="Sports Home" 
+          className="w-full h-full object-contain pointer-events-none"
+        />
       </div>
       
       <ConnectWalletModal 
         isOpen={isWalletModalOpen} 
         onClose={() => setIsWalletModalOpen(false)} 
       />
-    </HomeLayout>
+    </div>
   );
 }

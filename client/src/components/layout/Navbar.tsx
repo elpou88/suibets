@@ -75,13 +75,13 @@ export default function Navbar() {
         </Link>
       </div>
       
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center justify-end flex-1 pr-4">
         {isAuthenticated ? (
           <>
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
               onClick={() => setIsNotificationsModalOpen(true)}
             >
               <Bell className="h-5 w-5" />
@@ -90,7 +90,7 @@ export default function Navbar() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
               onClick={() => setIsSettingsModalOpen(true)}
             >
               <Settings className="h-5 w-5" />
@@ -98,7 +98,7 @@ export default function Navbar() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-2 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black">
+                <Button variant="outline" className="ml-3 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black">
                   {user?.walletAddress && shortenAddress(user.walletAddress)}
                 </Button>
               </DropdownMenuTrigger>
@@ -118,12 +118,12 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <Link href="/join">
+            <Link href="/join" className="mx-1">
               <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
                 Join Now
               </Button>
             </Link>
-            <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" onClick={() => setIsWalletModalOpen(true)}>
+            <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium ml-3" onClick={() => setIsWalletModalOpen(true)}>
               Connect Wallet
             </Button>
           </>

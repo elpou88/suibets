@@ -31,6 +31,7 @@ import LiveExact from "@/pages/live-exact";
 import ImageMapApproach from "@/pages/image-map-approach";
 import PureLive from "@/pages/pure-live";
 import FinalLive from "@/pages/final-live";
+import SimpleLive from "@/pages/simple-live";
 
 function App() {
   console.log("Starting React application");
@@ -62,7 +63,7 @@ function App() {
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />
-                <Route path="/live" component={FinalLive} />
+                <Route path="/live" component={SimpleLive} />
                 <Route path="/live-old" component={LiveExact} />
                 <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />

@@ -45,12 +45,17 @@ export default function Navbar() {
           </div>
         </Link>
         
-        <div className="flex-none ml-8">
+        <div className="flex-none ml-16">
           <Button
             size="sm"
-            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md p-1 px-2 text-xs"
+            className="bg-[#00FFFF] hover:bg-[#00FFFF]/80 text-black font-bold rounded-md text-xs"
             onClick={goToLive}
-            style={{ width: '60px', padding: '4px 8px' }}
+            style={{ 
+              width: '70px', 
+              padding: '4px 12px',
+              position: 'relative',
+              left: '5px'
+            }}
           >
             <div className="flex items-center justify-center w-full">
               <span>Live</span>

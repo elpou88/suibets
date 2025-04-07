@@ -42,11 +42,14 @@ body, html {
   border-radius: 4px;
   font-size: 12px;
   margin-right: 32px;
+  margin-left: 32px;
   display: inline-block;
   text-align: center;
   cursor: pointer;
   text-decoration: none;
-  min-width: 50px;
+  min-width: 60px;
+  position: relative;
+  left: 15px;
 }
 
 .live-dot {

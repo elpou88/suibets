@@ -8,45 +8,32 @@
     body, html {
       margin: 0;
       padding: 0;
-      background-color: #000000;
-      font-family: sans-serif;
+      background-color: #000;
+      height: 100%;
+      width: 100%;
       overflow: hidden;
-      height: 100%;
-      width: 100%;
     }
     
-    .full-image {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 10;
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
     }
     
-    .hidden-back {
-      position: absolute;
-      left: 43px;
-      top: 16px;
-      width: 50px;
-      height: 30px;
-      z-index: 20;
-      opacity: 0;
-      cursor: pointer;
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <a href="/" class="hidden-back"></a>
-  <img src="/images/live-exact.png" alt="Live Events" class="full-image">
+  <img src="/images/Live (2).png" alt="Live Events">
 
   <script>
-    // Additional click handler for anywhere on the page to return to main app
-    document.addEventListener('click', function(e) {
-      // If not clicking the back button link
-      if (!e.target.closest('.hidden-back')) {
-        window.location.href = '/';
-      }
+    // Make clicking anywhere return to the main app
+    document.addEventListener('click', function() {
+      window.location.href = '/';
     });
   </script>
 </body>

@@ -34,23 +34,19 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <a 
-          href="https://i.imgur.com/1Dt3LS8.png"
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center"
+        <button 
+          onClick={() => window.open('https://i.imgur.com/1Dt3LS8.png', '_blank')}
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center bg-transparent border-0 font-inherit"
         >
           Live 
           <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
-        </a>
-        <a 
-          href="https://i.imgur.com/7Xb4s1r.png"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline"
+        </button>
+        <button 
+          onClick={() => window.open('https://i.imgur.com/7Xb4s1r.png', '_blank')}
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline bg-transparent border-0 font-inherit"
         >
           Promotions
-        </a>
+        </button>
       </div>
       
       {/* Logo in center - only visible on mobile */}

@@ -176,6 +176,25 @@ export default function PromotionsPage() {
     joinNow3.href = '/join';
     map.appendChild(joinNow3);
     
+    // Disable all other links to ensure only our navigation buttons work
+    // This helps prevent any conflicts with other elements on the page
+    const links = document.querySelectorAll('a, button');
+    links.forEach(link => {
+      if (link !== sportsButton && link !== liveButton && link !== promotionsButton) {
+        // TypeScript fix: cast to HTMLElement before setting style
+        if (link instanceof HTMLElement) {
+          link.style.pointerEvents = 'none';
+        }
+      }
+    });
+    
+    // Make the navigation bar visually distinct to highlight clickable areas
+    navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
+    
+    // Add debugging info
+    console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
+    console.log('Sports link position: 435px, Live link position: 474px, Promotions link position: 555px');
+    
     // Clean up function
     return () => {
       body.style.margin = '';

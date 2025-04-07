@@ -35,7 +35,7 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/live-page.png"
+          href="/live.html"
           target="_blank"
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center"
         >
@@ -43,7 +43,7 @@ export default function Navbar() {
           <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
         </a>
         <a 
-          href="/promotions-direct.png"
+          href="/promotions.html"
           target="_blank"
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline"
         >

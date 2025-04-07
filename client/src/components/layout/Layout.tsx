@@ -1,5 +1,5 @@
 import { ReactNode } from "react";
-import Navbar from "./Navbar";
+import NavigationBar from "./NavigationBar";
 import Footer from "./Footer";
 import Sidebar from "./Sidebar";
 import { useMobile } from "@/hooks/use-mobile";
@@ -59,7 +59,7 @@ export default function Layout({ children }: LayoutProps) {
       )}
 
       <div className="flex-1 flex flex-col bg-[#09181B]">
-        <Navbar />
+        <NavigationBar />
         <main className="flex-1 p-4 overflow-y-auto pb-20 md:pb-4 bg-[#09181B] text-white">
           {children}
         </main>

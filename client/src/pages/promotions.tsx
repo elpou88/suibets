@@ -72,11 +72,11 @@ export default function PromotionsPage() {
     // IMPORTANT: The center of the navbar is at 512px (1024px/2)
     // So we position our 3 links centered around this point
     
-    // Sports button - enhanced for faster click detection
+    // Sports button - enhanced for faster click detection, better aligned
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '450px'; // Moved slightly to the right as requested
+    sportsButton.style.left = '470px'; // Moved closer to Live button
     sportsButton.style.top = '12px'; // Moved up to provide more click area
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.style.border = 'none';
@@ -101,11 +101,11 @@ export default function PromotionsPage() {
     };
     navigationBar.appendChild(sportsButton);
     
-    // Live button - enhanced for faster click detection
+    // Live button - enhanced for faster click detection, better aligned
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '510px'; // Center aligned
+    liveButton.style.left = '520px'; // Moved slightly to match new Sports position
     liveButton.style.top = '12px'; // Moved up to provide more click area
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';
@@ -130,11 +130,11 @@ export default function PromotionsPage() {
     };
     navigationBar.appendChild(liveButton);
     
-    // Promotions button - enhanced for faster click detection
+    // Promotions button - enhanced for faster click detection, better aligned
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '560px'; // Adjusted for better spacing
+    promotionsButton.style.left = '565px'; // Adjusted for better spacing with new Live position
     promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
@@ -212,7 +212,7 @@ export default function PromotionsPage() {
     
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
-    console.log('Sports link position: 450px, Live link position: 510px, Promotions link position: 560px');
+    console.log('Sports link position: 470px, Live link position: 520px, Promotions link position: 565px');
     
     // Clean up function
     return () => {

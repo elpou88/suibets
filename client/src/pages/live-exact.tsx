@@ -51,8 +51,8 @@ export default function LiveExact() {
     navContainer.style.zIndex = '1000';
     container.appendChild(navContainer);
     
-    // Turn on visual debugging to see button positions
-    const debugMode = true;
+    // Turn OFF visual debugging to hide button positions
+    const debugMode = false;
     
     // Add extra click logging to help with positioning
     document.addEventListener('click', (e) => {
@@ -237,67 +237,71 @@ export default function LiveExact() {
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
     console.log('Sports position: 470px, Live position: 542px, Promotions position: 608px');
     
-    // Create a floating debug panel to show click positions
-    const debugPanel = document.createElement('div');
-    debugPanel.style.position = 'fixed';
-    debugPanel.style.bottom = '10px';
-    debugPanel.style.right = '10px';
-    debugPanel.style.backgroundColor = 'rgba(0,0,0,0.7)';
-    debugPanel.style.color = 'white';
-    debugPanel.style.padding = '10px';
-    debugPanel.style.borderRadius = '5px';
-    debugPanel.style.zIndex = '10001';
-    debugPanel.style.fontSize = '12px';
-    debugPanel.style.fontFamily = 'monospace';
-    debugPanel.textContent = 'Click anywhere to see coordinates';
-    document.body.appendChild(debugPanel);
-    
-    // Update the debug panel with click coordinates
-    document.addEventListener('click', (e) => {
-      debugPanel.textContent = `Last click: X=${e.clientX}, Y=${e.clientY}`;
-    });
+    // Debug panel is only shown in debug mode
+    if (debugMode) {
+      // Create a floating debug panel to show click positions
+      const debugPanel = document.createElement('div');
+      debugPanel.style.position = 'fixed';
+      debugPanel.style.bottom = '10px';
+      debugPanel.style.right = '10px';
+      debugPanel.style.backgroundColor = 'rgba(0,0,0,0.7)';
+      debugPanel.style.color = 'white';
+      debugPanel.style.padding = '10px';
+      debugPanel.style.borderRadius = '5px';
+      debugPanel.style.zIndex = '10001';
+      debugPanel.style.fontSize = '12px';
+      debugPanel.style.fontFamily = 'monospace';
+      debugPanel.textContent = 'Click anywhere to see coordinates';
+      document.body.appendChild(debugPanel);
+      
+      // Update the debug panel with click coordinates
+      document.addEventListener('click', (e) => {
+        debugPanel.textContent = `Last click: X=${e.clientX}, Y=${e.clientY}`;
+      });
+    }
     
     // Add visual indicators that appear on top of the navigation elements in the image
-    // These will help us fine-tune the exact positions
-    
-    // Text label for Sports - positioned exactly where the button should be
-    const sportsLabel = document.createElement('div');
-    sportsLabel.textContent = "SPORTS";
-    sportsLabel.style.position = 'absolute';
-    sportsLabel.style.left = '470px'; // Match the button position exactly
-    sportsLabel.style.top = '22px'; // Match the button position exactly
-    sportsLabel.style.color = 'red';
-    sportsLabel.style.fontWeight = 'bold';
-    sportsLabel.style.fontSize = '14px';
-    sportsLabel.style.pointerEvents = 'none';
-    sportsLabel.style.zIndex = '10000';
-    overlay.appendChild(sportsLabel);
-    
-    // Text label for Live - positioned exactly where the button should be
-    const liveLabel = document.createElement('div');
-    liveLabel.textContent = "LIVE";
-    liveLabel.style.position = 'absolute';
-    liveLabel.style.left = '542px'; // Match the button position exactly
-    liveLabel.style.top = '22px'; // Match the button position exactly
-    liveLabel.style.color = 'green';
-    liveLabel.style.fontWeight = 'bold';
-    liveLabel.style.fontSize = '14px';
-    liveLabel.style.pointerEvents = 'none';
-    liveLabel.style.zIndex = '10000';
-    overlay.appendChild(liveLabel);
-    
-    // Text label for Promotions - positioned exactly where the button should be
-    const promotionsLabel = document.createElement('div');
-    promotionsLabel.textContent = "PROMOTIONS";
-    promotionsLabel.style.position = 'absolute';
-    promotionsLabel.style.left = '608px'; // Match the button position exactly
-    promotionsLabel.style.top = '22px'; // Match the button position exactly
-    promotionsLabel.style.color = 'blue';
-    promotionsLabel.style.fontWeight = 'bold';
-    promotionsLabel.style.fontSize = '14px';
-    promotionsLabel.style.pointerEvents = 'none';
-    promotionsLabel.style.zIndex = '10000';
-    overlay.appendChild(promotionsLabel);
+    // These will help us fine-tune the exact positions - only shown in debug mode
+    if (debugMode) {
+      // Text label for Sports - positioned exactly where the button should be
+      const sportsLabel = document.createElement('div');
+      sportsLabel.textContent = "SPORTS";
+      sportsLabel.style.position = 'absolute';
+      sportsLabel.style.left = '470px'; // Match the button position exactly
+      sportsLabel.style.top = '22px'; // Match the button position exactly
+      sportsLabel.style.color = 'red';
+      sportsLabel.style.fontWeight = 'bold';
+      sportsLabel.style.fontSize = '14px';
+      sportsLabel.style.pointerEvents = 'none';
+      sportsLabel.style.zIndex = '10000';
+      overlay.appendChild(sportsLabel);
+      
+      // Text label for Live - positioned exactly where the button should be
+      const liveLabel = document.createElement('div');
+      liveLabel.textContent = "LIVE";
+      liveLabel.style.position = 'absolute';
+      liveLabel.style.left = '542px'; // Match the button position exactly
+      liveLabel.style.top = '22px'; // Match the button position exactly
+      liveLabel.style.color = 'green';
+      liveLabel.style.fontWeight = 'bold';
+      liveLabel.style.fontSize = '14px';
+      liveLabel.style.pointerEvents = 'none';
+      liveLabel.style.zIndex = '10000';
+      overlay.appendChild(liveLabel);
+      
+      // Text label for Promotions - positioned exactly where the button should be
+      const promotionsLabel = document.createElement('div');
+      promotionsLabel.textContent = "PROMOTIONS";
+      promotionsLabel.style.position = 'absolute';
+      promotionsLabel.style.left = '608px'; // Match the button position exactly
+      promotionsLabel.style.top = '22px'; // Match the button position exactly
+      promotionsLabel.style.color = 'blue';
+      promotionsLabel.style.fontWeight = 'bold';
+      promotionsLabel.style.fontSize = '14px';
+      promotionsLabel.style.pointerEvents = 'none';
+      promotionsLabel.style.zIndex = '10000';
+      overlay.appendChild(promotionsLabel);
+    }
     
     // Add visual outlines to detect any overlapping elements
     sportsButton.style.outline = debugMode ? '2px solid red' : 'none';

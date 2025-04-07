@@ -63,7 +63,7 @@ function App() {
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />
-                <Route path="/live" component={SimpleLive} />
+                <Route path="/live" component={LiveExact} />
                 <Route path="/live-old" component={LiveExact} />
                 <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />

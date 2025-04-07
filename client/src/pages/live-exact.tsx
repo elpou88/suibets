@@ -82,7 +82,7 @@ export default function LiveExact() {
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '471px'; // Exact pixel position from image
+    sportsButton.style.left = '488px'; // Adjusted based on successful clicks
     sportsButton.style.top = '12px'; // Moved up to provide more click area
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.style.border = 'none';
@@ -109,7 +109,7 @@ export default function LiveExact() {
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '524px'; // Exact pixel position from image
+    liveButton.style.left = '550px'; // Adjusted based on successful clicks (avg 560)
     liveButton.style.top = '12px'; // Moved up to provide more click area
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';
@@ -138,7 +138,7 @@ export default function LiveExact() {
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '567px'; // Exact pixel position from image
+    promotionsButton.style.left = '590px'; // Adjusted based on successful clicks (avg 590)
     promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
@@ -219,7 +219,7 @@ export default function LiveExact() {
 
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
-    console.log('Sports link position: 471px, Live link position: 524px, Promotions link position: 567px');
+    console.log('Sports link position: 488px, Live link position: 550px, Promotions link position: 590px');
     
     // Add visual outlines to detect any overlapping elements
     sportsButton.style.outline = debugMode ? '1px solid red' : 'none';

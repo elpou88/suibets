@@ -1,62 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live - SuiBets</title>
-  <style>
-    body, html {
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      width: 100vw;
-      overflow: hidden;
-      background-color: #000;
-    }
-    
-    .content {
-      height: 100%;
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    
-    img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
-    }
-    
-    .back-button {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      padding: 8px 16px;
-      background-color: rgba(0, 0, 0, 0.5);
-      color: white;
-      border: 1px solid #00FFFF;
-      border-radius: 4px;
-      cursor: pointer;
-      z-index: 10;
-    }
-    
-    .back-button:hover {
-      background-color: rgba(0, 255, 255, 0.2);
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuiBets Live Betting</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #f1f1f1;
+            font-family: Arial, sans-serif;
+        }
+        img {
+            max-width: 100%;
+            max-height: 100vh;
+            display: block;
+        }
+        .back-button {
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            padding: 8px 16px;
+            background: #00FFFF;
+            color: black;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            z-index: 1000;
+        }
+    </style>
 </head>
 <body>
-  <button class="back-button" onclick="window.close()">← Back to SuiBets</button>
-  <div class="content">
-    <img src="/live-page.png" alt="Live Sports Betting">
-  </div>
-  
-  <script>
-    // Simple script that doesn't try to connect to any wallets
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('Live page loaded successfully');
-    });
-  </script>
+    <button class="back-button" onclick="window.location.href='/'">« Back to SuiBets</button>
+    <img src="/images/live.png" alt="Live Betting">
 </body>
 </html>

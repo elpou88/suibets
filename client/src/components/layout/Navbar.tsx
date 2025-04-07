@@ -25,7 +25,7 @@ export default function Navbar() {
 
   const goToLive = (e: React.MouseEvent) => {
     e.preventDefault();
-    setLocation("/live");
+    window.location.href = "/live";
   };
 
   const goToPromotions = (e: React.MouseEvent) => {

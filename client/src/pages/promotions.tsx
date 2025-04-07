@@ -72,17 +72,17 @@ export default function PromotionsPage() {
     // IMPORTANT: The center of the navbar is at 512px (1024px/2)
     // So we position our 3 links centered around this point
     
-    // Sports button
+    // Sports button - enhanced for faster click detection
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
     sportsButton.style.left = '440px'; // Adjusted for better spacing
-    sportsButton.style.top = '22px';
+    sportsButton.style.top = '12px'; // Moved up to provide more click area
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.style.border = 'none';
     sportsButton.style.color = 'transparent'; // Make text transparent but keep the button text for accessibility
-    sportsButton.style.width = '65px';
-    sportsButton.style.height = '25px'; // Increased height for better clickability
+    sportsButton.style.width = '70px'; // Wider for easier clicking
+    sportsButton.style.height = '40px'; // Much taller for better clickability
     sportsButton.style.cursor = 'pointer';
     sportsButton.style.fontFamily = 'Arial, sans-serif';
     sportsButton.style.fontSize = '16px';
@@ -100,17 +100,17 @@ export default function PromotionsPage() {
     };
     navigationBar.appendChild(sportsButton);
     
-    // Live button - evenly spaced between Sports and Promotions
+    // Live button - enhanced for faster click detection
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
     liveButton.style.left = '510px'; // Center aligned
-    liveButton.style.top = '22px';
+    liveButton.style.top = '12px'; // Moved up to provide more click area
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';
     liveButton.style.color = 'transparent';
-    liveButton.style.width = '45px';
-    liveButton.style.height = '25px'; // Increased height for better clickability
+    liveButton.style.width = '50px'; // Wider for easier clicking
+    liveButton.style.height = '40px'; // Much taller for better clickability
     liveButton.style.cursor = 'pointer';
     liveButton.style.fontFamily = 'Arial, sans-serif';
     liveButton.style.fontSize = '16px';
@@ -128,17 +128,17 @@ export default function PromotionsPage() {
     };
     navigationBar.appendChild(liveButton);
     
-    // Promotions button
+    // Promotions button - enhanced for faster click detection
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
     promotionsButton.style.left = '560px'; // Adjusted for better spacing
-    promotionsButton.style.top = '22px';
+    promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
     promotionsButton.style.color = 'transparent';
-    promotionsButton.style.width = '85px';
-    promotionsButton.style.height = '25px'; // Increased height for better clickability
+    promotionsButton.style.width = '90px'; // Wider for easier clicking
+    promotionsButton.style.height = '40px'; // Much taller for better clickability
     promotionsButton.style.cursor = 'pointer';
     promotionsButton.style.fontFamily = 'Arial, sans-serif';
     promotionsButton.style.fontSize = '16px';

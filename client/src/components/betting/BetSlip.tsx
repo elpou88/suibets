@@ -20,6 +20,21 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 export function BetSlip() {
+  const [isMobileView, setIsMobileView] = useState(false);
+  
+  // Detect screen size for responsive design
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth < 768);
+    };
+    
+    handleResize(); // Initial check
+    window.addEventListener('resize', handleResize);
+    
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
   const { selectedBets, removeBet, clearBets, placeBet, totalStake, potentialWinnings, updateStake } = useBetting();
   const { isAuthenticated, user } = useAuth();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);

@@ -369,6 +369,39 @@ export default function EventPage() {
                 
                 <Card className="mt-4">
                   <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Half-Time/Full-Time</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { result: `${event.homeTeam}/Draw`, odds: 15.0 },
+                        { result: `${event.homeTeam}/${event.homeTeam}`, odds: 3.4 },
+                        { result: `Draw/${event.homeTeam}`, odds: 5.0 },
+                        { result: `${event.awayTeam}/Draw`, odds: 15.0 },
+                        { result: `Draw/Draw`, odds: 4.5 },
+                        { result: `Draw/${event.awayTeam}`, odds: 7.5 },
+                        { result: `${event.homeTeam}/${event.awayTeam}`, odds: 25.0 },
+                        { result: `${event.awayTeam}/${event.awayTeam}`, odds: 5.5 },
+                        { result: `${event.awayTeam}/${event.homeTeam}`, odds: 25.0 }
+                      ].map((item, idx) => (
+                        <Button 
+                          key={idx}
+                          variant="outline"
+                          className="h-16 text-xs"
+                          onClick={() => handleAddBet(item.result, item.odds, "Half-Time/Full-Time")}
+                        >
+                          <div className="flex flex-col items-center">
+                            <span>{item.result}</span>
+                            <span className="text-base font-bold">{formatOdds(item.odds)}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="mt-4">
+                  <CardHeader className="pb-2">
                     <CardTitle className="text-lg">Correct Score</CardTitle>
                   </CardHeader>
                   <CardContent>
@@ -393,6 +426,48 @@ export default function EventPage() {
                           </div>
                         </Button>
                       ))}
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card className="mt-4">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg">Team to Score First</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-3">
+                      <Button 
+                        variant="outline"
+                        className="h-16"
+                        onClick={() => handleAddBet(event.homeTeam, 1.85, "Team to Score First")}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span>{event.homeTeam}</span>
+                          <span className="text-lg font-bold">{formatOdds(1.85)}</span>
+                        </div>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline"
+                        className="h-16"
+                        onClick={() => handleAddBet("No Goal", 9.5, "Team to Score First")}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span>No Goal</span>
+                          <span className="text-lg font-bold">{formatOdds(9.5)}</span>
+                        </div>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline"
+                        className="h-16"
+                        onClick={() => handleAddBet(event.awayTeam, 2.1, "Team to Score First")}
+                      >
+                        <div className="flex flex-col items-center">
+                          <span>{event.awayTeam}</span>
+                          <span className="text-lg font-bold">{formatOdds(2.1)}</span>
+                        </div>
+                      </Button>
                     </div>
                   </CardContent>
                 </Card>

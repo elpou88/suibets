@@ -90,9 +90,13 @@ export default function PromotionsPage() {
     sportsButton.style.margin = '0';
     sportsButton.style.textAlign = 'center';
     sportsButton.style.zIndex = '1001';
-    sportsButton.onclick = () => {
-      console.log('SPORTS button clicked');
-      window.location.href = '/';
+    sportsButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('SPORTS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
+      const homeUrl = '/';
+      window.history.pushState({}, '', homeUrl);
+      window.location.replace(homeUrl);
     };
     navigationBar.appendChild(sportsButton);
     
@@ -114,9 +118,13 @@ export default function PromotionsPage() {
     liveButton.style.margin = '0';
     liveButton.style.textAlign = 'center';
     liveButton.style.zIndex = '1001';
-    liveButton.onclick = () => {
-      console.log('LIVE button clicked');
-      window.location.href = '/live';
+    liveButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('LIVE button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
+      const liveUrl = '/live';
+      window.history.pushState({}, '', liveUrl);
+      window.location.replace(liveUrl);
     };
     navigationBar.appendChild(liveButton);
     
@@ -138,9 +146,13 @@ export default function PromotionsPage() {
     promotionsButton.style.margin = '0';
     promotionsButton.style.textAlign = 'center';
     promotionsButton.style.zIndex = '1001';
-    promotionsButton.onclick = () => {
-      console.log('PROMOTIONS button clicked');
-      window.location.href = '/promotions';
+    promotionsButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('PROMOTIONS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
+      const promotionsUrl = '/promotions';
+      window.history.pushState({}, '', promotionsUrl);
+      window.location.replace(promotionsUrl);
     };
     navigationBar.appendChild(promotionsButton);
     

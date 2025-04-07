@@ -55,7 +55,7 @@ const FixedNavbar = () => {
       // Add an event listener for router navigation
       liveLink.addEventListener('click', (e) => {
         e.preventDefault();
-        setLocation('/goto-live');
+        setLocation('/live');
       });
       
       // Create Promotions link

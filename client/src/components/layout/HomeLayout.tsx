@@ -34,7 +34,7 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
           </button>
           <button 
             className="p-2 flex flex-col items-center justify-center"
-            onClick={() => setLocation("/goto-live")}
+            onClick={() => setLocation("/live")}
           >
             <Grid2X2 className="h-6 w-6" />
             <span className="text-xs mt-1">Live</span>

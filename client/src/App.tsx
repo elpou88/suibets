@@ -28,6 +28,7 @@ import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
 import Live from "@/pages/live";
 import LiveExact from "@/pages/live-exact";
+import ImageMapApproach from "@/pages/image-map-approach";
 
 function App() {
   console.log("Starting React application");
@@ -59,7 +60,8 @@ function App() {
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />
-                <Route path="/live" component={LiveExact} />
+                <Route path="/live" component={ImageMapApproach} />
+                <Route path="/live-old" component={LiveExact} />
                 <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />
               </Switch>

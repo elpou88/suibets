@@ -18,7 +18,6 @@ import ConnectWallet from "@/pages/connect-wallet";
 import NotFound from "@/pages/not-found";
 import RedirectToPromotions from "@/pages/redirect-to-promotions";
 import RedirectToLive from "@/pages/redirect-to-live";
-import Layout from "@/components/layout/Layout";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
 import { WalProvider } from "@/components/ui/wal-components";
@@ -28,15 +27,58 @@ import Community from "@/pages/community";
 import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
 import Live from "@/pages/live";
+import NavigationBar from "@/components/layout/NavigationBar";
+import Footer from "@/components/layout/Footer";
+import Sidebar from "@/components/layout/Sidebar";
+import { useMobile } from "@/hooks/use-mobile";
+import { Grid2X2, Home as HomeIcon, User } from "lucide-react";
+import { BiFootball } from "react-icons/bi";
+import { Link } from "wouter";
 
-// Direct component mappings without wrapping each in Layout
-// The Layout is applied once at the router level
+function MainLayout({ children }: { children: React.ReactNode }) {
+  const isMobile = useMobile();
+  
+  return (
+    <div className="flex min-h-screen">
+      {/* Sidebar for desktop */}
+      {!isMobile && <Sidebar />}
+      
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#09181B] text-white z-30 flex justify-around p-2 border-t border-[#112225]">
+          <Link href="/" className="p-2 flex flex-col items-center justify-center">
+            <HomeIcon className="h-6 w-6 text-[#00FFFF]" />
+            <span className="text-xs mt-1">Home</span>
+          </Link>
+          <Link href="/sports" className="p-2 flex flex-col items-center justify-center">
+            <BiFootball className="h-6 w-6" />
+            <span className="text-xs mt-1">Sports</span>
+          </Link>
+          <Link href="/live" className="p-2 flex flex-col items-center justify-center">
+            <Grid2X2 className="h-6 w-6" />
+            <span className="text-xs mt-1">Live</span>
+          </Link>
+          <Link href="/settings" className="p-2 flex flex-col items-center justify-center">
+            <User className="h-6 w-6" />
+            <span className="text-xs mt-1">Account</span>
+          </Link>
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col bg-[#09181B]">
+        <NavigationBar />
+        <main className="flex-1 p-4 overflow-y-auto pb-20 md:pb-4 bg-[#09181B] text-white">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}
 
 function AppRouter() {
   console.log("Router initialized");
   
-  // Define component variables referencing our imported components
-  // This fixes the reference errors
   return (
     <Switch>
       <Route path="/" component={Home} />
@@ -71,9 +113,9 @@ function App() {
       <WalProvider>
         <AuthProvider>
           <BettingProvider>
-            <Layout>
+            <MainLayout>
               <AppRouter />
-            </Layout>
+            </MainLayout>
             <SpecialLinks />
             <Toaster />
           </BettingProvider>

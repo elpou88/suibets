@@ -43,15 +43,23 @@ export default function Navbar() {
             )}
           </div>
         </Link>
-        <div 
-          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer"
-          onClick={() => {
-            console.log('Trying direct HTML approach');
-            window.location.href = '/promotions-direct.html';
+        <a 
+          href="/promotions-image.png"
+          className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline"
+          onClick={(e) => {
+            e.preventDefault();
+            const image = new Image();
+            image.src = "/promotions-image.png";
+            const w = window.open("");
+            if (w) {
+              w.document.write(image.outerHTML);
+              w.document.title = "Promotions";
+              w.document.close();
+            }
           }}
         >
           Promotions
-        </div>
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

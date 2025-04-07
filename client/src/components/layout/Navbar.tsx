@@ -35,16 +35,18 @@ export default function Navbar() {
           </div>
         </Link>
         <a 
-          href="/live.html"
-          target="_blank"
+          href="https://i.imgur.com/1Dt3LS8.png"
+          target="_blank" 
+          rel="noopener noreferrer"
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline flex items-center"
         >
           Live 
           <span className="ml-1 w-2 h-2 bg-red-500 rounded-full inline-block animate-pulse"></span>
         </a>
         <a 
-          href="/promotions.html"
+          href="https://i.imgur.com/7Xb4s1r.png"
           target="_blank"
+          rel="noopener noreferrer"
           className="relative px-3 py-1 text-white hover:text-[#00FFFF] cursor-pointer no-underline"
         >
           Promotions

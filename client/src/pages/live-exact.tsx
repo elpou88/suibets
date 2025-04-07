@@ -51,8 +51,8 @@ export default function LiveExact() {
     navContainer.style.zIndex = '1000';
     container.appendChild(navContainer);
     
-    // Add visual debugging for clickable areas
-    const debugMode = false;
+    // Turn on visual debugging to see button positions
+    const debugMode = true;
     
     // Create a navigation bar that exactly matches the position in the image
     // The navigation uses EXACT pixel positions from the image we examined
@@ -96,11 +96,25 @@ export default function LiveExact() {
     sportsButton.onclick = (e) => {
       e.preventDefault();
       console.log('SPORTS button clicked - Ultra-fast navigation');
-      // Use history.pushState for faster navigation without page reload
-      const homeUrl = '/';
-      window.history.pushState({}, '', homeUrl);
-      // Direct navigation without reload for faster transitions
-      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      // Make this more reliable by using multiple navigation methods
+      try {
+        // First redirect with pushState
+        const homeUrl = '/';
+        window.history.pushState({}, '', homeUrl);
+        // Then trigger popstate event for faster transitions
+        window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+        
+        // Fallback in case that doesn't work - direct location change after a tiny delay
+        setTimeout(() => {
+          if (window.location.pathname !== '/') {
+            console.log('Fallback navigation to Sports');
+            window.location.href = '/';
+          }
+        }, 100);
+      } catch (err) {
+        console.error('Navigation error:', err);
+        window.location.href = '/';
+      }
     };
     navigationBar.appendChild(sportsButton);
     
@@ -209,9 +223,21 @@ export default function LiveExact() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
+    // Make buttons visually distinct to debug clickable areas
+    if (debugMode) {
+      sportsButton.style.backgroundColor = 'rgba(255,0,0,0.3)';
+      liveButton.style.backgroundColor = 'rgba(0,255,0,0.3)';
+      promotionsButton.style.backgroundColor = 'rgba(0,0,255,0.3)';
+    }
+
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
     console.log('Sports link position: 450px, Live link position: 510px, Promotions link position: 560px');
+    
+    // Add visual outlines to detect any overlapping elements
+    sportsButton.style.outline = debugMode ? '1px solid red' : 'none';
+    liveButton.style.outline = debugMode ? '1px solid green' : 'none';
+    promotionsButton.style.outline = debugMode ? '1px solid blue' : 'none';
     
     // Clean up function
     return () => {

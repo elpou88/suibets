@@ -35,37 +35,34 @@ export default function Navbar() {
 
   return (
     <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex justify-between items-center">
-      <div className="flex space-x-8">
-        {/* Sports link */}
-        <Link href="/">
-          <div className={`text-center relative px-2 py-1 ${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"}`}>
-            Sports
-            {location === "/" && (
-              <div className="absolute bottom-0 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
-          </div>
-        </Link>
+      <div className="flex space-x-12 items-center">
+        {/* Sports link - simple text link */}
+        <a 
+          href="/" 
+          className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer`}
+        >
+          Sports
+          {location === "/" && (
+            <div className="absolute -bottom-3 left-0 w-full h-1 bg-[#00FFFF]"></div>
+          )}
+        </a>
         
-        {/* Live button */}
-        <div className="text-center">
-          <button 
-            onClick={goToLive}
-            className="text-center bg-[#00FFFF] text-black font-bold rounded px-3 py-1 text-xs"
-          >
-            Live
-            <span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
-          </button>
-        </div>
+        {/* Live link - direct text */}
+        <a 
+          href="/live-final.html" 
+          className="flex items-center text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+        >
+          <span className="mr-1">Live</span>
+          <span className="inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+        </a>
         
-        {/* Promotions button */}
-        <div className="text-center">
-          <button
-            onClick={goToPromotions}
-            className="text-center bg-[#00FFFF] text-black font-bold rounded px-3 py-1 text-xs"
-          >
-            Promo
-          </button>
-        </div>
+        {/* Promotions link - direct text */}
+        <a 
+          href="/promotions-final.html" 
+          className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+        >
+          Promo
+        </a>
       </div>
       
       {/* Logo in center - only visible on mobile */}

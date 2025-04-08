@@ -8,23 +8,20 @@ export default function NewPromotions() {
   useEffect(() => {
     document.title = 'Promotions - SuiBets';
     
-    // Create a clean slate - remove all existing page content including any added navigation or UI elements
-    const body = document.body;
-    body.style.margin = '0';
-    body.style.padding = '0';
-    body.style.overflow = 'auto';
-    body.style.backgroundColor = '#F0F0F0';
-    body.innerHTML = ''; // completely clear all content
+    // Create a clean slate with no UI elements
+    document.body.innerHTML = ''; // completely clear all content
+    document.body.style.margin = '0';
+    document.body.style.padding = '0';
+    document.body.style.overflow = 'hidden';
+    document.body.style.backgroundColor = '#F0F0F0';
     
-    // Create a container for the full-page layout (exact mockup)
+    // Create a simple container for the image
     const container = document.createElement('div');
     container.style.position = 'relative';
-    container.style.width = '100%';
+    container.style.width = '100vw';
     container.style.height = '100vh';
-    container.style.maxWidth = '100%';
-    container.style.maxHeight = '100vh';
-    container.style.overflow = 'auto';
-    body.appendChild(container);
+    container.style.overflow = 'hidden';
+    document.body.appendChild(container);
     
     // Create the full page image - just show the original design
     const mainImage = document.createElement('img');
@@ -49,7 +46,7 @@ export default function NewPromotions() {
     map.name = 'navMap';
     container.appendChild(map);
     
-    // Add the Sports navigation area - exact position as in the mockup
+    // Add the Sports navigation area - exact position in the mockup, use assign for more reliable navigation
     const sportsNav = document.createElement('area');
     sportsNav.shape = 'rect';
     sportsNav.coords = '450,10,475,35'; // Positioned exactly where "Sports" appears in the mockup
@@ -58,11 +55,11 @@ export default function NewPromotions() {
     sportsNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Sports clicked');
-      window.location.href = "/sports";
+      window.location.assign("/sports");
     });
     map.appendChild(sportsNav);
     
-    // Add the Live navigation area
+    // Add the Live navigation area - Use window.location.assign for more reliable navigation
     const liveNav = document.createElement('area');
     liveNav.shape = 'rect';
     liveNav.coords = '505,10,525,35'; // Positioned exactly where "Live" appears in the mockup
@@ -71,7 +68,7 @@ export default function NewPromotions() {
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Live clicked');
-      window.location.href = "/live";
+      window.location.assign("/live");
     });
     map.appendChild(liveNav);
     
@@ -98,10 +95,10 @@ export default function NewPromotions() {
     
     // Clean up function
     return () => {
-      body.style.margin = '';
-      body.style.padding = '';
-      body.style.overflow = '';
-      body.style.backgroundColor = '';
+      document.body.style.margin = '';
+      document.body.style.padding = '';
+      document.body.style.overflow = '';
+      document.body.style.backgroundColor = '';
     };
   }, []);
   

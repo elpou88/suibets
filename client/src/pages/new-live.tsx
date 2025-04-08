@@ -25,7 +25,7 @@ export default function NewLive() {
     
     // Create the full page image
     const mainImage = document.createElement('img');
-    mainImage.src = '/images/live_exact.png';
+    mainImage.src = '/images/live-image.png';
     mainImage.alt = 'Live Events';
     mainImage.style.width = '100%';
     mainImage.style.height = 'auto';

@@ -34,6 +34,7 @@ import FinalLive from "@/pages/final-live";
 import SimpleLive from "@/pages/simple-live";
 import NewLive from "@/pages/new-live";
 import NewPromotions from "@/pages/new-promotions";
+import NewSports from "@/pages/new-sports";
 
 function App() {
   console.log("Starting React application");
@@ -45,8 +46,8 @@ function App() {
           <BettingProvider>
             <div className="root-container">
               <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/sports" component={Home} />
+                <Route path="/" component={NewSports} />
+                <Route path="/sports" component={NewSports} />
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />
                 <Route path="/match-detail/:id" component={MatchDetail} />
@@ -59,7 +60,7 @@ function App() {
                 <Route path="/bet-slip-2" component={BetSlip2} />
                 <Route path="/connect-wallet" component={ConnectWallet} />
                 <Route path="/join" component={Home} />
-                <Route path="/goto-sports" component={Home} />
+                <Route path="/goto-sports" component={NewSports} />
                 <Route path="/goto-promotions" component={RedirectToPromotions} />
                 <Route path="/goto-live" component={RedirectToLive} />
                 <Route path="/info" component={Info} />

@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 
 /**
- * New Promotions page component with precise navigation
+ * New Sports page component with precise navigation
  * This version uses an image map with exact coordinates from the design
  */
-export default function NewPromotions() {
+export default function NewSports() {
   useEffect(() => {
-    document.title = 'Promotions - SuiBets';
+    document.title = 'Sports - SuiBets';
     
     // Create a clean slate - remove all existing page content
     const body = document.body;
@@ -25,8 +25,8 @@ export default function NewPromotions() {
     
     // Create the full page image
     const mainImage = document.createElement('img');
-    mainImage.src = '/images/promotions-image.png';
-    mainImage.alt = 'Promotions';
+    mainImage.src = '/images/sports-image.png';
+    mainImage.alt = 'Sports';
     mainImage.style.width = '100%';
     mainImage.style.height = 'auto';
     mainImage.style.display = 'block';
@@ -38,7 +38,7 @@ export default function NewPromotions() {
     map.name = 'navMap';
     container.appendChild(map);
     
-    // Add the Sports navigation area - precise coordinates from design
+    // Add the Sports navigation area - this is the current page
     const sportsNav = document.createElement('area');
     sportsNav.shape = 'rect';
     sportsNav.coords = '435,12,465,32'; // x1,y1,x2,y2
@@ -46,8 +46,7 @@ export default function NewPromotions() {
     sportsNav.href = '#';
     sportsNav.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Sports clicked');
-      window.location.href = "/goto-sports";
+      console.log('Sports clicked - already on sports page');
     });
     map.appendChild(sportsNav);
     
@@ -64,7 +63,7 @@ export default function NewPromotions() {
     });
     map.appendChild(liveNav);
     
-    // Add the Promotions navigation area - this is the current page
+    // Add the Promotions navigation area
     const promotionsNav = document.createElement('area');
     promotionsNav.shape = 'rect';
     promotionsNav.coords = '553,12,610,32'; // x1,y1,x2,y2
@@ -72,14 +71,15 @@ export default function NewPromotions() {
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Promotions clicked - already on promotions page');
+      console.log('Promotions clicked');
+      window.location.href = "/promotions";
     });
     map.appendChild(promotionsNav);
     
     // Add invisible buttons over the navigation text for better clickability
     // These are positioned precisely over the navigation items
     
-    // Sports button - transparent but clickable
+    // Sports button - transparent but clickable (current page)
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
@@ -93,8 +93,7 @@ export default function NewPromotions() {
     sportsButton.style.cursor = 'pointer';
     sportsButton.style.zIndex = '1000';
     sportsButton.addEventListener('click', () => {
-      console.log('Sports button clicked');
-      window.location.href = "/goto-sports";
+      console.log('Sports button clicked - already on sports page');
     });
     container.appendChild(sportsButton);
     
@@ -117,7 +116,7 @@ export default function NewPromotions() {
     });
     container.appendChild(liveButton);
     
-    // Promotions button - transparent but clickable (current page)
+    // Promotions button - transparent but clickable
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
@@ -131,7 +130,8 @@ export default function NewPromotions() {
     promotionsButton.style.cursor = 'pointer';
     promotionsButton.style.zIndex = '1000';
     promotionsButton.addEventListener('click', () => {
-      console.log('Promotions button clicked - already on promotions page');
+      console.log('Promotions button clicked');
+      window.location.href = "/promotions";
     });
     container.appendChild(promotionsButton);
     

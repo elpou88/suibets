@@ -55,49 +55,72 @@ export const UniversalClickHandler: React.FC = () => {
         );
       });
       
-      if (isOddsElement) {
-        // This might be an odds button or display
-        const odds = parseFloat(element.textContent.match(/\d+\.\d+/)?.[0] || '0');
+      // Function to process an element that contains odds
+      const processOddsElement = (el: Element, oddsValue: number) => {
+        // Try to determine which team/selection this odds is for
+        let selectionName = 'Selection';
+        let marketName = 'Match Winner';
+        let foundEvent = false;
         
-        if (odds > 1.0) {
-          // Try to determine which team/selection this odds is for
-          let selectionName = 'Selection';
-          let marketName = 'Match Winner';
+        // Check parent elements for team information
+        let currentEl: HTMLElement | null = el as HTMLElement;
+        for (let i = 0; i < 5 && currentEl; i++) {
+          const text = currentEl.textContent || '';
           
-          // Check parent elements for team information
-          let currentEl: HTMLElement | null = element;
-          for (let i = 0; i < 5 && currentEl; i++) {
-            const text = currentEl.textContent || '';
-            
-            // Check for event context
-            events.forEach(event => {
-              if (text.includes(event.homeTeam)) {
-                selectionName = event.homeTeam;
-                handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, odds, marketName);
-                return;
-              } else if (text.includes(event.awayTeam)) {
-                selectionName = event.awayTeam;
-                handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, odds, marketName);
-                return;
-              } else if (text.toLowerCase().includes('draw')) {
-                selectionName = 'Draw';
-                handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, odds, marketName);
-                return;
-              }
-            });
-            
-            currentEl = currentEl.parentElement;
+          // Check for event context
+          for (const event of events) {
+            if (text.includes(event.homeTeam)) {
+              selectionName = event.homeTeam;
+              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
+              foundEvent = true;
+              break;
+            } else if (text.includes(event.awayTeam)) {
+              selectionName = event.awayTeam;
+              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
+              foundEvent = true;
+              break;
+            } else if (text.toLowerCase().includes('draw')) {
+              selectionName = 'Draw';
+              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
+              foundEvent = true;
+              break;
+            }
           }
           
-          if (selectionName === 'Selection') {
-            // If we couldn't determine the selection, use a fallback
-            handleBetClick(
-              9999, // Generic event ID
-              'Unknown Event',
-              `Selection @ ${odds}`, 
-              odds,
-              'Unknown Market'
-            );
+          if (foundEvent) break;
+          currentEl = currentEl.parentElement;
+        }
+        
+        if (!foundEvent) {
+          // If we couldn't determine the selection, use the odds as the fallback
+          handleBetClick(
+            9999, // Generic event ID
+            'Unknown Event',
+            `Selection @ ${oddsValue}`, 
+            oddsValue,
+            'Unknown Market'
+          );
+        }
+      };
+      
+      if (isOddsElement) {
+        // This might be an odds button or display
+        const odds = parseFloat(element.textContent?.match(/\d+\.\d+/)?.[0] || '0');
+        
+        if (odds > 1.0) {
+          processOddsElement(element, odds);
+        }
+      } else if (oddsNearby) {
+        // We found an element with odds nearby, use that
+        const nearbyElements = document.elementsFromPoint(e.clientX, e.clientY);
+        for (const el of nearbyElements) {
+          if (el.textContent && /\d+\.\d+/.test(el.textContent)) {
+            const odds = parseFloat(el.textContent.match(/\d+\.\d+/)?.[0] || '0');
+            if (odds > 1.0) {
+              console.log(`Found nearby odds element: ${odds}`);
+              processOddsElement(el, odds);
+              break;
+            }
           }
         }
       } else if (matchingEvent) {
@@ -111,6 +134,56 @@ export const UniversalClickHandler: React.FC = () => {
           isHomeTeam ? (matchingEvent.homeOdds || 1.9) : (matchingEvent.awayOdds || 3.5),
           'Match Winner'
         );
+      } else if (containsEventInfo) {
+        // Clicked on a card containing event info, determine which part was clicked
+        const rect = eventContainer?.getBoundingClientRect();
+        if (rect) {
+          const relativeX = (e.clientX - rect.left) / rect.width;
+          
+          // Find which event this container is for
+          let clickedEvent = null;
+          for (const event of events) {
+            if (
+              eventContainer?.textContent?.includes(event.homeTeam) && 
+              eventContainer?.textContent?.includes(event.awayTeam)
+            ) {
+              clickedEvent = event;
+              break;
+            }
+          }
+          
+          if (clickedEvent) {
+            // Based on where in the container the user clicked, select home, away or draw
+            if (relativeX < 0.33) {
+              // Left side - likely home team
+              handleBetClick(
+                clickedEvent.id,
+                `${clickedEvent.homeTeam} vs ${clickedEvent.awayTeam}`,
+                clickedEvent.homeTeam,
+                clickedEvent.homeOdds || 1.9,
+                'Match Winner'
+              );
+            } else if (relativeX > 0.66) {
+              // Right side - likely away team
+              handleBetClick(
+                clickedEvent.id,
+                `${clickedEvent.homeTeam} vs ${clickedEvent.awayTeam}`,
+                clickedEvent.awayTeam,
+                clickedEvent.awayOdds || 3.5,
+                'Match Winner'
+              );
+            } else if (clickedEvent.drawOdds) {
+              // Middle - might be draw
+              handleBetClick(
+                clickedEvent.id,
+                `${clickedEvent.homeTeam} vs ${clickedEvent.awayTeam}`,
+                'Draw',
+                clickedEvent.drawOdds,
+                'Match Winner'
+              );
+            }
+          }
+        }
       }
       
       // Check for specific UI patterns that might indicate betting elements

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useBetting } from '@/context/BettingContext';
 
 interface LiveImageOverlaysProps {
@@ -13,6 +13,62 @@ interface LiveImageOverlaysProps {
 export const LiveImageOverlays: React.FC<LiveImageOverlaysProps> = ({ imageSrc }) => {
   const imageRef = useRef<HTMLImageElement>(null);
   const { addBet } = useBetting();
+  const [liveEvents, setLiveEvents] = useState<any[]>([]);
+  
+  // Fetch live events on mount
+  useEffect(() => {
+    const fetchLiveEvents = async () => {
+      try {
+        // In a real app, get this data from the API
+        // For now, hard-code some example live events
+        const events = [
+          {
+            id: 1001,
+            homeTeam: 'Arthur Fils',
+            awayTeam: 'Pablo Carreno',
+            homeOdds: 1.57,
+            awayOdds: 2.42,
+            sport: 'tennis',
+            isLive: true
+          },
+          {
+            id: 1002,
+            homeTeam: 'Alex M Pujolas',
+            awayTeam: 'Dominik Kellovsky',
+            homeOdds: 1.07,
+            awayOdds: 6.96,
+            sport: 'tennis',
+            isLive: true
+          },
+          {
+            id: 1003,
+            homeTeam: 'Arsenal',
+            awayTeam: 'Tottenham',
+            homeOdds: 1.45,
+            awayOdds: 2.85,
+            drawOdds: 3.50,
+            sport: 'football',
+            isLive: true
+          },
+          {
+            id: 1004,
+            homeTeam: 'Lakers',
+            awayTeam: 'Warriors',
+            homeOdds: 1.60,
+            awayOdds: 2.45,
+            sport: 'basketball',
+            isLive: true
+          }
+        ];
+        
+        setLiveEvents(events);
+      } catch (error) {
+        console.error('Error fetching live events:', error);
+      }
+    };
+    
+    fetchLiveEvents();
+  }, []);
   
   useEffect(() => {
     // Create image map for betting clicks based on image src
@@ -260,6 +316,149 @@ export const LiveImageOverlays: React.FC<LiveImageOverlaysProps> = ({ imageSrc }
     
     console.log(`Set up clickable betting areas for image: ${src}`);
   };
+  
+  // Add direct click handlers to any visible live event elements in the DOM
+  useEffect(() => {
+    if (liveEvents.length === 0) return;
+    
+    // Find existing live event elements in the DOM to add click handlers to
+    // without modifying the UI structure
+    const findAndEnhanceLiveElements = () => {
+      const liveElements = document.querySelectorAll('[class*="live"], [class*="Live"]');
+      
+      console.log(`Found ${liveElements.length} potential live elements to enhance`);
+      
+      // Process each live element
+      liveElements.forEach(element => {
+        // Skip if already processed
+        if (element.hasAttribute('data-betting-enhanced')) return;
+        
+        // Mark as processed to avoid duplicate handlers
+        element.setAttribute('data-betting-enhanced', 'true');
+        
+        // Add direct click handler to the element
+        element.addEventListener('click', (e) => {
+          // Stop propagation to prevent multiple handlers
+          e.stopPropagation();
+          
+          const rect = element.getBoundingClientRect();
+          if (!rect || rect.width === 0) return;
+          
+          // Calculate relative position within the element
+          const relativeX = (e.clientX - rect.left) / rect.width;
+          
+          // Find a matching event based on text content
+          let matchedEvent = null;
+          
+          // Check for team name mentions in the text
+          const elementText = element.textContent || '';
+          for (const event of liveEvents) {
+            if (elementText.includes(event.homeTeam) || elementText.includes(event.awayTeam)) {
+              matchedEvent = event;
+              break;
+            }
+          }
+          
+          // If we found a match, create a bet based on click position
+          if (matchedEvent) {
+            // Map the relative X position to a team selection
+            if (relativeX < 0.33) {
+              // Left third - home team
+              handleBetClick(matchedEvent.homeTeam, matchedEvent.homeOdds, 'Match Winner');
+            } else if (relativeX > 0.66) {
+              // Right third - away team
+              handleBetClick(matchedEvent.awayTeam, matchedEvent.awayOdds, 'Match Winner');
+            } else if (matchedEvent.drawOdds) {
+              // Middle third - draw (if applicable)
+              handleBetClick('Draw', matchedEvent.drawOdds, 'Match Winner');
+            } else {
+              // Default to home team if no draw available
+              handleBetClick(matchedEvent.homeTeam, matchedEvent.homeOdds, 'Match Winner');
+            }
+          } else {
+            // If no specific match was found, use a default approach with the live events
+            const eventIndex = Math.min(Math.floor(relativeX * liveEvents.length), liveEvents.length - 1);
+            const event = liveEvents[eventIndex];
+            
+            if (relativeX < 0.33) {
+              handleBetClick(event.homeTeam, event.homeOdds, 'Match Winner');
+            } else if (relativeX > 0.66) {
+              handleBetClick(event.awayTeam, event.awayOdds, 'Match Winner');
+            } else if (event.drawOdds) {
+              handleBetClick('Draw', event.drawOdds, 'Match Winner');
+            }
+          }
+        });
+        
+        // Also check for child elements with odds
+        const potentialOddsElements = element.querySelectorAll('*');
+        potentialOddsElements.forEach(el => {
+          const text = el.textContent || '';
+          if (/\d+\.\d+/.test(text)) {
+            // This contains a decimal number, might be odds
+            el.addEventListener('click', (e) => {
+              e.stopPropagation();
+              
+              // Extract the odds value
+              const oddsMatch = text.match(/\d+\.\d+/);
+              if (oddsMatch) {
+                const odds = parseFloat(oddsMatch[0]);
+                
+                // Try to determine which team this odds is for
+                let teamName = 'Selection';
+                
+                // Check for team names nearby
+                for (const event of liveEvents) {
+                  if (text.includes(event.homeTeam) || 
+                      (el.previousElementSibling && el.previousElementSibling.textContent?.includes(event.homeTeam))) {
+                    teamName = event.homeTeam;
+                    break;
+                  } else if (text.includes(event.awayTeam) || 
+                            (el.previousElementSibling && el.previousElementSibling.textContent?.includes(event.awayTeam))) {
+                    teamName = event.awayTeam;
+                    break;
+                  } else if (text.toLowerCase().includes('draw') || 
+                            (el.previousElementSibling && el.previousElementSibling.textContent?.toLowerCase().includes('draw'))) {
+                    teamName = 'Draw';
+                    break;
+                  }
+                }
+                
+                // Create the bet
+                handleBetClick(teamName, odds, 'Match Winner');
+              }
+            });
+          }
+        });
+      });
+    };
+    
+    // Run the enhancement immediately
+    findAndEnhanceLiveElements();
+    
+    // Also set up a mutation observer to catch dynamically added elements
+    const observer = new MutationObserver((mutations) => {
+      let shouldReprocess = false;
+      
+      mutations.forEach(mutation => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          shouldReprocess = true;
+        }
+      });
+      
+      if (shouldReprocess) {
+        findAndEnhanceLiveElements();
+      }
+    });
+    
+    // Start observing the document with the configured parameters
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    // Clean up the observer when the component unmounts
+    return () => {
+      observer.disconnect();
+    };
+  }, [liveEvents]);
   
   // This component renders an invisible image reference to connect the map
   return (

@@ -130,72 +130,122 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
   
   // Attach event IDs to event cards in the DOM for easier identification
   const attachEventIds = () => {
-    // Find event cards in the DOM
-    // This uses common selectors that might be present in the UI
-    // Would need to be adjusted based on actual HTML structure
-    
-    const possibleCardSelectors = [
-      '.event-card', 
-      '[data-event]',
-      '.card:has(.odds)',
-      '.card:has([class*="event"])',
-      '.card:has([class*="match"])',
-      'div:has(button:has(.odds))',
-      'tr:has(td:has(.odds))',
-      'div:has(.team-name)',
-      // More generic fallbacks
-      '.overflow-hidden:has(button[variant="outline"])',
-      '.p-4:has(.text-sm)',
-      'article:has(a[href*="event"])',
+    // Get all cards or container elements that might be event cards
+    const cardElements = [
+      ...document.querySelectorAll('.card'),
+      ...document.querySelectorAll('.overflow-hidden'),
+      ...document.querySelectorAll('[class*="event"]'),
+      ...document.querySelectorAll('[class*="match"]'),
+      ...document.querySelectorAll('.p-4'),
     ];
     
+    // Count attached events for logging
     let eventsAttached = 0;
     
-    // Try each selector to find event cards
-    for (const selector of possibleCardSelectors) {
-      try {
-        const elements = document.querySelectorAll(selector);
+    // Create transparent overlays for each card that mentions teams
+    events.forEach(event => {
+      const eventTeams = `${event.homeTeam}.*${event.awayTeam}|${event.awayTeam}.*${event.homeTeam}`;
+      const eventTeamsRegex = new RegExp(eventTeams, 'i');
+      
+      // Find all cards that contain both team names
+      cardElements.forEach(card => {
+        if (!card.textContent) return;
         
-        if (elements.length > 0) {
-          elements.forEach((element, index) => {
-            // Skip if already has event ID
-            if (element.hasAttribute('data-event-id')) return;
-            
-            // Check if we still have events left to attach
-            if (index < events.length) {
-              element.setAttribute('data-event-id', events[index].id.toString());
-              eventsAttached++;
-            }
-          });
-          
-          if (eventsAttached > 0) {
-            console.log(`Attached ${eventsAttached} event IDs using selector: ${selector}`);
-            break; // Stop if we found matching elements
+        // Make sure we have both team names in the card
+        if (!eventTeamsRegex.test(card.textContent)) return;
+        
+        // Card contains both teams, set its event ID
+        card.setAttribute('data-event-id', event.id.toString());
+        eventsAttached++;
+        
+        // Now create invisible overlays for different bet positions within the card
+        const rect = card.getBoundingClientRect();
+        if (!rect || rect.width === 0) return;
+        
+        // Create the container and position it absolutely
+        const overlayContainer = document.createElement('div');
+        overlayContainer.style.position = 'absolute';
+        overlayContainer.style.top = `${rect.top}px`;
+        overlayContainer.style.left = `${rect.left}px`;
+        overlayContainer.style.width = `${rect.width}px`;
+        overlayContainer.style.height = `${rect.height}px`;
+        overlayContainer.style.pointerEvents = 'none'; // Don't block regular clicks
+        overlayContainer.style.zIndex = '10';
+        
+        // Create three clickable areas for home, draw, away
+        // Home team area (left third)
+        const homeArea = document.createElement('div');
+        homeArea.setAttribute('data-bet-type', 'home');
+        homeArea.setAttribute('data-event-id', event.id.toString());
+        homeArea.setAttribute('data-team', event.homeTeam);
+        homeArea.setAttribute('data-odds', String(event.homeOdds || 1.9));
+        homeArea.style.position = 'absolute';
+        homeArea.style.left = '0';
+        homeArea.style.top = '0';
+        homeArea.style.width = '33.3%';
+        homeArea.style.height = '100%';
+        homeArea.style.pointerEvents = 'auto';
+        // homeArea.style.backgroundColor = 'rgba(255, 0, 0, 0.1)'; // Debug only
+        overlayContainer.appendChild(homeArea);
+        
+        // Draw area (middle third) - only for sports that can have draws
+        if (event.drawOdds) {
+          const drawArea = document.createElement('div');
+          drawArea.setAttribute('data-bet-type', 'draw');
+          drawArea.setAttribute('data-event-id', event.id.toString());
+          drawArea.setAttribute('data-team', 'Draw');
+          drawArea.setAttribute('data-odds', String(event.drawOdds));
+          drawArea.style.position = 'absolute';
+          drawArea.style.left = '33.3%';
+          drawArea.style.top = '0';
+          drawArea.style.width = '33.3%';
+          drawArea.style.height = '100%';
+          drawArea.style.pointerEvents = 'auto';
+          // drawArea.style.backgroundColor = 'rgba(0, 255, 0, 0.1)'; // Debug only
+          overlayContainer.appendChild(drawArea);
+        }
+        
+        // Away team area (right third)
+        const awayArea = document.createElement('div');
+        awayArea.setAttribute('data-bet-type', 'away');
+        awayArea.setAttribute('data-event-id', event.id.toString());
+        awayArea.setAttribute('data-team', event.awayTeam);
+        awayArea.setAttribute('data-odds', String(event.awayOdds || 3.5));
+        awayArea.style.position = 'absolute';
+        awayArea.style.right = '0';
+        awayArea.style.top = '0';
+        awayArea.style.width = '33.3%';
+        awayArea.style.height = '100%';
+        awayArea.style.pointerEvents = 'auto';
+        // awayArea.style.backgroundColor = 'rgba(0, 0, 255, 0.1)'; // Debug only
+        overlayContainer.appendChild(awayArea);
+        
+        // Add the invisible overlays to the DOM - will be hidden but clickable
+        // document.body.appendChild(overlayContainer);
+        
+        // Instead of adding to DOM, directly add click handlers to the areas
+        // to avoid changing the UI structure in any way
+        homeArea.addEventListener('click', () => {
+          handleBetClick(event, event.homeTeam, event.homeOdds || 1.9, 'Match Winner');
+        });
+        
+        if (event.drawOdds) {
+          const drawArea = overlayContainer.querySelector('[data-bet-type="draw"]');
+          if (drawArea) {
+            drawArea.addEventListener('click', () => {
+              handleBetClick(event, 'Draw', event.drawOdds || 3.2, 'Match Winner');
+            });
           }
         }
-      } catch (error) {
-        console.error(`Error with selector ${selector}:`, error);
-      }
-    }
-    
-    if (eventsAttached === 0) {
-      // If no events were attached, try a more aggressive approach
-      // This attaches event IDs to any element that might be an event card
-      const cards = document.querySelectorAll('.card, .p-4, [class*="match"], [class*="event"]');
-      
-      cards.forEach((element, index) => {
-        // Skip if already has event ID
-        if (element.hasAttribute('data-event-id')) return;
         
-        // Check if we still have events left to attach
-        if (index < events.length) {
-          element.setAttribute('data-event-id', events[index].id.toString());
-          eventsAttached++;
-        }
+        awayArea.addEventListener('click', () => {
+          handleBetClick(event, event.awayTeam, event.awayOdds || 3.5, 'Match Winner');
+        });
       });
-      
-      console.log(`Attached ${eventsAttached} event IDs using fallback approach`);
-    }
+    });
+    
+    // Log the results for debugging
+    console.log(`Enhanced ${eventsAttached} event cards for betting`);
   };
   
   // Add click handlers for specific UI elements without modifying them

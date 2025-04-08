@@ -33,6 +33,7 @@ import GotoSports from "@/pages/goto-sports";
 import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
+import SportClickEvents from "@/components/layout/SportClickEvents";
 
 function App() {
   console.log("Starting React application");
@@ -76,6 +77,9 @@ function App() {
               {/* Universal betting handlers to enable betting across all pages */}
               <UniversalClickHandler />
               <SportBettingWrapper />
+              
+              {/* Handles sports navigation clicks */}
+              <SportClickEvents />
             </div>
             <SpecialLinks />
             <Toaster />

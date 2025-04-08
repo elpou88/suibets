@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { BettingContextType, SelectedBet, PlaceBetOptions } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './AuthContext';
@@ -20,49 +20,76 @@ const BettingContext = createContext<BettingContextType>({
 // Custom hook to use the betting context
 export const useBetting = () => useContext(BettingContext);
 
+// Load bets from localStorage (outside component to avoid React warnings)
+const loadSavedBets = (): SelectedBet[] => {
+  try {
+    const savedBets = localStorage.getItem('selectedBets');
+    return savedBets ? JSON.parse(savedBets) : [];
+  } catch (e) {
+    console.error("Error loading bets from localStorage:", e);
+    return [];
+  }
+};
+
 // Provider for betting context
-export const BettingProvider = ({ children }: { children: ReactNode }) => {
-  const [selectedBets, setSelectedBets] = useState<SelectedBet[]>([]);
+export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+  // Initialize with saved bets from localStorage
+  const [selectedBets, setSelectedBets] = useState<SelectedBet[]>(loadSavedBets);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // Save bets to localStorage whenever they change
+  useEffect(() => {
+    console.log("Saving bets to localStorage:", selectedBets);
+    localStorage.setItem('selectedBets', JSON.stringify(selectedBets));
+  }, [selectedBets]);
 
-  // Add a bet to the selection
+  // Add a bet to the selection - with fixes for bet persistence
   const addBet = (bet: SelectedBet) => {
     console.log("BettingContext: Adding bet to slip", bet);
     
-    // Check if we already have a bet for this selection, match by bet id
-    const existingBetIndex = selectedBets.findIndex(
-      (existing) => existing.id === bet.id
-    );
-
-    if (existingBetIndex >= 0) {
-      console.log("BettingContext: Updating existing bet", existingBetIndex);
-      // Replace the existing bet
-      const updatedBets = [...selectedBets];
-      updatedBets[existingBetIndex] = bet;
-      setSelectedBets(updatedBets);
-      
-      toast({
-        title: "Bet updated",
-        description: `${bet.selectionName} odds updated to ${bet.odds}`,
-      });
-    } else {
-      console.log("BettingContext: Adding new bet to slip", selectedBets.length);
-      // Add a new bet
-      const newBets = [...selectedBets, bet];
-      setSelectedBets(newBets);
-      console.log("BettingContext: New bets array", newBets);
-      
-      toast({
-        title: "Bet added",
-        description: `${bet.selectionName} added to bet slip`,
-      });
-    }
+    // Ensure we have the current state by using a callback with setSelectedBets
+    setSelectedBets(prevBets => {
+      // Check if we already have a bet for this selection
+      const existingBetIndex = prevBets.findIndex(
+        (existing) => existing.id === bet.id
+      );
+  
+      if (existingBetIndex >= 0) {
+        console.log("BettingContext: Updating existing bet", existingBetIndex);
+        // Replace the existing bet in a new array
+        const updatedBets = [...prevBets];
+        updatedBets[existingBetIndex] = bet;
+        
+        // Show toast notification
+        toast({
+          title: "Bet updated",
+          description: `${bet.selectionName} odds updated to ${bet.odds}`,
+        });
+        
+        return updatedBets;
+      } else {
+        console.log("BettingContext: Adding new bet to slip", prevBets.length);
+        // Add a new bet to the array
+        const newBets = [...prevBets, bet];
+        console.log("BettingContext: New bets array", newBets);
+        
+        // Show toast notification
+        toast({
+          title: "Bet added",
+          description: `${bet.selectionName} added to bet slip`,
+        });
+        
+        return newBets;
+      }
+    });
     
-    // Force the UI to update by using a setTimeout
+    // Log the current bets after the state update
     setTimeout(() => {
-      console.log("BettingContext: Current bets in slip after update", selectedBets);
-    }, 100);
+      // This is just for debugging, not needed for functionality
+      const currentBets = JSON.parse(localStorage.getItem('selectedBets') || '[]');
+      console.log("BettingContext: Current bets from localStorage", currentBets);
+    }, 500);
   };
 
   // Remove a bet from the selection

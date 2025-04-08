@@ -42,35 +42,49 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     // Create unique ID for this bet selection (without Date.now() to prevent ID changes on re-render)
     const betId = `${eventId}-${marketName}-${selectionName}`;
     
-    // Log the bet details to debug
-    console.log("ADDING BET:", {
+    // Create bet object
+    const bet = {
       id: betId,
       eventId,
       eventName,
       selectionName,
       odds,
+      stake: 10, // Default stake amount
       market: marketName,
-      isLive
-    });
+      marketId: marketId ? String(marketId) : undefined,
+      outcomeId: outcomeId || undefined,
+      isLive, // Pass the isLive flag
+    };
     
-    // Add the bet with a slight delay to avoid race conditions
-    setTimeout(() => {
-      addBet({
-        id: betId,
-        eventId,
-        eventName,
-        selectionName,
-        odds,
-        stake: 10, // Default stake amount
-        market: marketName,
-        marketId: marketId ? String(marketId) : undefined,
-        outcomeId: outcomeId || undefined,
-        isLive, // Pass the isLive flag
-      });
+    // Log the bet details to debug
+    console.log("ADDING BET:", bet);
+    
+    // Force syncing with localStorage directly to avoid race conditions
+    try {
+      const savedBets = localStorage.getItem('selectedBets');
+      const currentBets = savedBets ? JSON.parse(savedBets) : [];
+      const existingBetIndex = currentBets.findIndex((existing: any) => existing.id === betId);
       
-      // Log after adding to confirm it was processed
-      console.log("BET ADDED TO SLIP!");
-    }, 10);
+      if (existingBetIndex >= 0) {
+        // Update existing bet
+        currentBets[existingBetIndex] = bet;
+      } else {
+        // Add new bet
+        currentBets.push(bet);
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('selectedBets', JSON.stringify(currentBets));
+      console.log("Manually saved bets to localStorage:", currentBets);
+    } catch (e) {
+      console.error("Error saving to localStorage:", e);
+    }
+    
+    // Add the bet through context as well
+    addBet(bet);
+    
+    // Log after adding to confirm it was processed
+    console.log("BET ADDED TO SLIP!");
   };
   
   // Generate a random odds value within a reasonable range

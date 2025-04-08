@@ -116,20 +116,22 @@ export const LiveImageOverlays: React.FC<LiveImageOverlaysProps> = ({ imageSrc }
       isLive: true
     });
     
-    // Provide minimal visual feedback that the bet was added
+    // Provide minimal visual feedback that the bet was added - matching site color scheme
     const feedbackElement = document.createElement('div');
     feedbackElement.textContent = `Added ${selectionName} @ ${odds} to Bet Slip`;
     feedbackElement.style.position = 'fixed';
     feedbackElement.style.bottom = '20px';
     feedbackElement.style.right = '20px';
-    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)'; // Original green color
-    feedbackElement.style.color = 'white';
-    feedbackElement.style.padding = '10px';
+    feedbackElement.style.backgroundColor = '#112225'; // Dark teal/blue background
+    feedbackElement.style.color = '#fff';
+    feedbackElement.style.padding = '10px 15px';
     feedbackElement.style.borderRadius = '5px';
     feedbackElement.style.zIndex = '9999';
     feedbackElement.style.opacity = '0';
     feedbackElement.style.transform = 'translateY(20px)';
     feedbackElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    feedbackElement.style.border = '1px solid #1e3a3f'; // Teal border for consistency
+    feedbackElement.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
     
     document.body.appendChild(feedbackElement);
     

@@ -6,6 +6,8 @@ import { SuiMoveService } from "./services/suiMoveService";
 import { WalrusService } from "./services/walrusService";
 import { securityService } from "./services/securityService";
 import { aggregatorService } from "./services/aggregatorService";
+import { walProtocolService } from "./services/walProtocolService";
+import { suiMetadataService } from "./services/suiMetadataService";
 import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
@@ -1573,6 +1575,406 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: "Failed to initiate odds refresh" 
       });
+    }
+  });
+
+  // New wallet protocol-specific endpoints using Wal.app integration
+  
+  // Get live events using Wal protocol
+  app.get("/api/wal/events/live", async (req: Request, res: Response) => {
+    try {
+      const sportId = req.query.sportId as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      
+      const events = await walProtocolService.getLiveEvents(sportId, limit);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching live events:", error);
+      res.status(500).json({ message: "Failed to fetch live events" });
+    }
+  });
+  
+  // Get upcoming events using Wal protocol
+  app.get("/api/wal/events/upcoming", async (req: Request, res: Response) => {
+    try {
+      const sportId = req.query.sportId as string;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 10;
+      
+      const events = await walProtocolService.getUpcomingEvents(sportId, limit);
+      res.json(events);
+    } catch (error) {
+      console.error("Error fetching upcoming events:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming events" });
+    }
+  });
+  
+  // Get event details using Wal protocol
+  app.get("/api/wal/events/:eventId", async (req: Request, res: Response) => {
+    try {
+      const eventId = req.params.eventId;
+      const event = await walProtocolService.getEventDetails(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error(`Error fetching event ${req.params.eventId}:`, error);
+      res.status(500).json({ message: "Failed to fetch event details" });
+    }
+  });
+  
+  // Place bet with SUI tokens using Wal protocol
+  app.post("/api/wal/bets/sui", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, eventId, marketId, outcomeId, odds, amount } = req.body;
+      
+      if (!walletAddress || !eventId || !marketId || !outcomeId || !odds || !amount) {
+        return res.status(400).json({ 
+          message: "Missing required parameters",
+          details: "walletAddress, eventId, marketId, outcomeId, odds, and amount are required"
+        });
+      }
+      
+      // Check if the wallet address is valid
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      // Place the bet using the Wal protocol service
+      const result = await walProtocolService.placeBetWithSui(
+        walletAddress,
+        eventId,
+        marketId,
+        outcomeId,
+        parseFloat(odds),
+        parseFloat(amount)
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Failed to place bet",
+          error: result.error
+        });
+      }
+      
+      // Return success response
+      res.json({
+        success: true,
+        txHash: result.txHash,
+        message: `Successfully placed bet of ${amount} SUI at odds ${odds}`,
+        currency: "SUI"
+      });
+    } catch (error) {
+      console.error("Error placing bet with SUI via Wal protocol:", error);
+      res.status(500).json({ message: "Failed to place bet" });
+    }
+  });
+  
+  // Place bet with SBETS tokens using Wal protocol
+  app.post("/api/wal/bets/sbets", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, eventId, marketId, outcomeId, odds, amount } = req.body;
+      
+      if (!walletAddress || !eventId || !marketId || !outcomeId || !odds || !amount) {
+        return res.status(400).json({ 
+          message: "Missing required parameters",
+          details: "walletAddress, eventId, marketId, outcomeId, odds, and amount are required"
+        });
+      }
+      
+      // Check if the wallet address is valid
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      // Place the bet using the Wal protocol service
+      const result = await walProtocolService.placeBetWithSbets(
+        walletAddress,
+        eventId,
+        marketId,
+        outcomeId,
+        parseFloat(odds),
+        parseFloat(amount)
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Failed to place bet",
+          error: result.error
+        });
+      }
+      
+      // Return success response
+      res.json({
+        success: true,
+        txHash: result.txHash,
+        message: `Successfully placed bet of ${amount} SBETS at odds ${odds}`,
+        currency: "SBETS",
+        tokenAddress: "0x1b05613345e94ff29769c27c8ae86b5b9b273e74c4b5d14beb2a7525cc83561e::sbets::SBETS"
+      });
+    } catch (error) {
+      console.error("Error placing bet with SBETS via Wal protocol:", error);
+      res.status(500).json({ message: "Failed to place bet" });
+    }
+  });
+  
+  // Get user bets using Wal protocol
+  app.get("/api/wal/bets/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.walletAddress;
+      const status = req.query.status as string | undefined;
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const bets = await walProtocolService.getUserBets(walletAddress, status);
+      res.json(bets);
+    } catch (error) {
+      console.error(`Error fetching bets for ${req.params.walletAddress}:`, error);
+      res.status(500).json({ message: "Failed to fetch bets" });
+    }
+  });
+  
+  // Claim winnings using Wal protocol
+  app.post("/api/wal/claim-winnings", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, betId } = req.body;
+      
+      if (!walletAddress || !betId) {
+        return res.status(400).json({ 
+          message: "Missing required parameters",
+          details: "walletAddress and betId are required"
+        });
+      }
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const result = await walProtocolService.claimWinnings(walletAddress, betId);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Failed to claim winnings",
+          error: result.error
+        });
+      }
+      
+      res.json({
+        success: true,
+        txHash: result.txHash,
+        message: `Successfully claimed winnings for bet ${betId}`
+      });
+    } catch (error) {
+      console.error("Error claiming winnings:", error);
+      res.status(500).json({ message: "Failed to claim winnings" });
+    }
+  });
+  
+  // Cash out bet using Wal protocol
+  app.post("/api/wal/cashout", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, betId, amount } = req.body;
+      
+      if (!walletAddress || !betId || !amount) {
+        return res.status(400).json({ 
+          message: "Missing required parameters",
+          details: "walletAddress, betId, and amount are required"
+        });
+      }
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const result = await walProtocolService.cashoutBet(
+        walletAddress,
+        betId,
+        parseFloat(amount)
+      );
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "Failed to cash out bet",
+          error: result.error
+        });
+      }
+      
+      res.json({
+        success: true,
+        txHash: result.txHash,
+        message: `Successfully cashed out bet ${betId} for ${amount}`
+      });
+    } catch (error) {
+      console.error("Error cashing out bet:", error);
+      res.status(500).json({ message: "Failed to cash out bet" });
+    }
+  });
+  
+  // Get wallet dividends using Wal protocol
+  app.get("/api/wal/dividends/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.walletAddress;
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const dividends = await walProtocolService.getWalletDividends(walletAddress);
+      res.json(dividends);
+    } catch (error) {
+      console.error(`Error fetching dividends for ${req.params.walletAddress}:`, error);
+      res.status(500).json({ message: "Failed to fetch dividends" });
+    }
+  });
+  
+  // Get transaction status using Wal protocol
+  app.get("/api/wal/transaction/:txHash", async (req: Request, res: Response) => {
+    try {
+      const txHash = req.params.txHash;
+      
+      // Validate tx hash format (should start with 0x and be followed by hex characters)
+      if (!txHash.startsWith('0x') || !/^0x[a-fA-F0-9]+$/.test(txHash)) {
+        return res.status(400).json({ message: "Invalid transaction hash format" });
+      }
+      
+      const status = await walProtocolService.getTransactionStatus(txHash);
+      res.json(status);
+    } catch (error) {
+      console.error(`Error fetching transaction status for ${req.params.txHash}:`, error);
+      res.status(500).json({ message: "Failed to fetch transaction status" });
+    }
+  });
+  
+  // Sui Metadata API endpoints
+  
+  // Get token metadata
+  app.get("/api/sui/token/:tokenType", async (req: Request, res: Response) => {
+    try {
+      const tokenType = req.params.tokenType;
+      const metadata = await suiMetadataService.getTokenMetadata(tokenType);
+      
+      if (!metadata) {
+        return res.status(404).json({ message: "Token metadata not found" });
+      }
+      
+      res.json(metadata);
+    } catch (error) {
+      console.error(`Error fetching token metadata for ${req.params.tokenType}:`, error);
+      res.status(500).json({ message: "Failed to fetch token metadata" });
+    }
+  });
+  
+  // Get token balance
+  app.get("/api/sui/balance/:walletAddress/:tokenType", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.walletAddress;
+      const tokenType = req.params.tokenType;
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const balance = await suiMetadataService.getTokenBalance(walletAddress, tokenType);
+      
+      if (!balance) {
+        return res.status(404).json({ message: "Token balance not found" });
+      }
+      
+      res.json(balance);
+    } catch (error) {
+      console.error(`Error fetching token balance for ${req.params.walletAddress} and ${req.params.tokenType}:`, error);
+      res.status(500).json({ message: "Failed to fetch token balance" });
+    }
+  });
+  
+  // Get all token balances for a wallet
+  app.get("/api/sui/balances/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.walletAddress;
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const balances = await suiMetadataService.getAllTokenBalances(walletAddress);
+      res.json(balances);
+    } catch (error) {
+      console.error(`Error fetching token balances for ${req.params.walletAddress}:`, error);
+      res.status(500).json({ message: "Failed to fetch token balances" });
+    }
+  });
+  
+  // Get NFT metadata
+  app.get("/api/sui/nft/:objectId", async (req: Request, res: Response) => {
+    try {
+      const objectId = req.params.objectId;
+      const metadata = await suiMetadataService.getNFTMetadata(objectId);
+      
+      if (!metadata) {
+        return res.status(404).json({ message: "NFT metadata not found" });
+      }
+      
+      res.json(metadata);
+    } catch (error) {
+      console.error(`Error fetching NFT metadata for ${req.params.objectId}:`, error);
+      res.status(500).json({ message: "Failed to fetch NFT metadata" });
+    }
+  });
+  
+  // Get all NFTs owned by a wallet
+  app.get("/api/sui/nfts/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.walletAddress;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      
+      if (!securityService.validateWalletAddress(walletAddress)) {
+        return res.status(400).json({ message: "Invalid wallet address format" });
+      }
+      
+      const nfts = await suiMetadataService.getNFTsOwnedByAddress(walletAddress, limit);
+      res.json(nfts);
+    } catch (error) {
+      console.error(`Error fetching NFTs for ${req.params.walletAddress}:`, error);
+      res.status(500).json({ message: "Failed to fetch NFTs" });
+    }
+  });
+  
+  // Get transaction details
+  app.get("/api/sui/transaction/:txHash", async (req: Request, res: Response) => {
+    try {
+      const txHash = req.params.txHash;
+      
+      // Validate tx hash format (should start with 0x and be followed by hex characters)
+      if (!txHash.startsWith('0x') || !/^0x[a-fA-F0-9]+$/.test(txHash)) {
+        return res.status(400).json({ message: "Invalid transaction hash format" });
+      }
+      
+      const details = await suiMetadataService.getTransactionDetails(txHash);
+      res.json(details);
+    } catch (error) {
+      console.error(`Error fetching transaction details for ${req.params.txHash}:`, error);
+      res.status(500).json({ message: "Failed to fetch transaction details" });
+    }
+  });
+  
+  // Get object data
+  app.get("/api/sui/object/:objectId", async (req: Request, res: Response) => {
+    try {
+      const objectId = req.params.objectId;
+      const object = await suiMetadataService.getObject(objectId);
+      
+      if (!object) {
+        return res.status(404).json({ message: "Object not found" });
+      }
+      
+      res.json(object);
+    } catch (error) {
+      console.error(`Error fetching object ${req.params.objectId}:`, error);
+      res.status(500).json({ message: "Failed to fetch object" });
     }
   });
 

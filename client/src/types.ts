@@ -49,6 +49,7 @@ export interface SelectedBet {
   marketId?: number;
   outcomeId?: string | null;
   isLive?: boolean; // Indicates if this is a live betting event
+  currency?: 'SUI' | 'SBETS'; // Currency for this specific bet
 }
 
 // Betting context interface

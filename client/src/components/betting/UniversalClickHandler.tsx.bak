@@ -7,9 +7,6 @@ import { Event } from '@/types';
 /**
  * This component adds universal click handling to the entire application
  * to enable betting from any page without modifying the UI design.
- * 
- * This has been improved to be more selective about which clicks trigger bets
- * to prevent accidental bet additions.
  */
 export const UniversalClickHandler: React.FC = () => {
   const { addBet } = useBetting();
@@ -38,18 +35,15 @@ export const UniversalClickHandler: React.FC = () => {
       const sportSlug = isSportPage ? path.split('/').pop() : '';
       const isOnBettingPage = isSportPage || isLivePage;
       
-      // Log for debugging
+      // Log for debugging navigation
       console.log(`Sport Page - sport slug:`, sportSlug);
       console.log(`Full pathname:`, path);
+      
+      // Log click coordinates for debugging
       console.log(`Click coordinates: ${e.clientX}, ${e.clientY}`);
       
-      // Only allow betting interactions on sport-related pages
-      if (!isOnBettingPage) {
-        return;
-      }
-      
       // Check if this is an odds-like element (contains decimal number formatting)
-      // Only trigger if it's a specific UI element that's meant to be clickable
+      // If it's just a random area with a number in it, we don't want it to trigger
       const isOddsElement = element.textContent && 
                             /\d+\.\d+/.test(element.textContent || '') && 
                             (element.tagName === 'BUTTON' || 
@@ -58,12 +52,15 @@ export const UniversalClickHandler: React.FC = () => {
                              element.role === 'button' ||
                              element.closest('[role="button"]'));
       
+      // Check if we clicked directly on an element with odds - more restrictive to prevent accidental clicks
+      // No longer using the aggressive "nearby odds" detection which caused false positives
+      const oddsNearby = false; // Disabling this feature as it's causing unintentional bet additions
+      
       // Check if clicked on a team name - using more precise exact matching
-      const possibleTeamName = element.textContent?.trim();
+      // Only check team name clicks when on a betting-related page to prevent accidental clicks
+      const possibleTeamName = isOnBettingPage ? element.textContent?.trim() : null;
       // Only match a team name if it's a reasonable length and not a very common word
-      const isValidTeamName = possibleTeamName && 
-                              possibleTeamName.length > 3 && 
-                              !['the', 'and', 'for', 'vs', 'live', 'view', 'more', 'less', 'matches'].includes(possibleTeamName.toLowerCase());
+      const isValidTeamName = possibleTeamName && possibleTeamName.length > 3 && !['the', 'and', 'for', 'vs', 'live', 'view', 'more', 'less', 'matches'].includes(possibleTeamName.toLowerCase());
       
       // Find matching event with more precise logic to avoid false positives
       const matchingEvent = isValidTeamName ? events.find(event => {
@@ -81,7 +78,8 @@ export const UniversalClickHandler: React.FC = () => {
       }) : null;
       
       // Check if we clicked on a card or area containing event information
-      const eventContainer = element.closest('[class*="card"], [class*="event"], [class*="match"]');
+      // Only consider card clicks on sport-specific or live pages to prevent accidental clicks elsewhere
+      const eventContainer = isOnBettingPage ? element.closest('[class*="card"], [class*="event"], [class*="match"]') : null;
       const containsEventInfo = eventContainer && events.some(event => {
         return (
           eventContainer.textContent?.includes(event.homeTeam) && 
@@ -89,7 +87,7 @@ export const UniversalClickHandler: React.FC = () => {
         );
       });
       
-      // Function to process an element that contains odds
+      // Function to process an element that contains odds - improved to be more specific
       const processOddsElement = (el: Element, oddsValue: number) => {
         // Try to determine which team/selection this odds is for
         let selectionName = 'Selection';
@@ -159,24 +157,27 @@ export const UniversalClickHandler: React.FC = () => {
           currentEl = currentEl.parentElement;
         }
         
-        if (foundEvent) {
-          // We found a specific event and selection
-          handleBetClick(
-            selectedEventId,
-            selectedEventName,
-            selectionName,
-            oddsValue,
-            marketName
-          );
-        } else if (selectedEventId && selectedEventName) {
-          // We found an event context but couldn't determine the selection
-          handleBetClick(
-            selectedEventId,
-            selectedEventName,
-            `Selection @ ${oddsValue}`, 
-            oddsValue,
-            marketName
-          );
+        if (!foundEvent) {
+          // If we couldn't determine the selection, use the odds as the fallback
+          if (selectedEventId && selectedEventName) {
+            // We found an event context but couldn't determine the selection
+            handleBetClick(
+              selectedEventId,
+              selectedEventName,
+              `Selection @ ${oddsValue}`, 
+              oddsValue,
+              marketName
+            );
+          } else {
+            // Complete fallback when we couldn't find any event context
+            handleBetClick(
+              9999, // Generic event ID
+              'Unknown Event',
+              `Selection @ ${oddsValue}`, 
+              oddsValue,
+              'Unknown Market'
+            );
+          }
         }
       };
       
@@ -186,6 +187,19 @@ export const UniversalClickHandler: React.FC = () => {
         
         if (odds > 1.0) {
           processOddsElement(element, odds);
+        }
+      } else if (oddsNearby) {
+        // We found an element with odds nearby, use that
+        const nearbyElements = document.elementsFromPoint(e.clientX, e.clientY);
+        for (const el of nearbyElements) {
+          if (el.textContent && /\d+\.\d+/.test(el.textContent)) {
+            const odds = parseFloat(el.textContent.match(/\d+\.\d+/)?.[0] || '0');
+            if (odds > 1.0) {
+              console.log(`Found nearby odds element: ${odds}`);
+              processOddsElement(el, odds);
+              break;
+            }
+          }
         }
       } else if (matchingEvent) {
         // Clicked on a team name, create a bet for that team

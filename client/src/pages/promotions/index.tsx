@@ -60,8 +60,7 @@ export default function PromotionsPage() {
         className="w-full h-full object-contain"
       />
       
-      {/* Back button using the reusable component */}
-      <BackButton to="/" label="Back to Home" />
+      {/* No back button as per user request */}
       
       {/* Promotions overlay */}
       <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">

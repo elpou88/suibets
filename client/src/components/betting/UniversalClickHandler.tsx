@@ -30,7 +30,12 @@ export const UniversalClickHandler: React.FC = () => {
       console.log(`Click coordinates: ${e.clientX}, ${e.clientY}`);
       
       // Check if this is an odds-like element (contains decimal number formatting)
-      const isOddsElement = element.textContent && /\d+\.\d+/.test(element.textContent);
+      const isOddsElement = element.textContent && /\d+\.\d+/.test(element.textContent || '');
+      
+      // Check if we clicked near an element with odds - more aggressive detection
+      const oddsNearby = !isOddsElement && document.elementsFromPoint(e.clientX, e.clientY).some(el => {
+        return el.textContent && /\d+\.\d+/.test(el.textContent);
+      });
       
       // Check if clicked on a team name
       const possibleTeamName = element.textContent?.trim();
@@ -40,6 +45,15 @@ export const UniversalClickHandler: React.FC = () => {
           event.awayTeam.includes(possibleTeamName)
         )
       );
+      
+      // Check if we clicked on a card or area containing event information
+      const eventContainer = element.closest('[class*="card"], [class*="event"], [class*="match"]');
+      const containsEventInfo = eventContainer && events.some(event => {
+        return (
+          eventContainer.textContent?.includes(event.homeTeam) && 
+          eventContainer.textContent?.includes(event.awayTeam)
+        );
+      });
       
       if (isOddsElement) {
         // This might be an odds button or display

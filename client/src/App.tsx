@@ -52,7 +52,6 @@ function App() {
                 <Route path="/match/:id" component={Match} />
                 <Route path="/match-detail/:id" component={MatchDetail} />
                 <Route path="/promotions" component={NewPromotions} />
-                <Route path="/promotions/referral" component={ReferralPage} />
                 <Route path="/notifications" component={Notifications} />
                 <Route path="/settings" component={Settings} />
                 <Route path="/bet-history" component={BetHistory} />
@@ -68,7 +67,6 @@ function App() {
                 <Route path="/contact" component={Contact} />
                 <Route path="/live" component={NewLive} />
                 <Route path="/live-old" component={LiveExact} />
-                <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />
               </Switch>
             </div>

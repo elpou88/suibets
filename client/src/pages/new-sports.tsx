@@ -76,7 +76,12 @@ export default function NewSports() {
     
     // No additional buttons or UI elements - only image map with clickable areas
     
-    // Removed debugging click logger
+    // Log click coordinates for debugging
+    document.addEventListener('click', (e) => {
+      const x = e.clientX;
+      const y = e.clientY;
+      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
+    });
     
     // Clean up function
     return () => {

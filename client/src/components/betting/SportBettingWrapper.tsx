@@ -170,6 +170,39 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
           homeOdds={1.8}
           awayOdds={2.0}
         />
+        
+        {/* Esports */}
+        <SportSpecificBets 
+          sportType="esports"
+          eventId={9}
+          eventName="Sample Esports Match"
+          homeTeam="Team Q"
+          awayTeam="Team R"
+          homeOdds={1.85}
+          awayOdds={1.95}
+        />
+        
+        {/* Baseball */}
+        <SportSpecificBets 
+          sportType="baseball"
+          eventId={10}
+          eventName="Sample Baseball Game"
+          homeTeam="Team S"
+          awayTeam="Team T"
+          homeOdds={1.75}
+          awayOdds={2.05}
+        />
+        
+        {/* American Football */}
+        <SportSpecificBets 
+          sportType="american-football"
+          eventId={11}
+          eventName="Sample Football Game"
+          homeTeam="Team U"
+          awayTeam="Team V"
+          homeOdds={1.9}
+          awayOdds={1.9}
+        />
       </>
     );
   };

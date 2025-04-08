@@ -41,10 +41,10 @@ export default function NewPromotions() {
     map.name = 'navMap';
     container.appendChild(map);
     
-    // Add the Sports navigation area - using exact paragraph positions from mockup
+    // Add the Sports navigation area - exact position as in the mockup
     const sportsNav = document.createElement('area');
     sportsNav.shape = 'rect';
-    sportsNav.coords = '440,10,475,35'; // Positioned precisely on "Sports" text
+    sportsNav.coords = '450,10,475,35'; // Positioned exactly where "Sports" appears in the mockup
     sportsNav.alt = 'Sports';
     sportsNav.href = '#';
     sportsNav.addEventListener('click', (e) => {
@@ -57,7 +57,7 @@ export default function NewPromotions() {
     // Add the Live navigation area
     const liveNav = document.createElement('area');
     liveNav.shape = 'rect';
-    liveNav.coords = '500,10,535,35'; // Positioned precisely on "Live" text
+    liveNav.coords = '505,10,525,35'; // Positioned exactly where "Live" appears in the mockup
     liveNav.alt = 'Live';
     liveNav.href = '#';
     liveNav.addEventListener('click', (e) => {
@@ -70,7 +70,7 @@ export default function NewPromotions() {
     // Add the Promotions navigation area - this is the current page
     const promotionsNav = document.createElement('area');
     promotionsNav.shape = 'rect';
-    promotionsNav.coords = '540,10,610,35'; // Positioned precisely on "Promotions" text
+    promotionsNav.coords = '565,10,615,35'; // Positioned exactly where "Promotions" appears in the mockup
     promotionsNav.alt = 'Promotions';
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {

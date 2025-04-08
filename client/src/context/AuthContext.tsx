@@ -9,6 +9,8 @@ const AuthContext = createContext<AuthContextType>({
   isLoading: true,
   connectWallet: async () => {},
   disconnectWallet: () => {},
+  login: () => {},
+  updateWalletBalance: () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -86,6 +88,47 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       description: "Your wallet has been disconnected.",
     });
   };
+  
+  // Direct login function for external components
+  const login = (userData: User) => {
+    setUser(userData);
+    
+    // Save wallet data if available
+    if (userData.walletAddress) {
+      localStorage.setItem('wallet_address', userData.walletAddress);
+    }
+    if (userData.walletType) {
+      localStorage.setItem('wallet_type', userData.walletType);
+    }
+    
+    toast({
+      title: "Logged In",
+      description: `Welcome, ${userData.username}!`,
+    });
+  };
+  
+  // Update wallet balance (used for deposits/withdrawals)
+  const updateWalletBalance = (amount: number, currency: string) => {
+    if (!user) return;
+    
+    setUser(prevUser => {
+      if (!prevUser) return null;
+      
+      // Create a new user object with updated balance
+      // In a real implementation, this would be more specific to handle different token balances
+      return {
+        ...prevUser,
+        balance: (prevUser.balance || 0) + amount
+      };
+    });
+    
+    const action = amount > 0 ? 'deposited' : 'withdrawn';
+    
+    toast({
+      title: `${action.charAt(0).toUpperCase() + action.slice(1)} ${currency}`,
+      description: `Successfully ${action} ${Math.abs(amount)} ${currency}`,
+    });
+  };
 
   return (
     <AuthContext.Provider
@@ -95,6 +138,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         isLoading,
         connectWallet,
         disconnectWallet,
+        login,
+        updateWalletBalance,
       }}
     >
       {children}

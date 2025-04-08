@@ -212,7 +212,7 @@ export default function DividendsReal() {
                     />
                   </div>
                   <div className="flex justify-end text-sm text-gray-400">
-                    Available: {(user?.walletBalances?.SBETS || 0).toFixed(4)} SBET
+                    Available: {(user?.sbetsBalance || 0).toFixed(4)} SBET
                   </div>
                 </div>
 

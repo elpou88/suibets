@@ -6,6 +6,8 @@ export interface AuthContextType {
   isLoading: boolean;
   connectWallet: (address: string, walletType: WalletType) => Promise<void>;
   disconnectWallet: () => void;
+  login: (user: User) => void;
+  updateWalletBalance: (amount: number, currency: string) => void;
 }
 
 export interface PlaceBetOptions {
@@ -36,6 +38,7 @@ export interface SelectedBet {
   marketId?: number; // Added for proper parlay creation
   outcomeId?: number; // Added for proper outcome reference
   currency?: 'SUI' | 'SBETS'; // Added to support multiple currencies
+  isLive?: boolean; // Indicates if this is a live event
 }
 
 export interface ConnectWalletModalProps {

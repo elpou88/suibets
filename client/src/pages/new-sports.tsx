@@ -12,15 +12,18 @@ export default function NewSports() {
     const body = document.body;
     body.style.margin = '0';
     body.style.padding = '0';
-    body.style.overflow = 'hidden';
+    body.style.overflow = 'auto';
     body.style.backgroundColor = '#F0F0F0';
     body.innerHTML = ''; // completely clear all content
     
-    // Create a container for the full-page layout
+    // Create a container for the full-page layout (exact mockup)
     const container = document.createElement('div');
     container.style.position = 'relative';
     container.style.width = '100%';
     container.style.height = '100vh';
+    container.style.maxWidth = '100%';
+    container.style.maxHeight = '100vh';
+    container.style.overflow = 'auto';
     body.appendChild(container);
     
     // Create the full page image - just show the original design
@@ -41,11 +44,12 @@ export default function NewSports() {
     // Add the Sports navigation area - this is the current page
     const sportsNav = document.createElement('area');
     sportsNav.shape = 'rect';
-    sportsNav.coords = '435,12,465,32'; // x1,y1,x2,y2
+    sportsNav.coords = '445,22,475,32'; // Updated for better precision
     sportsNav.alt = 'Sports';
     sportsNav.href = '#';
     sportsNav.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('Sports clicked - already on sports page');
       // Already on sports page, do nothing
     });
     map.appendChild(sportsNav);
@@ -53,11 +57,12 @@ export default function NewSports() {
     // Add the Live navigation area
     const liveNav = document.createElement('area');
     liveNav.shape = 'rect';
-    liveNav.coords = '495,12,515,32'; // x1,y1,x2,y2
+    liveNav.coords = '495,22,525,32'; // Updated for better precision
     liveNav.alt = 'Live';
     liveNav.href = '#';
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('Live clicked');
       window.location.href = "/goto-live";
     });
     map.appendChild(liveNav);
@@ -65,11 +70,12 @@ export default function NewSports() {
     // Add the Promotions navigation area
     const promotionsNav = document.createElement('area');
     promotionsNav.shape = 'rect';
-    promotionsNav.coords = '553,12,610,32'; // x1,y1,x2,y2
+    promotionsNav.coords = '550,22,610,32'; // Updated for better precision
     promotionsNav.alt = 'Promotions';
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
+      console.log('Promotions clicked');
       window.location.href = "/goto-promotions";
     });
     map.appendChild(promotionsNav);

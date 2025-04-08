@@ -13,6 +13,7 @@ import { BetSlip } from '@/components/betting/BetSlip';
 import { formatOdds } from '@/lib/utils';
 import { useBetting } from '@/context/BettingContext';
 import { SportPageOverlays } from '@/components/betting/SportPageOverlays';
+import SportsSidebar from '@/components/layout/SportsSidebar';
 
 // Map sport slug to sportId for the API
 const sportIdMap: Record<string, number> = {
@@ -139,21 +140,24 @@ export default function Sport() {
   
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-6 min-h-screen flex flex-col md:flex-row gap-6">
+      <div className="container mx-auto px-4 py-6 min-h-screen flex flex-col md:flex-row gap-6 relative bg-primary-gradient">
+        {/* Sports sidebar */}
+        <SportsSidebar />
+        
         {/* Add the sport page overlays component for clickable bets without changing UI */}
         <SportPageOverlays sportSlug={sportSlug} />
         
         <div className="flex-1">
           <div className="flex items-center mb-6">
-            <Button variant="ghost" onClick={() => setLocation('/')} className="mr-2 p-2">
+            <Button variant="ghost" onClick={() => setLocation('/')} className="mr-2 p-2 text-white hover:bg-transparent hover:text-primary">
               <ArrowLeft className="h-5 w-5" />
             </Button>
-            <h1 className="text-2xl font-bold">{sportTitle}</h1>
+            <h1 className="text-2xl font-bold text-white">{sportTitle}</h1>
           </div>
           
           <Tabs defaultValue="upcoming" value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="mb-6">
-              <TabsTrigger value="live" className="relative">
+            <TabsList className="mb-6 bg-[#112225] border border-[#1e3a3f]">
+              <TabsTrigger value="live" className="relative text-white data-[state=active]:bg-primary data-[state=active]:text-black">
                 Live
                 {liveEvents.length > 0 && (
                   <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
@@ -161,34 +165,34 @@ export default function Sport() {
                   </span>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="upcoming">Today</TabsTrigger>
-              <TabsTrigger value="all">All Events</TabsTrigger>
-              <TabsTrigger value="featured">Featured</TabsTrigger>
+              <TabsTrigger value="upcoming" className="text-white data-[state=active]:bg-primary data-[state=active]:text-black">Today</TabsTrigger>
+              <TabsTrigger value="all" className="text-white data-[state=active]:bg-primary data-[state=active]:text-black">All Events</TabsTrigger>
+              <TabsTrigger value="featured" className="text-white data-[state=active]:bg-primary data-[state=active]:text-black">Featured</TabsTrigger>
             </TabsList>
             
             {/* Live Events Tab */}
             <TabsContent value="live">
               {eventsLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  <p className="mt-4">Loading live events...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-4 text-white">Loading live events...</p>
                 </div>
               ) : liveEvents.length === 0 ? (
-                <div className="text-center py-12 bg-muted/20 rounded-lg">
-                  <p className="text-lg mb-2">No live events right now</p>
-                  <p className="text-sm text-muted-foreground">Check back later for live {sportTitle} events</p>
+                <div className="text-center py-12 bg-[#112225] border border-[#1e3a3f] rounded-lg">
+                  <p className="text-lg mb-2 text-white">No live events right now</p>
+                  <p className="text-sm text-primary">Check back later for live {sportTitle} events</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {Object.keys(groupedByLeagueLiveEvents).map(league => (
-                    <Card key={league} className="overflow-hidden">
-                      <CardHeader className="bg-muted/30 py-3">
-                        <CardTitle className="text-base flex items-center">
-                          <Trophy className="w-4 h-4 mr-2" />
+                    <Card key={league} className="overflow-hidden bg-[#112225] border border-[#1e3a3f]">
+                      <CardHeader className="bg-[#0b1618] py-3">
+                        <CardTitle className="text-base flex items-center text-white">
+                          <Trophy className="w-4 h-4 mr-2 text-primary" />
                           {league}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0 divide-y">
+                      <CardContent className="p-0 divide-y divide-[#1e3a3f]">
                         {groupedByLeagueLiveEvents[league].map(event => (
                           <div key={event.id} className="p-4 hover:bg-muted/10">
                             <div className="flex justify-between items-center mb-2">
@@ -261,25 +265,25 @@ export default function Sport() {
             <TabsContent value="upcoming">
               {eventsLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  <p className="mt-4">Loading today's events...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-4 text-white">Loading today's events...</p>
                 </div>
               ) : upcomingEvents.length === 0 ? (
-                <div className="text-center py-12 bg-muted/20 rounded-lg">
-                  <p className="text-lg mb-2">No events scheduled for today</p>
-                  <p className="text-sm text-muted-foreground">Check the 'All Events' tab for upcoming {sportTitle} matches</p>
+                <div className="text-center py-12 bg-[#112225] border border-[#1e3a3f] rounded-lg">
+                  <p className="text-lg mb-2 text-white">No events scheduled for today</p>
+                  <p className="text-sm text-primary">Check the 'All Events' tab for upcoming {sportTitle} matches</p>
                 </div>
               ) : (
                 <div className="space-y-6">
                   {Object.keys(groupedByLeagueUpcomingEvents).map(league => (
-                    <Card key={league} className="overflow-hidden">
-                      <CardHeader className="bg-muted/30 py-3">
-                        <CardTitle className="text-base flex items-center">
-                          <Trophy className="w-4 h-4 mr-2" />
+                    <Card key={league} className="overflow-hidden bg-[#112225] border border-[#1e3a3f]">
+                      <CardHeader className="bg-[#0b1618] py-3">
+                        <CardTitle className="text-base flex items-center text-white">
+                          <Trophy className="w-4 h-4 mr-2 text-primary" />
                           {league}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="p-0 divide-y">
+                      <CardContent className="p-0 divide-y divide-[#1e3a3f]">
                         {groupedByLeagueUpcomingEvents[league].map(event => (
                           <div key={event.id} className="p-4 hover:bg-muted/10">
                             <div className="flex justify-between items-center mb-2">
@@ -350,13 +354,13 @@ export default function Sport() {
             <TabsContent value="all">
               {eventsLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  <p className="mt-4">Loading all events...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-4 text-white">Loading all events...</p>
                 </div>
               ) : futureEvents.length === 0 ? (
-                <div className="text-center py-12 bg-muted/20 rounded-lg">
-                  <p className="text-lg mb-2">No upcoming events found</p>
-                  <p className="text-sm text-muted-foreground">Check back later for upcoming {sportTitle} matches</p>
+                <div className="text-center py-12 bg-[#112225] border border-[#1e3a3f] rounded-lg">
+                  <p className="text-lg mb-2 text-white">No upcoming events found</p>
+                  <p className="text-sm text-primary">Check back later for upcoming {sportTitle} matches</p>
                 </div>
               ) : (
                 <div className="space-y-8">
@@ -371,8 +375,8 @@ export default function Sport() {
                       
                       <div className="space-y-4">
                         {groupedByDateEvents[date].map(event => (
-                          <Card key={event.id} className="overflow-hidden">
-                            <CardContent className="p-4">
+                          <Card key={event.id} className="overflow-hidden bg-[#112225] border border-[#1e3a3f]">
+                            <CardContent className="p-4 text-white">
                               <div className="flex justify-between items-center mb-2">
                                 <div className="flex items-center">
                                   <Clock className="w-4 h-4 mr-2 text-muted-foreground" />
@@ -448,25 +452,25 @@ export default function Sport() {
             <TabsContent value="featured">
               {eventsLoading ? (
                 <div className="text-center py-12">
-                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
-                  <p className="mt-4">Loading featured events...</p>
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                  <p className="mt-4 text-white">Loading featured events...</p>
                 </div>
               ) : (
                 <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Featured {sportTitle} Events</CardTitle>
-                      <CardDescription>Top matches with the best odds</CardDescription>
+                  <Card className="bg-[#112225] border border-[#1e3a3f]">
+                    <CardHeader className="bg-[#0b1618]">
+                      <CardTitle className="text-white">Featured {sportTitle} Events</CardTitle>
+                      <CardDescription className="text-primary">Top matches with the best odds</CardDescription>
                     </CardHeader>
-                    <CardContent>
+                    <CardContent className="text-white">
                       {events.slice(0, 3).map(event => (
-                        <div key={event.id} className="mb-6 pb-6 border-b border-gray-200 last:border-0 last:mb-0 last:pb-0">
+                        <div key={event.id} className="mb-6 pb-6 border-b border-[#1e3a3f] last:border-0 last:mb-0 last:pb-0">
                           <div className="flex justify-between items-center mb-3">
                             <div className="flex items-center">
-                              <Star className="w-4 h-4 mr-2 text-yellow-500 fill-yellow-500" />
-                              <h3 className="font-medium">{event.homeTeam} vs {event.awayTeam}</h3>
+                              <Star className="w-4 h-4 mr-2 text-primary fill-primary" />
+                              <h3 className="font-medium text-white">{event.homeTeam} vs {event.awayTeam}</h3>
                             </div>
-                            <div className="text-sm text-muted-foreground">
+                            <div className="text-sm text-primary">
                               {format(new Date(event.startTime), 'MMM d, h:mm a')}
                             </div>
                           </div>
@@ -474,7 +478,7 @@ export default function Sport() {
                           <div className="grid grid-cols-3 gap-3">
                             <Button
                               variant="outline"
-                              className="h-auto py-3"
+                              className="h-auto py-3 bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                               onClick={() => handleAddBet(event, event.homeTeam, event.homeOdds || 1.9, "Match Winner")}
                             >
                               <div className="text-center">
@@ -485,7 +489,7 @@ export default function Sport() {
                             
                             <Button
                               variant="outline"
-                              className="h-auto py-3"
+                              className="h-auto py-3 bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                               onClick={() => handleAddBet(event, "Draw", event.drawOdds || 3.4, "Match Winner")}
                             >
                               <div className="text-center">
@@ -496,7 +500,7 @@ export default function Sport() {
                             
                             <Button
                               variant="outline"
-                              className="h-auto py-3"
+                              className="h-auto py-3 bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                               onClick={() => handleAddBet(event, event.awayTeam, event.awayOdds || 4.2, "Match Winner")}
                             >
                               <div className="text-center">
@@ -508,7 +512,7 @@ export default function Sport() {
                           
                           <div className="mt-3 flex justify-end">
                             <Link href={`/event/${event.id}`}>
-                              <Button variant="link" size="sm">
+                              <Button variant="link" size="sm" className="text-primary hover:text-primary/80">
                                 View All Markets
                               </Button>
                             </Link>
@@ -518,14 +522,14 @@ export default function Sport() {
                     </CardContent>
                   </Card>
                   
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Top Leagues</CardTitle>
+                  <Card className="bg-[#112225] border border-[#1e3a3f]">
+                    <CardHeader className="bg-[#0b1618]">
+                      <CardTitle className="text-white">Top Leagues</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
                       {Array.from(new Set(events.map(e => e.leagueName))).slice(0, 6).map(league => (
-                        <Button key={league} variant="outline" className="h-auto py-3 justify-start">
-                          <Trophy className="w-4 h-4 mr-2" />
+                        <Button key={league} variant="outline" className="h-auto py-3 justify-start bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]">
+                          <Trophy className="w-4 h-4 mr-2 text-primary" />
                           {league}
                         </Button>
                       ))}
@@ -541,29 +545,29 @@ export default function Sport() {
         <div className="md:w-80">
           <BetSlip />
           
-          <Card className="mt-6">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center">
-                <Star className="w-4 h-4 mr-2" />
+          <Card className="mt-6 bg-[#112225] border border-[#1e3a3f]">
+            <CardHeader className="pb-2 bg-[#0b1618]">
+              <CardTitle className="text-lg flex items-center text-white">
+                <Star className="w-4 h-4 mr-2 text-primary" />
                 Top {sportTitle} Markets
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="text-white">
               <ul className="space-y-2">
                 <li>
-                  <Button variant="ghost" className="w-full justify-start">Match Winner</Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Match Winner</Button>
                 </li>
                 <li>
-                  <Button variant="ghost" className="w-full justify-start">Both Teams to Score</Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Both Teams to Score</Button>
                 </li>
                 <li>
-                  <Button variant="ghost" className="w-full justify-start">Total Goals/Points</Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Total Goals/Points</Button>
                 </li>
                 <li>
-                  <Button variant="ghost" className="w-full justify-start">Handicap</Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Handicap</Button>
                 </li>
                 <li>
-                  <Button variant="ghost" className="w-full justify-start">First Scorer</Button>
+                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">First Scorer</Button>
                 </li>
               </ul>
             </CardContent>

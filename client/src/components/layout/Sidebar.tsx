@@ -50,8 +50,8 @@ export default function Sidebar() {
     queryKey: ['/api/sports']
   });
   
-  // Use API sports or our static list for consistent display
-  const sports = apiSports.length > 0 ? apiSports : sportsList;
+  // Use our static list for consistent display
+  const sports = sportsList;
 
   // Set active sport based on path
   useEffect(() => {
@@ -104,12 +104,6 @@ export default function Sidebar() {
     }
   };
 
-  // Function for handling sport clicks to log them
-  const handleSportClick = (sport: Sport) => {
-    console.log(`Sidebar: Clicked on sport ${sport.name} (${sport.slug})`);
-    setActiveSport(sport.slug);
-  };
-  
   return (
     <div className="flex flex-col w-64 bg-[#09151A] text-white h-full">
       {/* Logo */}
@@ -126,14 +120,7 @@ export default function Sidebar() {
       {/* Sports navigation - simplified with direct anchor links */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
         {/* Home/Upcoming */}
-        <a 
-          href="/" 
-          className="block"
-          onClick={() => {
-            console.log('Sidebar: Clicked on Upcoming');
-            setActiveSport('upcoming');
-          }}
-        >
+        <a href="/" className="block">
           <div className={`flex items-center px-4 py-3 cursor-pointer ${
             activeSport === 'upcoming' ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
           }`}>
@@ -146,15 +133,8 @@ export default function Sidebar() {
           </div>
         </a>
         
-        {/* Esports - with special highlight */}
-        <a 
-          href="/sport/esports" 
-          className="block"
-          onClick={() => {
-            console.log('Sidebar: Clicked on Esports');
-            setActiveSport('esports');
-          }}
-        >
+        {/* Esports */}
+        <a href="/sport/esports" className="block">
           <div className="flex items-center px-4 py-3 cursor-pointer bg-cyan-400 text-black my-2">
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
               {getSportIcon('esports')}
@@ -169,7 +149,6 @@ export default function Sidebar() {
             key={sport.id} 
             href={`/sport/${sport.slug}`} 
             className="block"
-            onClick={() => handleSportClick(sport)}
           >
             <div className={`flex items-center px-4 py-3 cursor-pointer ${
               activeSport === sport.slug ? 'text-cyan-400' : 'text-white hover:text-cyan-400'

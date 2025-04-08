@@ -2,6 +2,7 @@ import { useLocation } from "wouter";
 import { useState, useEffect } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import sportImages from '@/data/sportImages';
+import SportsSidebar from "@/components/layout/SportsSidebar";
 import { useBetting } from "@/context/BettingContext";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -255,6 +256,9 @@ export default function Home() {
           alt="Sports Home" 
           className="w-full h-full object-contain pointer-events-none"
         />
+        
+        {/* Overlay the sports sidebar on top of the image */}
+        <SportsSidebar />
       </div>
       
       <ConnectWalletModal 

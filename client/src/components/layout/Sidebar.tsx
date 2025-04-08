@@ -10,16 +10,19 @@ import {
   MdSportsEsports, 
   MdSportsRugby, 
   MdSportsCricket, 
-  MdSportsVolleyball
+  MdSportsVolleyball,
+  MdSportsFootball
 } from "react-icons/md";
 import {
   FaFistRaised,
   FaHorse,
-  FaTableTennis
+  FaTableTennis,
+  FaDog,
+  FaFootballBall
 } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 
-// Static list of sports to match the screenshot
+// Static list of sports to match the sportIdMap in sport.tsx
 const sportsList = [
   { id: 1, name: 'Upcoming', slug: 'upcoming', icon: 'grid' },
   { id: 2, name: 'Football', slug: 'football', icon: 'soccer' },
@@ -35,7 +38,9 @@ const sportsList = [
   { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
   { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
   { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' }
+  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
+  { id: 16, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' },
+  { id: 17, name: 'AFL', slug: 'afl', icon: 'football' }
 ];
 
 export default function Sidebar() {
@@ -90,6 +95,10 @@ export default function Sidebar() {
         return <MdSportsCricket size={24} />;
       case 'horse':
         return <FaHorse size={24} />;
+      case 'dog':
+        return <FaDog size={24} />;
+      case 'football':
+        return <MdSportsFootball size={24} />;
       default:
         return <Grid2X2 size={24} />;
     }

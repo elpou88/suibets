@@ -8,6 +8,7 @@ export default function Match() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [sportName, setSportName] = useState("Football");
   
   // Check if we're in a match/:id route
   const [matchRoute, matchParams] = useRoute('/match/:id');
@@ -17,8 +18,38 @@ export default function Match() {
   
   // Image state based on the route
   const [imageSrc, setImageSrc] = useState('/images/Sports 3 (2).png');
+  const [location] = useLocation();
   
   useEffect(() => {
+    // Get the sport parameter from the URL query string
+    const queryParams = new URLSearchParams(window.location.search);
+    const sportParam = queryParams.get('sport');
+    
+    // Map sport slug to proper name for display
+    if (sportParam) {
+      const sportSlugToName: {[key: string]: string} = {
+        'football': 'Football',
+        'basketball': 'Basketball',
+        'tennis': 'Tennis',
+        'baseball': 'Baseball',
+        'boxing': 'Boxing',
+        'hockey': 'Hockey',
+        'esports': 'Esports',
+        'mma-ufc': 'MMA/UFC',
+        'volleyball': 'Volleyball',
+        'table-tennis': 'Table Tennis',
+        'rugby-league': 'Rugby League',
+        'rugby-union': 'Rugby Union',
+        'cricket': 'Cricket',
+        'horse-racing': 'Horse Racing',
+        'greyhounds': 'Greyhounds',
+        'afl': 'AFL'
+      };
+      
+      setSportName(sportSlugToName[sportParam] || 'Football');
+      console.log('Sport name:', sportSlugToName[sportParam] || 'Football');
+    }
+    
     if (matchRoute && matchParams) {
       // This is a match page
       setImageSrc('/images/Sports 3 (2).png');
@@ -27,7 +58,7 @@ export default function Match() {
       console.log('Sport slug:', sportParams.slug);
       setImageSrc('/images/Sports 3 (2).png'); // Use the same image for now
     }
-  }, [matchRoute, matchParams, sportRoute, sportParams]);
+  }, [matchRoute, matchParams, sportRoute, sportParams, location]);
 
   // Function to handle clicks on the image that should navigate
   const handleImageClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -103,6 +134,14 @@ export default function Match() {
           alt="Match Details" 
           className="w-full h-full object-contain pointer-events-none"
         />
+        
+        {/* Overlay sport name on the page without changing UI */}
+        <div className="absolute top-[160px] left-[300px] text-white text-xl font-bold">
+          {sportName} Betting Markets
+        </div>
+        <div className="absolute top-[190px] left-[300px] text-white text-sm">
+          Club Brugge vs Aston Villa - {sportName} Match
+        </div>
       </div>
       
       <ConnectWalletModal 

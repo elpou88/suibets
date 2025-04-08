@@ -27,6 +27,9 @@ import Community from "@/pages/community";
 import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
 import Live from "@/pages/live";
+import LivePage from "@/pages/live/index";
+import SportsPage from "@/pages/sports/index";
+import PromotionsPage from "@/pages/promotions/index";
 import LiveExact from "@/pages/live-exact";
 import SportsExact from "@/pages/sports-exact";
 import GotoSports from "@/pages/goto-sports";
@@ -41,13 +44,13 @@ function App() {
           <BettingProvider>
             <div className="root-container">
               <Switch>
-                <Route path="/" component={Home} />
-                <Route path="/sports" component={Home} />
+                <Route path="/" component={SportsPage} />
+                <Route path="/sports" component={SportsPage} />
                 <Route path="/sports-exact" component={SportsExact} />
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />
                 <Route path="/match-detail/:id" component={MatchDetail} />
-                <Route path="/promotions" component={Promotions} />
+                <Route path="/promotions" component={PromotionsPage} />
                 <Route path="/promotions/referral" component={ReferralPage} />
                 <Route path="/notifications" component={Notifications} />
                 <Route path="/settings" component={Settings} />
@@ -62,8 +65,9 @@ function App() {
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />
-                <Route path="/live" component={LiveExact} />
+                <Route path="/live" component={LivePage} />
                 <Route path="/live/:id" component={LiveEventPage} />
+                <Route path="/live-exact" component={LiveExact} />
                 <Route component={NotFound} />
               </Switch>
             </div>

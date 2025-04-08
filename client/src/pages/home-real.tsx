@@ -81,7 +81,7 @@ export default function HomeReal() {
               <h1 className="text-2xl font-bold text-white">Featured Events</h1>
               <Button 
                 variant="outline" 
-                className="bg-cyan-400 text-black border-transparent hover:bg-cyan-500"
+                className="bg-[#00ffff] text-black border-transparent hover:bg-[#00d8d8]"
                 onClick={() => setLocation('/live-real')}
               >
                 View All Live Events
@@ -100,7 +100,7 @@ export default function HomeReal() {
                   {liveEvents.slice(0, 4).map((event: any) => (
                     <Card key={event.id} className="bg-[#0b1618] border-[#1e3a3f] text-white overflow-hidden">
                       <CardContent className="p-0">
-                        <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-cyan-600 to-cyan-400">
+                        <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-[#1e3a3f] to-[#00ffff]">
                           <div className="flex justify-between items-center">
                             <h3 className="text-lg font-semibold">{event.name}</h3>
                             <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
@@ -135,7 +135,7 @@ export default function HomeReal() {
                                 <Button
                                   key={outcome.id}
                                   variant="outline"
-                                  className={`flex justify-between items-center border-[#1e3a3f] hover:bg-cyan-400 hover:text-black ${
+                                  className={`flex justify-between items-center border-[#1e3a3f] hover:bg-[#00ffff] hover:text-black ${
                                     outcome.status === 'active' 
                                       ? 'bg-[#112225]' 
                                       : 'bg-gray-800 opacity-70 cursor-not-allowed'
@@ -146,7 +146,7 @@ export default function HomeReal() {
                                   <span className="truncate">{outcome.name}</span>
                                   <span className={`font-medium ml-2 ${
                                     outcome.status === 'active' 
-                                      ? 'text-cyan-400' 
+                                      ? 'text-[#00ffff]' 
                                       : 'text-gray-400'
                                   }`}>
                                     {outcome.odds.toFixed(2)}
@@ -169,7 +169,7 @@ export default function HomeReal() {
               
               {eventsLoading ? (
                 <div className="flex justify-center items-center h-40">
-                  <div className="animate-spin w-8 h-8 border-4 border-cyan-400 border-t-transparent rounded-full"></div>
+                  <div className="animate-spin w-8 h-8 border-4 border-[#00ffff] border-t-transparent rounded-full"></div>
                 </div>
               ) : upcomingEvents.length > 0 ? (
                 <div className="space-y-6">
@@ -184,7 +184,7 @@ export default function HomeReal() {
                           <h3 className="font-semibold text-white">{sport.name}</h3>
                           <Button 
                             variant="link" 
-                            className="text-cyan-400 px-0 hover:text-cyan-300"
+                            className="text-[#00ffff] px-0 hover:text-[#00d8d8]"
                             onClick={() => navigateToSport(sport.slug)}
                           >
                             View All
@@ -211,11 +211,11 @@ export default function HomeReal() {
                                     <Button
                                       key={outcome.id}
                                       variant="outline"
-                                      className="flex justify-between items-center bg-[#0b1618] border-[#1e3a3f] hover:bg-cyan-400 hover:text-black"
+                                      className="flex justify-between items-center bg-[#0b1618] border-[#1e3a3f] hover:bg-[#00ffff] hover:text-black"
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
                                       <span className="truncate">{outcome.name}</span>
-                                      <span className="font-medium ml-2 text-cyan-400">{outcome.odds.toFixed(2)}</span>
+                                      <span className="font-medium ml-2 text-[#00ffff]">{outcome.odds.toFixed(2)}</span>
                                     </Button>
                                   ))}
                                 </div>

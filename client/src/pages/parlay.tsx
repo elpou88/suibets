@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { Helmet } from 'react-helmet';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { useBetting } from '@/context/BettingContext';
-import SportBettingWrapper from '@/components/betting/SportBettingWrapper';
+
 import { 
   Trophy, 
   AlertTriangle, 
@@ -98,10 +98,7 @@ export default function ParlayPage() {
   }
 
   return (
-    <SportBettingWrapper>
-      <Helmet>
-        <title>Parlay Bets | SuiBets</title>
-      </Helmet>
+    <div className="bg-[#112225] text-white">
 
       <div className="container py-6">
         <div className="flex justify-between items-center mb-6">
@@ -386,6 +383,6 @@ export default function ParlayPage() {
           ))}
         </Tabs>
       </div>
-    </SportBettingWrapper>
+    </div>
   );
 }

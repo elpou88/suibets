@@ -44,6 +44,8 @@ import SportsLive from "@/pages/sports-live";
 import PromotionsReal from "@/pages/promotions-real";
 import BetHistoryReal from "@/pages/bet-history-real";
 import DividendsReal from "@/pages/dividends-real";
+import Parlay from "@/pages/parlay";
+import SportPage from "@/pages/sports-live/[sport]";
 
 function App() {
   console.log("Starting React application");
@@ -91,7 +93,9 @@ function App() {
                 {/* Legacy Routes with new names for backward compatibility */}
                 <Route path="/home-real" component={HomeReal} />
                 <Route path="/live-real" component={LiveReal} />
-                <Route path="/sports-live/:slug*" component={SportsLive} />
+                <Route path="/sports-live" component={SportsLive} />
+                <Route path="/sports-live/:sport" component={SportPage} />
+                <Route path="/parlay" component={Parlay} />
                 
                 <Route component={NotFound} />
               </Switch>

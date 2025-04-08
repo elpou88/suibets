@@ -64,7 +64,7 @@ export default function PromotionsReal() {
       {/* Referral Banner */}
       <div className="w-full bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg overflow-hidden mb-6">
         <Link href="/promotions/referral">
-          <a className="block relative">
+          <div className="block relative">
             <div className="w-full h-32 md:h-48 relative">
               <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center z-10">
                 <h3 className="text-xl md:text-3xl font-bold text-white">SuiBets</h3>
@@ -87,7 +87,7 @@ export default function PromotionsReal() {
                      animation: 'confetti-fall 10s linear infinite'
                    }}></div>
             </div>
-          </a>
+          </div>
         </Link>
       </div>
 

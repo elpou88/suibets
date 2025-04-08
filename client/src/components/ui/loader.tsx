@@ -1,42 +1,26 @@
 import React from 'react';
+import { cn } from '@/lib/utils';
 
 interface LoaderProps {
-  size?: 'small' | 'medium' | 'large' | 'sm' | 'lg';
-  color?: 'white' | 'black' | 'cyan' | 'primary';
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-/**
- * Loader component for displaying loading states
- */
-export const Loader: React.FC<LoaderProps> = ({ 
-  size = 'medium', 
-  color = 'white',
-  className = '' 
-}) => {
-  // Map sizes to class names
+export const Loader: React.FC<LoaderProps> = ({ size = 'md', className }) => {
   const sizeClasses = {
-    small: 'h-4 w-4 border-2',
-    medium: 'h-8 w-8 border-3',
-    large: 'h-12 w-12 border-4',
-    lg: 'h-12 w-12 border-4', // Alias for large
-    sm: 'h-4 w-4 border-2'    // Alias for small
+    sm: 'w-4 h-4 border-2',
+    md: 'w-6 h-6 border-2',
+    lg: 'w-8 h-8 border-4'
   };
-  
-  // Map colors to class names
-  const colorClasses = {
-    white: 'border-white border-t-transparent',
-    black: 'border-black border-t-transparent',
-    cyan: 'border-cyan-400 border-t-transparent',
-    primary: 'border-primary border-t-transparent'
-  };
-  
+
   return (
     <div 
-      className={`animate-spin rounded-full ${sizeClasses[size]} ${colorClasses[color]} ${className}`}
+      className={cn(
+        "animate-spin rounded-full border-primary border-t-transparent", 
+        sizeClasses[size],
+        className
+      )} 
       aria-label="Loading"
     />
   );
 };
-
-export default Loader;

@@ -72,7 +72,7 @@ const config: AppConfig = {
   },
   blockchain: {
     // Use testnet by default for development
-    defaultNetwork: 'testnet',
+    defaultNetwork: SuiNetwork.TESTNET,
     // Enable verbose logging in development
     verbose: process.env.NODE_ENV !== 'production',
     // Admin wallet would be securely stored in environment variables

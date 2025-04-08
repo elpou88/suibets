@@ -8,7 +8,7 @@ import { Wallet, ArrowRight, Info, Scan, CheckCircle2, AlertCircle } from "lucid
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import Loader from "@/components/ui/loader";
+import { Loader } from "@/components/ui/loader";
 
 export default function ConnectWallet() {
   const [, setLocation] = useLocation();
@@ -198,7 +198,7 @@ export default function ConnectWallet() {
                   >
                     {connecting ? (
                       <>
-                        <Loader size="small" color="black" />
+                        <Loader size="sm" className="text-black" />
                         <span className="ml-2">Connecting...</span>
                       </>
                     ) : (
@@ -242,7 +242,7 @@ export default function ConnectWallet() {
                   >
                     {connecting ? (
                       <>
-                        <Loader size="small" color="black" />
+                        <Loader size="sm" className="text-black" />
                         <span className="ml-2">Connecting...</span>
                       </>
                     ) : (
@@ -273,7 +273,7 @@ export default function ConnectWallet() {
                     >
                       {registering ? (
                         <>
-                          <Loader size="small" color="black" />
+                          <Loader size="sm" className="text-black" />
                           <span className="ml-2">Registering...</span>
                         </>
                       ) : (

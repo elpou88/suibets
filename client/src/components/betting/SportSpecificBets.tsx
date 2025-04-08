@@ -48,8 +48,8 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       odds,
       stake: 10, // Default stake amount
       market: marketName,
-      marketId,
-      outcomeId,
+      marketId: marketId ? Number(marketId) : undefined,
+      outcomeId: outcomeId ? Number(outcomeId) : undefined,
     });
   };
 
@@ -152,7 +152,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           {[[1, 0], [2, 0], [3, 0], [0, 0], [1, 1], [2, 1], [0, 1], [0, 2], [0, 3]].map(
             ([home, away]) => (
               <Button
-                key={`${home}-${away}`}
+                key={`score-${home}-${away}-${Date.now()}-${Math.random()}`}
                 variant="outline"
                 onClick={() =>
                   handleAddBet('Correct Score', `${home}-${away}`, calculateCorrectScoreOdds(home, away))
@@ -375,7 +375,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         <CardContent className="grid grid-cols-3 gap-2">
           {[1, 2, 3, 4, 5].map((round) => (
             <Button
-              key={`${homeTeam}-R${round}`}
+              key={`home-${homeTeam}-R${round}`}
               variant="outline"
               onClick={() => handleAddBet('Round Betting', `${homeTeam} in Round ${round}`, 8.00 + round)}
               className="flex flex-col"
@@ -386,7 +386,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           ))}
           {[1, 2, 3, 4, 5].map((round) => (
             <Button
-              key={`${awayTeam}-R${round}`}
+              key={`away-${awayTeam}-R${round}`}
               variant="outline"
               onClick={() => handleAddBet('Round Betting', `${awayTeam} in Round ${round}`, 10.00 + round)}
               className="flex flex-col"

@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Live Betting - SuiBets</title>
+  <title>Sports Betting - SuiBets</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="navbar">
-    <a href="/sports.html">Sports</a>
-    <a href="/live.html" class="active">Live</a>
+    <a href="/sports.html" class="active">Sports</a>
+    <a href="/live.html">Live</a>
     <a href="/promotions.html">Promotions</a>
     <a href="/betslip.html">Bet Slip</a>
     <a href="/connect-wallet.html">Connect Wallet</a>
@@ -17,21 +17,25 @@
   </div>
 
   <div class="container">
-    <img src="/assets/Live (2)_1744042506627.png" alt="Live Betting Page" class="background-image">
+    <img src="/assets/Sports 1 (2).png" alt="Sports Betting Page" class="background-image">
     
     <!-- Overlay interactive buttons on top of the image -->
     <div class="action-buttons">
       <!-- Navigation buttons -->
-      <button class="action-btn" style="top: 2%; left: 30%; width: 8%; height: 6%;" onclick="window.location.href='/sports.html'">Sports</button>
+      <button class="action-btn" style="top: 2%; left: 35%; width: 8%; height: 6%;" onclick="window.location.href='/live.html'">Live</button>
       <button class="action-btn" style="top: 2%; left: 44%; width: 8%; height: 6%;" onclick="window.location.href='/promotions.html'">Promo</button>
       
-      <!-- Game selection areas -->
-      <button class="action-btn" style="top: 25%; left: 10%; width: 15%; height: 10%;" onclick="showNotification('Game 1 selected!')">Game 1</button>
-      <button class="action-btn" style="top: 38%; left: 10%; width: 15%; height: 10%;" onclick="showNotification('Game 2 selected!')">Game 2</button>
+      <!-- Sport selection buttons -->
+      <button class="action-btn" style="top: 16%; left: 13%; width: 8%; height: 6%;" onclick="showNotification('Football selected!')">Football</button>
+      <button class="action-btn" style="top: 24%; left: 13%; width: 8%; height: 6%;" onclick="showNotification('Basketball selected!')">Basketball</button>
+      <button class="action-btn" style="top: 32%; left: 13%; width: 8%; height: 6%;" onclick="showNotification('Tennis selected!')">Tennis</button>
       
-      <!-- Betting controls -->
-      <button class="action-btn" style="top: 45%; left: 35%; width: 15%; height: 6%;" onclick="showNotification('Place Bet clicked!')">Bet</button>
-      <button class="action-btn" style="top: 65%; left: 75%; width: 15%; height: 6%;" onclick="showNotification('Bet Slip clicked!')">Bet Slip</button>
+      <!-- Join button -->
+      <button class="action-btn" style="top: 38%; left: 52%; width: 8%; height: 6%;" onclick="showNotification('Join Now clicked!')">Join</button>
+      
+      <!-- Game selections -->
+      <button class="action-btn" style="top: 50%; left: 30%; width: 40%; height: 10%;" onclick="showNotification('Game selection clicked!')">Game Select</button>
+      <button class="action-btn" style="top: 65%; left: 30%; width: 40%; height: 10%;" onclick="showNotification('Game selection clicked!')">Game Select</button>
     </div>
   </div>
   

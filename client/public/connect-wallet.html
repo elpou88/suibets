@@ -3,37 +3,34 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Promotions - SuiBets</title>
+  <title>Connect Wallet - SuiBets</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="navbar">
     <a href="/sports.html">Sports</a>
     <a href="/live.html">Live</a>
-    <a href="/promotions.html" class="active">Promotions</a>
+    <a href="/promotions.html">Promotions</a>
     <a href="/betslip.html">Bet Slip</a>
-    <a href="/connect-wallet.html">Connect Wallet</a>
+    <a href="/connect-wallet.html" class="active">Connect Wallet</a>
     <a href="/bet-history.html">History</a>
   </div>
 
   <div class="container">
-    <img src="/assets/Promotions (2)_1744049175590.png" alt="Promotions Page" class="background-image">
+    <img src="/assets/Connect Wallet (2).png" alt="Connect Wallet Page" class="background-image">
     
     <!-- Overlay interactive buttons on top of the image -->
     <div class="action-buttons">
       <!-- Navigation buttons -->
       <button class="action-btn" style="top: 2%; left: 30%; width: 8%; height: 6%;" onclick="window.location.href='/sports.html'">Sports</button>
       <button class="action-btn" style="top: 2%; left: 37%; width: 8%; height: 6%;" onclick="window.location.href='/live.html'">Live</button>
+      <button class="action-btn" style="top: 2%; left: 44%; width: 8%; height: 6%;" onclick="window.location.href='/promotions.html'">Promo</button>
+      <button class="action-btn" style="top: 2%; left: 51%; width: 8%; height: 6%;" onclick="window.location.href='/betslip.html'">Bet Slip</button>
       
-      <!-- Promotion cards -->
-      <button class="action-btn" style="top: 30%; left: 20%; width: 15%; height: 20%;" onclick="showNotification('Promotion 1 details!')">Promo 1</button>
-      <button class="action-btn" style="top: 30%; left: 45%; width: 15%; height: 20%;" onclick="showNotification('Promotion 2 details!')">Promo 2</button>
-      <button class="action-btn" style="top: 30%; left: 70%; width: 15%; height: 20%;" onclick="showNotification('Promotion 3 details!')">Promo 3</button>
-      
-      <!-- Join buttons -->
-      <button class="action-btn" style="top: 52%; left: 20%; width: 8%; height: 5%;" onclick="showNotification('Joined Promotion 1!')">Join 1</button>
-      <button class="action-btn" style="top: 52%; left: 45%; width: 8%; height: 5%;" onclick="showNotification('Joined Promotion 2!')">Join 2</button>
-      <button class="action-btn" style="top: 52%; left: 70%; width: 8%; height: 5%;" onclick="showNotification('Joined Promotion 3!')">Join 3</button>
+      <!-- Wallet connection buttons -->
+      <button class="action-btn" style="top: 40%; left: 35%; width: 30%; height: 10%;" onclick="showNotification('Connecting to Sui Wallet...')">Connect Sui Wallet</button>
+      <button class="action-btn" style="top: 55%; left: 35%; width: 30%; height: 10%;" onclick="showNotification('Connecting to Ethos Wallet...')">Connect Ethos</button>
+      <button class="action-btn" style="top: 70%; left: 35%; width: 30%; height: 10%;" onclick="showNotification('Connecting to Martian Wallet...')">Connect Martian</button>
     </div>
   </div>
   

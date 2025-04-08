@@ -1,6 +1,5 @@
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import BackButton from "@/components/ui/BackButton";
 
 // Define Promotion type for type safety
 interface Promotion {
@@ -60,7 +59,13 @@ export default function PromotionsPage() {
         className="w-full h-full object-contain"
       />
       
-      {/* No back button as per user request */}
+      {/* Back button */}
+      <button 
+        onClick={() => setLocation("/")}
+        className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg"
+      >
+        Back to Home
+      </button>
       
       {/* Promotions overlay */}
       <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">

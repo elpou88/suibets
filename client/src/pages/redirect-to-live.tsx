@@ -12,6 +12,5 @@ export default function RedirectToLive() {
     }, 100);
   }, [setLocation]);
   
-  // Don't display any UI, just redirect silently
-  return null;
+  return <div className="h-screen flex items-center justify-center">Redirecting to live events...</div>;
 }

@@ -51,17 +51,8 @@ export default function LiveExact() {
     navContainer.style.zIndex = '1000';
     container.appendChild(navContainer);
     
-    // Turn OFF visual debugging to hide button positions
+    // Add visual debugging for clickable areas
     const debugMode = false;
-    
-    // Add extra click logging to help with positioning
-    document.addEventListener('click', (e) => {
-      console.log(`Clicked at X: ${e.clientX}, Y: ${e.clientY}`);
-      
-      // Find what element was clicked
-      const element = document.elementFromPoint(e.clientX, e.clientY);
-      console.log("Element clicked:", element);
-    });
     
     // Create a navigation bar that exactly matches the position in the image
     // The navigation uses EXACT pixel positions from the image we examined
@@ -77,29 +68,19 @@ export default function LiveExact() {
     navigationBar.style.zIndex = '1000';
     container.appendChild(navigationBar);
     
-    // Instead of manually placing buttons, we'll add a debug overlay with annotations
-    // to visually identify the exact click positions and align with the visible text
+    // Add fixed-position buttons exactly where they appear in the source image
+    // Each button has exact coordinates and dimensions from the image inspection
     
-    // Create an overlay container for debugging - enabling visual feedback
-    const overlay = document.createElement('div');
-    overlay.style.position = 'absolute';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.pointerEvents = 'none'; // Let clicks pass through
-    overlay.style.zIndex = '9999';
-    document.body.appendChild(overlay);
+    // Create navigation elements with consistent spacing
+    // IMPORTANT: The center of the navbar is at 512px (1024px/2)
+    // So we position our 3 links centered around this point
     
-    // This will help us precisely position our navigation buttons
-    // directly over the text in the image
-    
-    // Sports button - placed directly over the text in the image
+    // Sports button - enhanced for faster click detection
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '470px'; // Centered over the "SPORTS" text in the image
-    sportsButton.style.top = '22px'; // Directly on the text, not above it
+    sportsButton.style.left = '440px'; // Adjusted for better spacing
+    sportsButton.style.top = '12px'; // Moved up to provide more click area
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.style.border = 'none';
     sportsButton.style.color = 'transparent'; // Make text transparent but keep the button text for accessibility
@@ -114,19 +95,20 @@ export default function LiveExact() {
     sportsButton.style.zIndex = '1001';
     sportsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('SPORTS button clicked - Ultra-fast navigation');
-      // Go through the goto-sports page which has a reliable redirect mechanism
-      // This is the most reliable method we've found
-      window.location.href = '/goto-sports';
+      console.log('SPORTS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
+      const homeUrl = '/';
+      window.history.pushState({}, '', homeUrl);
+      window.location.replace(homeUrl);
     };
     navigationBar.appendChild(sportsButton);
     
-    // Live button - placed directly over the text in the image
+    // Live button - enhanced for faster click detection
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '542px'; // Based on click coordinates from logs (X: 553, Y: 20)
-    liveButton.style.top = '22px'; // Positioned at the same height as the text in the image
+    liveButton.style.left = '510px'; // Center aligned
+    liveButton.style.top = '12px'; // Moved up to provide more click area
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';
     liveButton.style.color = 'transparent';
@@ -141,21 +123,20 @@ export default function LiveExact() {
     liveButton.style.zIndex = '1001';
     liveButton.onclick = (e) => {
       e.preventDefault();
-      console.log('LIVE button clicked - Ultra-fast navigation');
-      // Use history.pushState for faster navigation without page reload
+      console.log('LIVE button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
       const liveUrl = '/live';
       window.history.pushState({}, '', liveUrl);
-      // Direct navigation without reload for faster transitions
-      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      window.location.replace(liveUrl);
     };
     navigationBar.appendChild(liveButton);
     
-    // Promotions button - placed directly over the text in the image
+    // Promotions button - enhanced for faster click detection
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '608px'; // Based on click coordinates from logs (X: 626, Y: 15)
-    promotionsButton.style.top = '22px'; // Positioned at the same height as the text in the image
+    promotionsButton.style.left = '560px'; // Adjusted for better spacing
+    promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
     promotionsButton.style.color = 'transparent';
@@ -170,12 +151,11 @@ export default function LiveExact() {
     promotionsButton.style.zIndex = '1001';
     promotionsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('PROMOTIONS button clicked - Ultra-fast navigation');
-      // Use history.pushState for faster navigation without page reload
+      console.log('PROMOTIONS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
       const promotionsUrl = '/promotions';
       window.history.pushState({}, '', promotionsUrl);
-      // Direct navigation without reload for faster transitions
-      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      window.location.replace(promotionsUrl);
     };
     navigationBar.appendChild(promotionsButton);
     
@@ -203,22 +183,14 @@ export default function LiveExact() {
     filsButton.href = '/bet-slip';
     map.appendChild(filsButton);
     
-    // Remove EVERYTHING from the page except our navigation buttons
-    // This ensures there are no hidden or conflicting elements
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(el => {
-      if (el !== navigationBar && 
-          el !== sportsButton && 
-          el !== liveButton && 
-          el !== promotionsButton && 
-          el !== body && 
-          el !== container && 
-          el !== img && 
-          el !== map) {
-        // Remove everything else to start clean
-        if (el.parentNode && el !== document.body && el !== document.documentElement) {
-          console.log('Removing potential interfering element:', el);
-          el.parentNode.removeChild(el);
+    // Disable all other links to ensure only our navigation buttons work
+    // This helps prevent any conflicts with other elements on the page
+    const links = document.querySelectorAll('a, button');
+    links.forEach(link => {
+      if (link !== sportsButton && link !== liveButton && link !== promotionsButton) {
+        // TypeScript fix: cast to HTMLElement before setting style
+        if (link instanceof HTMLElement) {
+          link.style.pointerEvents = 'none';
         }
       }
     });
@@ -226,87 +198,9 @@ export default function LiveExact() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
-    // Make buttons visually distinct to debug clickable areas
-    if (debugMode) {
-      sportsButton.style.backgroundColor = 'rgba(255,0,0,0.3)';
-      liveButton.style.backgroundColor = 'rgba(0,255,0,0.3)';
-      promotionsButton.style.backgroundColor = 'rgba(0,0,255,0.3)';
-    }
-
-    // Add debugging info with the updated positions
+    // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
-    console.log('Sports position: 470px, Live position: 542px, Promotions position: 608px');
-    
-    // Debug panel is only shown in debug mode
-    if (debugMode) {
-      // Create a floating debug panel to show click positions
-      const debugPanel = document.createElement('div');
-      debugPanel.style.position = 'fixed';
-      debugPanel.style.bottom = '10px';
-      debugPanel.style.right = '10px';
-      debugPanel.style.backgroundColor = 'rgba(0,0,0,0.7)';
-      debugPanel.style.color = 'white';
-      debugPanel.style.padding = '10px';
-      debugPanel.style.borderRadius = '5px';
-      debugPanel.style.zIndex = '10001';
-      debugPanel.style.fontSize = '12px';
-      debugPanel.style.fontFamily = 'monospace';
-      debugPanel.textContent = 'Click anywhere to see coordinates';
-      document.body.appendChild(debugPanel);
-      
-      // Update the debug panel with click coordinates
-      document.addEventListener('click', (e) => {
-        debugPanel.textContent = `Last click: X=${e.clientX}, Y=${e.clientY}`;
-      });
-    }
-    
-    // Add visual indicators that appear on top of the navigation elements in the image
-    // These will help us fine-tune the exact positions - only shown in debug mode
-    if (debugMode) {
-      // Text label for Sports - positioned exactly where the button should be
-      const sportsLabel = document.createElement('div');
-      sportsLabel.textContent = "SPORTS";
-      sportsLabel.style.position = 'absolute';
-      sportsLabel.style.left = '470px'; // Match the button position exactly
-      sportsLabel.style.top = '22px'; // Match the button position exactly
-      sportsLabel.style.color = 'red';
-      sportsLabel.style.fontWeight = 'bold';
-      sportsLabel.style.fontSize = '14px';
-      sportsLabel.style.pointerEvents = 'none';
-      sportsLabel.style.zIndex = '10000';
-      overlay.appendChild(sportsLabel);
-      
-      // Text label for Live - positioned exactly where the button should be
-      const liveLabel = document.createElement('div');
-      liveLabel.textContent = "LIVE";
-      liveLabel.style.position = 'absolute';
-      liveLabel.style.left = '542px'; // Match the button position exactly
-      liveLabel.style.top = '22px'; // Match the button position exactly
-      liveLabel.style.color = 'green';
-      liveLabel.style.fontWeight = 'bold';
-      liveLabel.style.fontSize = '14px';
-      liveLabel.style.pointerEvents = 'none';
-      liveLabel.style.zIndex = '10000';
-      overlay.appendChild(liveLabel);
-      
-      // Text label for Promotions - positioned exactly where the button should be
-      const promotionsLabel = document.createElement('div');
-      promotionsLabel.textContent = "PROMOTIONS";
-      promotionsLabel.style.position = 'absolute';
-      promotionsLabel.style.left = '608px'; // Match the button position exactly
-      promotionsLabel.style.top = '22px'; // Match the button position exactly
-      promotionsLabel.style.color = 'blue';
-      promotionsLabel.style.fontWeight = 'bold';
-      promotionsLabel.style.fontSize = '14px';
-      promotionsLabel.style.pointerEvents = 'none';
-      promotionsLabel.style.zIndex = '10000';
-      overlay.appendChild(promotionsLabel);
-    }
-    
-    // Add visual outlines to detect any overlapping elements
-    sportsButton.style.outline = debugMode ? '2px solid red' : 'none';
-    liveButton.style.outline = debugMode ? '2px solid green' : 'none';
-    promotionsButton.style.outline = debugMode ? '2px solid blue' : 'none';
+    console.log('Sports link position: 440px, Live link position: 510px, Promotions link position: 560px');
     
     // Clean up function
     return () => {

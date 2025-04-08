@@ -48,8 +48,8 @@ export default function PromotionsPage() {
     navContainer.style.zIndex = '1000';
     container.appendChild(navContainer);
     
-    // Turn on visual debugging to see button positions 
-    const debugMode = true;
+    // Add visual debugging for clickable areas
+    const debugMode = false;
     
     // Create a navigation bar that exactly matches the position in the image
     // The navigation uses EXACT pixel positions from the image we examined
@@ -76,7 +76,7 @@ export default function PromotionsPage() {
     const sportsButton = document.createElement('button');
     sportsButton.textContent = 'Sports';
     sportsButton.style.position = 'absolute';
-    sportsButton.style.left = '488px'; // Adjusted based on successful clicks 
+    sportsButton.style.left = '440px'; // Adjusted for better spacing
     sportsButton.style.top = '12px'; // Moved up to provide more click area
     sportsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
     sportsButton.style.border = 'none';
@@ -92,10 +92,11 @@ export default function PromotionsPage() {
     sportsButton.style.zIndex = '1001';
     sportsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('SPORTS button clicked - Ultra-fast navigation');
-      // Go through the goto-sports page which has a reliable redirect mechanism
-      // This is the most reliable method we've found
-      window.location.href = '/goto-sports';
+      console.log('SPORTS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
+      const homeUrl = '/';
+      window.history.pushState({}, '', homeUrl);
+      window.location.replace(homeUrl);
     };
     navigationBar.appendChild(sportsButton);
     
@@ -103,7 +104,7 @@ export default function PromotionsPage() {
     const liveButton = document.createElement('button');
     liveButton.textContent = 'Live';
     liveButton.style.position = 'absolute';
-    liveButton.style.left = '550px'; // Adjusted based on successful clicks
+    liveButton.style.left = '510px'; // Center aligned
     liveButton.style.top = '12px'; // Moved up to provide more click area
     liveButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
     liveButton.style.border = 'none';
@@ -119,12 +120,11 @@ export default function PromotionsPage() {
     liveButton.style.zIndex = '1001';
     liveButton.onclick = (e) => {
       e.preventDefault();
-      console.log('LIVE button clicked - Ultra-fast navigation');
-      // Use history.pushState for faster navigation without page reload
+      console.log('LIVE button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
       const liveUrl = '/live';
       window.history.pushState({}, '', liveUrl);
-      // Direct navigation without reload for faster transitions
-      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      window.location.replace(liveUrl);
     };
     navigationBar.appendChild(liveButton);
     
@@ -132,7 +132,7 @@ export default function PromotionsPage() {
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '590px'; // Adjusted based on successful clicks
+    promotionsButton.style.left = '560px'; // Adjusted for better spacing
     promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
@@ -148,12 +148,11 @@ export default function PromotionsPage() {
     promotionsButton.style.zIndex = '1001';
     promotionsButton.onclick = (e) => {
       e.preventDefault();
-      console.log('PROMOTIONS button clicked - Ultra-fast navigation');
-      // Use history.pushState for faster navigation without page reload
+      console.log('PROMOTIONS button clicked - Fast navigation');
+      // Use direct DOM replacement for faster navigation
       const promotionsUrl = '/promotions';
       window.history.pushState({}, '', promotionsUrl);
-      // Direct navigation without reload for faster transitions
-      window.dispatchEvent(new PopStateEvent('popstate', { state: {} }));
+      window.location.replace(promotionsUrl);
     };
     navigationBar.appendChild(promotionsButton);
     
@@ -193,22 +192,14 @@ export default function PromotionsPage() {
     joinNow3.href = '/join';
     map.appendChild(joinNow3);
     
-    // Remove EVERYTHING from the page except our navigation buttons
-    // This ensures there are no hidden or conflicting elements
-    const allElements = document.querySelectorAll('*');
-    allElements.forEach(el => {
-      if (el !== navigationBar && 
-          el !== sportsButton && 
-          el !== liveButton && 
-          el !== promotionsButton && 
-          el !== body && 
-          el !== container && 
-          el !== img && 
-          el !== map) {
-        // Remove everything else to start clean
-        if (el.parentNode && el !== document.body && el !== document.documentElement) {
-          console.log('Removing potential interfering element:', el);
-          el.parentNode.removeChild(el);
+    // Disable all other links to ensure only our navigation buttons work
+    // This helps prevent any conflicts with other elements on the page
+    const links = document.querySelectorAll('a, button');
+    links.forEach(link => {
+      if (link !== sportsButton && link !== liveButton && link !== promotionsButton) {
+        // TypeScript fix: cast to HTMLElement before setting style
+        if (link instanceof HTMLElement) {
+          link.style.pointerEvents = 'none';
         }
       }
     });
@@ -216,21 +207,9 @@ export default function PromotionsPage() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
-    // Make buttons visually distinct to debug clickable areas
-    if (debugMode) {
-      sportsButton.style.backgroundColor = 'rgba(255,0,0,0.3)';
-      liveButton.style.backgroundColor = 'rgba(0,255,0,0.3)';
-      promotionsButton.style.backgroundColor = 'rgba(0,0,255,0.3)';
-    }
-
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
-    console.log('Sports link position: 488px, Live link position: 550px, Promotions link position: 590px');
-    
-    // Add visual outlines to detect any overlapping elements
-    sportsButton.style.outline = debugMode ? '1px solid red' : 'none';
-    liveButton.style.outline = debugMode ? '1px solid green' : 'none';
-    promotionsButton.style.outline = debugMode ? '1px solid blue' : 'none';
+    console.log('Sports link position: 440px, Live link position: 510px, Promotions link position: 560px');
     
     // Clean up function
     return () => {

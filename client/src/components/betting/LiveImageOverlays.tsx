@@ -116,22 +116,39 @@ export const LiveImageOverlays: React.FC<LiveImageOverlaysProps> = ({ imageSrc }
       isLive: true
     });
     
-    // Provide visual feedback that the bet was added
+    // Provide minimal visual feedback that the bet was added
     const feedbackElement = document.createElement('div');
     feedbackElement.textContent = `Added ${selectionName} @ ${odds} to Bet Slip`;
     feedbackElement.style.position = 'fixed';
     feedbackElement.style.bottom = '20px';
     feedbackElement.style.right = '20px';
-    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)';
+    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)'; // Original green color
     feedbackElement.style.color = 'white';
     feedbackElement.style.padding = '10px';
     feedbackElement.style.borderRadius = '5px';
     feedbackElement.style.zIndex = '9999';
+    feedbackElement.style.opacity = '0';
+    feedbackElement.style.transform = 'translateY(20px)';
+    feedbackElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     
     document.body.appendChild(feedbackElement);
     
+    // Animate in
     setTimeout(() => {
-      document.body.removeChild(feedbackElement);
+      feedbackElement.style.opacity = '1';
+      feedbackElement.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Animate out and remove
+    setTimeout(() => {
+      feedbackElement.style.opacity = '0';
+      feedbackElement.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        if (document.body.contains(feedbackElement)) {
+          document.body.removeChild(feedbackElement);
+        }
+      }, 300); // Wait for the animation to complete
     }, 2000);
   };
   

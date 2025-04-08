@@ -12,8 +12,11 @@ const SportItem = ({ name, slug, top }: SportItemProps) => {
 
   const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent the click from bubbling up to parent elements
-    // Navigate to match page with sport information
-    setLocation(`/match/1?sport=${slug}`);
+    // Navigate directly to sport page with the correct slug
+    setLocation(`/sport/${slug}`);
+    
+    // Log the navigation for debugging
+    console.log(`Loaded events for sport: ${slug}`);
   };
 
   return (

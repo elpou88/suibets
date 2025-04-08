@@ -21,10 +21,18 @@ export const UniversalClickHandler: React.FC = () => {
   });
   
   useEffect(() => {
+    console.log(`Loaded ${events.length} events for betting`);
+    
     // Add the click event listener to the document
     const handleDocumentClick = (e: MouseEvent) => {
       // Get the clicked element
       const element = e.target as HTMLElement;
+      
+      // Check if we're on a sport-specific page
+      const path = window.location.pathname;
+      const isLivePage = path.includes('/live');
+      const isSportPage = path.includes('/sport/');
+      const sportSlug = isSportPage ? path.split('/').pop() : '';
       
       // Log click coordinates for debugging
       console.log(`Click coordinates: ${e.clientX}, ${e.clientY}`);
@@ -269,22 +277,39 @@ export const UniversalClickHandler: React.FC = () => {
       market,
     });
     
-    // Provide visual feedback that the bet was added
+    // Provide minimal visual feedback that the bet was added
     const feedbackElement = document.createElement('div');
     feedbackElement.textContent = `Added ${selectionName} @ ${odds} to Bet Slip`;
     feedbackElement.style.position = 'fixed';
     feedbackElement.style.bottom = '20px';
     feedbackElement.style.right = '20px';
-    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)';
+    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)'; // Original green color
     feedbackElement.style.color = 'white';
     feedbackElement.style.padding = '10px';
     feedbackElement.style.borderRadius = '5px';
     feedbackElement.style.zIndex = '9999';
+    feedbackElement.style.opacity = '0';
+    feedbackElement.style.transform = 'translateY(20px)';
+    feedbackElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
     
     document.body.appendChild(feedbackElement);
     
+    // Animate in
     setTimeout(() => {
-      document.body.removeChild(feedbackElement);
+      feedbackElement.style.opacity = '1';
+      feedbackElement.style.transform = 'translateY(0)';
+    }, 10);
+    
+    // Animate out and remove
+    setTimeout(() => {
+      feedbackElement.style.opacity = '0';
+      feedbackElement.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        if (document.body.contains(feedbackElement)) {
+          document.body.removeChild(feedbackElement);
+        }
+      }, 300); // Wait for the animation to complete
     }, 2000);
   };
   

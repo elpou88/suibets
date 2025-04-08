@@ -79,11 +79,7 @@ export default function NewPromotions() {
     // No additional buttons or UI elements - only image map with clickable areas
     
     // Log click coordinates for debugging
-    document.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
-    });
+    // Removed click logger
     
     // Clean up function
     return () => {

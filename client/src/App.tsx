@@ -37,7 +37,7 @@ import NewPromotions from "@/pages/new-promotions";
 import NewSports from "@/pages/new-sports";
 
 function App() {
-  console.log("Starting React application");
+  // Initializing the application
   
   return (
     <QueryClientProvider client={queryClient}>

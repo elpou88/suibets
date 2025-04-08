@@ -398,36 +398,36 @@ export default function Sport() {
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 md:flex-none"
+                                    className="flex-1 md:flex-none bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                                     onClick={() => handleAddBet(event, event.homeTeam, event.homeOdds || 1.9, "Match Winner")}
                                   >
                                     <div className="text-center">
-                                      <div className="text-xs">{event.homeTeam}</div>
-                                      <div className="font-bold">{formatOdds(event.homeOdds || 1.9)}</div>
+                                      <div className="text-xs text-white">{event.homeTeam}</div>
+                                      <div className="font-bold text-white">{formatOdds(event.homeOdds || 1.9)}</div>
                                     </div>
                                   </Button>
                                   
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 md:flex-none"
+                                    className="flex-1 md:flex-none bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                                     onClick={() => handleAddBet(event, "Draw", event.drawOdds || 3.4, "Match Winner")}
                                   >
                                     <div className="text-center">
-                                      <div className="text-xs">Draw</div>
-                                      <div className="font-bold">{formatOdds(event.drawOdds || 3.4)}</div>
+                                      <div className="text-xs text-white">Draw</div>
+                                      <div className="font-bold text-white">{formatOdds(event.drawOdds || 3.4)}</div>
                                     </div>
                                   </Button>
                                   
                                   <Button
                                     variant="outline"
                                     size="sm"
-                                    className="flex-1 md:flex-none"
+                                    className="flex-1 md:flex-none bg-[#0f1d20] text-white hover:bg-[#1e3a3f] hover:text-white border-[#1e3a3f]"
                                     onClick={() => handleAddBet(event, event.awayTeam, event.awayOdds || 4.2, "Match Winner")}
                                   >
                                     <div className="text-center">
-                                      <div className="text-xs">{event.awayTeam}</div>
-                                      <div className="font-bold">{formatOdds(event.awayOdds || 4.2)}</div>
+                                      <div className="text-xs text-white">{event.awayTeam}</div>
+                                      <div className="font-bold text-white">{formatOdds(event.awayOdds || 4.2)}</div>
                                     </div>
                                   </Button>
                                 </div>
@@ -435,7 +435,7 @@ export default function Sport() {
                               
                               <div className="mt-3 flex justify-end">
                                 <Link href={`/event/${event.id}`}>
-                                  <Button size="sm" variant="ghost">More Markets</Button>
+                                  <Button size="sm" variant="ghost" className="text-white hover:text-white hover:bg-[#1e3a3f]">More Markets</Button>
                                 </Link>
                               </div>
                             </CardContent>
@@ -482,8 +482,8 @@ export default function Sport() {
                               onClick={() => handleAddBet(event, event.homeTeam, event.homeOdds || 1.9, "Match Winner")}
                             >
                               <div className="text-center">
-                                <div className="text-xs">{event.homeTeam}</div>
-                                <div className="font-bold">{formatOdds(event.homeOdds || 1.9)}</div>
+                                <div className="text-xs text-white">{event.homeTeam}</div>
+                                <div className="font-bold text-white">{formatOdds(event.homeOdds || 1.9)}</div>
                               </div>
                             </Button>
                             
@@ -493,8 +493,8 @@ export default function Sport() {
                               onClick={() => handleAddBet(event, "Draw", event.drawOdds || 3.4, "Match Winner")}
                             >
                               <div className="text-center">
-                                <div className="text-xs">Draw</div>
-                                <div className="font-bold">{formatOdds(event.drawOdds || 3.4)}</div>
+                                <div className="text-xs text-white">Draw</div>
+                                <div className="font-bold text-white">{formatOdds(event.drawOdds || 3.4)}</div>
                               </div>
                             </Button>
                             
@@ -504,8 +504,8 @@ export default function Sport() {
                               onClick={() => handleAddBet(event, event.awayTeam, event.awayOdds || 4.2, "Match Winner")}
                             >
                               <div className="text-center">
-                                <div className="text-xs">{event.awayTeam}</div>
-                                <div className="font-bold">{formatOdds(event.awayOdds || 4.2)}</div>
+                                <div className="text-xs text-white">{event.awayTeam}</div>
+                                <div className="font-bold text-white">{formatOdds(event.awayOdds || 4.2)}</div>
                               </div>
                             </Button>
                           </div>

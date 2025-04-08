@@ -31,6 +31,11 @@ export function BetSlip() {
     console.log("BetSlip: selectedBets updated", selectedBets);
   }, [selectedBets]);
   
+  // Update bet type based on number of selected bets
+  useEffect(() => {
+    setBetType(selectedBets.length > 1 ? 'parlay' : 'single');
+  }, [selectedBets.length]);
+  
   // Toggle bet details
   const toggleDetails = (id: string) => {
     setShowDetails(prev => ({
@@ -83,9 +88,30 @@ export function BetSlip() {
       return;
     }
     
+    // Ensure all single bets have a stake amount set
+    if (betType === 'single') {
+      const invalidBets = selectedBets.filter(bet => !bet.stake || bet.stake <= 0);
+      if (invalidBets.length > 0) {
+        toast({
+          title: "Invalid stake amounts",
+          description: "Please enter a stake amount for all selections",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
     setIsLoading(true);
     try {
-      const success = await placeBet(totalStake, {
+      // Create a copy of the current bet state to ensure we're using the latest values
+      const currentBets = [...selectedBets];
+      const currentTotal = currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
+      
+      console.log("Placing bet with type:", betType);
+      console.log("Current bets:", currentBets);
+      console.log("Total stake:", currentTotal);
+      
+      const success = await placeBet(currentTotal, {
         betType,
         currency: betCurrency,
         acceptOddsChange: true
@@ -95,6 +121,7 @@ export function BetSlip() {
         toast({
           title: "Bet placed successfully",
           description: `Your ${betType} bet has been placed`,
+          variant: "default",
         });
         
         // Clear bets after successful placement
@@ -107,6 +134,7 @@ export function BetSlip() {
         });
       }
     } catch (error) {
+      console.error("Error placing bet:", error);
       toast({
         title: "Error",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -118,17 +146,23 @@ export function BetSlip() {
   };
   
   return (
-    <Card className="bg-[#0b1618] border-[#1e3a3f] text-white shadow-lg shadow-cyan-900/10">
-      <CardHeader className="pb-2 relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-        <CardTitle className="text-xl flex justify-between items-center text-cyan-300">
-          <span>Bet Slip</span>
+    <Card className="bg-gradient-to-b from-[#0b1618] to-[#081214] border-[#1e3a3f] text-white shadow-lg shadow-cyan-900/20 relative overflow-hidden">
+      {/* Cyan glow at the top */}
+      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-80"></div>
+      
+      {/* Side glow */}
+      <div className="absolute left-0 top-10 bottom-10 w-1 bg-gradient-to-b from-cyan-400/50 to-transparent"></div>
+      <div className="absolute right-0 top-10 bottom-10 w-1 bg-gradient-to-b from-cyan-400/50 to-transparent"></div>
+      
+      <CardHeader className="pb-2 relative z-10">
+        <CardTitle className="text-xl flex justify-between items-center">
+          <span className="text-cyan-300 font-bold tracking-wide">Bet Slip</span>
           {selectedBets.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={clearBets}
-              className="text-gray-400 hover:text-cyan-400 p-0 h-auto"
+              className="text-cyan-300/80 hover:text-cyan-400 p-0 h-auto hover:bg-transparent"
             >
               <Trash className="h-4 w-4" />
             </Button>
@@ -136,19 +170,25 @@ export function BetSlip() {
         </CardTitle>
       </CardHeader>
       
-      <CardContent className="pb-2">
+      <CardContent className="pb-2 relative z-10">
         {selectedBets.length === 0 ? (
-          <div className="py-8 text-center text-gray-500">
-            <p>No bets selected</p>
-            <p className="text-sm mt-2">Click on odds to add selections</p>
+          <div className="py-10 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#112225] to-[#0b1618] border border-[#1e3a3f] flex items-center justify-center">
+              <CoinsIcon className="h-8 w-8 text-cyan-400/60" />
+            </div>
+            <p className="text-cyan-200">No bets selected</p>
+            <p className="text-sm mt-2 text-cyan-300/60">Click on odds to add selections</p>
           </div>
         ) : (
-          <div className="space-y-2 max-h-[300px] overflow-y-auto scrollbar-thin">
+          <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
             {selectedBets.map(bet => (
               <div 
                 key={bet.id} 
-                className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10"
+                className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10 relative overflow-hidden transition-all duration-200 hover:border-cyan-400/30 group"
               >
+                {/* Top line accent */}
+                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
+                
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
                     <p className="text-sm font-medium truncate text-cyan-200">{bet.eventName}</p>
@@ -163,14 +203,14 @@ export function BetSlip() {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeBet(bet.id)}
-                    className="h-5 w-5 p-0 text-gray-400 hover:text-cyan-400"
+                    className="h-5 w-5 p-0 text-cyan-300/60 hover:text-cyan-400 hover:bg-transparent"
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 
                 <div 
-                  className="flex justify-between items-center cursor-pointer"
+                  className="flex justify-between items-center cursor-pointer group-hover:bg-[#1e3a3f]/20 p-1 rounded-sm transition-colors"
                   onClick={() => toggleDetails(bet.id)}
                 >
                   <div className="flex items-center">
@@ -178,11 +218,13 @@ export function BetSlip() {
                     <div className="ml-2 text-cyan-400 font-bold">{bet.odds.toFixed(2)}</div>
                   </div>
                   
-                  {showDetails[bet.id] ? (
-                    <ChevronUp className="h-4 w-4 text-cyan-300" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-cyan-300" />
-                  )}
+                  <div className="text-cyan-400 transition-transform">
+                    {showDetails[bet.id] ? (
+                      <ChevronUp className="h-4 w-4" />
+                    ) : (
+                      <ChevronDown className="h-4 w-4" />
+                    )}
+                  </div>
                 </div>
                 
                 {showDetails[bet.id] && betType === 'single' && (
@@ -223,17 +265,17 @@ export function BetSlip() {
                 onValueChange={(value) => setBetType(value as 'single' | 'parlay')}
                 className="w-full"
               >
-                <TabsList className="w-full bg-[#112225]">
+                <TabsList className="w-full bg-[#0b1618] border border-[#1e3a3f]">
                   <TabsTrigger 
                     value="single" 
-                    className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black"
+                    className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:shadow-[0_0_8px_rgba(0,255,255,0.5)]"
                   >
                     Singles
                   </TabsTrigger>
                   {selectedBets.length > 1 && (
                     <TabsTrigger 
                       value="parlay" 
-                      className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black"
+                      className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:shadow-[0_0_8px_rgba(0,255,255,0.5)]"
                     >
                       Parlay
                     </TabsTrigger>
@@ -241,7 +283,9 @@ export function BetSlip() {
                 </TabsList>
                 
                 <TabsContent value="parlay" className="mt-2">
-                  <div className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10">
+                  <div className="p-3 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
+                    
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-sm text-cyan-200">Total Stake:</label>
                       <Input
@@ -274,7 +318,9 @@ export function BetSlip() {
               </Tabs>
             </div>
             
-            <div className="flex items-center space-x-2 mt-4 p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225]">
+            <div className="flex items-center space-x-2 mt-4 p-3 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] relative overflow-hidden">
+              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
+              
               <Select
                 value={betCurrency}
                 onValueChange={(value) => setBetCurrency(value as 'SUI' | 'SBETS')}
@@ -283,8 +329,8 @@ export function BetSlip() {
                   <SelectValue placeholder="Currency" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0b1618] border-[#1e3a3f] text-white">
-                  <SelectItem value="SUI">SUI</SelectItem>
-                  <SelectItem value="SBETS">SBETS</SelectItem>
+                  <SelectItem value="SUI" className="hover:bg-[#1e3a3f] hover:text-cyan-200">SUI</SelectItem>
+                  <SelectItem value="SBETS" className="hover:bg-[#1e3a3f] hover:text-cyan-200">SBETS</SelectItem>
                 </SelectContent>
               </Select>
               
@@ -302,9 +348,9 @@ export function BetSlip() {
       </CardContent>
       
       {selectedBets.length > 0 && (
-        <CardFooter className="pt-2">
+        <CardFooter className="pt-2 relative z-10">
           <Button 
-            className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-bold"
+            className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold shadow-[0_0_10px_rgba(0,255,255,0.3)] hover:shadow-[0_0_15px_rgba(0,255,255,0.5)] transition-all"
             onClick={handlePlaceBet}
             disabled={isLoading || totalStake <= 0}
           >

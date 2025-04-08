@@ -5,6 +5,7 @@ import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { SportSpecificBets } from "@/components/betting/SportSpecificBets";
 
 export default function Match() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -33,6 +34,17 @@ export default function Match() {
       return response.json();
     },
     enabled: !!sportParam
+  });
+  
+  // Fetch event details for the match
+  const { data: eventDetails } = useQuery({
+    queryKey: ['/api/events', matchParams?.id],
+    queryFn: async () => {
+      if (!matchParams?.id) return null;
+      const response = await apiRequest('GET', `/api/events/${matchParams.id}`);
+      return response.json();
+    },
+    enabled: !!matchParams?.id
   });
   
   useEffect(() => {

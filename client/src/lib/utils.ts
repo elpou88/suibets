@@ -62,3 +62,89 @@ export const WALLET_TYPES = [
   { id: 'nightly', name: 'Nightly Wallet', color: 'bg-indigo-500' },
   { id: 'walletconnect', name: 'Wallet Connect', color: 'bg-green-500' }
 ];
+
+// Calculate correct score odds based on sport type
+export function calculateCorrectScoreOdds(sport: string, homeScore: number, awayScore: number, baseOdds: number = 5.0): number {
+  // Different calculation logics for different sports
+  switch(sport.toLowerCase()) {
+    case 'football':
+    case 'soccer':
+      // Soccer/Football: lower scores are more common
+      const totalGoals = homeScore + awayScore;
+      return baseOdds * (1 + (totalGoals / 2));
+      
+    case 'basketball':
+      // Basketball: higher scores are normal, so use different logic
+      const scoreDiff = Math.abs(homeScore - awayScore);
+      // Close games are more likely than blowouts
+      return baseOdds * (1 + (scoreDiff / 10));
+      
+    case 'tennis':
+      // Tennis scoring (sets)
+      return baseOdds * (1 + (Math.max(homeScore, awayScore) * 0.5));
+      
+    case 'baseball':
+      // Baseball: moderate scoring
+      return baseOdds * (1 + ((homeScore + awayScore) / 5));
+      
+    case 'hockey':
+      // Hockey: low scoring
+      return baseOdds * (1 + ((homeScore + awayScore) * 0.8));
+      
+    case 'cricket':
+      // Cricket: high scoring
+      return baseOdds * (1 + (Math.abs(homeScore - awayScore) / 50));
+      
+    case 'rugby-league':
+    case 'rugby-union':
+      // Rugby: moderate to high scoring
+      return baseOdds * (1 + ((homeScore + awayScore) / 15));
+      
+    case 'boxing':
+    case 'mma-ufc':
+      // Boxing/MMA: rounds/decisions or KO
+      // For these sports, scores might represent rounds won or method of victory
+      return baseOdds * (1 + (Math.abs(homeScore - awayScore) * 0.5));
+      
+    default:
+      // Default calculation for other sports
+      return baseOdds * (1 + ((homeScore + awayScore) / 4));
+  }
+}
+
+// Get sport-specific market types
+export function getSportMarkets(sportType: string): string[] {
+  const baseMarkets = ['Match Winner', 'Double Chance', 'Total'];
+  
+  switch(sportType.toLowerCase()) {
+    case 'football':
+    case 'soccer':
+      return [...baseMarkets, 'Correct Score', 'Both Teams to Score', 'First Goal Scorer', 'Half-Time/Full-Time'];
+      
+    case 'basketball':
+      return [...baseMarkets, 'Point Spread', 'Player Points', 'First Quarter Winner', 'Race to 20 Points'];
+      
+    case 'tennis':
+      return [...baseMarkets, 'Set Betting', 'Total Games', 'Player to Win a Set', 'Correct Set Score'];
+      
+    case 'baseball':
+      return [...baseMarkets, 'Run Line', 'Total Runs', 'First Team to Score', 'Innings Betting'];
+      
+    case 'boxing':
+    case 'mma-ufc':
+      return ['Fight Winner', 'Method of Victory', 'Round Betting', 'Fight to Go the Distance', 'Total Rounds'];
+      
+    case 'hockey':
+      return [...baseMarkets, 'Puck Line', 'Total Goals', 'Period Betting', 'Team to Score First'];
+      
+    case 'cricket':
+      return ['Match Winner', 'Top Batsman', 'Top Bowler', 'Total Match Runs', 'Method of Dismissal'];
+      
+    case 'rugby-league':
+    case 'rugby-union':
+      return [...baseMarkets, 'Handicap', 'First Try Scorer', 'Total Tries', 'Winning Margin'];
+      
+    default:
+      return baseMarkets;
+  }
+}

@@ -28,12 +28,35 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Temporarily clear any stored wallet data to prevent connection errors
-        localStorage.removeItem('wallet_address');
-        localStorage.removeItem('wallet_type');
+        // Check if wallet data exists in localStorage
+        const savedAddress = localStorage.getItem('wallet_address');
+        const savedWalletType = localStorage.getItem('wallet_type') as WalletType;
         
-        // Skip auto-connection for now to avoid errors
-        // This prevents the wallet connection error on initial load
+        // If we have saved wallet data, try to reconnect
+        if (savedAddress && savedWalletType) {
+          try {
+            const res = await apiRequest('POST', '/api/wallet/connect', {
+              address: savedAddress,
+              walletType: savedWalletType
+            });
+            
+            if (res.ok) {
+              const userData = await res.json();
+              setUser(userData);
+              
+              // Display a toast for reconnection
+              toast({
+                title: "Wallet Reconnected",
+                description: "Your wallet session has been restored.",
+              });
+            }
+          } catch (connectionError) {
+            console.error('Error reconnecting wallet:', connectionError);
+            // Clear invalid data if reconnection fails
+            localStorage.removeItem('wallet_address');
+            localStorage.removeItem('wallet_type');
+          }
+        }
       } catch (error) {
         console.error('Auth check error:', error);
       } finally {
@@ -42,7 +65,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
     
     checkAuth();
-  }, []);
+  }, [toast]);
 
   const connectWallet = async (address: string, walletType: WalletType) => {
     try {

@@ -14,6 +14,7 @@ interface SportSpecificBetsProps {
   homeOdds?: number;
   drawOdds?: number;
   awayOdds?: number;
+  isLive?: boolean;
 }
 
 // This component handles sport-specific betting features
@@ -26,6 +27,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   homeOdds = 2.0,
   drawOdds = 3.5,
   awayOdds = 3.8,
+  isLive = false,
 }) => {
   const { addBet } = useBetting();
   
@@ -50,6 +52,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       market: marketName,
       marketId: marketId ? Number(marketId) : undefined,
       outcomeId: outcomeId ? Number(outcomeId) : undefined,
+      isLive, // Pass the isLive flag
     });
   };
 

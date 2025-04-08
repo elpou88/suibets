@@ -55,6 +55,11 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       isLive, // Pass the isLive flag
     });
   };
+  
+  // Generate a random odds value within a reasonable range
+  const generateOdds = (base: number = 2.0, variance: number = 0.5): number => {
+    return Number((base + (Math.random() * variance)).toFixed(2));
+  };
 
   // Render generic betting options available for all sports
   const renderGenericBets = () => (
@@ -779,35 +784,51 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         <CardContent className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', homeTeam, 3.5)}
+            onClick={() => handleAddBet('Race Winner', 'Max Verstappen', 1.80)}
             className="flex flex-col"
           >
-            <span>{homeTeam}</span>
-            <span className="text-sm font-bold">3.50</span>
+            <span>Max Verstappen</span>
+            <span className="text-sm font-bold">1.80</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', awayTeam, 4.0)}
+            onClick={() => handleAddBet('Race Winner', 'Lewis Hamilton', 5.50)}
             className="flex flex-col"
           >
-            <span>{awayTeam}</span>
-            <span className="text-sm font-bold">4.00</span>
+            <span>Lewis Hamilton</span>
+            <span className="text-sm font-bold">5.50</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', 'Driver/Rider 3', 6.0)}
+            onClick={() => handleAddBet('Race Winner', 'Charles Leclerc', 7.00)}
             className="flex flex-col"
           >
-            <span>Driver/Rider 3</span>
-            <span className="text-sm font-bold">6.00</span>
+            <span>Charles Leclerc</span>
+            <span className="text-sm font-bold">7.00</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', 'Driver/Rider 4', 8.0)}
+            onClick={() => handleAddBet('Race Winner', 'Lando Norris', 9.00)}
             className="flex flex-col"
           >
-            <span>Driver/Rider 4</span>
-            <span className="text-sm font-bold">8.00</span>
+            <span>Lando Norris</span>
+            <span className="text-sm font-bold">9.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Sergio Perez', 12.00)}
+            className="flex flex-col"
+          >
+            <span>Sergio Perez</span>
+            <span className="text-sm font-bold">12.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Carlos Sainz', 15.00)}
+            className="flex flex-col"
+          >
+            <span>Carlos Sainz</span>
+            <span className="text-sm font-bold">15.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -816,22 +837,78 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         <CardHeader>
           <CardTitle>Podium Finish</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Podium Finish', homeTeam, 1.8)}
-            className="flex-1 flex flex-col"
+            onClick={() => handleAddBet('Podium Finish', 'Max Verstappen', 1.20)}
+            className="flex flex-col"
           >
-            <span>{homeTeam}</span>
-            <span className="text-sm font-bold">1.80</span>
+            <span>Max Verstappen</span>
+            <span className="text-sm font-bold">1.20</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Podium Finish', awayTeam, 2.2)}
-            className="flex-1 flex flex-col"
+            onClick={() => handleAddBet('Podium Finish', 'Lewis Hamilton', 1.90)}
+            className="flex flex-col"
           >
-            <span>{awayTeam}</span>
+            <span>Lewis Hamilton</span>
+            <span className="text-sm font-bold">1.90</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Podium Finish', 'Charles Leclerc', 2.20)}
+            className="flex flex-col"
+          >
+            <span>Charles Leclerc</span>
             <span className="text-sm font-bold">2.20</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Podium Finish', 'Lando Norris', 2.50)}
+            className="flex flex-col"
+          >
+            <span>Lando Norris</span>
+            <span className="text-sm font-bold">2.50</span>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Fastest Lap</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Fastest Lap', 'Max Verstappen', 2.10)}
+            className="flex flex-col"
+          >
+            <span>Max Verstappen</span>
+            <span className="text-sm font-bold">2.10</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Fastest Lap', 'Lewis Hamilton', 3.00)}
+            className="flex flex-col"
+          >
+            <span>Lewis Hamilton</span>
+            <span className="text-sm font-bold">3.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Fastest Lap', 'Charles Leclerc', 4.50)}
+            className="flex flex-col"
+          >
+            <span>Charles Leclerc</span>
+            <span className="text-sm font-bold">4.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Fastest Lap', 'Lando Norris', 5.00)}
+            className="flex flex-col"
+          >
+            <span>Lando Norris</span>
+            <span className="text-sm font-bold">5.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -933,18 +1010,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', 'Runner 3', 8.0)}
+            onClick={() => handleAddBet('Race Winner', 'Black Beauty', 8.0)}
             className="flex flex-col"
           >
-            <span>Runner 3</span>
+            <span>Black Beauty</span>
             <span className="text-sm font-bold">8.00</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Race Winner', 'Runner 4', 10.0)}
+            onClick={() => handleAddBet('Race Winner', 'Silver Star', 10.0)}
             className="flex flex-col"
           >
-            <span>Runner 4</span>
+            <span>Silver Star</span>
             <span className="text-sm font-bold">10.00</span>
           </Button>
         </CardContent>
@@ -954,22 +1031,78 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         <CardHeader>
           <CardTitle>Each Way</CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="grid grid-cols-2 gap-2">
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Each Way', homeTeam, 2.0)}
-            className="flex-1 flex flex-col"
+            onClick={() => handleAddBet('Each Way', `${homeTeam} (E/W)`, 2.0)}
+            className="flex flex-col"
           >
-            <span>{homeTeam}</span>
+            <span>{`${homeTeam} (E/W)`}</span>
             <span className="text-sm font-bold">2.00</span>
           </Button>
           <Button
             variant="outline"
-            onClick={() => handleAddBet('Each Way', awayTeam, 2.5)}
-            className="flex-1 flex flex-col"
+            onClick={() => handleAddBet('Each Way', `${awayTeam} (E/W)`, 2.5)}
+            className="flex flex-col"
           >
-            <span>{awayTeam}</span>
+            <span>{`${awayTeam} (E/W)`}</span>
             <span className="text-sm font-bold">2.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Each Way', 'Black Beauty (E/W)', 3.2)}
+            className="flex flex-col"
+          >
+            <span>Black Beauty (E/W)</span>
+            <span className="text-sm font-bold">3.20</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Each Way', 'Silver Star (E/W)', 4.0)}
+            className="flex flex-col"
+          >
+            <span>Silver Star (E/W)</span>
+            <span className="text-sm font-bold">4.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Forecast</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Forecast', `${homeTeam} / ${awayTeam}`, 14.0)}
+            className="flex flex-col"
+          >
+            <span>{`${homeTeam} / ${awayTeam}`}</span>
+            <span className="text-sm font-bold">14.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Forecast', `${awayTeam} / ${homeTeam}`, 16.0)}
+            className="flex flex-col"
+          >
+            <span>{`${awayTeam} / ${homeTeam}`}</span>
+            <span className="text-sm font-bold">16.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Forecast', `${homeTeam} / Black Beauty`, 18.0)}
+            className="flex flex-col"
+          >
+            <span>{`${homeTeam} / Black Beauty`}</span>
+            <span className="text-sm font-bold">18.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Forecast', `${awayTeam} / Silver Star`, 22.0)}
+            className="flex flex-col"
+          >
+            <span>{`${awayTeam} / Silver Star`}</span>
+            <span className="text-sm font-bold">22.00</span>
           </Button>
         </CardContent>
       </Card>

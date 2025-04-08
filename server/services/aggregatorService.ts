@@ -65,7 +65,7 @@ export class AggregatorService {
     this.oddsCache = new Map();
     this.normalizedOddsCache = new Map();
     this.refreshInterval = null;
-    this.refreshRate = 60000; // Default to 1 minute
+    this.refreshRate = 15000; // Changed to 15 seconds to match MockSportsDataProvider
     
     // Load initial providers from config or environment
     this.initializeProviders();

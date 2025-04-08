@@ -6,7 +6,7 @@
  * from multiple providers according to Wal.app standards.
  */
 import { securityService } from './securityService';
-import { config } from '../config';
+import config from '../config';
 import axios from 'axios';
 
 // Types for odds providers

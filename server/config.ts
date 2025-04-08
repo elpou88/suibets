@@ -5,9 +5,10 @@
  * - https://docs.wal.app/dev-guide/data-security.html
  */
 
-import { SuiNetwork } from './services/suiMoveService';
+// Network type definition
+export type SuiNetwork = 'mainnet' | 'testnet' | 'devnet' | 'localnet';
 
-interface AppConfig {
+export interface AppConfig {
   // API configuration
   api: {
     // This would be provided by Wal.app when registering as a developer
@@ -62,41 +63,38 @@ interface AppConfig {
   };
 }
 
-// Default configuration
+// Default configuration with environment variable fallbacks
 const config: AppConfig = {
   api: {
-    // API keys would be loaded from environment variables in production
     walAppApiKey: process.env.WAL_APP_API_KEY,
     wurlusApiKey: process.env.WURLUS_API_KEY,
-    walAppBaseUrl: process.env.WAL_APP_BASE_URL || 'https://api.wal.app'
+    walAppBaseUrl: 'https://api.wal.app/v1',
   },
+  
   blockchain: {
-    // Use testnet by default for development
-    defaultNetwork: SuiNetwork.TESTNET,
-    // Enable verbose logging in development
+    defaultNetwork: (process.env.SUI_NETWORK as SuiNetwork) || 'devnet',
     verbose: process.env.NODE_ENV !== 'production',
-    // Admin wallet would be securely stored in environment variables
     adminWalletAddress: process.env.ADMIN_WALLET_ADDRESS,
   },
+  
   security: {
-    // Encryption key should be set via environment variable in production
-    encryptionKey: process.env.WAL_ENCRYPTION_KEY || 'default-encryption-key-replace-in-production',
-    passwordSalt: process.env.PASSWORD_SALT || 'default-password-salt-replace-in-production',
-    sessionSecret: process.env.SESSION_SECRET || 'default-session-secret-replace-in-production',
+    encryptionKey: process.env.ENCRYPTION_KEY || 'your-fallback-encryption-key-for-dev',
+    passwordSalt: process.env.PASSWORD_SALT || 'your-fallback-salt-for-dev',
+    sessionSecret: process.env.SESSION_SECRET || 'your-fallback-session-secret-for-dev',
     enableCsrf: process.env.NODE_ENV === 'production',
     rateLimit: {
-      max: 100,
-      windowMs: 15 * 60 * 1000 // 15 minutes
+      max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+      windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10), // 15 minutes
     },
-    contentSecurityPolicy: process.env.NODE_ENV === 'production'
+    contentSecurityPolicy: process.env.NODE_ENV === 'production',
   },
+  
   fees: {
-    // Updated fee structure
-    platformFeeBetting: 0.00, // 0% (removed platform fee)
-    networkFeeBetting: 0.01,  // 1%
-    platformFeeStaking: 0.02, // 2%
-    platformFeeRewards: 0.10  // 10%
-  }
+    platformFeeBetting: 0, // No platform fee as per requirements
+    networkFeeBetting: 0.01, // 1% network fee
+    platformFeeStaking: 0.02, // 2% platform fee on staking
+    platformFeeRewards: 0.10, // 10% platform fee on rewards
+  },
 };
 
-export { config, AppConfig };
+export default config;

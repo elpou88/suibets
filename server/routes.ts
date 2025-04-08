@@ -2,11 +2,11 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { SportsApi } from "./services/sportsApi";
-import { SuiService } from "./services/sui";
-import { suiMoveService } from "./services/suiMoveService";
+import { SuiMoveService } from "./services/suiMoveService";
+import { WalrusService } from "./services/walrusService";
 import { securityService } from "./services/securityService";
 import { aggregatorService } from "./services/aggregatorService";
-import { config } from "./config";
+import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -22,7 +22,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Initialize services
   const sportsApi = new SportsApi();
-  const suiService = new SuiService();
+  const suiMoveService = new SuiMoveService();
+  const walrusService = new WalrusService();
 
   // API Routes - prefixed with /api
   // Sports routes
@@ -196,8 +197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.id,
         user.walletAddress,
         eventId,
-        validatedData.marketName || "Match result", // Default market name
-        validatedData.prediction,
+        validatedData.marketId || 0,
+        validatedData.outcomeId || 0,
         validatedData.betAmount,
         validatedData.odds
       );
@@ -270,8 +271,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         user.id,
         user.walletAddress,
         eventId,
-        validatedData.marketName || "Match result", // Default market name
-        validatedData.prediction,
+        validatedData.marketId || 0,
+        validatedData.outcomeId || 0,
         validatedData.betAmount,
         validatedData.odds
       );
@@ -404,7 +405,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           betAmount,
           totalOdds,
           potentialPayout,
-          status: 'pending',
           feeCurrency: 'SBETS'
         });
         
@@ -456,7 +456,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           betAmount,
           totalOdds,
           potentialPayout,
-          status: 'pending',
           feeCurrency: 'SUI'
         });
         
@@ -527,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Process the cash out using the SuiMoveService for blockchain integration
-        const txHash = await suiMoveService.cashOutSingleBet(userId, walletAddress, betId, currency);
+        const txHash = await suiMoveService.cashOutSingleBet(walletAddress, betId.toString(), cashOutAmount);
         
         if (!txHash) {
           return res.status(500).json({ message: 'Failed to process cash out' });
@@ -609,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         // Process the cash out using the SuiMoveService for blockchain integration
-        const txHash = await suiMoveService.cashOutParlay(userId, walletAddress, parlayId, currency);
+        const txHash = await suiMoveService.cashOutParlay(walletAddress, parlayId.toString(), cashOutAmount);
         
         if (!txHash) {
           return res.status(500).json({ message: 'Failed to process parlay cash out' });
@@ -706,6 +705,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Sui Blockchain integration routes with Sui Move language integration
+  // Wallet integration routes
+  
+  // Get wallet balance
+  app.get("/api/wallet/:address/balance", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.params.address;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      // Get balance from blockchain
+      const balances = await suiMoveService.getWalletBalance(walletAddress);
+      
+      res.json({
+        sui: balances.sui,
+        sbets: balances.sbets
+      });
+    } catch (error) {
+      console.error("Error fetching wallet balance:", error);
+      res.status(500).json({ message: "Failed to fetch wallet balance" });
+    }
+  });
+  
+  // Transfer SUI tokens
+  app.post("/api/wallet/transfer/sui", async (req: Request, res: Response) => {
+    try {
+      const { sender, recipient, amount } = req.body;
+      
+      if (!sender || !recipient || !amount) {
+        return res.status(400).json({ 
+          message: "Sender, recipient, and amount are required" 
+        });
+      }
+      
+      // Transfer SUI tokens
+      const txHash = await walrusService.transferSui(sender, recipient, amount);
+      
+      res.json({
+        success: true,
+        txHash,
+        message: `Successfully transferred ${amount} SUI to ${recipient}`
+      });
+    } catch (error) {
+      console.error("Error transferring SUI:", error);
+      res.status(500).json({ message: "Failed to transfer SUI" });
+    }
+  });
+  
+  // Transfer SBETS tokens
+  app.post("/api/wallet/transfer/sbets", async (req: Request, res: Response) => {
+    try {
+      const { sender, recipient, amount } = req.body;
+      
+      if (!sender || !recipient || !amount) {
+        return res.status(400).json({ 
+          message: "Sender, recipient, and amount are required" 
+        });
+      }
+      
+      // Transfer SBETS tokens
+      const txHash = await walrusService.transferSbets(sender, recipient, amount);
+      
+      res.json({
+        success: true,
+        txHash,
+        message: `Successfully transferred ${amount} SBETS to ${recipient}`
+      });
+    } catch (error) {
+      console.error("Error transferring SBETS:", error);
+      res.status(500).json({ message: "Failed to transfer SBETS" });
+    }
+  });
+  
+  // Connect wallet to the platform
   app.post("/api/wallet/connect", async (req: Request, res: Response) => {
     try {
       const { address, walletType } = req.body;
@@ -729,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Connect wallet to wurlus protocol using Sui Move
       console.log(`Connecting wallet ${address} to Wurlus protocol with type ${sanitizedWalletType}`);
-      const connected = await suiMoveService.connectWallet(address, sanitizedWalletType);
+      const connected = await suiMoveService.connectWallet(address);
       
       if (!connected) {
         return res.status(400).json({ message: "Failed to connect wallet to Wurlus protocol" });
@@ -774,10 +848,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get wallet balance from Sui blockchain via Sui Move
         const balance = await suiMoveService.getWalletBalance(address);
         
-        // Update user with balance from blockchain - use suiBalance instead of balance
-        if (user.suiBalance !== balance) {
-          user = await storage.updateUser(user.id, { suiBalance: balance });
-        }
+        // Update user with balance from blockchain
+        const updateData = {
+          suiBalance: balance.sui, 
+          sbetsBalance: balance.sbets
+        };
+        user = await storage.updateUser(user.id, updateData);
       } catch (balanceError) {
         console.warn("Error updating balance, continuing with wallet connection:", balanceError);
         // Continue with connection even if balance update fails
@@ -826,7 +902,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Using the imported suiMoveService singleton for wurlus protocol integration
       
       // Connect to the Wurlus protocol using Sui Move
-      const connected = await suiMoveService.connectWallet(walletAddress, sanitizedWalletType);
+      const connected = await suiMoveService.connectWallet(walletAddress);
       
       if (!connected) {
         return res.status(400).json({ 
@@ -1107,7 +1183,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Using the imported suiMoveService singleton
-      const marketId = await suiMoveService.createMarket(adminWallet, eventId, marketName);
+      const startTime = Math.floor(Date.now() / 1000);
+      const endTime = startTime + (24 * 60 * 60); // 24 hours later
+      
+      const marketId = await suiMoveService.createMarket(
+        adminWallet, 
+        Number(eventId), 
+        marketName,
+        [], // Empty outcomes array, will be added separately
+        startTime,
+        endTime
+      );
       
       res.json({ 
         success: true,

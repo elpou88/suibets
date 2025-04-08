@@ -2,6 +2,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 // Define types for wallet balances and state
 export type TokenBalances = {
@@ -127,22 +129,67 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      // Simulate wallet connection for development
-      // In production, this would use the actual Sui wallet adapter
-      setTimeout(() => {
-        // Generate a mock wallet address
+      // Try to connect to an actual wallet if available
+      if (window.suiWallet) {
+        try {
+          // Connect to Sui wallet
+          const response = await window.suiWallet.requestPermissions();
+          if (response.status === 'success') {
+            const accounts = await window.suiWallet.getAccounts();
+            if (accounts && accounts.length > 0) {
+              const walletAddress = accounts[0];
+              
+              // Set the wallet state
+              setAccount({ address: walletAddress });
+              setAddress(walletAddress);
+              setConnected(true);
+              
+              // Connect wallet on server
+              connectMutation.mutate(walletAddress);
+              setConnecting(false);
+              return;
+            }
+          }
+        } catch (walletError) {
+          console.error('Sui wallet error:', walletError);
+          // Fall back to simulated wallet if Sui wallet fails
+        }
+      }
+      
+      // Create Sui client for development/testing
+      try {
+        const client = new SuiClient({ url: getFullnodeUrl('testnet') });
+        // Create a keypair for testing
+        const keypair = new Ed25519Keypair();
+        const testWalletAddress = keypair.getPublicKey().toSuiAddress();
+        
+        // Set the wallet state with the test address
+        setAccount({ address: testWalletAddress });
+        setAddress(testWalletAddress);
+        setConnected(true);
+        
+        // Connect wallet on server
+        connectMutation.mutate(testWalletAddress);
+        setConnecting(false);
+        
+        toast({
+          title: 'Test Wallet Connected',
+          description: 'Using test wallet for development',
+        });
+      } catch (e) {
+        console.error('Error creating test wallet:', e);
+        
+        // Final fallback - generate mock address
         const mockAddress = `0x${Array.from({length: 64}, () => 
           Math.floor(Math.random() * 16).toString(16)).join('')}`;
-          
-        // Set the wallet state
+            
         setAccount({ address: mockAddress });
         setAddress(mockAddress);
         setConnected(true);
         
-        // Connect wallet on server
         connectMutation.mutate(mockAddress);
         setConnecting(false);
-      }, 1500); // Simulate connection delay
+      }
     } catch (error: any) {
       setConnecting(false);
       setError(error.message || 'Failed to connect wallet');

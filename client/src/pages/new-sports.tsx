@@ -8,13 +8,13 @@ export default function NewSports() {
   useEffect(() => {
     document.title = 'Sports - SuiBets';
     
-    // Create a clean slate - remove all existing page content
+    // Create a clean slate - remove all existing page content including any added navigation or UI elements
     const body = document.body;
     body.style.margin = '0';
     body.style.padding = '0';
     body.style.overflow = 'hidden';
     body.style.backgroundColor = '#F0F0F0';
-    body.innerHTML = '';
+    body.innerHTML = ''; // completely clear all content
     
     // Create a container for the full-page layout
     const container = document.createElement('div');
@@ -58,7 +58,7 @@ export default function NewSports() {
     liveNav.href = '#';
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
-      window.location.href = "/live";
+      window.location.href = "/goto-live";
     });
     map.appendChild(liveNav);
     
@@ -70,7 +70,7 @@ export default function NewSports() {
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
-      window.location.href = "/promotions";
+      window.location.href = "/goto-promotions";
     });
     map.appendChild(promotionsNav);
     

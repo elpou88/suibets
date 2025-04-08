@@ -8,13 +8,13 @@ export default function NewLive() {
   useEffect(() => {
     document.title = 'Live Events - SuiBets';
     
-    // Create a clean slate - remove all existing page content
+    // Create a clean slate - remove all existing page content including any added navigation or UI elements
     const body = document.body;
     body.style.margin = '0';
     body.style.padding = '0';
     body.style.overflow = 'hidden';
     body.style.backgroundColor = '#F0F0F0';
-    body.innerHTML = '';
+    body.innerHTML = ''; // completely clear all content
     
     // Create a container for the full-page layout
     const container = document.createElement('div');
@@ -72,7 +72,7 @@ export default function NewLive() {
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Promotions clicked');
-      window.location.href = "/promotions";
+      window.location.href = "/goto-promotions";
     });
     map.appendChild(promotionsNav);
     

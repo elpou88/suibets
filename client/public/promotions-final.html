@@ -68,5 +68,78 @@
       <area shape="poly" coords="705,200,850,200,850,380,705,380" alt="Promotion 3 Details" href="#promo3-details">
     </map>
   </div>
+  <script>
+    // Add click event listeners to navigation menu
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get all menu links
+      var menuLinks = document.querySelectorAll('.menu a');
+      
+      // Add click event listeners to each link
+      menuLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          var href = this.getAttribute('href');
+          window.location.href = href;
+        });
+      });
+      
+      // Add click event for main image
+      document.querySelector('.container img').addEventListener('click', function(e) {
+        // Get click coordinates relative to the image
+        var rect = this.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        
+        console.log('Clicked at coordinates:', x, y);
+        
+        // Check if click is in navigation area (top menu area)
+        if (y < 40) {
+          if (x > 290 && x < 340) {
+            // Sports button clicked
+            window.location.href = '/sports-final.html';
+            return;
+          }
+          if (x > 350 && x < 390) {
+            // Live button clicked
+            window.location.href = '/live-final.html';
+            return;
+          }
+        }
+        
+        // Check for promotion cards
+        // First promotion
+        if (x > 200 && x < 350 && y > 190 && y < 390) {
+          alert('Promotion 1 details!');
+          return;
+        }
+        // First promotion join button
+        if (x > 200 && x < 255 && y > 390 && y < 435) {
+          alert('Joined Promotion 1!');
+          return;
+        }
+        
+        // Second promotion
+        if (x > 445 && x < 595 && y > 190 && y < 390) {
+          alert('Promotion 2 details!');
+          return;
+        }
+        // Second promotion join button
+        if (x > 445 && x < 515 && y > 390 && y < 435) {
+          alert('Joined Promotion 2!');
+          return;
+        }
+        
+        // Third promotion
+        if (x > 700 && x < 855 && y > 190 && y < 390) {
+          alert('Promotion 3 details!');
+          return;
+        }
+        // Third promotion join button
+        if (x > 700 && x < 765 && y > 390 && y < 435) {
+          alert('Joined Promotion 3!');
+          return;
+        }
+      });
+    });
+  </script>
 </body>
 </html>

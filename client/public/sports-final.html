@@ -65,5 +65,66 @@
       <area shape="rect" coords="420,17,445,29" alt="Promotions" href="/promotions-final.html">
     </map>
   </div>
+  <script>
+    // Add click event listeners to navigation menu
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get all menu links
+      var menuLinks = document.querySelectorAll('.menu a');
+      
+      // Add click event listeners to each link
+      menuLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          var href = this.getAttribute('href');
+          window.location.href = href;
+        });
+      });
+      
+      // Add click event for main image
+      document.querySelector('.container img').addEventListener('click', function(e) {
+        // Get click coordinates relative to the image
+        var rect = this.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        
+        console.log('Clicked at coordinates:', x, y);
+        
+        // Check if click is in navigation area (top menu area)
+        if (y < 40) {
+          if (x > 350 && x < 390) {
+            // Live button clicked
+            window.location.href = '/live-final.html';
+            return;
+          }
+          if (x > 410 && x < 450) {
+            // Promotions button clicked
+            window.location.href = '/promotions-final.html';
+            return;
+          }
+        }
+        
+        // Check for sidebar sport selection
+        if (x > 130 && x < 190) {
+          if (y > 130 && y < 180) {
+            alert('Football selected!');
+            return;
+          }
+          if (y > 170 && y < 220) {
+            alert('Basketball selected!');
+            return;
+          }
+          if (y > 210 && y < 260) {
+            alert('Tennis selected!');
+            return;
+          }
+        }
+        
+        // Check for Join Now button
+        if (x > 520 && x < 595 && y > 300 && y < 340) {
+          alert('Join Now clicked!');
+          return;
+        }
+      });
+    });
+  </script>
 </body>
 </html>

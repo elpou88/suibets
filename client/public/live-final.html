@@ -65,5 +65,62 @@
       <area shape="rect" coords="100,300,200,380" alt="Game 2" href="#game2">
     </map>
   </div>
+  <script>
+    // Add click event listeners to navigation menu
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get all menu links
+      var menuLinks = document.querySelectorAll('.menu a');
+      
+      // Add click event listeners to each link
+      menuLinks.forEach(function(link) {
+        link.addEventListener('click', function(e) {
+          var href = this.getAttribute('href');
+          window.location.href = href;
+        });
+      });
+      
+      // Add click event for main image
+      document.querySelector('.container img').addEventListener('click', function(e) {
+        // Get click coordinates relative to the image
+        var rect = this.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        var y = e.clientY - rect.top;
+        
+        console.log('Clicked at coordinates:', x, y);
+        
+        // Check if click is in navigation area (top menu area)
+        if (y < 40) {
+          if (x > 290 && x < 340) {
+            // Sports button clicked
+            window.location.href = '/sports-final.html';
+            return;
+          }
+          if (x > 410 && x < 450) {
+            // Promotions button clicked
+            window.location.href = '/promotions-final.html';
+            return;
+          }
+        }
+        
+        // Check for game selection areas
+        if (x > 90 && x < 210) {
+          if (y > 190 && y < 290) {
+            alert('Game 1 selected!');
+            return;
+          }
+          if (y > 290 && y < 390) {
+            alert('Game 2 selected!');
+            return;
+          }
+        }
+        
+        // Check for bet button
+        if (x > 350 && x < 460 && y > 360 && y < 400) {
+          alert('Place Bet clicked!');
+          return;
+        }
+      });
+    });
+  </script>
 </body>
 </html>

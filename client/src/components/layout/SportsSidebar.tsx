@@ -7,7 +7,8 @@ import {
   Trophy, 
   Grid, 
   Home,
-  ChevronRight
+  ChevronRight,
+  BarChart
 } from 'lucide-react';
 
 export default function SportsSidebar() {
@@ -85,6 +86,14 @@ export default function SportsSidebar() {
           >
             <Grid className="mr-2 h-5 w-5 text-cyan-400" />
             Cash Out
+          </Button>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors bg-gradient-to-r from-[#112225]/50 to-[#1e3a3f]/50"
+            onClick={() => setLocation('/defi-staking')}
+          >
+            <BarChart className="mr-2 h-5 w-5 text-cyan-400" />
+            DeFi Staking
           </Button>
         </div>
       </div>

@@ -46,7 +46,7 @@ function App() {
           <BettingProvider>
             <div className="root-container">
               <Switch>
-                <Route path="/" component={NewSports} />
+                <Route path="/" component={Home} />
                 <Route path="/sports" component={NewSports} />
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />

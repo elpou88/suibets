@@ -50,8 +50,8 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       odds,
       stake: 10, // Default stake amount
       market: marketName,
-      marketId: marketId ? Number(marketId) : undefined,
-      outcomeId: outcomeId ? Number(outcomeId) : undefined,
+      marketId: marketId ? String(marketId) : undefined,
+      outcomeId: outcomeId || undefined,
       isLive, // Pass the isLive flag
     });
   };

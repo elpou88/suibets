@@ -1,9 +1,20 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { AuthContextType, User, WalletType } from '@/types';
+import { AuthContextType, User } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
-const AuthContext = createContext<AuthContextType>({
+// Define wallet type here since it might be missing from types file
+type WalletType = string;
+
+const AuthContext = createContext<{
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  connectWallet: (address: string, walletType: WalletType) => Promise<void>;
+  disconnectWallet: () => void;
+  login: (userData: User) => void;
+  updateWalletBalance: (amount: number, currency: string) => void;
+}>({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -28,12 +39,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setIsLoading(true);
         // Check if wallet data exists in localStorage
         const savedAddress = localStorage.getItem('wallet_address');
-        const savedWalletType = localStorage.getItem('wallet_type') as WalletType;
+        const savedWalletType = localStorage.getItem('wallet_type');
         
         // If we have saved wallet data, try to reconnect
         if (savedAddress && savedWalletType) {
+          console.log('Found saved wallet data, attempting to reconnect:', { savedAddress, savedWalletType });
+          
           try {
             const res = await apiRequest('POST', '/api/wallet/connect', {
               address: savedAddress,
@@ -43,19 +57,27 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             if (res.ok) {
               const userData = await res.json();
               setUser(userData);
+              console.log('Successfully reconnected wallet from localStorage');
               
               // Display a toast for reconnection
               toast({
-                title: "Wallet Reconnected",
-                description: "Your wallet session has been restored.",
+                title: "Wallet Connected",
+                description: "Your wallet has been reconnected.",
               });
+            } else {
+              console.error('Failed to reconnect wallet, response not OK:', res.status);
+              // Only clear if the error is permanent (not a temporary network issue)
+              if (res.status === 400 || res.status === 404) {
+                localStorage.removeItem('wallet_address');
+                localStorage.removeItem('wallet_type');
+              }
             }
           } catch (connectionError) {
             console.error('Error reconnecting wallet:', connectionError);
-            // Clear invalid data if reconnection fails
-            localStorage.removeItem('wallet_address');
-            localStorage.removeItem('wallet_type');
+            // Don't clear the data on network errors - might be temporary
           }
+        } else {
+          console.log('No saved wallet data found');
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -139,9 +161,34 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
       // Create a new user object with updated balance
       // In a real implementation, this would be more specific to handle different token balances
+      let newBalance = 0;
+      
+      // Handle the case where balance could be a complex object or a number
+      if (typeof prevUser.balance === 'number') {
+        newBalance = prevUser.balance + amount;
+      } else if (prevUser.balance) {
+        // If it's a complex object with token balances, update the specific token
+        const balanceObj = {...prevUser.balance};
+        if (currency === 'SUI' && typeof balanceObj.SUI === 'number') {
+          balanceObj.SUI += amount;
+        } else if (currency === 'SBETS' && typeof balanceObj.SBETS === 'number') {
+          balanceObj.SBETS += amount;
+        } else {
+          // Default case if the specific token doesn't exist
+          if (currency === 'SUI') balanceObj.SUI = amount;
+          if (currency === 'SBETS') balanceObj.SBETS = amount;
+        }
+        return {
+          ...prevUser,
+          balance: balanceObj
+        };
+      } else {
+        newBalance = amount;
+      }
+      
       return {
         ...prevUser,
-        balance: (prevUser.balance || 0) + amount
+        balance: newBalance
       };
     });
     

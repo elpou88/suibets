@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -6,7 +6,7 @@ import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
-import { Bell, Settings, LogOut } from "lucide-react";
+import { Bell, Settings, LogOut, Wallet } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -22,6 +22,22 @@ export default function Navbar() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [walletConnected, setWalletConnected] = useState(false);
+  
+  // Check if wallet is connected on component mount and when user status changes
+  useEffect(() => {
+    // Check localStorage for wallet data
+    const savedAddress = localStorage.getItem('wallet_address');
+    const savedWalletType = localStorage.getItem('wallet_type');
+    
+    setWalletConnected(!!(savedAddress && isAuthenticated));
+    
+    console.log('Navbar: Wallet connection status -', {
+      savedAddress,
+      isAuthenticated,
+      walletConnected: !!(savedAddress && isAuthenticated)
+    });
+  }, [isAuthenticated]);
 
   const goToLive = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,7 +96,7 @@ export default function Navbar() {
       </div>
       
       <div className="flex items-center justify-end flex-1 pr-4">
-        {isAuthenticated ? (
+        {walletConnected ? (
           <>
             <Button 
               variant="ghost" 
@@ -102,14 +118,14 @@ export default function Navbar() {
             
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-3 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF] hover:text-black">
+                <Button variant="outline" className="ml-3 border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20">
+                  <Wallet className="h-4 w-4 mr-2" />
                   {user?.walletAddress && shortenAddress(user.walletAddress)}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>Profile</DropdownMenuItem>
                 <DropdownMenuItem>My Bets</DropdownMenuItem>
                 <DropdownMenuItem>Transactions</DropdownMenuItem>
                 <DropdownMenuSeparator />
@@ -128,6 +144,7 @@ export default function Navbar() {
               </Button>
             </Link>
             <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium ml-3" onClick={() => setIsWalletModalOpen(true)}>
+              <Wallet className="h-4 w-4 mr-2" />
               Connect Wallet
             </Button>
           </>

@@ -39,8 +39,9 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     marketId?: number,
     outcomeId?: string | null
   ) => {
-    // Create unique ID for this bet selection (without Date.now() to prevent ID changes on re-render)
-    const betId = `${eventId}-${marketName}-${selectionName}`;
+    // Create unique ID for this bet selection - make it truly unique
+    // Avoid duplicates by using a more specific ID format
+    const betId = `${eventId}-${marketName.replace(/\s+/g, '-')}-${selectionName.replace(/\s+/g, '-')}`;
     
     // Create bet object
     const bet = {
@@ -59,28 +60,8 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     // Log the bet details to debug
     console.log("ADDING BET:", bet);
     
-    // Force syncing with localStorage directly to avoid race conditions
-    try {
-      const savedBets = localStorage.getItem('selectedBets');
-      const currentBets = savedBets ? JSON.parse(savedBets) : [];
-      const existingBetIndex = currentBets.findIndex((existing: any) => existing.id === betId);
-      
-      if (existingBetIndex >= 0) {
-        // Update existing bet
-        currentBets[existingBetIndex] = bet;
-      } else {
-        // Add new bet
-        currentBets.push(bet);
-      }
-      
-      // Save to localStorage
-      localStorage.setItem('selectedBets', JSON.stringify(currentBets));
-      console.log("Manually saved bets to localStorage:", currentBets);
-    } catch (e) {
-      console.error("Error saving to localStorage:", e);
-    }
-    
-    // Add the bet through context as well
+    // Only use the context to add the bet - this prevents double-saving
+    // The context will handle saving to localStorage
     addBet(bet);
     
     // Log after adding to confirm it was processed

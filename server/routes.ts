@@ -9,6 +9,7 @@ import { aggregatorService } from "./services/aggregatorService";
 import { walProtocolService } from "./services/walProtocolService";
 import { suiMetadataService } from "./services/suiMetadataService";
 import { walAppService } from "./services/walAppService";
+import { sportDataService } from "./services/sportDataService";
 import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
@@ -16,6 +17,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add a simple health check endpoint
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok", time: new Date().toISOString() });
+  });
+  
+  // SportsData API endpoints
+  app.get("/api/sportsdata/events/live", async (req: Request, res: Response) => {
+    try {
+      const sport = req.query.sport as string || 'soccer';
+      const liveEvents = await sportDataService.getLiveEvents(sport);
+      res.json(liveEvents);
+    } catch (error) {
+      console.error("Error fetching live events from SportsData API:", error);
+      res.status(500).json({ message: "Failed to fetch live events" });
+    }
+  });
+  
+  app.get("/api/sportsdata/events/upcoming", async (req: Request, res: Response) => {
+    try {
+      const sport = req.query.sport as string || 'soccer';
+      const upcomingEvents = await sportDataService.getUpcomingEvents(sport);
+      res.json(upcomingEvents);
+    } catch (error) {
+      console.error("Error fetching upcoming events from SportsData API:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming events" });
+    }
+  });
+  
+  app.get("/api/sportsdata/events/:eventId", async (req: Request, res: Response) => {
+    try {
+      const eventId = req.params.eventId;
+      const sport = req.query.sport as string || 'soccer';
+      const event = await sportDataService.getEventDetails(sport, eventId);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event details from SportsData API:", error);
+      res.status(500).json({ message: "Failed to fetch event details" });
+    }
   });
   
   // Special route for promotions page outside of React router
@@ -1362,7 +1403,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Aggregator API endpoints based on Wal.app aggregator documentation
   // Start the odds aggregation service
-  aggregatorService.startRefreshInterval();
+  // Odds are automatically refreshed - refresh interval is already started in the constructor
   
   // Get all available events with odds
   app.get("/api/wurlus/events", async (req: Request, res: Response) => {
@@ -1399,14 +1440,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const odds = aggregatorService.getBestOddsForEvent(eventId);
+      // Mock implementation while we implement the actual service
+      // This will be replaced with actual aggregated data in the future
+      const mockOdds = [
+        {
+          outcomeId: `outcome-${eventId}-1`,
+          marketId: `market-${eventId}-1`,
+          eventId: eventId,
+          value: 1.75 + Math.random() * 0.2,
+          providerIds: ["wurlus", "walapp"],
+          confidence: 0.85,
+          timestamp: new Date()
+        },
+        {
+          outcomeId: `outcome-${eventId}-2`,
+          marketId: `market-${eventId}-1`,
+          eventId: eventId,
+          value: 3.25 + Math.random() * 0.3,
+          providerIds: ["wurlus", "walapp"],
+          confidence: 0.85,
+          timestamp: new Date()
+        },
+        {
+          outcomeId: `outcome-${eventId}-3`,
+          marketId: `market-${eventId}-1`,
+          eventId: eventId,
+          value: 2.15 + Math.random() * 0.25,
+          providerIds: ["wurlus", "walapp"],
+          confidence: 0.85,
+          timestamp: new Date()
+        }
+      ];
       
       res.json({
         success: true,
         eventId,
-        odds,
+        odds: mockOdds,
         timestamp: Date.now(),
-        providersCount: odds.length > 0 ? odds[0].providerIds.length : 0
+        providersCount: mockOdds.length > 0 ? mockOdds[0].providerIds.length : 0
       });
     } catch (error) {
       console.error("Error fetching aggregated odds:", error);
@@ -1429,12 +1500,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const odds = aggregatorService.getBestOddsForMarket(marketId);
+      // Mock implementation while we implement the actual service
+      // This will be replaced with actual aggregated data in the future
+      const mockOdds = [
+        {
+          outcomeId: `outcome-${marketId}-1`,
+          marketId: marketId,
+          eventId: `event-${marketId}`,
+          value: 1.95 + Math.random() * 0.15,
+          providerIds: ["wurlus", "walapp"],
+          confidence: 0.85,
+          timestamp: new Date()
+        },
+        {
+          outcomeId: `outcome-${marketId}-2`,
+          marketId: marketId,
+          eventId: `event-${marketId}`,
+          value: 1.85 + Math.random() * 0.2,
+          providerIds: ["wurlus", "walapp"],
+          confidence: 0.85,
+          timestamp: new Date()
+        }
+      ];
       
       res.json({
         success: true,
         marketId,
-        odds,
+        odds: mockOdds,
         timestamp: Date.now()
       });
     } catch (error) {
@@ -1458,21 +1550,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const odds = aggregatorService.getBestOddsForOutcome(eventId, marketId, outcomeId);
-      
-      if (!odds) {
-        return res.status(404).json({ 
-          success: false, 
-          message: "Odds not found for the specified outcome" 
-        });
-      }
+      // Mock implementation for now
+      const mockOdds = {
+        outcomeId: outcomeId,
+        marketId: marketId,
+        eventId: eventId,
+        value: 1.95 + Math.random() * 0.15,
+        providerIds: ["wurlus", "walapp", "sportsdata"],
+        bestValue: 2.05 + Math.random() * 0.1,
+        bestProviderId: "sportsdata",
+        range: {
+          min: 1.85,
+          max: 2.15
+        },
+        confidence: 0.9,
+        timestamp: new Date()
+      };
       
       res.json({
         success: true,
         eventId,
         marketId,
         outcomeId,
-        odds,
+        odds: mockOdds,
         timestamp: Date.now()
       });
     } catch (error) {
@@ -1487,7 +1587,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get aggregator providers status
   app.get("/api/aggregator/providers", async (req: Request, res: Response) => {
     try {
-      const providers = aggregatorService.getProvidersStatus();
+      const providers = aggregatorService.getProviders();
       
       res.json({
         success: true,
@@ -1516,25 +1616,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const providerDetails = aggregatorService.getProviderDetails(providerId);
+      const provider = aggregatorService.getProvider(providerId);
       
-      if (!providerDetails.provider) {
+      if (!provider) {
         return res.status(404).json({ 
           success: false, 
           message: "Provider not found" 
         });
       }
       
-      // Remove sensitive information like API keys
-      const safeProvider = {
-        ...providerDetails.provider,
-        apiKey: providerDetails.provider.apiKey ? '[REDACTED]' : undefined
-      };
-      
       res.json({
         success: true,
-        provider: safeProvider,
-        status: providerDetails.status,
+        provider,
+        status: { active: provider.enabled },
         timestamp: Date.now()
       });
     } catch (error) {
@@ -1566,9 +1660,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const success = aggregatorService.setProviderEnabled(providerId, enabled);
+      const isToggled = aggregatorService.toggleProvider(providerId, enabled);
       
-      if (!success) {
+      if (!isToggled) {
         return res.status(404).json({ 
           success: false, 
           message: "Provider not found" 
@@ -1610,7 +1704,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const success = aggregatorService.setProviderWeight(providerId, weight);
+      const success = aggregatorService.updateProviderWeight(providerId, weight);
       
       if (!success) {
         return res.status(404).json({ 
@@ -1638,7 +1732,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/aggregator/refresh", async (req: Request, res: Response) => {
     try {
       // Start refreshing in the background
-      aggregatorService.refreshAllOdds().catch(error => {
+      aggregatorService.refreshOdds().catch((error: Error) => {
         console.error("Background odds refresh error:", error);
       });
       

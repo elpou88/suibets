@@ -34,6 +34,10 @@ export const UniversalClickHandler: React.FC = () => {
       const isSportPage = path.includes('/sport/');
       const sportSlug = isSportPage ? path.split('/').pop() : '';
       
+      // Log for debugging navigation
+      console.log(`Sport Page - sport slug:`, sportSlug);
+      console.log(`Full pathname:`, path);
+      
       // Log click coordinates for debugging
       console.log(`Click coordinates: ${e.clientX}, ${e.clientY}`);
       
@@ -45,14 +49,25 @@ export const UniversalClickHandler: React.FC = () => {
         return el.textContent && /\d+\.\d+/.test(el.textContent);
       });
       
-      // Check if clicked on a team name
+      // Check if clicked on a team name - using more precise exact matching
       const possibleTeamName = element.textContent?.trim();
-      const matchingEvent = events.find(event => 
-        possibleTeamName && (
-          event.homeTeam.includes(possibleTeamName) || 
-          event.awayTeam.includes(possibleTeamName)
-        )
-      );
+      // Only match a team name if it's a reasonable length and not a very common word
+      const isValidTeamName = possibleTeamName && possibleTeamName.length > 3 && !['the', 'and', 'for', 'vs', 'live'].includes(possibleTeamName.toLowerCase());
+      
+      // Find matching event with more precise logic to avoid false positives
+      const matchingEvent = isValidTeamName ? events.find(event => {
+        // Check for exact match first
+        if (event.homeTeam === possibleTeamName || event.awayTeam === possibleTeamName) {
+          return true;
+        }
+        
+        // Otherwise only match if the team name is a significant part of the text
+        const homeTeamWords = event.homeTeam.split(' ');
+        const awayTeamWords = event.awayTeam.split(' ');
+        
+        // Check if the clicked text exactly matches one of the team name words
+        return homeTeamWords.includes(possibleTeamName) || awayTeamWords.includes(possibleTeamName);
+      }) : null;
       
       // Check if we clicked on a card or area containing event information
       const eventContainer = element.closest('[class*="card"], [class*="event"], [class*="match"]');
@@ -63,35 +78,69 @@ export const UniversalClickHandler: React.FC = () => {
         );
       });
       
-      // Function to process an element that contains odds
+      // Function to process an element that contains odds - improved to be more specific
       const processOddsElement = (el: Element, oddsValue: number) => {
         // Try to determine which team/selection this odds is for
         let selectionName = 'Selection';
         let marketName = 'Match Winner';
         let foundEvent = false;
+        let selectedEventId = 0;
+        let selectedEventName = '';
         
         // Check parent elements for team information
         let currentEl: HTMLElement | null = el as HTMLElement;
-        for (let i = 0; i < 5 && currentEl; i++) {
+        for (let i = 0; i < 5 && currentEl && !foundEvent; i++) {
           const text = currentEl.textContent || '';
           
-          // Check for event context
+          // Check for full match context first (both teams)
           for (const event of events) {
-            if (text.includes(event.homeTeam)) {
-              selectionName = event.homeTeam;
-              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
-              foundEvent = true;
-              break;
-            } else if (text.includes(event.awayTeam)) {
-              selectionName = event.awayTeam;
-              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
-              foundEvent = true;
-              break;
-            } else if (text.toLowerCase().includes('draw')) {
-              selectionName = 'Draw';
-              handleBetClick(event.id, `${event.homeTeam} vs ${event.awayTeam}`, selectionName, oddsValue, marketName);
-              foundEvent = true;
-              break;
+            // If we found both team names in the same container, this is likely the correct event
+            if (text.includes(event.homeTeam) && text.includes(event.awayTeam)) {
+              // Now determine which team the odds are for based on proximity
+              selectedEventId = event.id;
+              selectedEventName = `${event.homeTeam} vs ${event.awayTeam}`;
+              
+              // Simplistic approach - check if the element is closer to home team or away team
+              const elContent = el.textContent || '';
+              const elParentContent = el.parentElement?.textContent || '';
+              
+              // Check if the odds element contains or is right near a team name
+              if (elContent.includes(event.homeTeam) || elParentContent.includes(event.homeTeam)) {
+                selectionName = event.homeTeam;
+                foundEvent = true;
+                break;
+              } else if (elContent.includes(event.awayTeam) || elParentContent.includes(event.awayTeam)) {
+                selectionName = event.awayTeam;
+                foundEvent = true;
+                break;
+              } else if (elContent.toLowerCase().includes('draw') || elParentContent.toLowerCase().includes('draw')) {
+                selectionName = 'Draw';
+                foundEvent = true;
+                break;
+              }
+              
+              // If still not found, check the position in the parent element
+              const parentElement = el.parentElement;
+              if (parentElement) {
+                // Get position based on bounding rectangle instead of child nodes
+                const parentRect = parentElement.getBoundingClientRect();
+                const elRect = el.getBoundingClientRect();
+                
+                // Calculate relative position within parent
+                const relativePosition = (elRect.left - parentRect.left) / parentRect.width;
+                
+                // Determine selection based on position
+                if (relativePosition < 0.33) {
+                  selectionName = event.homeTeam;
+                } else if (relativePosition > 0.66) {
+                  selectionName = event.awayTeam;
+                } else {
+                  selectionName = 'Draw';
+                }
+                
+                foundEvent = true;
+                break;
+              }
             }
           }
           
@@ -101,13 +150,25 @@ export const UniversalClickHandler: React.FC = () => {
         
         if (!foundEvent) {
           // If we couldn't determine the selection, use the odds as the fallback
-          handleBetClick(
-            9999, // Generic event ID
-            'Unknown Event',
-            `Selection @ ${oddsValue}`, 
-            oddsValue,
-            'Unknown Market'
-          );
+          if (selectedEventId && selectedEventName) {
+            // We found an event context but couldn't determine the selection
+            handleBetClick(
+              selectedEventId,
+              selectedEventName,
+              `Selection @ ${oddsValue}`, 
+              oddsValue,
+              marketName
+            );
+          } else {
+            // Complete fallback when we couldn't find any event context
+            handleBetClick(
+              9999, // Generic event ID
+              'Unknown Event',
+              `Selection @ ${oddsValue}`, 
+              oddsValue,
+              'Unknown Market'
+            );
+          }
         }
       };
       
@@ -277,20 +338,22 @@ export const UniversalClickHandler: React.FC = () => {
       market,
     });
     
-    // Provide minimal visual feedback that the bet was added
+    // Provide minimal visual feedback that the bet was added - using site color scheme
     const feedbackElement = document.createElement('div');
     feedbackElement.textContent = `Added ${selectionName} @ ${odds} to Bet Slip`;
     feedbackElement.style.position = 'fixed';
     feedbackElement.style.bottom = '20px';
     feedbackElement.style.right = '20px';
-    feedbackElement.style.backgroundColor = 'rgba(0, 255, 0, 0.8)'; // Original green color
-    feedbackElement.style.color = 'white';
-    feedbackElement.style.padding = '10px';
+    feedbackElement.style.backgroundColor = '#112225'; // Dark teal/blue background
+    feedbackElement.style.color = '#fff';
+    feedbackElement.style.padding = '10px 15px';
     feedbackElement.style.borderRadius = '5px';
     feedbackElement.style.zIndex = '9999';
     feedbackElement.style.opacity = '0';
     feedbackElement.style.transform = 'translateY(20px)';
     feedbackElement.style.transition = 'opacity 0.3s ease, transform 0.3s ease';
+    feedbackElement.style.border = '1px solid #1e3a3f'; // Teal border for consistency
+    feedbackElement.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.3)';
     
     document.body.appendChild(feedbackElement);
     

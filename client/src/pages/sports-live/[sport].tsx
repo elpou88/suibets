@@ -109,7 +109,7 @@ export default function SportPage() {
       <div className="container py-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-bold">{sportName}</h1>
+            <h1 className="text-3xl font-bold text-cyan-400">{sportName}</h1>
             <p className="text-muted-foreground">
               {selectedTab === 'live' ? 'Live matches happening now' : 'Upcoming scheduled matches'}
             </p>
@@ -118,7 +118,7 @@ export default function SportPage() {
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            className="flex items-center"
+            className="flex items-center border-cyan-400 text-cyan-400 hover:bg-cyan-400/10"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -136,9 +136,9 @@ export default function SportPage() {
           onValueChange={(value) => setSelectedTab(value as 'live' | 'upcoming')}
           className="mb-6"
         >
-          <TabsList className="grid w-[400px] grid-cols-2">
-            <TabsTrigger value="live">Live Matches</TabsTrigger>
-            <TabsTrigger value="upcoming">Upcoming</TabsTrigger>
+          <TabsList className="grid w-[400px] grid-cols-2 bg-[#0b1618] border-[#1e3a3f]">
+            <TabsTrigger value="live" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">Live Matches</TabsTrigger>
+            <TabsTrigger value="upcoming" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">Upcoming</TabsTrigger>
           </TabsList>
           
           <TabsContent value={selectedTab} className="mt-6">
@@ -213,7 +213,7 @@ export default function SportPage() {
                           </div>
                           <Button 
                             variant="outline" 
-                            className="w-full mt-2 border-[#1e3a3f] hover:bg-[#1e3a3f]"
+                            className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
                             data-event-id={event.id}
                             data-outcome="home"
                             data-odd={event.homeOdds}
@@ -233,7 +233,7 @@ export default function SportPage() {
                           {event.drawOdds !== null ? (
                             <Button 
                               variant="outline" 
-                              className="w-full mt-2 border-[#1e3a3f] hover:bg-[#1e3a3f]"
+                              className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
                               data-event-id={event.id}
                               data-outcome="draw"
                               data-odd={event.drawOdds}
@@ -257,7 +257,7 @@ export default function SportPage() {
                           </div>
                           <Button 
                             variant="outline" 
-                            className="w-full mt-2 border-[#1e3a3f] hover:bg-[#1e3a3f]"
+                            className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
                             data-event-id={event.id}
                             data-outcome="away"
                             data-odd={event.awayOdds}

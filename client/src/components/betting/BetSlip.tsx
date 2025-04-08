@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { X, ChevronDown, ChevronUp, Trash } from 'lucide-react';
+import { X, ChevronDown, ChevronUp, Trash, CoinsIcon } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function BetSlip() {
@@ -23,6 +23,8 @@ export function BetSlip() {
   const [isLoading, setIsLoading] = useState(false);
   const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
   const [betCurrency, setBetCurrency] = useState<'SUI' | 'SBETS'>('SUI');
+  const [isStakeInputFocused, setIsStakeInputFocused] = useState(false);
+  const stakeInputRef = useRef<HTMLInputElement>(null);
   
   // Toggle bet details
   const toggleDetails = (id: string) => {
@@ -39,6 +41,22 @@ export function BetSlip() {
       updateStake(id, stakeValue);
     }
   };
+  
+  // Focus the input when shown
+  useEffect(() => {
+    // For any bet that has just had its details shown, focus the input
+    const openBetIds = Object.entries(showDetails)
+      .filter(([_, isOpen]) => isOpen)
+      .map(([id]) => id);
+      
+    if (openBetIds.length > 0 && betType === 'single') {
+      const lastOpenedBetId = openBetIds[openBetIds.length - 1];
+      const inputElement = document.querySelector(`input[data-bet-id="${lastOpenedBetId}"]`) as HTMLInputElement;
+      if (inputElement) {
+        inputElement.focus();
+      }
+    }
+  }, [showDetails, betType]);
   
   // Handle place bet button click
   const handlePlaceBet = async () => {
@@ -166,9 +184,13 @@ export function BetSlip() {
                     <div className="flex items-center justify-between">
                       <label className="text-xs text-gray-400">Stake:</label>
                       <Input
-                        className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-right"
+                        className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={bet.stake}
                         onChange={(e) => handleStakeChange(bet.id, e.target.value)}
+                        onFocus={() => setIsStakeInputFocused(true)}
+                        onBlur={() => setIsStakeInputFocused(false)}
+                        ref={stakeInputRef}
+                        data-bet-id={bet.id}
                         type="number"
                         min="0"
                         step="1"
@@ -217,7 +239,7 @@ export function BetSlip() {
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-sm">Total Stake:</label>
                       <Input
-                        className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right"
+                        className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={totalStake}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
@@ -228,6 +250,8 @@ export function BetSlip() {
                             });
                           }
                         }}
+                        onFocus={() => setIsStakeInputFocused(true)}
+                        onBlur={() => setIsStakeInputFocused(false)}
                         type="number"
                         min="0"
                         step="1"

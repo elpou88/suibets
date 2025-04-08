@@ -46,7 +46,7 @@ export default function NewSports() {
     sportsNav.href = '#';
     sportsNav.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Sports clicked - already on sports page');
+      // Already on sports page, do nothing
     });
     map.appendChild(sportsNav);
     
@@ -58,7 +58,6 @@ export default function NewSports() {
     liveNav.href = '#';
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Live clicked');
       window.location.href = "/live";
     });
     map.appendChild(liveNav);
@@ -71,19 +70,13 @@ export default function NewSports() {
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
-      console.log('Promotions clicked');
       window.location.href = "/promotions";
     });
     map.appendChild(promotionsNav);
     
     // No additional buttons or UI elements - only image map with clickable areas
     
-    // Log click coordinates for debugging
-    document.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
-    });
+    // Removed debugging click logger
     
     // Clean up function
     return () => {

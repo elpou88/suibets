@@ -77,7 +77,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
         >
           <span>{homeTeam}</span>
-          <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(homeOdds)}</span>
+          <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(homeOdds)}</span>
         </Button>
         
         {/* Draw option for sports that can have draws */}
@@ -88,7 +88,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Draw</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(drawOdds)}</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(drawOdds)}</span>
           </Button>
         )}
         
@@ -98,7 +98,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
         >
           <span>{awayTeam}</span>
-          <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(awayOdds)}</span>
+          <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(awayOdds)}</span>
         </Button>
       </CardContent>
     </Card>
@@ -121,7 +121,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Yes</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
           </Button>
           <Button
             variant="outline"
@@ -129,7 +129,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>No</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
           </Button>
         </CardContent>
       </Card>
@@ -148,7 +148,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 2.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -156,7 +156,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 2.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -182,7 +182,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
                   className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-2"
                 >
                   <span className="text-lg font-bold">{`${home}-${away}`}</span>
-                  <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">
+                  <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
                     {formatOdds(odds)}
                   </span>
                 </Button>
@@ -211,7 +211,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 199.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -219,7 +219,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 199.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -238,7 +238,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} -5.5`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -246,7 +246,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} +5.5`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -265,7 +265,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
           </Button>
           <Button
             variant="outline"
@@ -273,7 +273,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
           </Button>
         </CardContent>
       </Card>
@@ -297,7 +297,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} 2-0`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">2.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.20</span>
           </Button>
           <Button
             variant="outline"
@@ -305,7 +305,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} 2-1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">3.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.50</span>
           </Button>
           <Button
             variant="outline"
@@ -313,7 +313,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} 2-0`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">4.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
           </Button>
           <Button
             variant="outline"
@@ -321,7 +321,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} 2-1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">4.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
           </Button>
         </CardContent>
       </Card>
@@ -340,7 +340,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 22.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -348,7 +348,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 22.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -372,7 +372,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} by KO/TKO`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">2.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.50</span>
           </Button>
           <Button
             variant="outline"
@@ -380,7 +380,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} by Decision`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">3.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.00</span>
           </Button>
           <Button
             variant="outline"
@@ -388,7 +388,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} by KO/TKO`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">4.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
           </Button>
           <Button
             variant="outline"
@@ -396,7 +396,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} by Decision`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">3.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.50</span>
           </Button>
           <Button
             variant="outline"
@@ -404,7 +404,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Draw</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">15.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">15.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -427,7 +427,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
                 className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-2"
               >
                 <span>{`${homeTeam} R${round}`}</span>
-                <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(odds)}</span>
+                <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(odds)}</span>
               </Button>
             );
           })}
@@ -441,7 +441,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
                 className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-2"
               >
                 <span>{`${awayTeam} R${round}`}</span>
-                <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(odds)}</span>
+                <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(odds)}</span>
               </Button>
             );
           })}
@@ -467,7 +467,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} - Player 1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">4.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
           </Button>
           <Button
             variant="outline"
@@ -475,7 +475,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} - Player 2`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">5.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">5.00</span>
           </Button>
           <Button
             variant="outline"
@@ -483,7 +483,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} - Player 1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">4.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
           </Button>
           <Button
             variant="outline"
@@ -491,7 +491,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} - Player 2`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">5.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">5.50</span>
           </Button>
         </CardContent>
       </Card>
@@ -510,7 +510,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 350.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -518,7 +518,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 350.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -542,7 +542,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 5.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
           </Button>
           <Button
             variant="outline"
@@ -550,7 +550,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 5.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
           </Button>
         </CardContent>
       </Card>
@@ -569,7 +569,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{homeTeam} -1.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">2.30</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.30</span>
           </Button>
           <Button
             variant="outline"
@@ -577,7 +577,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{awayTeam} +1.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.60</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.60</span>
           </Button>
         </CardContent>
       </Card>
@@ -601,7 +601,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} Map 1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
           </Button>
           <Button
             variant="outline"
@@ -609,7 +609,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} Map 1`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
           </Button>
           <Button
             variant="outline"
@@ -617,7 +617,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} Map 2`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -625,7 +625,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} Map 2`}</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -644,7 +644,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 2.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">2.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.20</span>
           </Button>
           <Button
             variant="outline"
@@ -652,7 +652,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 2.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.65</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.65</span>
           </Button>
         </CardContent>
       </Card>
@@ -676,7 +676,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{homeTeam} -1.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">2.10</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.10</span>
           </Button>
           <Button
             variant="outline"
@@ -684,7 +684,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{awayTeam} +1.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.75</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.75</span>
           </Button>
         </CardContent>
       </Card>
@@ -703,7 +703,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 8.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -711,7 +711,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 8.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -735,7 +735,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{homeTeam} -7.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -743,7 +743,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{awayTeam} +7.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -762,7 +762,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 48.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -770,7 +770,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 48.5</span>
-            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
         </CardContent>
       </Card>
@@ -791,7 +791,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">12.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">12.00</span>
           </Button>
           <Button
             variant="outline"
@@ -799,7 +799,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">15.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">15.00</span>
           </Button>
           <Button
             variant="outline"
@@ -807,7 +807,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Other Player 1</span>
-            <span className="text-sm font-bold">8.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">8.50</span>
           </Button>
           <Button
             variant="outline"
@@ -815,7 +815,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Other Player 2</span>
-            <span className="text-sm font-bold">10.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">10.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -831,7 +831,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">4.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
           </Button>
           <Button
             variant="outline"
@@ -839,7 +839,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">5.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">5.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -860,7 +860,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Max Verstappen</span>
-            <span className="text-sm font-bold">1.80</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.80</span>
           </Button>
           <Button
             variant="outline"
@@ -868,7 +868,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lewis Hamilton</span>
-            <span className="text-sm font-bold">5.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">5.50</span>
           </Button>
           <Button
             variant="outline"
@@ -876,7 +876,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Charles Leclerc</span>
-            <span className="text-sm font-bold">7.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">7.00</span>
           </Button>
           <Button
             variant="outline"
@@ -884,7 +884,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lando Norris</span>
-            <span className="text-sm font-bold">9.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">9.00</span>
           </Button>
           <Button
             variant="outline"
@@ -892,7 +892,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Sergio Perez</span>
-            <span className="text-sm font-bold">12.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">12.00</span>
           </Button>
           <Button
             variant="outline"
@@ -900,7 +900,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Carlos Sainz</span>
-            <span className="text-sm font-bold">15.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">15.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -916,7 +916,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Max Verstappen</span>
-            <span className="text-sm font-bold">1.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.20</span>
           </Button>
           <Button
             variant="outline"
@@ -924,7 +924,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lewis Hamilton</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
           </Button>
           <Button
             variant="outline"
@@ -932,7 +932,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Charles Leclerc</span>
-            <span className="text-sm font-bold">2.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.20</span>
           </Button>
           <Button
             variant="outline"
@@ -940,7 +940,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lando Norris</span>
-            <span className="text-sm font-bold">2.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.50</span>
           </Button>
         </CardContent>
       </Card>
@@ -956,7 +956,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Max Verstappen</span>
-            <span className="text-sm font-bold">2.10</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.10</span>
           </Button>
           <Button
             variant="outline"
@@ -964,7 +964,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lewis Hamilton</span>
-            <span className="text-sm font-bold">3.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.00</span>
           </Button>
           <Button
             variant="outline"
@@ -972,7 +972,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Charles Leclerc</span>
-            <span className="text-sm font-bold">4.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
           </Button>
           <Button
             variant="outline"
@@ -980,7 +980,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Lando Norris</span>
-            <span className="text-sm font-bold">5.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">5.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -1001,7 +1001,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">2.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.50</span>
           </Button>
           <Button
             variant="outline"
@@ -1009,7 +1009,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">3.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.20</span>
           </Button>
           <Button
             variant="outline"
@@ -1017,7 +1017,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Athlete 3</span>
-            <span className="text-sm font-bold">4.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1025,7 +1025,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Athlete 4</span>
-            <span className="text-sm font-bold">6.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">6.50</span>
           </Button>
         </CardContent>
       </Card>
@@ -1041,7 +1041,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">1.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.50</span>
           </Button>
           <Button
             variant="outline"
@@ -1049,7 +1049,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">1.70</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.70</span>
           </Button>
         </CardContent>
       </Card>
@@ -1070,7 +1070,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">4.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
           </Button>
           <Button
             variant="outline"
@@ -1078,7 +1078,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">6.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">6.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1086,7 +1086,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Black Beauty</span>
-            <span className="text-sm font-bold">8.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">8.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1094,7 +1094,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Silver Star</span>
-            <span className="text-sm font-bold">10.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">10.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -1110,7 +1110,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${homeTeam} (E/W)`}</span>
-            <span className="text-sm font-bold">2.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1118,7 +1118,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${awayTeam} (E/W)`}</span>
-            <span className="text-sm font-bold">2.50</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.50</span>
           </Button>
           <Button
             variant="outline"
@@ -1126,7 +1126,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Black Beauty (E/W)</span>
-            <span className="text-sm font-bold">3.20</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.20</span>
           </Button>
           <Button
             variant="outline"
@@ -1134,7 +1134,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>Silver Star (E/W)</span>
-            <span className="text-sm font-bold">4.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -1150,7 +1150,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${homeTeam} / ${awayTeam}`}</span>
-            <span className="text-sm font-bold">14.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">14.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1158,7 +1158,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${awayTeam} / ${homeTeam}`}</span>
-            <span className="text-sm font-bold">16.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">16.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1166,7 +1166,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${homeTeam} / Black Beauty`}</span>
-            <span className="text-sm font-bold">18.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">18.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1174,7 +1174,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex flex-col"
           >
             <span>{`${awayTeam} / Silver Star`}</span>
-            <span className="text-sm font-bold">22.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">22.00</span>
           </Button>
         </CardContent>
       </Card>
@@ -1195,7 +1195,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{homeTeam} -1.5</span>
-            <span className="text-sm font-bold">2.00</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.00</span>
           </Button>
           <Button
             variant="outline"
@@ -1203,7 +1203,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{awayTeam} +1.5</span>
-            <span className="text-sm font-bold">1.80</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.80</span>
           </Button>
         </CardContent>
       </Card>
@@ -1219,7 +1219,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
           </Button>
           <Button
             variant="outline"
@@ -1227,7 +1227,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             className="flex-1 flex flex-col"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
           </Button>
         </CardContent>
       </Card>

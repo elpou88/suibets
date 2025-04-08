@@ -113,16 +113,17 @@ export function BetSlip() {
   };
   
   return (
-    <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-xl flex justify-between items-center">
+    <Card className="bg-[#0b1618] border-[#1e3a3f] text-white shadow-lg shadow-cyan-900/10">
+      <CardHeader className="pb-2 relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+        <CardTitle className="text-xl flex justify-between items-center text-cyan-300">
           <span>Bet Slip</span>
           {selectedBets.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
               onClick={clearBets}
-              className="text-gray-400 hover:text-white p-0 h-auto"
+              className="text-gray-400 hover:text-cyan-400 p-0 h-auto"
             >
               <Trash className="h-4 w-4" />
             </Button>
@@ -141,13 +142,13 @@ export function BetSlip() {
             {selectedBets.map(bet => (
               <div 
                 key={bet.id} 
-                className="p-2 border border-[#1e3a3f] rounded-md bg-[#112225]"
+                className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10"
               >
                 <div className="flex justify-between items-start mb-2">
                   <div className="flex-1">
-                    <p className="text-sm font-medium truncate">{bet.eventName}</p>
+                    <p className="text-sm font-medium truncate text-cyan-200">{bet.eventName}</p>
                     <div className="flex items-center">
-                      <span className="text-xs text-gray-400">{bet.market}</span>
+                      <span className="text-xs text-cyan-300/70">{bet.market}</span>
                       {bet.isLive && (
                         <span className="ml-2 px-1 text-xs bg-red-600 rounded text-white animate-pulse">LIVE</span>
                       )}
@@ -157,7 +158,7 @@ export function BetSlip() {
                     variant="ghost"
                     size="sm"
                     onClick={() => removeBet(bet.id)}
-                    className="h-5 w-5 p-0 text-gray-400 hover:text-white"
+                    className="h-5 w-5 p-0 text-gray-400 hover:text-cyan-400"
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -168,23 +169,23 @@ export function BetSlip() {
                   onClick={() => toggleDetails(bet.id)}
                 >
                   <div className="flex items-center">
-                    <div className="text-sm font-medium">{bet.selectionName}</div>
+                    <div className="text-sm font-medium text-cyan-200">{bet.selectionName}</div>
                     <div className="ml-2 text-cyan-400 font-bold">{bet.odds.toFixed(2)}</div>
                   </div>
                   
                   {showDetails[bet.id] ? (
-                    <ChevronUp className="h-4 w-4 text-gray-400" />
+                    <ChevronUp className="h-4 w-4 text-cyan-300" />
                   ) : (
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-cyan-300" />
                   )}
                 </div>
                 
                 {showDetails[bet.id] && betType === 'single' && (
                   <div className="mt-2 pt-2 border-t border-[#1e3a3f]">
                     <div className="flex items-center justify-between">
-                      <label className="text-xs text-gray-400">Stake:</label>
+                      <label className="text-xs text-cyan-200">Stake:</label>
                       <Input
-                        className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                        className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-cyan-200 text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={bet.stake}
                         onChange={(e) => handleStakeChange(bet.id, e.target.value)}
                         onFocus={() => setIsStakeInputFocused(true)}
@@ -197,8 +198,8 @@ export function BetSlip() {
                       />
                     </div>
                     <div className="flex justify-between items-center mt-1 text-xs">
-                      <span className="text-gray-400">Potential win:</span>
-                      <span className="text-cyan-400 font-medium">
+                      <span className="text-cyan-200">Potential win:</span>
+                      <span className="text-cyan-400 font-medium bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
                         {(bet.stake * bet.odds).toFixed(2)} {betCurrency}
                       </span>
                     </div>
@@ -235,11 +236,11 @@ export function BetSlip() {
                 </TabsList>
                 
                 <TabsContent value="parlay" className="mt-2">
-                  <div className="p-2 border border-[#1e3a3f] rounded-md bg-[#112225]">
+                  <div className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10">
                     <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm">Total Stake:</label>
+                      <label className="text-sm text-cyan-200">Total Stake:</label>
                       <Input
-                        className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
+                        className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right text-cyan-200 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={totalStake}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value);
@@ -258,8 +259,8 @@ export function BetSlip() {
                       />
                     </div>
                     <div className="flex justify-between items-center text-sm">
-                      <span>Combined Odds:</span>
-                      <span className="text-cyan-400 font-bold">
+                      <span className="text-cyan-200">Combined Odds:</span>
+                      <span className="text-cyan-400 font-bold bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
                         {selectedBets.reduce((total, bet) => total * bet.odds, 1).toFixed(2)}
                       </span>
                     </div>
@@ -268,12 +269,12 @@ export function BetSlip() {
               </Tabs>
             </div>
             
-            <div className="flex items-center space-x-2 mt-4">
+            <div className="flex items-center space-x-2 mt-4 p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225]">
               <Select
                 value={betCurrency}
                 onValueChange={(value) => setBetCurrency(value as 'SUI' | 'SBETS')}
               >
-                <SelectTrigger className="w-[120px] bg-[#112225] border-[#1e3a3f]">
+                <SelectTrigger className="w-[120px] bg-[#0b1618] border-[#1e3a3f] text-cyan-200">
                   <SelectValue placeholder="Currency" />
                 </SelectTrigger>
                 <SelectContent className="bg-[#0b1618] border-[#1e3a3f] text-white">
@@ -284,8 +285,8 @@ export function BetSlip() {
               
               <div className="flex-1">
                 <div className="flex justify-between items-center text-sm">
-                  <span>Potential Win:</span>
-                  <span className="text-cyan-400 font-bold">
+                  <span className="text-cyan-200">Potential Win:</span>
+                  <span className="text-cyan-400 font-bold bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
                     {potentialWinnings.toFixed(2)} {betCurrency}
                   </span>
                 </div>

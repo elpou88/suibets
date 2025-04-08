@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, CalendarIcon, RefreshCw, Loader2 } from 'lucide-react';
+import SportSpecificBets from '@/components/betting/SportSpecificBets';
 
 const SPORTS_MAPPING: Record<string, number> = {
   'football': 1,
@@ -290,265 +291,24 @@ export default function SportPage() {
                       
                       {/* Additional betting markets based on sport type */}
                       <div className="mt-6 border-t border-[#1e3a3f] pt-4">
-                        <div className="flex justify-between items-center mb-3">
-                          <h3 className="text-md font-bold text-cyan-400">More Betting Markets</h3>
-                          <Button 
-                            variant="link" 
-                            className="text-cyan-400 p-0 h-auto"
-                            onClick={() => window.location.href = `/event/${event.id}`}
-                          >
-                            View All Markets
-                          </Button>
+                        <div className="mb-3">
+                          <h3 className="text-md font-bold text-cyan-400">All Betting Markets</h3>
                         </div>
                         
-                        {/* Sport-specific betting options */}
-                        {params.sport === 'football' || params.sport === 'soccer' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Over 2.5 Goals</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Under 2.5 Goals</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>BTTS - Yes</span>
-                              <span className="font-semibold">1.85</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>BTTS - No</span>
-                              <span className="font-semibold">1.95</span>
-                            </Button>
-                          </div>
-                        ) : params.sport === 'basketball' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Over 199.5 Points</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Under 199.5 Points</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.homeTeam} -5.5</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.awayTeam} +5.5</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                          </div>
-                        ) : params.sport === 'tennis' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Over 22.5 Games</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Under 22.5 Games</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.homeTeam} to Win Set 1</span>
-                              <span className="font-semibold">1.75</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.awayTeam} to Win Set 1</span>
-                              <span className="font-semibold">2.10</span>
-                            </Button>
-                          </div>
-                        ) : params.sport === 'boxing' || params.sport === 'mma' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.homeTeam} by KO/TKO</span>
-                              <span className="font-semibold">2.50</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.homeTeam} by Decision</span>
-                              <span className="font-semibold">3.00</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.awayTeam} by KO/TKO</span>
-                              <span className="font-semibold">4.00</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>{event.awayTeam} by Decision</span>
-                              <span className="font-semibold">3.50</span>
-                            </Button>
-                          </div>
-                        ) : params.sport === 'hockey' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Over 5.5 Goals</span>
-                              <span className="font-semibold">1.95</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Under 5.5 Goals</span>
-                              <span className="font-semibold">1.85</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Puck Line {event.homeTeam} -1.5</span>
-                              <span className="font-semibold">2.10</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Puck Line {event.awayTeam} +1.5</span>
-                              <span className="font-semibold">1.75</span>
-                            </Button>
-                          </div>
-                        ) : params.sport === 'baseball' ? (
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Over 8.5 Runs</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Under 8.5 Runs</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Run Line {event.homeTeam} -1.5</span>
-                              <span className="font-semibold">2.20</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Run Line {event.awayTeam} +1.5</span>
-                              <span className="font-semibold">1.70</span>
-                            </Button>
-                          </div>
-                        ) : (
-                          // Default additional betting markets for other sports
-                          <div className="grid grid-cols-2 gap-3">
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Handicap {event.homeTeam} -1.5</span>
-                              <span className="font-semibold">2.20</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Handicap {event.awayTeam} +1.5</span>
-                              <span className="font-semibold">1.70</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>First to Score</span>
-                              <span className="font-semibold">1.90</span>
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              className="justify-between border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400"
-                              onClick={() => {}}
-                            >
-                              <span>Double Chance 1X</span>
-                              <span className="font-semibold">1.50</span>
-                            </Button>
-                          </div>
-                        )}
+                        {/* Import SportSpecificBets component to display all available markets */}
+                        <div className="betting-markets">
+                          <SportSpecificBets
+                            sportType={params.sport}
+                            eventId={event.id}
+                            eventName={`${event.homeTeam} vs ${event.awayTeam}`}
+                            homeTeam={event.homeTeam}
+                            awayTeam={event.awayTeam}
+                            homeOdds={event.homeOdds}
+                            drawOdds={event.drawOdds}
+                            awayOdds={event.awayOdds}
+                            isLive={event.isLive}
+                          />
+                        </div>
                       </div>
                     </CardContent>
                   </Card>

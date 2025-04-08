@@ -2208,6 +2208,168 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch object" });
     }
   });
+  
+  // DeFi Staking API Endpoints
+  app.post("/api/staking/stake", async (req: Request, res: Response) => {
+    try {
+      const { 
+        walletAddress, 
+        token, 
+        amount, 
+        period, 
+        eventId, 
+        outcomeId, 
+        marketId
+      } = req.body;
+      
+      if (!walletAddress || !token || !amount || !period || !eventId || !outcomeId) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      // In a real implementation, this would create a transaction on the SUI blockchain
+      // using the wurlus protocol for staking
+      
+      // Simulate blockchain delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Mock stake creation
+      const stake = {
+        id: Math.floor(Math.random() * 10000),
+        walletAddress,
+        token,
+        amount: parseFloat(amount),
+        period: parseInt(period),
+        apy: calculateApy(parseInt(period), token, outcomeId),
+        startDate: new Date(),
+        endDate: new Date(Date.now() + parseInt(period) * 24 * 60 * 60 * 1000),
+        eventId,
+        outcomeId,
+        marketId,
+        status: 'active',
+        txHash: `0x${Math.random().toString(16).substring(2, 42)}`,
+        yieldEarned: 0
+      };
+      
+      res.status(201).json({ 
+        success: true, 
+        stake,
+        message: `Successfully staked ${amount} ${token} for ${period} days` 
+      });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.post("/api/staking/unstake", async (req: Request, res: Response) => {
+    try {
+      const { stakeId, walletAddress } = req.body;
+      
+      if (!stakeId || !walletAddress) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+      
+      // In a real implementation, this would create a transaction on the SUI blockchain
+      // to unstake tokens and claim any yield
+      
+      // Simulate blockchain delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Mock unstake response
+      const unstakeResponse = {
+        success: true,
+        stakeId,
+        walletAddress,
+        returnedAmount: Math.random() * 100 + 100,
+        yieldEarned: Math.random() * 10 + 1,
+        txHash: `0x${Math.random().toString(16).substring(2, 42)}`
+      };
+      
+      res.json(unstakeResponse);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  app.get("/api/staking/active/:walletAddress", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.params;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ error: "Wallet address is required" });
+      }
+      
+      // In a real implementation, this would query the SUI blockchain
+      // for all active stakes by this wallet
+      
+      // Mock active stakes
+      const activeStakes = [
+        {
+          id: 1001,
+          walletAddress,
+          token: 'SUI',
+          amount: 150.5,
+          period: 30,
+          apy: 8.5,
+          startDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000),
+          status: 'active',
+          eventId: 2,
+          eventName: 'Manchester United vs Liverpool',
+          outcomeId: 'outcome-2-1-1',
+          outcomeName: 'Manchester United',
+          marketId: 'market-2-1',
+          marketName: 'Match Result',
+          txHash: `0x${Math.random().toString(16).substring(2, 42)}`,
+          yieldEarned: 1.06
+        },
+        {
+          id: 1002,
+          walletAddress,
+          token: 'SBETS',
+          amount: 500,
+          period: 60,
+          apy: 12.2,
+          startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+          endDate: new Date(Date.now() + 50 * 24 * 60 * 60 * 1000),
+          status: 'active',
+          eventId: 3,
+          eventName: 'NBA Finals Game 3',
+          outcomeId: 'outcome-3-1-1',
+          outcomeName: 'Los Angeles Lakers',
+          marketId: 'market-3-1',
+          marketName: 'Match Result',
+          txHash: `0x${Math.random().toString(16).substring(2, 42)}`,
+          yieldEarned: 10.17
+        }
+      ];
+      
+      res.json(activeStakes);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+  
+  // Helper function to calculate APY based on period, token and outcome
+  function calculateApy(period: number, token: string, outcomeId: string): number {
+    // Base APY based on staking period
+    let baseApy = 0;
+    switch (period) {
+      case 7: baseApy = 5; break;
+      case 30: baseApy = 8; break;
+      case 90: baseApy = 12; break;
+      case 180: baseApy = 15; break;
+      default: baseApy = 8;
+    }
+    
+    // Add a boost based on token type
+    const tokenBoost = token === 'SBETS' ? 2 : 0;
+    
+    // Add a small random boost based on outcome to simulate variability
+    // In reality, this would be based on the odds of the outcome
+    const outcomeBoost = Math.random() * 3 + 1;
+    
+    return +(baseApy + tokenBoost + outcomeBoost).toFixed(1);
+  }
 
   const httpServer = createServer(app);
   return httpServer;

@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -37,36 +39,20 @@ export default function DefiStaking() {
   const [selectedTab, setSelectedTab] = useState<string>('stake');
   const [selectedOutcome, setSelectedOutcome] = useState<string>('');
   const [selectedEvent, setSelectedEvent] = useState<string>('');
-
-  // Mock data for demonstration
-  const activeStakes = [
-    {
-      id: 1,
-      token: 'SUI',
-      amount: 150,
-      apy: 8.5,
-      period: 30,
-      startDate: new Date(2025, 3, 1),
-      endDate: new Date(2025, 4, 1),
-      status: 'active',
-      event: 'Manchester United vs Liverpool',
-      outcome: 'Manchester United',
-      yieldEarned: 1.06,
+  const [isStaking, setIsStaking] = useState<boolean>(false);
+  const [isUnstaking, setIsUnstaking] = useState<boolean>(false);
+  
+  // Fetch active stakes
+  const { data: activeStakes = [], isLoading: isLoadingStakes, refetch: refetchStakes } = useQuery({
+    queryKey: ['/api/staking/active', user?.walletAddress],
+    queryFn: async () => {
+      if (!user?.walletAddress) return [];
+      
+      const response = await apiRequest('GET', `/api/staking/active/${user.walletAddress}`);
+      return response.json();
     },
-    {
-      id: 2,
-      token: 'SBETS',
-      amount: 500,
-      apy: 12.2,
-      period: 60,
-      startDate: new Date(2025, 3, 5),
-      endDate: new Date(2025, 5, 5),
-      status: 'active',
-      event: 'NBA Finals Game 3',
-      outcome: 'Los Angeles Lakers',
-      yieldEarned: 10.17,
-    }
-  ];
+    enabled: !!user?.walletAddress,
+  });
 
   // Mock events for staking
   const stakingEvents = [
@@ -130,8 +116,87 @@ export default function DefiStaking() {
     });
   };
 
+  // Setup query client for mutations
+  const queryClient = useQueryClient();
+  
+  // Setup staking mutation
+  const stakeMutation = useMutation({
+    mutationFn: async (stakeData: {
+      walletAddress: string;
+      token: string;
+      amount: string;
+      period: string;
+      eventId: string;
+      outcomeId: string;
+      marketId?: string;
+    }) => {
+      const response = await apiRequest('POST', '/api/staking/stake', stakeData);
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalidate stakes cache to trigger a refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/staking/active', user?.walletAddress] });
+      
+      // Reset form
+      setStakingAmount('');
+      setSelectedOutcome('');
+      setSelectedEvent('');
+      setIsStaking(false);
+      
+      toast({
+        title: "Staking successful!",
+        description: `You have staked ${stakingAmount} ${stakingToken} for ${stakingPeriod} days`,
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      setIsStaking(false);
+      toast({
+        title: "Staking failed",
+        description: error.message || "There was an error processing your stake",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Setup unstaking mutation
+  const unstakeMutation = useMutation({
+    mutationFn: async ({ stakeId, walletAddress }: { stakeId: number; walletAddress: string }) => {
+      const response = await apiRequest('POST', '/api/staking/unstake', { stakeId, walletAddress });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      // Invalidate stakes cache to trigger a refresh
+      queryClient.invalidateQueries({ queryKey: ['/api/staking/active', user?.walletAddress] });
+      
+      setIsUnstaking(false);
+      toast({
+        title: "Unstaking successful!",
+        description: `Your ${data.returnedAmount.toFixed(2)} tokens and ${data.yieldEarned.toFixed(2)} yield have been returned to your wallet`,
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      setIsUnstaking(false);
+      toast({
+        title: "Unstaking failed",
+        description: error.message || "There was an error processing your unstake request",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handle staking submission
   const handleStake = () => {
+    if (!user?.walletAddress) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet before staking",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     if (!stakingAmount || Number(stakingAmount) <= 0) {
       toast({
         title: "Invalid amount",
@@ -149,26 +214,53 @@ export default function DefiStaking() {
       });
       return;
     }
-
-    // Simulate successful staking
-    toast({
-      title: "Staking successful!",
-      description: `You have staked ${stakingAmount} ${stakingToken} for ${stakingPeriod} days on the ${selectedOutcome} outcome`,
-      variant: "default",
+    
+    const selectedEventObj = stakingEvents.find(e => e.id.toString() === selectedEvent);
+    const selectedOutcomeObj = selectedEventObj?.outcomes.find(o => o.id.toString() === selectedOutcome);
+    
+    if (!selectedEventObj || !selectedOutcomeObj) {
+      toast({
+        title: "Invalid selection",
+        description: "The selected event or outcome is invalid",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Create market ID from event and outcome IDs
+    const marketId = `market-${selectedEvent}-1`;
+    
+    setIsStaking(true);
+    
+    // Call the stake mutation
+    stakeMutation.mutate({
+      walletAddress: user.walletAddress,
+      token: stakingToken,
+      amount: stakingAmount,
+      period: stakingPeriod,
+      eventId: selectedEvent,
+      outcomeId: selectedOutcome,
+      marketId
     });
-
-    // Reset form
-    setStakingAmount('');
-    setSelectedOutcome('');
-    setSelectedEvent('');
   };
 
   // Handle unstaking
   const handleUnstake = (stakeId: number) => {
-    toast({
-      title: "Unstaking initiated",
-      description: "Your funds will be returned to your wallet shortly",
-      variant: "default",
+    if (!user?.walletAddress) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet before unstaking",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    setIsUnstaking(true);
+    
+    // Call the unstake mutation
+    unstakeMutation.mutate({
+      stakeId,
+      walletAddress: user.walletAddress
     });
   };
 
@@ -299,9 +391,14 @@ export default function DefiStaking() {
                     <Button 
                       className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 hover:from-cyan-500 hover:to-blue-600 text-black font-bold"
                       onClick={handleStake}
-                      disabled={!stakingAmount || Number(stakingAmount) <= 0 || !selectedEvent || !selectedOutcome}
+                      disabled={!stakingAmount || Number(stakingAmount) <= 0 || !selectedEvent || !selectedOutcome || isStaking}
                     >
-                      Stake Tokens
+                      {isStaking ? (
+                        <>
+                          <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-black border-t-transparent"></div>
+                          Processing...
+                        </>
+                      ) : "Stake Tokens"}
                     </Button>
                   </CardFooter>
                 </Card>
@@ -474,9 +571,16 @@ export default function DefiStaking() {
           </TabsContent>
           
           <TabsContent value="mystakes" className="mt-6">
-            {activeStakes.length > 0 ? (
+            {isLoadingStakes ? (
+              <div className="flex justify-center items-center h-48">
+                <div className="flex flex-col items-center">
+                  <div className="h-12 w-12 animate-spin rounded-full border-4 border-cyan-400 border-t-transparent mb-4"></div>
+                  <p className="text-gray-300">Loading your active stakes...</p>
+                </div>
+              </div>
+            ) : activeStakes.length > 0 ? (
               <div className="space-y-4">
-                {activeStakes.map(stake => (
+                {activeStakes.map((stake: any) => (
                   <Card key={stake.id} className="bg-[#0b1618] border-[#1e3a3f] shadow-lg shadow-cyan-900/20">
                     <CardHeader className="pb-3">
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
@@ -485,7 +589,7 @@ export default function DefiStaking() {
                             {stake.amount} {stake.token} Stake
                           </CardTitle>
                           <CardDescription className="text-gray-300">
-                            {stake.event} - {stake.outcome}
+                            {stake.eventName} - {stake.outcomeName}
                           </CardDescription>
                         </div>
                         <div className="flex items-center gap-2">
@@ -538,8 +642,14 @@ export default function DefiStaking() {
                         variant="outline"
                         className="border-[#1e3a3f] bg-[#14292e] text-cyan-400 hover:bg-cyan-400/10"
                         onClick={() => handleUnstake(stake.id)}
+                        disabled={isUnstaking}
                       >
-                        Unstake
+                        {isUnstaking ? (
+                          <>
+                            <div className="mr-2 h-3 w-3 animate-spin rounded-full border-2 border-cyan-400 border-t-transparent"></div>
+                            Processing...
+                          </>
+                        ) : "Unstake"}
                       </Button>
                     </CardFooter>
                   </Card>

@@ -58,7 +58,7 @@ export default function Sidebar() {
       setActiveSport(sportSlug);
       console.log('Sport slug detected in URL:', sportSlug);
     }
-  }, []);
+  }, [window.location.pathname]); // Update when the pathname changes
 
   const getSportIcon = (iconType: string) => {
     switch (iconType) {

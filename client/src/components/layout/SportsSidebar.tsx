@@ -90,20 +90,20 @@ export default function SportsSidebar() {
   
   return (
     <div className="p-4">
-      <div className="mb-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Navigation</h2>
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-cyan-400 mb-4 border-b border-[#1e3a3f] pb-2">Navigation</h2>
         <div className="space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            className="w-full justify-start text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors"
             onClick={() => setLocation('/home-real')}
           >
-            <Home className="mr-2 h-5 w-5" />
+            <Home className="mr-2 h-5 w-5 text-cyan-400" />
             Home
           </Button>
           <Button
             variant="ghost" 
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            className="w-full justify-start text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors"
             onClick={() => setLocation('/live-real')}
           >
             <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></div>
@@ -112,43 +112,45 @@ export default function SportsSidebar() {
         </div>
       </div>
       
-      <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Sports</h2>
-        <div className="space-y-1">
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold text-cyan-400 mb-4 border-b border-[#1e3a3f] pb-2">Sports</h2>
+        <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
           {sports.map((sport: any) => (
             <Button
               key={sport.id}
               variant="ghost"
-              className="w-full justify-between text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+              className="w-full justify-between text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors"
               onClick={() => setLocation(`/sports-live/${sport.slug}`)}
             >
               <div className="flex items-center">
-                {getSportIcon(sport.id)}
+                <div className="text-cyan-400">
+                  {getSportIcon(sport.id)}
+                </div>
                 <span className="ml-2">{sport.name}</span>
               </div>
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-4 w-4 text-cyan-400" />
             </Button>
           ))}
         </div>
       </div>
       
       <div className="mt-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Bet Types</h2>
+        <h2 className="text-lg font-semibold text-cyan-400 mb-4 border-b border-[#1e3a3f] pb-2">Bet Types</h2>
         <div className="space-y-2">
           <Button
             variant="ghost"
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            className="w-full justify-start text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors"
             onClick={() => setLocation('/parlay')}
           >
-            <Trophy className="mr-2 h-5 w-5" />
+            <Trophy className="mr-2 h-5 w-5 text-cyan-400" />
             Parlay Bets
           </Button>
           <Button
             variant="ghost"
-            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            className="w-full justify-start text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors"
             onClick={() => setLocation('/cashout')}
           >
-            <Grid className="mr-2 h-5 w-5" />
+            <Grid className="mr-2 h-5 w-5 text-cyan-400" />
             Cash Out
           </Button>
         </div>

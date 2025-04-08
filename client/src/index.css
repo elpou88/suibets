@@ -99,6 +99,31 @@
     scrollbar-width: none;
   }
   
+  /* Custom cyan scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #0b1618;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e3a3f;
+    border-radius: 10px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #00ffff;
+  }
+  
+  /* Firefox scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #1e3a3f #0b1618;
+  }
+  
   .live-pulse {
     animation: pulse 1.5s infinite;
   }
@@ -113,6 +138,23 @@
     100% {
       opacity: 1;
     }
+  }
+  
+  /* Sidebar glow effect */
+  .sidebar-item-active {
+    position: relative;
+    background-color: #1e3a3f;
+  }
+  
+  .sidebar-item-active::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 3px;
+    height: 100%;
+    background-color: #00ffff;
+    box-shadow: 0 0 8px 1px rgba(0, 255, 255, 0.5);
   }
 }
 

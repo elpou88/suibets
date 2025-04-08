@@ -22,11 +22,16 @@ export default function LiveReal() {
   const { data: events = [], isLoading: eventsLoading } = useQuery({
     queryKey: ['/api/events', 'live'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/events?status=live');
-      return response.json();
+      const response = await apiRequest('GET', '/api/events?isLive=true');
+      const data = await response.json();
+      console.log("API response for live events:", data);
+      return data;
     },
     refetchInterval: 15000 // Refetch every 15 seconds
   });
+  
+  // Log event data to see the structure
+  console.log("Live events data:", events);
   
   // Group events by sport
   const eventsBySport: Record<string, any[]> = {};
@@ -56,7 +61,7 @@ export default function LiveReal() {
     addBet({
       id: betId,
       eventId: event.id,
-      eventName: event.name,
+      eventName: event.name || `${event.homeTeam} vs ${event.awayTeam}`,
       selectionName: outcome.name,
       odds: outcome.odds,
       stake: 10, // Default stake
@@ -111,7 +116,7 @@ export default function LiveReal() {
                     <CardContent className="p-0">
                       <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-cyan-600 to-cyan-400">
                         <div className="flex justify-between items-center">
-                          <h3 className="text-lg font-semibold">{event.name}</h3>
+                          <h3 className="text-lg font-semibold">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h3>
                           <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
                             LIVE
                           </div>
@@ -144,7 +149,62 @@ export default function LiveReal() {
                         )}
                       </div>
                       
-                      {/* Markets */}
+                      {/* Default Markets - when no specific markets are available */}
+                      {(!event.markets || event.markets.length === 0) && (
+                        <>
+                          <div className="px-4 py-3 border-b border-[#1e3a3f]">
+                            <h4 className="text-sm text-gray-400 mb-2">Match Result</h4>
+                            <div className="grid grid-cols-3 gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex justify-between items-center border-[#1e3a3f] hover:bg-cyan-400 hover:text-black bg-[#112225]"
+                                onClick={() => handleBetSelection(
+                                  event, 
+                                  {id: 'match-result', name: 'Match Result'}, 
+                                  {id: 'home', name: event.homeTeam, odds: event.homeOdds || 1.9}
+                                )}
+                              >
+                                <span className="truncate text-cyan-200">{event.homeTeam}</span>
+                                <span className="font-medium ml-2 text-cyan-400">
+                                  {(event.homeOdds || 1.9).toFixed(2)}
+                                </span>
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                className="flex justify-between items-center border-[#1e3a3f] hover:bg-cyan-400 hover:text-black bg-[#112225]"
+                                onClick={() => handleBetSelection(
+                                  event, 
+                                  {id: 'match-result', name: 'Match Result'}, 
+                                  {id: 'draw', name: 'Draw', odds: event.drawOdds || 3.5}
+                                )}
+                              >
+                                <span className="truncate text-cyan-200">Draw</span>
+                                <span className="font-medium ml-2 text-cyan-400">
+                                  {(event.drawOdds || 3.5).toFixed(2)}
+                                </span>
+                              </Button>
+
+                              <Button
+                                variant="outline"
+                                className="flex justify-between items-center border-[#1e3a3f] hover:bg-cyan-400 hover:text-black bg-[#112225]"
+                                onClick={() => handleBetSelection(
+                                  event, 
+                                  {id: 'match-result', name: 'Match Result'}, 
+                                  {id: 'away', name: event.awayTeam, odds: event.awayOdds || 3.8}
+                                )}
+                              >
+                                <span className="truncate text-cyan-200">{event.awayTeam}</span>
+                                <span className="font-medium ml-2 text-cyan-400">
+                                  {(event.awayOdds || 3.8).toFixed(2)}
+                                </span>
+                              </Button>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                      
+                      {/* Dynamic Markets - from API */}
                       {event.markets && event.markets.map((market: any) => (
                         <div key={market.id} className="px-4 py-3 border-b border-[#1e3a3f]">
                           <h4 className="text-sm text-gray-400 mb-2">{market.name}</h4>
@@ -161,7 +221,7 @@ export default function LiveReal() {
                                 disabled={outcome.status !== 'active'}
                                 onClick={() => handleBetSelection(event, market, outcome)}
                               >
-                                <span className="truncate">{outcome.name}</span>
+                                <span className="truncate text-cyan-200">{outcome.name}</span>
                                 <span className={`font-medium ml-2 ${
                                   outcome.status === 'active' 
                                     ? 'text-cyan-400' 

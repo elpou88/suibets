@@ -41,10 +41,10 @@ export default function NewLive() {
     map.name = 'navMap';
     container.appendChild(map);
     
-    // Add the Sports navigation area - precise coordinates from design
+    // Add the Sports navigation area - exact coordinates from 12 hours ago
     const sportsNav = document.createElement('area');
     sportsNav.shape = 'rect';
-    sportsNav.coords = '445,22,475,32'; // Updated for better precision
+    sportsNav.coords = '440,20,470,45'; // Exactly as it was 12 hours ago - wider click area
     sportsNav.alt = 'Sports';
     sportsNav.href = '#';
     sportsNav.addEventListener('click', (e) => {
@@ -57,7 +57,7 @@ export default function NewLive() {
     // Add the Live navigation area - this is the current page
     const liveNav = document.createElement('area');
     liveNav.shape = 'rect';
-    liveNav.coords = '495,22,525,32'; // Updated for better precision
+    liveNav.coords = '510,20,540,45'; // Exactly as it was 12 hours ago - wider click area
     liveNav.alt = 'Live';
     liveNav.href = '#';
     liveNav.addEventListener('click', (e) => {
@@ -69,7 +69,7 @@ export default function NewLive() {
     // Add the Promotions navigation area
     const promotionsNav = document.createElement('area');
     promotionsNav.shape = 'rect';
-    promotionsNav.coords = '550,22,610,32'; // Updated for better precision
+    promotionsNav.coords = '560,20,620,45'; // Exactly as it was 12 hours ago - wider click area
     promotionsNav.alt = 'Promotions';
     promotionsNav.href = '#';
     promotionsNav.addEventListener('click', (e) => {

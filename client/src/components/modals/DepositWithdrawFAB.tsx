@@ -31,7 +31,7 @@ export function DepositWithdrawFAB() {
         {/* Deposit button */}
         <Button 
           onClick={() => handleActionClick('deposit')}
-          className="rounded-full h-14 w-14 bg-green-500 hover:bg-green-600 shadow-lg p-0"
+          className="rounded-full h-14 w-14 bg-[#00ffff] hover:bg-[#00d8d8] text-black shadow-lg p-0"
         >
           <Plus className="h-6 w-6" />
           <span className="sr-only">Deposit</span>

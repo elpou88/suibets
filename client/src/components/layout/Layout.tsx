@@ -77,7 +77,7 @@ const Layout: React.FC<LayoutProps> = ({
             <Button 
               variant="default" 
               size="sm"
-              className="bg-green-600 hover:bg-green-700 text-white text-xs"
+              className="bg-[#00ffff] hover:bg-[#00d8d8] text-black text-xs"
               onClick={() => setLocation('/connect-wallet')}
             >
               <Wallet className="mr-2 h-3 w-3" />

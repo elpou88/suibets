@@ -73,9 +73,9 @@ export const BetslipActions: React.FC<BetslipActionsProps> = ({
             variant="outline" 
             size="icon"
             onClick={() => setIsDepositOpen(true)}
-            className="flex-1"
+            className="flex-1 hover:text-cyan-400 hover:border-cyan-400"
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 mr-1 text-cyan-400" />
             Deposit
           </Button>
           
@@ -91,7 +91,7 @@ export const BetslipActions: React.FC<BetslipActionsProps> = ({
         </div>
         
         <Button
-          className="w-full"
+          className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium"
           disabled={isPlacingBet || selectedBets.length === 0 || !isAuthenticated || !hasEnoughBalance}
           onClick={handlePlaceBet}
         >
@@ -135,7 +135,7 @@ export const BetslipActions: React.FC<BetslipActionsProps> = ({
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Potential Winnings:</span>
-          <span className="font-medium text-green-600">{formatCurrency(potentialWinnings)}</span>
+          <span className="font-medium text-cyan-400">{formatCurrency(potentialWinnings)}</span>
         </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Balance ({betCurrency}):</span>
@@ -159,9 +159,9 @@ export const BetslipActions: React.FC<BetslipActionsProps> = ({
           variant="outline" 
           size="sm"
           onClick={() => setIsDepositOpen(true)}
-          className="flex-1"
+          className="flex-1 hover:text-cyan-400 hover:border-cyan-400"
         >
-          <Plus className="h-4 w-4 mr-1" />
+          <Plus className="h-4 w-4 mr-1 text-cyan-400" />
           Deposit
         </Button>
         
@@ -177,7 +177,7 @@ export const BetslipActions: React.FC<BetslipActionsProps> = ({
       </div>
       
       <Button
-        className="w-full"
+        className="w-full bg-cyan-400 hover:bg-cyan-500 text-black font-medium"
         disabled={isPlacingBet || selectedBets.length === 0 || !isAuthenticated || !hasEnoughBalance}
         onClick={handlePlaceBet}
       >

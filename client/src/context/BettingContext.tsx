@@ -28,12 +28,15 @@ export const BettingProvider = ({ children }: { children: ReactNode }) => {
 
   // Add a bet to the selection
   const addBet = (bet: SelectedBet) => {
+    console.log("BettingContext: Adding bet to slip", bet);
+    
     // Check if we already have a bet for this selection, match by bet id
     const existingBetIndex = selectedBets.findIndex(
       (existing) => existing.id === bet.id
     );
 
     if (existingBetIndex >= 0) {
+      console.log("BettingContext: Updating existing bet", existingBetIndex);
       // Replace the existing bet
       const updatedBets = [...selectedBets];
       updatedBets[existingBetIndex] = bet;
@@ -44,14 +47,22 @@ export const BettingProvider = ({ children }: { children: ReactNode }) => {
         description: `${bet.selectionName} odds updated to ${bet.odds}`,
       });
     } else {
+      console.log("BettingContext: Adding new bet to slip", selectedBets.length);
       // Add a new bet
-      setSelectedBets([...selectedBets, bet]);
+      const newBets = [...selectedBets, bet];
+      setSelectedBets(newBets);
+      console.log("BettingContext: New bets array", newBets);
       
       toast({
         title: "Bet added",
         description: `${bet.selectionName} added to bet slip`,
       });
     }
+    
+    // Force the UI to update by using a setTimeout
+    setTimeout(() => {
+      console.log("BettingContext: Current bets in slip after update", selectedBets);
+    }, 100);
   };
 
   // Remove a bet from the selection

@@ -26,6 +26,11 @@ export function BetSlip() {
   const [isStakeInputFocused, setIsStakeInputFocused] = useState(false);
   const stakeInputRef = useRef<HTMLInputElement>(null);
   
+  // Log when bets are updated
+  useEffect(() => {
+    console.log("BetSlip: selectedBets updated", selectedBets);
+  }, [selectedBets]);
+  
   // Toggle bet details
   const toggleDetails = (id: string) => {
     setShowDetails(prev => ({

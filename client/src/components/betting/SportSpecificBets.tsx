@@ -42,18 +42,35 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     // Create unique ID for this bet selection (without Date.now() to prevent ID changes on re-render)
     const betId = `${eventId}-${marketName}-${selectionName}`;
     
-    addBet({
+    // Log the bet details to debug
+    console.log("ADDING BET:", {
       id: betId,
       eventId,
       eventName,
       selectionName,
       odds,
-      stake: 10, // Default stake amount
       market: marketName,
-      marketId: marketId ? String(marketId) : undefined,
-      outcomeId: outcomeId || undefined,
-      isLive, // Pass the isLive flag
+      isLive
     });
+    
+    // Add the bet with a slight delay to avoid race conditions
+    setTimeout(() => {
+      addBet({
+        id: betId,
+        eventId,
+        eventName,
+        selectionName,
+        odds,
+        stake: 10, // Default stake amount
+        market: marketName,
+        marketId: marketId ? String(marketId) : undefined,
+        outcomeId: outcomeId || undefined,
+        isLive, // Pass the isLive flag
+      });
+      
+      // Log after adding to confirm it was processed
+      console.log("BET ADDED TO SLIP!");
+    }, 10);
   };
   
   // Generate a random odds value within a reasonable range

@@ -50,7 +50,7 @@ export default function NewPromotions() {
     sportsNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Sports clicked');
-      window.location.href = "/goto-sports";
+      window.location.href = "/sports";
     });
     map.appendChild(sportsNav);
     
@@ -63,7 +63,7 @@ export default function NewPromotions() {
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Live clicked');
-      window.location.href = "/goto-live";
+      window.location.href = "/live";
     });
     map.appendChild(liveNav);
     

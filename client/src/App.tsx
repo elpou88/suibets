@@ -46,7 +46,7 @@ function App() {
           <BettingProvider>
             <div className="root-container">
               <Switch>
-                <Route path="/" component={Home} />
+                <Route path="/" component={NewSports} />
                 <Route path="/sports" component={NewSports} />
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />
@@ -60,8 +60,8 @@ function App() {
                 <Route path="/connect-wallet" component={ConnectWallet} />
                 <Route path="/join" component={Home} />
                 <Route path="/goto-sports" component={NewSports} />
-                <Route path="/goto-promotions" component={RedirectToPromotions} />
-                <Route path="/goto-live" component={RedirectToLive} />
+                <Route path="/goto-promotions" component={NewPromotions} />
+                <Route path="/goto-live" component={NewLive} />
                 <Route path="/info" component={Info} />
                 <Route path="/community" component={Community} />
                 <Route path="/contact" component={Contact} />

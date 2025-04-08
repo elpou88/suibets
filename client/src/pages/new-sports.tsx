@@ -63,7 +63,7 @@ export default function NewSports() {
     liveNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Live clicked');
-      window.location.href = "/goto-live";
+      window.location.href = "/live";
     });
     map.appendChild(liveNav);
     
@@ -76,7 +76,7 @@ export default function NewSports() {
     promotionsNav.addEventListener('click', (e) => {
       e.preventDefault();
       console.log('Promotions clicked');
-      window.location.href = "/goto-promotions";
+      window.location.href = "/promotions";
     });
     map.appendChild(promotionsNav);
     

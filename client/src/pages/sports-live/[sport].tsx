@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRoute } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, CalendarIcon, RefreshCw, Loader2 } from 'lucide-react';
+import { Clock, CalendarIcon, RefreshCw, Loader2, Trophy, Flame } from 'lucide-react';
 import SportSpecificBets from '@/components/betting/SportSpecificBets';
 
 const SPORTS_MAPPING: Record<string, number> = {
@@ -124,21 +124,52 @@ export default function SportPage() {
     );
   }
   
+  // Sport-specific background gradient
+  const getSportGradient = () => {
+    switch (params.sport) {
+      case 'football':
+      case 'soccer':
+        return 'bg-gradient-to-b from-[#112225] to-[#0e1d20]';
+      case 'basketball':
+        return 'bg-gradient-to-b from-[#112225] to-[#111f24]';
+      case 'tennis':
+        return 'bg-gradient-to-b from-[#112225] to-[#12222c]';
+      case 'baseball':
+        return 'bg-gradient-to-b from-[#112225] to-[#142226]';
+      case 'hockey':
+        return 'bg-gradient-to-b from-[#112225] to-[#102028]';
+      case 'formula-1':
+        return 'bg-gradient-to-b from-[#112225] to-[#171f23]';
+      case 'esports':
+        return 'bg-gradient-to-b from-[#112225] to-[#12202a]';
+      default:
+        return 'bg-gradient-to-b from-[#112225] to-[#0f1e21]';
+    }
+  };
+
   return (
-    <div className="bg-[#112225] text-white min-h-screen">
+    <div className={`${getSportGradient()} text-white min-h-screen`}>
       <div className="container py-6">
-        <div className="flex justify-between items-center mb-6">
-          <div>
-            <h1 className="text-3xl font-bold text-cyan-400">{sportName}</h1>
-            <p className="text-muted-foreground">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div className="mb-4 md:mb-0">
+            <div className="flex items-center">
+              {selectedTab === 'live' ? (
+                <Flame className="h-8 w-8 mr-3 text-cyan-400" />
+              ) : (
+                <Trophy className="h-8 w-8 mr-3 text-cyan-400" />
+              )}
+              <h1 className="text-3xl font-bold text-cyan-400">{sportName}</h1>
+            </div>
+            <p className="text-muted-foreground mt-1 ml-1">
               {selectedTab === 'live' ? 'Live matches happening now' : 'Upcoming scheduled matches'}
             </p>
+            <div className="h-1 w-24 bg-cyan-400 mt-2 rounded-full"></div>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            className="flex items-center border-cyan-400 text-cyan-400 hover:bg-cyan-400/10"
+            className="flex items-center border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 shadow-lg shadow-cyan-900/20"
             disabled={isLoading}
           >
             {isLoading ? (
@@ -156,9 +187,21 @@ export default function SportPage() {
           onValueChange={(value) => setSelectedTab(value as 'live' | 'upcoming')}
           className="mb-6"
         >
-          <TabsList className="grid w-[400px] grid-cols-2 bg-[#0b1618] border-[#1e3a3f]">
-            <TabsTrigger value="live" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">Live Matches</TabsTrigger>
-            <TabsTrigger value="upcoming" className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black">Upcoming</TabsTrigger>
+          <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 bg-[#0b1618] border-[#1e3a3f] shadow-lg shadow-cyan-900/10">
+            <TabsTrigger 
+              value="live" 
+              className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              <Flame className="h-4 w-4 mr-2" />
+              Live Matches
+            </TabsTrigger>
+            <TabsTrigger 
+              value="upcoming" 
+              className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:font-bold"
+            >
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Upcoming
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value={selectedTab} className="mt-6">
@@ -192,21 +235,27 @@ export default function SportPage() {
             ) : (
               <div className="grid grid-cols-1 gap-4">
                 {events.map((event: any) => (
-                  <Card key={event.id} className="overflow-hidden border border-[#1e3a3f]">
-                    <CardHeader className="pb-2 bg-[#0b1618]">
+                  <Card key={event.id} className="overflow-hidden border border-[#1e3a3f] shadow-xl shadow-cyan-900/10 bg-gradient-to-b from-[#112225] to-[#14292e]">
+                    <CardHeader className="pb-3 bg-gradient-to-r from-[#0b1618] to-[#0f1d20] relative border-b border-[#1e3a3f]">
+                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
                       <div className="flex justify-between items-center">
                         <div>
                           <CardTitle className="text-lg flex items-center">
-                            {event.leagueName || 'League'}
+                            <span className="text-cyan-300">{event.leagueName || 'League'}</span>
                             {selectedTab === 'live' && (
-                              <Badge className="ml-2 bg-red-600 animated-pulse">LIVE</Badge>
+                              <Badge className="ml-2 bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
+                                <span className="flex items-center">
+                                  <Flame className="h-3 w-3 mr-1" />
+                                  LIVE
+                                </span>
+                              </Badge>
                             )}
                           </CardTitle>
-                          <CardDescription className="flex items-center text-sm">
+                          <CardDescription className="flex items-center text-sm mt-1">
                             {selectedTab === 'live' ? (
-                              <Clock className="h-3 w-3 mr-1" />
+                              <Clock className="h-3 w-3 mr-1 text-cyan-400" />
                             ) : (
-                              <CalendarIcon className="h-3 w-3 mr-1" />
+                              <CalendarIcon className="h-3 w-3 mr-1 text-cyan-400" />
                             )}
                             <span>
                               {selectedTab === 'live' 
@@ -217,8 +266,8 @@ export default function SportPage() {
                         </div>
                         {event.score && (
                           <div className="text-right">
-                            <div className="text-sm font-medium">Score</div>
-                            <div className="text-xl font-bold">{event.score}</div>
+                            <div className="text-sm font-medium text-cyan-400">Score</div>
+                            <div className="text-xl font-bold bg-[#0b1618] py-1 px-3 rounded-lg border border-[#1e3a3f]">{event.score}</div>
                           </div>
                         )}
                       </div>
@@ -227,13 +276,13 @@ export default function SportPage() {
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         {/* Home Team */}
                         <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2">
-                            <div className="font-bold">{event.homeTeam}</div>
+                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
+                            <div className="font-bold text-cyan-300">{event.homeTeam}</div>
                             <div className="text-sm text-muted-foreground">Home</div>
                           </div>
                           <Button 
-                            variant="outline" 
-                            className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
+                            variant="outline"
+                            className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
                             data-event-id={event.id}
                             data-outcome="home"
                             data-odd={event.homeOdds}
@@ -246,14 +295,14 @@ export default function SportPage() {
                         
                         {/* Draw (if applicable) */}
                         <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2">
-                            <div className="font-bold">Draw</div>
+                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
+                            <div className="font-bold text-gray-300">Draw</div>
                             <div className="text-sm text-muted-foreground">Tie</div>
                           </div>
                           {event.drawOdds !== null ? (
                             <Button 
                               variant="outline" 
-                              className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
+                              className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
                               data-event-id={event.id}
                               data-outcome="draw"
                               data-odd={event.drawOdds}
@@ -263,7 +312,11 @@ export default function SportPage() {
                               {formatOdds(event.drawOdds)}
                             </Button>
                           ) : (
-                            <Button variant="outline" className="w-full mt-2 opacity-50" disabled>
+                            <Button 
+                              variant="outline" 
+                              className="w-full mt-2 opacity-50 bg-[#0b1618] border-[#1e3a3f]"
+                              disabled
+                            >
                               N/A
                             </Button>
                           )}
@@ -271,13 +324,13 @@ export default function SportPage() {
                         
                         {/* Away Team */}
                         <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2">
-                            <div className="font-bold">{event.awayTeam}</div>
+                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
+                            <div className="font-bold text-cyan-300">{event.awayTeam}</div>
                             <div className="text-sm text-muted-foreground">Away</div>
                           </div>
                           <Button 
                             variant="outline" 
-                            className="w-full mt-2 border-[#1e3a3f] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400"
+                            className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
                             data-event-id={event.id}
                             data-outcome="away"
                             data-odd={event.awayOdds}
@@ -290,13 +343,21 @@ export default function SportPage() {
                       </div>
                       
                       {/* Additional betting markets based on sport type */}
-                      <div className="mt-6 border-t border-[#1e3a3f] pt-4">
-                        <div className="mb-3">
-                          <h3 className="text-md font-bold text-cyan-400">All Betting Markets</h3>
+                      <div className="mt-8 border-t border-[#1e3a3f] pt-6">
+                        <div className="mb-4 flex items-center">
+                          <div className="h-8 w-1 bg-cyan-400 rounded-full mr-3"></div>
+                          <h3 className="text-xl font-bold text-cyan-400">All Betting Markets</h3>
+                          <div className="ml-auto">
+                            <Badge 
+                              className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold hover:from-cyan-500 hover:to-blue-600"
+                            >
+                              {params.sport.toUpperCase()} BETS
+                            </Badge>
+                          </div>
                         </div>
                         
                         {/* Import SportSpecificBets component to display all available markets */}
-                        <div className="betting-markets">
+                        <div className="betting-markets bg-[#0b1618]/50 p-4 rounded-lg border border-[#1e3a3f] shadow-lg shadow-cyan-900/10">
                           <SportSpecificBets
                             sportType={params.sport}
                             eventId={event.id}

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, CalendarIcon, RefreshCw, Loader2, Trophy, Flame } from 'lucide-react';
+import { Clock, CalendarIcon, RefreshCw, Loader2 } from 'lucide-react';
 import SportSpecificBets from '@/components/betting/SportSpecificBets';
 
 const SPORTS_MAPPING: Record<string, number> = {
@@ -153,11 +153,6 @@ export default function SportPage() {
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
           <div className="mb-4 md:mb-0">
             <div className="flex items-center">
-              {selectedTab === 'live' ? (
-                <Flame className="h-8 w-8 mr-3 text-cyan-400" />
-              ) : (
-                <Trophy className="h-8 w-8 mr-3 text-cyan-400" />
-              )}
               <h1 className="text-3xl font-bold text-cyan-400">{sportName}</h1>
             </div>
             <p className="text-muted-foreground mt-1 ml-1">

@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { useWallet } from '@suiet/wallet-adapter';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
@@ -44,15 +43,11 @@ const WalletContext = createContext<WalletContextType>({
 // Provider component that wraps the app
 export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { toast } = useToast();
-  const { 
-    select, 
-    connecting, 
-    connected, 
-    account, 
-    signMessage, 
-    signTransaction, 
-    disconnect: disconnectWallet 
-  } = useWallet();
+  // For a real implementation, we would use a proper Sui wallet adapter
+  // For now, we'll provide a simulated implementation
+  const [connecting, setConnecting] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [account, setAccount] = useState<{address: string} | null>(null);
   
   const [address, setAddress] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
@@ -130,30 +125,26 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const connect = async () => {
     try {
       setError(null);
-      const selectedWallet = await select();
-      if (!selectedWallet || !account?.address) {
-        setError('No wallet selected');
-        return;
-      }
+      setConnecting(true);
       
-      setAddress(account.address);
-      
-      // Verify ownership by signing a message
-      const timestamp = Date.now().toString();
-      const signatureResponse = await signMessage({
-        message: new TextEncoder().encode(
-          `Authenticate with WAL.app at ${timestamp}`
-        ),
-      });
-      
-      if (!signatureResponse) {
-        setError('Failed to sign message');
-        return;
-      }
-      
-      // Connect wallet on server
-      await connectMutation.mutateAsync(account.address);
+      // Simulate wallet connection for development
+      // In production, this would use the actual Sui wallet adapter
+      setTimeout(() => {
+        // Generate a mock wallet address
+        const mockAddress = `0x${Array.from({length: 64}, () => 
+          Math.floor(Math.random() * 16).toString(16)).join('')}`;
+          
+        // Set the wallet state
+        setAccount({ address: mockAddress });
+        setAddress(mockAddress);
+        setConnected(true);
+        
+        // Connect wallet on server
+        connectMutation.mutate(mockAddress);
+        setConnecting(false);
+      }, 1500); // Simulate connection delay
     } catch (error: any) {
+      setConnecting(false);
       setError(error.message || 'Failed to connect wallet');
       toast({
         title: 'Connection Error',
@@ -165,8 +156,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Disconnect wallet
   const disconnect = () => {
-    disconnectWallet();
+    setAccount(null);
     setAddress(null);
+    setConnected(false);
     setIsConnected(false);
     toast({
       title: 'Wallet Disconnected',

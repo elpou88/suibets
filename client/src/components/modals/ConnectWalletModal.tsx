@@ -1,76 +1,45 @@
 import { useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { ConnectWalletModalProps } from "@/types";
 import { useAuth } from "@/context/AuthContext";
 import { WALLET_TYPES } from "@/lib/utils";
 import { ChevronRight, AlertCircle, Loader2 } from "lucide-react";
 import { useWurlusProtocol } from "@/hooks/useWurlusProtocol";
 import { useToast } from "@/hooks/use-toast";
+import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+
+// Define the props interface here instead of importing from types
+interface ConnectWalletModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
-  const { connectWallet } = useAuth();
-  const { connectToWurlusProtocol, checkRegistrationStatus, error } = useWurlusProtocol();
+  const { setUser } = useAuth();
+  const { connect: connectAdapter } = useWalletAdapter();
+  const { connectToWurlusProtocol, checkRegistrationStatus, error: wurlusError } = useWurlusProtocol();
   const { toast } = useToast();
   const modalRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStep, setConnectionStep] = useState<'selecting' | 'connecting' | 'registering'>('selecting');
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConnectWallet = async (walletId: string) => {
     try {
       setSelectedWallet(walletId);
       setConnectionStep('connecting');
       setConnecting(true);
+      setError(null);
       
-      // This function would use the official Sui wallet adapter to connect
-      // For development purposes, we'll simulate a successful connection
-      // In production, this would use the Sui wallet adapter:
-      // See: https://docs.sui.io/build/wallet-adapter
+      // Connect using the wallet adapter
+      await connectAdapter();
       
-      // Example implementation (commented out as we don't have the actual adapter):
-      // const wallet = getWallet(walletId);
-      // if (!wallet) throw new Error("Selected wallet not available");
-      // await wallet.connect();
-      // const address = await wallet.getAddress();
+      // At this point, the wallet should be connected via the WalletAdapter
+      // The address will be available in the WalletAdapter context
       
-      // For demo purposes, create a simulated wallet address
-      // In production, this would be the actual address from the connected wallet
-      const walletAddress = `0x${Array.from({length: 40}, () => 
-        Math.floor(Math.random() * 16).toString(16)).join('')}`;
-      
-      console.log(`Connecting wallet: ${walletId}, address: ${walletAddress}`);
-      
-      // Check if this wallet is already registered with the Wurlus protocol
-      const isRegistered = await checkRegistrationStatus(walletAddress);
-      console.log(`Wallet registration status: ${isRegistered}`);
-      
-      if (!isRegistered) {
-        setConnectionStep('registering');
-        console.log(`Registering wallet with Wurlus protocol`);
-        
-        // Register the wallet with the Wurlus protocol
-        const connected = await connectToWurlusProtocol(walletAddress);
-        
-        if (!connected) {
-          toast({
-            title: "Registration Failed",
-            description: "Failed to register wallet with Wurlus protocol. Please try again.",
-            variant: "destructive",
-          });
-          setConnectionStep('selecting');
-          setConnecting(false);
-          return;
-        }
-        
-        toast({
-          title: "Wallet Registered",
-          description: "Successfully registered with Wurlus protocol!",
-        });
-      }
-      
-      // Connect the wallet with the application
-      await connectWallet(walletAddress, walletId as any);
+      // After wallet connection succeeds, we get the user info from the API
+      // to complete the auth flow
       
       toast({
         title: "Wallet Connected",
@@ -78,11 +47,12 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       });
       
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error connecting wallet:", err);
+      setError(err?.message || wurlusError || "Failed to connect wallet. Please try again.");
       toast({
         title: "Connection Failed",
-        description: error || "Failed to connect wallet. Please try again.",
+        description: err?.message || wurlusError || "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
     } finally {

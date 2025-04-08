@@ -28,6 +28,8 @@ import Contact from "@/pages/contact";
 import LiveEventPage from "@/pages/live/[id]";
 import Live from "@/pages/live";
 import LiveExact from "@/pages/live-exact";
+import SportsExact from "@/pages/sports-exact";
+import GotoSports from "@/pages/goto-sports";
 
 function App() {
   console.log("Starting React application");
@@ -41,6 +43,7 @@ function App() {
               <Switch>
                 <Route path="/" component={Home} />
                 <Route path="/sports" component={Home} />
+                <Route path="/sports-exact" component={SportsExact} />
                 <Route path="/sport/:slug*" component={Sport} />
                 <Route path="/match/:id" component={Match} />
                 <Route path="/match-detail/:id" component={MatchDetail} />
@@ -53,7 +56,7 @@ function App() {
                 <Route path="/bet-slip-2" component={BetSlip2} />
                 <Route path="/connect-wallet" component={ConnectWallet} />
                 <Route path="/join" component={Home} />
-                <Route path="/goto-sports" component={Home} />
+                <Route path="/goto-sports" component={GotoSports} />
                 <Route path="/goto-promotions" component={RedirectToPromotions} />
                 <Route path="/goto-live" component={RedirectToLive} />
                 <Route path="/info" component={Info} />

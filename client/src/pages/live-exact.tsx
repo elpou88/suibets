@@ -198,6 +198,10 @@ export default function LiveExact() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
+    // Add underline to the current active page (Live)
+    liveButton.style.borderBottom = '2px solid #3b82f6'; // Blue underline for active page
+    liveButton.style.paddingBottom = '5px';
+    
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');
     console.log('Sports link position: 440px, Live link position: 510px, Promotions link position: 560px');

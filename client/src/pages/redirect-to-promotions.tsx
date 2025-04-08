@@ -8,7 +8,7 @@ export default function RedirectToPromotions() {
     console.log("Redirecting to promotions page");
     // Redirect to the promotions page with a slight delay to ensure navigation works
     setTimeout(() => {
-      setLocation("/promotions");
+      window.location.href = "/promotions";
     }, 100);
   }, [setLocation]);
   

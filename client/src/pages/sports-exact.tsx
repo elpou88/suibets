@@ -1,72 +1,49 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 
-export default function PromotionsPage() {
+/**
+ * Sports page that shows the exact image with precise click regions
+ * This is similar to live-exact.tsx but for the Sports page with blue underline indicator
+ */
+export default function SportsExact() {
   useEffect(() => {
-    document.title = 'Promotions - SuiBets';
-    
-    // Create a full-page image with no navigation elements
+    // Prevent scrolling
     const body = document.body;
     body.style.margin = '0';
     body.style.padding = '0';
     body.style.overflow = 'hidden';
-    body.style.backgroundColor = 'black';
+    body.style.backgroundColor = '#0f172a'; // dark background
     
-    // Remove all existing content
-    body.innerHTML = '';
-    
-    // Create a container for better positioning
-    const container = document.createElement('div');
-    container.style.position = 'relative';
-    body.appendChild(container);
-    
-    // Create the image element - using the full original image
+    // Add the image
     const img = document.createElement('img');
-    img.src = '/images/promotions_actual.png';
-    img.alt = 'Promotions';
+    img.src = '/images/Sports 1 (2).png';
+    img.alt = 'Sports Page';
     img.style.width = '100%';
+    img.style.height = '100vh';
+    img.style.objectFit = 'contain';
     img.style.display = 'block';
-    img.useMap = '#promotionsmap';
-    container.appendChild(img);
+    img.style.margin = '0 auto';
+    body.appendChild(img);
     
-    // Create the image map with console logging to help debug click positions
+    // Create an image map
     const map = document.createElement('map');
-    map.name = 'promotionsmap';
-    container.appendChild(map);
+    map.name = 'sports-map';
+    body.appendChild(map);
     
-    img.addEventListener('click', (e) => {
-      const x = (e as MouseEvent).clientX;
-      const y = (e as MouseEvent).clientY;
-      console.log(`Click coordinates: ${x},${y}`);
-    });
+    // Connect the image to the map
+    img.useMap = '#sports-map';
     
-    // Create absolute positioned divs for clickable areas - more reliable than image maps
-    const navContainer = document.createElement('div');
-    navContainer.style.position = 'absolute';
-    navContainer.style.top = '0';
-    navContainer.style.left = '0';
-    navContainer.style.width = '100%';
-    navContainer.style.zIndex = '1000';
-    container.appendChild(navContainer);
-    
-    // Add visual debugging for clickable areas
+    // Debugging mode - set to true to see click regions
     const debugMode = false;
     
-    // Create a navigation bar that exactly matches the position in the image
-    // The navigation uses EXACT pixel positions from the image we examined
+    // Create a navigation bar that will hold our clickable elements
     const navigationBar = document.createElement('div');
     navigationBar.style.position = 'absolute';
     navigationBar.style.top = '0';
     navigationBar.style.left = '0';
     navigationBar.style.width = '100%';
-    navigationBar.style.height = '45px';
-    navigationBar.style.display = 'flex';
-    navigationBar.style.justifyContent = 'center';
-    navigationBar.style.alignItems = 'center';
+    navigationBar.style.height = '60px';
     navigationBar.style.zIndex = '1000';
-    container.appendChild(navigationBar);
-    
-    // Add fixed-position buttons exactly where they appear in the source image
-    // Each button has exact coordinates and dimensions from the image inspection
+    body.appendChild(navigationBar);
     
     // Create navigation elements with consistent spacing
     // IMPORTANT: The center of the navbar is at 512px (1024px/2)
@@ -170,28 +147,6 @@ export default function PromotionsPage() {
     connectWalletArea.href = '/connect-wallet';
     map.appendChild(connectWalletArea);
     
-    // Promotion-specific clickable areas
-    const joinNow1 = document.createElement('area');
-    joinNow1.shape = 'rect';
-    joinNow1.coords = '190,390,260,410'; // Wider button
-    joinNow1.alt = 'Join Now 1';
-    joinNow1.href = '/join';
-    map.appendChild(joinNow1);
-    
-    const joinNow2 = document.createElement('area');
-    joinNow2.shape = 'rect';
-    joinNow2.coords = '440,390,510,410'; // Wider button
-    joinNow2.alt = 'Join Now 2';
-    joinNow2.href = '/join';
-    map.appendChild(joinNow2);
-    
-    const joinNow3 = document.createElement('area');
-    joinNow3.shape = 'rect';
-    joinNow3.coords = '690,390,760,410'; // Wider button
-    joinNow3.alt = 'Join Now 3';
-    joinNow3.href = '/join';
-    map.appendChild(joinNow3);
-    
     // Disable all other links to ensure only our navigation buttons work
     // This helps prevent any conflicts with other elements on the page
     const links = document.querySelectorAll('a, button');
@@ -207,9 +162,9 @@ export default function PromotionsPage() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
-    // Add underline to the current active page (Promotions)
-    promotionsButton.style.borderBottom = '2px solid #3b82f6'; // Blue underline for active page
-    promotionsButton.style.paddingBottom = '5px';
+    // Add underline to the current active page (Sports)
+    sportsButton.style.borderBottom = '2px solid #3b82f6'; // Blue underline for active page
+    sportsButton.style.paddingBottom = '5px';
     
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');

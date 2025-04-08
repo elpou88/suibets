@@ -5,10 +5,10 @@ export default function GotoSports() {
   const [, setLocation] = useLocation();
   
   useEffect(() => {
-    console.log("Redirecting to sports/home page");
-    // Redirect to the home/sports page with a slight delay to ensure navigation works
+    console.log("Redirecting to sports-exact page");
+    // Redirect to the sports-exact page which has the proper navigation
     setTimeout(() => {
-      window.location.href = '/';
+      window.location.href = '/sports-exact';
     }, 100);
   }, [setLocation]);
   

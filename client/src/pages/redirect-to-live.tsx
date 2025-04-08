@@ -8,7 +8,7 @@ export default function RedirectToLive() {
     console.log("Redirecting to live page");
     // Redirect to the live page with a slight delay to ensure navigation works
     setTimeout(() => {
-      setLocation("/live");
+      window.location.href = "/live";
     }, 100);
   }, [setLocation]);
   

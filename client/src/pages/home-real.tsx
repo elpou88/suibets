@@ -48,7 +48,7 @@ export default function HomeReal() {
     addBet({
       id: betId,
       eventId: event.id,
-      eventName: event.name,
+      eventName: event.name || `${event.homeTeam} vs ${event.awayTeam}`,
       selectionName: outcome.name,
       odds: outcome.odds,
       stake: 10, // Default stake
@@ -102,7 +102,7 @@ export default function HomeReal() {
                       <CardContent className="p-0">
                         <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-[#1e3a3f] to-[#00ffff]">
                           <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">{event.name}</h3>
+                            <h3 className="text-lg font-semibold">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h3>
                             <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
                               LIVE
                             </div>
@@ -143,7 +143,7 @@ export default function HomeReal() {
                                   disabled={outcome.status !== 'active'}
                                   onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                 >
-                                  <span className="truncate">{outcome.name}</span>
+                                  <span className="truncate text-cyan-200">{outcome.name}</span>
                                   <span className={`font-medium ml-2 ${
                                     outcome.status === 'active' 
                                       ? 'text-[#00ffff]' 
@@ -195,7 +195,7 @@ export default function HomeReal() {
                           {sportEvents.slice(0, 3).map((event: any) => (
                             <div key={event.id} className="p-4 bg-[#112225] hover:bg-[#0b1618]">
                               <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium text-white">{event.name}</h4>
+                                <h4 className="font-medium text-white">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h4>
                                 <div className="flex items-center text-sm text-gray-400">
                                   <Calendar className="w-4 h-4 mr-1" />
                                   {format(new Date(event.startTime), 'dd MMM')}
@@ -214,7 +214,7 @@ export default function HomeReal() {
                                       className="flex justify-between items-center bg-[#0b1618] border-[#1e3a3f] hover:bg-[#00ffff] hover:text-black"
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
-                                      <span className="truncate">{outcome.name}</span>
+                                      <span className="truncate text-cyan-200">{outcome.name}</span>
                                       <span className="font-medium ml-2 text-[#00ffff]">{outcome.odds.toFixed(2)}</span>
                                     </Button>
                                   ))}

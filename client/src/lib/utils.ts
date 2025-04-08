@@ -54,18 +54,75 @@ export function getSportMarkets(sportType: string): { name: string; code: string
     { name: "Handicap", code: "HDP" },
   ];
 
+  // Team sports markets
+  const teamSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Both Teams to Score", code: "BTTS" },
+    { name: "Total Goals", code: "TG" },
+    { name: "Correct Score", code: "CS" },
+    { name: "Half-Time/Full-Time", code: "HTFT" },
+    { name: "First Goalscorer", code: "FG" },
+  ];
+
+  // Racket sports markets
+  const racketSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Set Betting", code: "SB" },
+    { name: "Total Games", code: "TG" },
+    { name: "Games Handicap", code: "GH" },
+    { name: "Player to Win a Set", code: "PWS" },
+  ];
+
+  // Combat sports markets
+  const combatSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Method of Victory", code: "MOV" },
+    { name: "Round Betting", code: "RB" },
+    { name: "Will the Fight Go the Distance", code: "WFGD" },
+    { name: "Total Rounds", code: "TR" },
+  ];
+
+  // Racing sports markets
+  const racingSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Race Winner", code: "RW" },
+    { name: "Podium Finish", code: "PF" },
+    { name: "Head to Head", code: "H2H" },
+    { name: "Winning Margin", code: "WM" },
+  ];
+
+  // Precision sports markets
+  const precisionSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Tournament Winner", code: "TW" },
+    { name: "To Make Final", code: "TMF" },
+    { name: "Each Way", code: "EW" },
+    { name: "Head to Head", code: "H2H" },
+  ];
+
+  // Individual competition markets
+  const individualSportsMarkets = [
+    ...defaultMarkets,
+    { name: "Gold Medal", code: "GM" },
+    { name: "To Win a Medal", code: "TWM" },
+    { name: "Head to Head", code: "H2H" },
+    { name: "Outright Winner", code: "OW" },
+  ];
+
   // Sport-specific markets
   switch (sportType) {
+    // Team sports
     case "football":
     case "soccer":
-      return [
-        ...defaultMarkets,
-        { name: "Both Teams to Score", code: "BTTS" },
-        { name: "Total Goals", code: "TG" },
-        { name: "Correct Score", code: "CS" },
-        { name: "Half-Time/Full-Time", code: "HTFT" },
-        { name: "First Goalscorer", code: "FG" },
-      ];
+    case "handball":
+    case "volleyball":
+    case "beach-volleyball":
+    case "rugby-league":
+    case "rugby-union":
+    case "afl":
+      return teamSportsMarkets;
+    
+    // Court/Racket sports  
     case "basketball":
       return [
         ...defaultMarkets,
@@ -74,23 +131,18 @@ export function getSportMarkets(sportType: string): { name: string; code: string
         { name: "Quarter Betting", code: "QB" },
         { name: "Race to Points", code: "RTP" },
       ];
+      
     case "tennis":
-      return [
-        ...defaultMarkets,
-        { name: "Set Betting", code: "SB" },
-        { name: "Total Games", code: "TG" },
-        { name: "Games Handicap", code: "GH" },
-        { name: "Player to Win a Set", code: "PWS" },
-      ];
+    case "badminton":
+    case "table-tennis":
+      return racketSportsMarkets;
+      
+    // Combat sports  
     case "boxing":
     case "mma-ufc":
-      return [
-        ...defaultMarkets,
-        { name: "Method of Victory", code: "MOV" },
-        { name: "Round Betting", code: "RB" },
-        { name: "Will the Fight Go the Distance", code: "WFGD" },
-        { name: "Total Rounds", code: "TR" },
-      ];
+      return combatSportsMarkets;
+      
+    // Cricket specific  
     case "cricket":
       return [
         ...defaultMarkets,
@@ -99,6 +151,37 @@ export function getSportMarkets(sportType: string): { name: string; code: string
         { name: "Total Runs", code: "TR" },
         { name: "Man of the Match", code: "MOM" },
       ];
+      
+    // Precision sports
+    case "golf":
+    case "darts":
+    case "snooker":
+      return precisionSportsMarkets;
+      
+    // Racing sports
+    case "formula-1":
+    case "cycling":
+    case "horse-racing":
+    case "greyhounds":
+      return racingSportsMarkets;
+    
+    // Individual competitions
+    case "olympics":
+    case "athletics":
+    case "swimming":
+    case "alpine-skiing":
+    case "surfing":
+      return individualSportsMarkets;
+    
+    // Mind sports
+    case "chess":
+      return [
+        ...defaultMarkets,
+        { name: "Game Result", code: "GR" },
+        { name: "Number of Moves", code: "NM" },
+        { name: "First to Checkmate", code: "FC" },
+      ];
+      
     default:
       return defaultMarkets;
   }

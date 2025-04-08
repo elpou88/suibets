@@ -697,6 +697,343 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     </>
   );
   
+  // Render precision sports markets (golf, darts, snooker)
+  const renderPrecisionSportsMarkets = () => (
+    <>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Tournament Winner</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Tournament Winner', homeTeam, 12.0)}
+            className="flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">12.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Tournament Winner', awayTeam, 15.0)}
+            className="flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">15.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Tournament Winner', 'Other Player 1', 8.5)}
+            className="flex flex-col"
+          >
+            <span>Other Player 1</span>
+            <span className="text-sm font-bold">8.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Tournament Winner', 'Other Player 2', 10.0)}
+            className="flex flex-col"
+          >
+            <span>Other Player 2</span>
+            <span className="text-sm font-bold">10.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>To Make Final</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('To Make Final', homeTeam, 4.5)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">4.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('To Make Final', awayTeam, 5.0)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">5.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+    </>
+  );
+  
+  // Render racing sports markets (Formula 1, cycling)
+  const renderRacingSportsMarkets = () => (
+    <>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Race/Stage Winner</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', homeTeam, 3.5)}
+            className="flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">3.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', awayTeam, 4.0)}
+            className="flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">4.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Driver/Rider 3', 6.0)}
+            className="flex flex-col"
+          >
+            <span>Driver/Rider 3</span>
+            <span className="text-sm font-bold">6.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Driver/Rider 4', 8.0)}
+            className="flex flex-col"
+          >
+            <span>Driver/Rider 4</span>
+            <span className="text-sm font-bold">8.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Podium Finish</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Podium Finish', homeTeam, 1.8)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">1.80</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Podium Finish', awayTeam, 2.2)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">2.20</span>
+          </Button>
+        </CardContent>
+      </Card>
+    </>
+  );
+  
+  // Render individual sports markets (olympics, athletics, swimming, skiing, surfing)
+  const renderIndividualSportsMarkets = () => (
+    <>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Gold Medal Winner</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Gold Medal', homeTeam, 2.5)}
+            className="flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">2.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Gold Medal', awayTeam, 3.2)}
+            className="flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">3.20</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Gold Medal', 'Athlete 3', 4.0)}
+            className="flex flex-col"
+          >
+            <span>Athlete 3</span>
+            <span className="text-sm font-bold">4.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Gold Medal', 'Athlete 4', 6.5)}
+            className="flex flex-col"
+          >
+            <span>Athlete 4</span>
+            <span className="text-sm font-bold">6.50</span>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>To Win a Medal</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('To Win a Medal', homeTeam, 1.5)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">1.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('To Win a Medal', awayTeam, 1.7)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">1.70</span>
+          </Button>
+        </CardContent>
+      </Card>
+    </>
+  );
+  
+  // Render chess markets
+  const renderChessMarkets = () => (
+    <>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Game Result</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Game Result', `${homeTeam} (White)`, 2.2)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{homeTeam} (White)</span>
+            <span className="text-sm font-bold">2.20</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Game Result', 'Draw', 2.5)}
+            className="flex-1 flex flex-col"
+          >
+            <span>Draw</span>
+            <span className="text-sm font-bold">2.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Game Result', `${awayTeam} (Black)`, 3.0)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{awayTeam} (Black)</span>
+            <span className="text-sm font-bold">3.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Number of Moves</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Number of Moves', 'Under 40.5', 1.85)}
+            className="flex-1 flex flex-col"
+          >
+            <span>Under 40.5</span>
+            <span className="text-sm font-bold">1.85</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Number of Moves', 'Over 40.5', 1.95)}
+            className="flex-1 flex flex-col"
+          >
+            <span>Over 40.5</span>
+            <span className="text-sm font-bold">1.95</span>
+          </Button>
+        </CardContent>
+      </Card>
+    </>
+  );
+  
+  // Render animal racing markets (horse racing, greyhounds)
+  const renderAnimalRacingMarkets = () => (
+    <>
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Race Winner</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', homeTeam, 4.5)}
+            className="flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">4.50</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', awayTeam, 6.0)}
+            className="flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">6.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Runner 3', 8.0)}
+            className="flex flex-col"
+          >
+            <span>Runner 3</span>
+            <span className="text-sm font-bold">8.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Race Winner', 'Runner 4', 10.0)}
+            className="flex flex-col"
+          >
+            <span>Runner 4</span>
+            <span className="text-sm font-bold">10.00</span>
+          </Button>
+        </CardContent>
+      </Card>
+      
+      <Card className="mb-4">
+        <CardHeader>
+          <CardTitle>Each Way</CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Each Way', homeTeam, 2.0)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{homeTeam}</span>
+            <span className="text-sm font-bold">2.00</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Each Way', awayTeam, 2.5)}
+            className="flex-1 flex flex-col"
+          >
+            <span>{awayTeam}</span>
+            <span className="text-sm font-bold">2.50</span>
+          </Button>
+        </CardContent>
+      </Card>
+    </>
+  );
+  
   // Render generic sport markets for any other sports
   const renderGenericSportMarkets = () => (
     <>
@@ -782,6 +1119,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     
     // Add sport-specific markets
     switch (sportType) {
+      // Team sports with similar market structures
       case 'football':
       case 'soccer':
         markets.push(renderFootballMarkets());
@@ -811,6 +1149,57 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       case 'american-football':
         markets.push(renderAmericanFootballMarkets());
         break;
+
+      // New sports with similar market structures to existing ones
+      case 'badminton':
+      case 'table-tennis':
+        // Similar markets to tennis
+        markets.push(renderTennisMarkets());
+        break;
+
+      case 'handball':
+      case 'volleyball':
+      case 'beach-volleyball':
+      case 'rugby-league': 
+      case 'rugby-union':
+      case 'afl':
+        // Similar markets to team sports
+        markets.push(renderFootballMarkets());
+        break;
+
+      case 'golf':
+      case 'darts':
+      case 'snooker':
+        // Precision sports
+        markets.push(renderPrecisionSportsMarkets());
+        break;
+
+      case 'formula-1':
+      case 'cycling':
+        // Racing sports
+        markets.push(renderRacingSportsMarkets());
+        break;
+
+      case 'olympics':
+      case 'athletics':
+      case 'swimming':
+      case 'alpine-skiing':
+      case 'surfing':
+        // Individual sports/competitions
+        markets.push(renderIndividualSportsMarkets());
+        break;
+
+      case 'chess':
+        // Mind sports
+        markets.push(renderChessMarkets());
+        break;
+
+      case 'horse-racing':
+      case 'greyhounds':
+        // Racing with animals
+        markets.push(renderAnimalRacingMarkets());
+        break;
+        
       default:
         // For other sports, provide at least some basic sport-specific markets
         markets.push(renderGenericSportMarkets());

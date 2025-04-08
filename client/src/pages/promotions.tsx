@@ -132,13 +132,13 @@ export default function PromotionsPage() {
     const promotionsButton = document.createElement('button');
     promotionsButton.textContent = 'Promotions';
     promotionsButton.style.position = 'absolute';
-    promotionsButton.style.left = '558px'; // Precisely aligned with 'Promotions' text
+    promotionsButton.style.left = '560px'; // Adjusted for better spacing
     promotionsButton.style.top = '12px'; // Moved up to provide more click area
     promotionsButton.style.backgroundColor = debugMode ? 'rgba(0,0,255,0.3)' : 'transparent';
     promotionsButton.style.border = 'none';
     promotionsButton.style.color = 'transparent';
-    promotionsButton.style.width = '95px'; // Exactly the width of 'Promotions' text
-    promotionsButton.style.height = '40px'; // Taller for better clickability
+    promotionsButton.style.width = '90px'; // Wider for easier clicking
+    promotionsButton.style.height = '40px'; // Much taller for better clickability
     promotionsButton.style.cursor = 'pointer';
     promotionsButton.style.fontFamily = 'Arial, sans-serif';
     promotionsButton.style.fontSize = '16px';

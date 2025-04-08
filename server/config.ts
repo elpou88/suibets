@@ -14,12 +14,8 @@ interface AppConfig {
     walAppApiKey?: string;
     // This would be provided by wurlus protocol team
     wurlusApiKey?: string;
-    // This would be provided by the Bets API service
-    betsApiKey?: string;
     // Base URL for Wal.app API
     walAppBaseUrl?: string;
-    // Base URL for Bets API
-    betsApiBaseUrl?: string;
   };
   
   // Blockchain network configuration
@@ -72,13 +68,11 @@ const config: AppConfig = {
     // API keys would be loaded from environment variables in production
     walAppApiKey: process.env.WAL_APP_API_KEY,
     wurlusApiKey: process.env.WURLUS_API_KEY,
-    betsApiKey: process.env.BETS_API_KEY,
-    walAppBaseUrl: process.env.WAL_APP_BASE_URL || 'https://api.wal.app',
-    betsApiBaseUrl: process.env.BETS_API_BASE_URL || 'https://api.b365api.com'
+    walAppBaseUrl: process.env.WAL_APP_BASE_URL || 'https://api.wal.app'
   },
   blockchain: {
     // Use testnet by default for development
-    defaultNetwork: SuiNetwork.TESTNET,
+    defaultNetwork: 'testnet',
     // Enable verbose logging in development
     verbose: process.env.NODE_ENV !== 'production',
     // Admin wallet would be securely stored in environment variables

@@ -1,67 +1,107 @@
-import React from 'react';
-import Layout from '@/components/layout/Layout';
-import promotionsImg from "@assets/Promotions (2).png";
 import { useLocation } from "wouter";
+import { useQuery } from "@tanstack/react-query";
+
+// Define Promotion type for type safety
+interface Promotion {
+  id: number;
+  title: string;
+  description: string;
+  endDate: string;
+  category: string;
+}
 
 export default function PromotionsPage() {
   const [, setLocation] = useLocation();
-
-  // Function to handle image clicks for joining promotions
-  const handleImageClick = (event: React.MouseEvent<HTMLImageElement>) => {
-    // Get coordinates from click event
-    const x = event.nativeEvent.offsetX;
-    const y = event.nativeEvent.offsetY;
-    
-    console.log("Click coordinates:", x, y);
-    
-    // You can add logic here to map specific coordinates to promotion actions
-    // This would allow the image to function for promotion signups while keeping the exact UI
-  };
-
-  // Function to handle joining a promotion via the image map
-  const handleJoinPromotion = (promoId: number) => {
-    console.log(`Joining promotion ${promoId}`);
-    setLocation("/join");
-  };
-
+  
+  // Mock promotions data
+  const mockPromotions: Promotion[] = [
+    { 
+      id: 1, 
+      title: "Welcome Bonus", 
+      description: "Get 100% bonus up to 1000 SUI on your first deposit", 
+      endDate: "2025-05-15",
+      category: "welcome"
+    },
+    { 
+      id: 2, 
+      title: "Referral Bonus", 
+      description: "Earn 50 SBETS for each friend you refer", 
+      endDate: "2025-12-31",
+      category: "referral"
+    },
+    { 
+      id: 3, 
+      title: "NBA Finals Special", 
+      description: "Get 20% cashback on all NBA Finals bets", 
+      endDate: "2025-06-20",
+      category: "sport"
+    },
+    { 
+      id: 4, 
+      title: "Champions League Parlay Boost", 
+      description: "10% odds boost on Champions League parlays", 
+      endDate: "2025-05-29",
+      category: "sport"
+    },
+  ];
+  
+  // Fetch promotions data
+  const { data: promotions = mockPromotions, isLoading } = useQuery<Promotion[]>({
+    queryKey: ['/api/promotions'],
+    // If no data is returned or an error occurs, fallback to mock data
+  });
+  
   return (
-    <Layout>
-      <div className="w-full min-h-screen bg-[#f2f2f2] flex justify-center">
-        <img 
-          src={promotionsImg} 
-          alt="Promotions Page" 
-          className="w-full h-auto object-contain"
-          useMap="#promotionsPageMap"
-          onClick={handleImageClick}
-        />
+    <div className="w-full min-h-screen relative">
+      <img 
+        src="/images/Promotions (2).png" 
+        alt="Promotions"
+        className="w-full h-full object-contain"
+      />
+      
+      {/* Back button */}
+      <button 
+        onClick={() => setLocation("/")}
+        className="absolute top-4 left-4 bg-black/50 text-white px-4 py-2 rounded-lg"
+      >
+        Back to Home
+      </button>
+      
+      {/* Promotions overlay */}
+      <div className="absolute top-1/4 left-1/2 transform -translate-x-1/2 w-11/12 max-w-3xl">
+        <h2 className="text-2xl font-bold text-white mb-4 text-center">Current Promotions</h2>
         
-        {/* This map allows specific areas of the image to be clickable */}
-        <map name="promotionsPageMap">
-          {/* First promotion join button */}
-          <area 
-            shape="rect" 
-            coords="205,400,250,430" 
-            alt="Join First Promotion"
-            onClick={() => handleJoinPromotion(1)}
-          />
-          
-          {/* Second promotion join button */}
-          <area 
-            shape="rect" 
-            coords="450,400,510,430" 
-            alt="Join Second Promotion"
-            onClick={() => handleJoinPromotion(2)}
-          />
-          
-          {/* Third promotion join button */}
-          <area 
-            shape="rect" 
-            coords="705,400,760,430" 
-            alt="Join Third Promotion"
-            onClick={() => handleJoinPromotion(3)}
-          />
-        </map>
+        {isLoading ? (
+          <div className="bg-black/70 p-4 rounded-lg">
+            <p className="text-white text-center">Loading promotions...</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {promotions.map((promo: Promotion) => (
+              <div 
+                key={promo.id}
+                onClick={() => {
+                  if (promo.category === "referral") {
+                    setLocation("/promotions/referral");
+                  } else {
+                    // For other promotions, could add more detailed routes
+                    setLocation(`/promotions/${promo.id}`);
+                  }
+                }}
+                className="bg-black/70 p-4 rounded-lg cursor-pointer hover:bg-black/90 transition"
+              >
+                <div className="text-white">
+                  <div className="font-bold text-lg mb-1">{promo.title}</div>
+                  <div className="text-sm mb-2">{promo.description}</div>
+                  <div className="text-xs text-gray-400">
+                    Available until: {new Date(promo.endDate).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
-    </Layout>
+    </div>
   );
 }

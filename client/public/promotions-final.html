@@ -8,138 +8,16 @@
     body, html {
       margin: 0;
       padding: 0;
-      height: 100%;
-      width: 100%;
-      overflow: hidden;
-      background-color: #f2f2f2;
-    }
-    .container {
-      width: 100%;
-      height: 100%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      overflow-x: hidden;
+      background-color: #000;
     }
     img {
-      max-width: 100%;
-      max-height: 100vh;
-      object-fit: contain;
-    }
-    .menu {
-      position: absolute;
-      top: 20px;
-      text-align: center;
       width: 100%;
-    }
-    .menu a {
-      color: white;
-      background-color: #00FFFF;
-      padding: 8px 16px;
-      margin: 0 10px;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: bold;
-    }
-    .menu a.active {
-      color: black;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <div class="menu">
-    <a href="/">Sports</a>
-    <a href="/live-final.html">Live</a>
-    <a href="/promotions-final.html" class="active">Promotions</a>
-  </div>
-
-  <div class="container">
-    <img src="/assets/Promotions (2).png" alt="Promotions Page" usemap="#promomap">
-    <map name="promomap">
-      <!-- Define clickable areas for promotions on the image -->
-      <area shape="rect" coords="205,400,250,430" alt="Join First Promotion" href="#promo1">
-      <area shape="rect" coords="450,400,510,430" alt="Join Second Promotion" href="#promo2">
-      <area shape="rect" coords="705,400,760,430" alt="Join Third Promotion" href="#promo3">
-      <!-- Navigation to other pages -->
-      <area shape="rect" coords="300,17,330,29" alt="Sports" href="/sports-final.html">
-      <area shape="rect" coords="360,17,380,29" alt="Live" href="/live-final.html">
-      <!-- Promotion details -->
-      <area shape="poly" coords="205,200,350,200,350,380,205,380" alt="Promotion 1 Details" href="#promo1-details">
-      <area shape="poly" coords="450,200,590,200,590,380,450,380" alt="Promotion 2 Details" href="#promo2-details">
-      <area shape="poly" coords="705,200,850,200,850,380,705,380" alt="Promotion 3 Details" href="#promo3-details">
-    </map>
-  </div>
-  <script>
-    // Add click event listeners to navigation menu
-    document.addEventListener('DOMContentLoaded', function() {
-      // Get all menu links
-      var menuLinks = document.querySelectorAll('.menu a');
-      
-      // Add click event listeners to each link
-      menuLinks.forEach(function(link) {
-        link.addEventListener('click', function(e) {
-          var href = this.getAttribute('href');
-          window.location.href = href;
-        });
-      });
-      
-      // Add click event for main image
-      document.querySelector('.container img').addEventListener('click', function(e) {
-        // Get click coordinates relative to the image
-        var rect = this.getBoundingClientRect();
-        var x = e.clientX - rect.left;
-        var y = e.clientY - rect.top;
-        
-        console.log('Clicked at coordinates:', x, y);
-        
-        // Check if click is in navigation area (top menu area)
-        if (y < 40) {
-          if (x > 290 && x < 340) {
-            // Sports button clicked
-            window.location.href = '/sports-final.html';
-            return;
-          }
-          if (x > 350 && x < 390) {
-            // Live button clicked
-            window.location.href = '/live-final.html';
-            return;
-          }
-        }
-        
-        // Check for promotion cards
-        // First promotion
-        if (x > 200 && x < 350 && y > 190 && y < 390) {
-          alert('Promotion 1 details!');
-          return;
-        }
-        // First promotion join button
-        if (x > 200 && x < 255 && y > 390 && y < 435) {
-          alert('Joined Promotion 1!');
-          return;
-        }
-        
-        // Second promotion
-        if (x > 445 && x < 595 && y > 190 && y < 390) {
-          alert('Promotion 2 details!');
-          return;
-        }
-        // Second promotion join button
-        if (x > 445 && x < 515 && y > 390 && y < 435) {
-          alert('Joined Promotion 2!');
-          return;
-        }
-        
-        // Third promotion
-        if (x > 700 && x < 855 && y > 190 && y < 390) {
-          alert('Promotion 3 details!');
-          return;
-        }
-        // Third promotion join button
-        if (x > 700 && x < 765 && y > 390 && y < 435) {
-          alert('Joined Promotion 3!');
-          return;
-        }
-      });
-    });
-  </script>
+  <img src="/images/promotions_no_header.png" alt="Promotions" onclick="window.location.href='/'">
 </body>
 </html>

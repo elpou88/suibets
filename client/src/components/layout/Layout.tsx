@@ -1,13 +1,22 @@
 import React, { ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
-import { Home, TrendingUp, Megaphone, Bell, Settings, Clock, Wallet } from 'lucide-react';
+import { 
+  Home, TrendingUp, Megaphone, Bell, Settings, 
+  Clock, Wallet, ChevronLeft
+} from 'lucide-react';
 
-interface LayoutProps {
+export interface LayoutProps {
   children: ReactNode;
+  title?: string;
+  showBackButton?: boolean;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC<LayoutProps> = ({ 
+  children, 
+  title, 
+  showBackButton = false
+}) => {
   const [location, setLocation] = useLocation();
   
   const navItems = [
@@ -18,14 +27,35 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     { label: 'History', icon: <Clock />, href: '/bet-history' },
     { label: 'Settings', icon: <Settings />, href: '/settings' },
   ];
+
+  const handleBack = () => {
+    window.history.back();
+  };
   
   return (
-    <div className="min-h-screen bg-[#112225] text-white">
+    <div className="min-h-screen bg-[#112225] text-white pb-16 lg:pb-0">
       {/* Header */}
       <header className="bg-[#0b1618] border-b border-[#1e3a3f] p-4">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-2">
-            <div className="font-bold text-xl text-cyan-400">Wurlus Betting</div>
+            {showBackButton ? (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="mr-2 text-cyan-400"
+                onClick={handleBack}
+              >
+                <ChevronLeft className="h-5 w-5" />
+                Back
+              </Button>
+            ) : (
+              <div className="font-bold text-xl text-cyan-400">
+                {title || "Wurlus Betting"}
+              </div>
+            )}
+            {showBackButton && title && (
+              <h1 className="text-xl font-semibold">{title}</h1>
+            )}
           </div>
           
           <div className="flex items-center space-x-2">
@@ -40,6 +70,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </header>
+      
+      {/* Main content */}
+      <div className="container mx-auto p-4">
+        {children}
+      </div>
       
       {/* Mobile bottom navigation (visible on small screens) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-[#0b1618] border-t border-[#1e3a3f] z-50">
@@ -63,9 +98,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           ))}
         </div>
       </div>
-      
-      {/* Main content */}
-      {children}
     </div>
   );
 };

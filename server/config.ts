@@ -70,9 +70,18 @@ const config: AppConfig = {
     wurlusApiKey: process.env.WURLUS_API_KEY,
     walAppBaseUrl: process.env.WAL_APP_BASE_URL || 'https://api.wal.app'
   },
+  
+  // Helper methods to check API key availability
+  get hasWalAppKey(): boolean {
+    return !!this.api.walAppApiKey;
+  },
+  
+  get hasWurlusKey(): boolean {
+    return !!this.api.wurlusApiKey;
+  },
   blockchain: {
     // Use testnet by default for development
-    defaultNetwork: 'testnet',
+    defaultNetwork: SuiNetwork.TESTNET,
     // Enable verbose logging in development
     verbose: process.env.NODE_ENV !== 'production',
     // Admin wallet would be securely stored in environment variables

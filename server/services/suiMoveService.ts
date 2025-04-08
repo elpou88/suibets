@@ -564,14 +564,32 @@ export class SuiMoveService {
    */
   private createWurlusBlob(blobType: string, data: any): string {
     try {
-      // Create the blob data
+      // Check if API key is available
+      if (!this.wurlusApiKey) {
+        console.warn('Wurlus API key not available, using mock blob');
+        // Return mock blob structure with indication it's not authenticated
+        return sealService.seal({
+          type: blobType,
+          data,
+          network: this.network,
+          timestamp: Date.now(),
+          nonce: Math.floor(Math.random() * 1000000),
+          version: 1,
+          authenticated: false,
+          mock: true
+        });
+      }
+      
+      // Create the blob data with authentication when API key is available
       const blobData = {
         type: blobType,
         data,
         network: this.network,
         timestamp: Date.now(),
         nonce: Math.floor(Math.random() * 1000000),
-        version: 1
+        version: 1,
+        authenticated: true,
+        apiKeySignature: this.getApiKeySignature()
       };
       
       // Seal the blob data for security
@@ -579,6 +597,27 @@ export class SuiMoveService {
       return sealedBlob;
     } catch (error) {
       console.error('Error creating wurlus blob:', error);
+      return '';
+    }
+  }
+  
+  /**
+   * Generate a signature using the API key for authentication
+   * @returns A signature string for verification
+   */
+  private getApiKeySignature(): string {
+    try {
+      // In a real implementation, this would use the API key to generate
+      // a cryptographic signature for verification
+      if (!this.wurlusApiKey) {
+        return '';
+      }
+      
+      // Simple mock signature based on API key and timestamp
+      // In production, this would use proper cryptographic functions
+      return `${this.wurlusApiKey.substring(0, 8)}_${Date.now()}`;
+    } catch (error) {
+      console.error('Error generating API key signature:', error);
       return '';
     }
   }

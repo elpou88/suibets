@@ -28,9 +28,9 @@ export const BettingProvider = ({ children }: { children: ReactNode }) => {
 
   // Add a bet to the selection
   const addBet = (bet: SelectedBet) => {
-    // Check if we already have a bet for this selection
+    // Check if we already have a bet for this selection, match by bet id
     const existingBetIndex = selectedBets.findIndex(
-      (existing) => existing.eventId === bet.eventId && existing.market === bet.market
+      (existing) => existing.id === bet.id
     );
 
     if (existingBetIndex >= 0) {

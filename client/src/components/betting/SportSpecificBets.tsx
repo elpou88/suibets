@@ -39,8 +39,8 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     marketId?: number,
     outcomeId?: string | null
   ) => {
-    // Create unique ID for this bet selection
-    const betId = `${eventId}-${marketName}-${selectionName}-${Date.now()}`;
+    // Create unique ID for this bet selection (without Date.now() to prevent ID changes on re-render)
+    const betId = `${eventId}-${marketName}-${selectionName}`;
     
     addBet({
       id: betId,

@@ -1,21 +1,25 @@
-import React from "react";
+import React from 'react';
 
 interface LoaderProps {
-  size?: "sm" | "md" | "lg";
-  className?: string;
+  size?: 'small' | 'medium' | 'large';
+  color?: string;
 }
 
-export function Loader({ size = "md", className = "" }: LoaderProps) {
-  const sizeClass = {
-    sm: "w-4 h-4 border-2",
-    md: "w-6 h-6 border-2",
-    lg: "w-10 h-10 border-3",
+export const Loader: React.FC<LoaderProps> = ({ 
+  size = 'medium', 
+  color = 'cyan-400' 
+}) => {
+  const sizeClasses = {
+    small: 'w-4 h-4 border-2',
+    medium: 'w-8 h-8 border-4',
+    large: 'w-12 h-12 border-4',
   };
 
   return (
-    <div
-      className={`animate-spin rounded-full border-t-transparent border-primary ${sizeClass[size]} ${className}`}
-      aria-label="Loading"
+    <div className={`animate-spin ${sizeClasses[size]} border-${color} border-t-transparent rounded-full`} 
+      aria-label="Loading" 
     />
   );
-}
+};
+
+export default Loader;

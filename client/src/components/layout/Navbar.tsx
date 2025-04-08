@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useLocation } from "wouter";
+import { Link, useRoute, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
@@ -23,13 +23,16 @@ export default function Navbar() {
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
-  const goToLive = (e: React.MouseEvent) => {
-    e.preventDefault();
+  // Direct navigation to static HTML files
+  const goToSports = () => {
+    window.location.href = "/sports-final.html";
+  };
+
+  const goToLive = () => {
     window.location.href = "/live-final.html";
   };
 
-  const goToPromotions = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const goToPromotions = () => {
     window.location.href = "/promotions-final.html";
   };
 
@@ -39,9 +42,9 @@ export default function Navbar() {
         <div className="w-[120px]"></div> {/* Spacer */}
         
         <div className="flex items-center space-x-10 mx-auto">
-          {/* Sports link - simple text link */}
+          {/* Sports link */}
           <a 
-            href="/" 
+            onClick={goToSports}
             className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer`}
           >
             Sports
@@ -50,17 +53,17 @@ export default function Navbar() {
             )}
           </a>
           
-          {/* Live link - direct text */}
+          {/* Live link - with direct navigation */}
           <a 
-            href="/live-final.html" 
+            onClick={goToLive} 
             className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
           >
             Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
           </a>
           
-          {/* Promotions link - direct text */}
+          {/* Promotions link - with direct navigation */}
           <a 
-            href="/promotions-final.html" 
+            onClick={goToPromotions} 
             className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
           >
             Promo

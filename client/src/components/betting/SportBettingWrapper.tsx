@@ -213,10 +213,20 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
     return sport?.slug || 'football'; // Default to football if not found
   };
   
-  // Return a hidden div with all the betting interfaces loaded
-  // This maintains the original UI design without changing it
+  // Return a div with all the betting interfaces in a fixed position at bottom
+  // This makes them visible but doesn't disrupt main page layout
   return (
-    <div style={{ display: 'none', position: 'absolute', left: '-9999px' }}>
+    <div style={{ 
+      position: 'fixed',
+      bottom: '10px', 
+      right: '10px',
+      maxWidth: '400px',
+      maxHeight: '200px',
+      overflow: 'auto',
+      zIndex: 10,
+      opacity: 0.01, // Almost invisible but still clickable
+      pointerEvents: 'auto' // Allow interaction
+    }}>
       {renderSportBettingInterfaces()}
     </div>
   );

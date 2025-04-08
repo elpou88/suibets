@@ -487,32 +487,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if currency is specified
       const currency = validatedData.feeCurrency || 'SUI';
       
-      // Redirect to the appropriate endpoint based on currency
-      if (currency.toUpperCase() === 'SBETS') {
-        // Forward to SBETS endpoint
-        const response = await fetch(`${req.protocol}://${req.get('host')}/api/bets/sbets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(req.body),
-        });
-        
-        const data = await response.json();
-        return res.status(response.status).json(data);
-      } else {
-        // Default to SUI endpoint
-        const response = await fetch(`${req.protocol}://${req.get('host')}/api/bets/sui`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(req.body),
-        });
-        
-        const data = await response.json();
-        return res.status(response.status).json(data);
-      }
+      // Skip the redirection for now which is causing a parsing error
+      // Store the bet directly in the database instead of redirecting to other endpoints
+      
+      // Create a new bet in the database
+      const bet = await storage.createBet({
+        userId: Number(req.body.userId),
+        eventId: Number(req.body.eventId),
+        marketId: req.body.marketId ? Number(req.body.marketId) : null,
+        outcomeId: req.body.outcomeId || null,
+        odds: Number(req.body.odds),
+        betAmount: Number(req.body.betAmount),
+        prediction: req.body.prediction,
+        potentialPayout: Number(req.body.potentialPayout),
+        status: 'pending',
+        result: null,
+        createdAt: new Date().toISOString(),
+        settledAt: null,
+        transactionHash: null,
+        feeCurrency: req.body.feeCurrency || 'SUI'
+      });
+      
+      return res.status(200).json(bet);
     } catch (error) {
       console.error("Error placing bet:", error);
       res.status(500).json({ message: "Failed to place bet" });

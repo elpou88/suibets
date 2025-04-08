@@ -1,69 +1,97 @@
-import { useLocation } from "wouter";
-
-type SportItemProps = {
-  name: string;
-  slug: string;
-  top: number; // position from top in %
-}
-
-// Component for each sport item in the sidebar
-const SportItem = ({ name, slug, top }: SportItemProps) => {
-  const [, setLocation] = useLocation();
-
-  const handleClick = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent the click from bubbling up to parent elements
-    // Navigate directly to sport page with the correct slug
-    setLocation(`/sport/${slug}`);
-    
-    // Log the navigation for debugging
-    console.log(`Loaded events for sport: ${slug}`);
-  };
-
-  return (
-    <div 
-      className="absolute left-0 px-4 py-1 w-full text-transparent cursor-pointer"
-      style={{ top: `${top}%` }}
-      onClick={handleClick}
-    >
-      {name}
-    </div>
-  );
-};
+import { useState } from 'react';
+import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { apiRequest } from '@/lib/queryClient';
+import { 
+  Trophy, 
+  Activity, 
+  Grid, 
+  Home,
+  ChevronRight,
+  Dumbbell,
+  CircleDot,
+  CircleDashed,
+  BarChart4
+} from 'lucide-react';
 
 export default function SportsSidebar() {
-  // Define all sports with their positions
-  const sports = [
-    { name: "Football", slug: "football", top: 2 },
-    { name: "Basketball", slug: "basketball", top: 6 },
-    { name: "Tennis", slug: "tennis", top: 10 },
-    { name: "Baseball", slug: "baseball", top: 14 },
-    { name: "Boxing", slug: "boxing", top: 18 },
-    { name: "Hockey", slug: "hockey", top: 22 },
-    { name: "Esports", slug: "esports", top: 26 },
-    { name: "MMA/UFC", slug: "mma-ufc", top: 30 },
-    { name: "Volleyball", slug: "volleyball", top: 34 },
-    { name: "Table Tennis", slug: "table-tennis", top: 38 },
-    { name: "Rugby League", slug: "rugby-league", top: 42 },
-    { name: "Rugby Union", slug: "rugby-union", top: 46 },
-    { name: "Cricket", slug: "cricket", top: 50 },
-    { name: "Horse Racing", slug: "horse-racing", top: 54 },
-    { name: "Greyhounds", slug: "greyhounds", top: 58 },
-    { name: "AFL", slug: "afl", top: 62 }
-  ];
-
+  const [, setLocation] = useLocation();
+  
+  // Fetch sports for the sidebar
+  const { data: sports = [] } = useQuery({
+    queryKey: ['/api/sports'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/sports');
+      return response.json();
+    }
+  });
+  
+  // Get icon based on sport ID
+  const getSportIcon = (sportId: string) => {
+    switch(sportId) {
+      case '1': // Football/Soccer
+        return <Dumbbell className="w-5 h-5" />;
+      case '2': // Basketball
+        return <CircleDot className="w-5 h-5" />;
+      case '3': // Tennis
+        return <CircleDashed className="w-5 h-5" />;
+      case '4': // Baseball
+        return <BarChart4 className="w-5 h-5" />;
+      case '5': // Boxing
+        return <Trophy className="w-5 h-5" />;
+      case '6': // Hockey
+        return <Activity className="w-5 h-5" />;
+      case '7': // Esports
+        return <Grid className="w-5 h-5" />;
+      default:
+        return <Activity className="w-5 h-5" />;
+    }
+  };
+  
   return (
-    <div className="absolute left-0 top-[100px] bottom-0 w-[15%] z-10 pointer-events-auto">
-      {/* Transparent overlay to make the entire sidebar area interactive */}
-      <div className="absolute inset-0 bg-transparent"></div>
+    <div className="p-4">
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Navigation</h2>
+        <div className="space-y-2">
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            onClick={() => setLocation('/home-real')}
+          >
+            <Home className="mr-2 h-5 w-5" />
+            Home
+          </Button>
+          <Button
+            variant="ghost" 
+            className="w-full justify-start text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+            onClick={() => setLocation('/live-real')}
+          >
+            <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></div>
+            Live Events
+          </Button>
+        </div>
+      </div>
       
-      {sports.map((sport) => (
-        <SportItem 
-          key={sport.slug}
-          name={sport.name}
-          slug={sport.slug}
-          top={sport.top}
-        />
-      ))}
+      <div>
+        <h2 className="text-lg font-semibold text-white mb-4">Sports</h2>
+        <div className="space-y-1">
+          {sports.map((sport: any) => (
+            <Button
+              key={sport.id}
+              variant="ghost"
+              className="w-full justify-between text-gray-300 hover:text-white hover:bg-[#1e3a3f]"
+              onClick={() => setLocation(`/sports-live/${sport.slug}`)}
+            >
+              <div className="flex items-center">
+                {getSportIcon(sport.id)}
+                <span className="ml-2">{sport.name}</span>
+              </div>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

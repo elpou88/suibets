@@ -34,6 +34,11 @@ import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 
+// New real data display pages
+import HomeReal from "@/pages/home-real";
+import LiveReal from "@/pages/live-real";
+import SportsLive from "@/pages/sports-live";
+
 function App() {
   console.log("Starting React application");
   
@@ -67,6 +72,12 @@ function App() {
                 <Route path="/contact" component={Contact} />
                 <Route path="/live" component={LiveExact} />
                 <Route path="/live/:id" component={LiveEventPage} />
+                
+                {/* New real data display pages */}
+                <Route path="/home-real" component={HomeReal} />
+                <Route path="/live-real" component={LiveReal} />
+                <Route path="/sports-live/:slug*" component={SportsLive} />
+                
                 <Route component={NotFound} />
               </Switch>
               

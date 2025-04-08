@@ -48,6 +48,7 @@ export interface SelectedBet {
   market: string;
   marketId?: number;
   outcomeId?: string | null;
+  isLive?: boolean; // Indicates if this is a live betting event
 }
 
 // Betting context interface

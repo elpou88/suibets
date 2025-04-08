@@ -63,18 +63,21 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
 
   // Render generic betting options available for all sports
   const renderGenericBets = () => (
-    <Card className="mb-4">
-      <CardHeader>
-        <CardTitle>Match Result</CardTitle>
+    <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+      <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+        <CardTitle className="text-cyan-300 font-bold flex items-center">
+          Match Result
+        </CardTitle>
       </CardHeader>
-      <CardContent className="flex flex-wrap gap-2">
+      <CardContent className="flex flex-wrap gap-3 p-4">
         <Button
           variant="outline"
           onClick={() => handleAddBet('Match Result', `${homeTeam} (Win)`, homeOdds)}
-          className="flex-1 flex flex-col"
+          className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
         >
           <span>{homeTeam}</span>
-          <span className="text-sm font-bold">{formatOdds(homeOdds)}</span>
+          <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(homeOdds)}</span>
         </Button>
         
         {/* Draw option for sports that can have draws */}
@@ -82,20 +85,20 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Match Result', 'Draw', drawOdds)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Draw</span>
-            <span className="text-sm font-bold">{formatOdds(drawOdds)}</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(drawOdds)}</span>
           </Button>
         )}
         
         <Button
           variant="outline"
           onClick={() => handleAddBet('Match Result', `${awayTeam} (Win)`, awayOdds)}
-          className="flex-1 flex flex-col"
+          className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
         >
           <span>{awayTeam}</span>
-          <span className="text-sm font-bold">{formatOdds(awayOdds)}</span>
+          <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">{formatOdds(awayOdds)}</span>
         </Button>
       </CardContent>
     </Card>
@@ -104,75 +107,87 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   // Render football/soccer specific markets
   const renderFootballMarkets = () => (
     <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Both Teams to Score</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Both Teams to Score
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Both Teams to Score', 'Yes', 1.85)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Yes</span>
-            <span className="text-sm font-bold">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => handleAddBet('Both Teams to Score', 'No', 1.95)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>No</span>
-            <span className="text-sm font-bold">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Total Goals</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Total Goals
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Total Goals', 'Over 2.5', 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 2.5</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => handleAddBet('Total Goals', 'Under 2.5', 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 2.5</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Correct Score</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Correct Score
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-3 gap-2">
+        <CardContent className="grid grid-cols-3 gap-3 p-4">
           {[[1, 0], [2, 0], [3, 0], [0, 0], [1, 1], [2, 1], [0, 1], [0, 2], [0, 3]].map(
-            ([home, away]) => (
-              <Button
-                key={`score-${home}-${away}-${Date.now()}-${Math.random()}`}
-                variant="outline"
-                onClick={() =>
-                  handleAddBet('Correct Score', `${home}-${away}`, calculateCorrectScoreOdds(home, away))
-                }
-                className="flex flex-col"
-              >
-                <span>{`${home}-${away}`}</span>
-                <span className="text-sm font-bold">
-                  {formatOdds(calculateCorrectScoreOdds(home, away))}
-                </span>
-              </Button>
-            )
+            ([home, away]) => {
+              const odds = calculateCorrectScoreOdds(home, away);
+              return (
+                <Button
+                  key={`score-${home}-${away}`}
+                  variant="outline"
+                  onClick={() =>
+                    handleAddBet('Correct Score', `${home}-${away}`, odds)
+                  }
+                  className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-2"
+                >
+                  <span className="text-lg font-bold">{`${home}-${away}`}</span>
+                  <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">
+                    {formatOdds(odds)}
+                  </span>
+                </Button>
+              );
+            }
           )}
         </CardContent>
       </Card>
@@ -182,74 +197,83 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   // Render basketball specific markets
   const renderBasketballMarkets = () => (
     <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Total Points</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Total Points
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Total Points', 'Over 199.5', 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Over 199.5</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => handleAddBet('Total Points', 'Under 199.5', 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>Under 199.5</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Point Spread</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Point Spread
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Point Spread', `${homeTeam} -5.5`, 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${homeTeam} -5.5`}</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => handleAddBet('Point Spread', `${awayTeam} +5.5`, 1.90)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{`${awayTeam} +5.5`}</span>
-            <span className="text-sm font-bold">1.90</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.90</span>
           </Button>
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>First Half Winner</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            First Half Winner
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('First Half Winner', homeTeam, 1.85)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{homeTeam}</span>
-            <span className="text-sm font-bold">1.85</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.85</span>
           </Button>
           <Button
             variant="outline"
             onClick={() => handleAddBet('First Half Winner', awayTeam, 1.95)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span>{awayTeam}</span>
-            <span className="text-sm font-bold">1.95</span>
+            <span className="text-sm font-bold mt-1 bg-[#14292e] px-3 py-1 rounded-md">1.95</span>
           </Button>
         </CardContent>
       </Card>

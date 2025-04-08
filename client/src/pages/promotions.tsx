@@ -207,9 +207,7 @@ export default function PromotionsPage() {
     // Make the navigation bar visually distinct to highlight clickable areas
     navigationBar.style.borderBottom = debugMode ? '2px solid red' : 'none';
     
-    // Add underline to the current active page (Promotions)
-    promotionsButton.style.borderBottom = '2px solid #3b82f6'; // Blue underline for active page
-    promotionsButton.style.paddingBottom = '5px';
+    // No need to add underline as it's already part of the UI design
     
     // Add debugging info
     console.log('Navigation setup complete. Only Sports, Live, and Promotions links are active.');

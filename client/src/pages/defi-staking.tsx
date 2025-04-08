@@ -90,30 +90,71 @@ export default function DefiStaking() {
   ];
 
   // Calculate days remaining for active stakes
-  const calculateDaysRemaining = (endDate: Date) => {
-    const today = new Date();
-    const diffTime = endDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays > 0 ? diffDays : 0;
+  const calculateDaysRemaining = (endDate: any) => {
+    try {
+      const today = new Date();
+      // Convert to Date object if it's a string
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
+      
+      if (!(endDateObj instanceof Date) || isNaN(endDateObj.getTime())) {
+        console.error('Invalid end date:', endDate);
+        return 0;
+      }
+      
+      const diffTime = endDateObj.getTime() - today.getTime();
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 0;
+    } catch (error) {
+      console.error('Error calculating days remaining:', error);
+      return 0;
+    }
   };
 
   // Calculate completion percentage
-  const calculateCompletionPercentage = (startDate: Date, endDate: Date) => {
-    const today = new Date();
-    const totalDuration = endDate.getTime() - startDate.getTime();
-    const elapsed = today.getTime() - startDate.getTime();
-    
-    const percentage = (elapsed / totalDuration) * 100;
-    return Math.min(Math.max(percentage, 0), 100); // Ensure between 0 and 100
+  const calculateCompletionPercentage = (startDate: any, endDate: any) => {
+    try {
+      const today = new Date();
+      // Convert to Date objects if they're strings
+      const startDateObj = typeof startDate === 'string' ? new Date(startDate) : startDate;
+      const endDateObj = typeof endDate === 'string' ? new Date(endDate) : endDate;
+      
+      if (!(startDateObj instanceof Date) || isNaN(startDateObj.getTime()) || 
+          !(endDateObj instanceof Date) || isNaN(endDateObj.getTime())) {
+        console.error('Invalid date objects:', { startDate, endDate });
+        return 0;
+      }
+      
+      const totalDuration = endDateObj.getTime() - startDateObj.getTime();
+      const elapsed = today.getTime() - startDateObj.getTime();
+      
+      const percentage = (elapsed / totalDuration) * 100;
+      return Math.min(Math.max(percentage, 0), 100); // Ensure between 0 and 100
+    } catch (error) {
+      console.error('Error calculating completion percentage:', error);
+      return 0;
+    }
   };
 
   // Format date
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
+  const formatDate = (date: any) => {
+    try {
+      // Convert to Date object if it's a string
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      
+      if (!(dateObj instanceof Date) || isNaN(dateObj.getTime())) {
+        console.error('Invalid date for formatting:', date);
+        return 'Invalid date';
+      }
+      
+      return dateObj.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric' 
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   // Setup query client for mutations

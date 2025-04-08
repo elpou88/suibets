@@ -26,18 +26,18 @@ export default function Navbar() {
   
   // Check if wallet is connected on component mount and when user status changes
   useEffect(() => {
-    // Check localStorage for wallet data
-    const savedAddress = localStorage.getItem('wallet_address');
-    const savedWalletType = localStorage.getItem('wallet_type');
+    // Check if user has a wallet address
+    const userHasWallet = !!user?.walletAddress;
     
-    setWalletConnected(!!(savedAddress && isAuthenticated));
+    // Set wallet connected status based on user object
+    setWalletConnected(userHasWallet);
     
     console.log('Navbar: Wallet connection status -', {
-      savedAddress,
-      isAuthenticated,
-      walletConnected: !!(savedAddress && isAuthenticated)
+      userWalletAddress: user?.walletAddress,
+      userHasWallet,
+      isAuthenticated
     });
-  }, [isAuthenticated]);
+  }, [user, isAuthenticated]);
 
   const goToLive = (e: React.MouseEvent) => {
     e.preventDefault();

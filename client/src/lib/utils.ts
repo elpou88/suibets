@@ -166,21 +166,9 @@ export function getSportMarkets(sportType: string): { name: string; code: string
       return racingSportsMarkets;
     
     // Individual competitions
-    case "olympics":
     case "athletics":
     case "swimming":
-    case "alpine-skiing":
-    case "surfing":
       return individualSportsMarkets;
-    
-    // Mind sports
-    case "chess":
-      return [
-        ...defaultMarkets,
-        { name: "Game Result", code: "GR" },
-        { name: "Number of Moves", code: "NM" },
-        { name: "First to Checkmate", code: "FC" },
-      ];
       
     default:
       return defaultMarkets;

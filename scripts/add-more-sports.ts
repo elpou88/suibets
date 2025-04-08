@@ -77,14 +77,6 @@ async function main() {
       providerId: 'sports_provider_2'
     },
     { 
-      name: 'Olympics', 
-      slug: 'olympics',
-      icon: '🏅',
-      wurlusSportId: 'olympics_wurlus_id',
-      isActive: true,
-      providerId: 'sports_provider_2'
-    },
-    { 
       name: 'Swimming', 
       slug: 'swimming',
       icon: '🏊',
@@ -99,30 +91,6 @@ async function main() {
       wurlusSportId: 'athletics_wurlus_id',
       isActive: true,
       providerId: 'sports_provider_2'
-    },
-    { 
-      name: 'Alpine Skiing', 
-      slug: 'alpine-skiing',
-      icon: '⛷️',
-      wurlusSportId: 'skiing_wurlus_id',
-      isActive: true,
-      providerId: 'sports_provider_3'
-    },
-    { 
-      name: 'Chess', 
-      slug: 'chess',
-      icon: '♟️',
-      wurlusSportId: 'chess_wurlus_id',
-      isActive: true,
-      providerId: 'sports_provider_3'
-    },
-    { 
-      name: 'Surfing', 
-      slug: 'surfing',
-      icon: '🏄',
-      wurlusSportId: 'surfing_wurlus_id',
-      isActive: true,
-      providerId: 'sports_provider_3'
     }
   ];
 

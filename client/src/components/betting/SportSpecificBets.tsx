@@ -835,7 +835,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     </>
   );
   
-  // Render individual sports markets (olympics, athletics, swimming, skiing, surfing)
+  // Render individual sports markets (athletics, swimming)
   const renderIndividualSportsMarkets = () => (
     <>
       <Card className="mb-4">
@@ -898,67 +898,6 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           >
             <span>{awayTeam}</span>
             <span className="text-sm font-bold">1.70</span>
-          </Button>
-        </CardContent>
-      </Card>
-    </>
-  );
-  
-  // Render chess markets
-  const renderChessMarkets = () => (
-    <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Game Result</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleAddBet('Game Result', `${homeTeam} (White)`, 2.2)}
-            className="flex-1 flex flex-col"
-          >
-            <span>{homeTeam} (White)</span>
-            <span className="text-sm font-bold">2.20</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleAddBet('Game Result', 'Draw', 2.5)}
-            className="flex-1 flex flex-col"
-          >
-            <span>Draw</span>
-            <span className="text-sm font-bold">2.50</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleAddBet('Game Result', `${awayTeam} (Black)`, 3.0)}
-            className="flex-1 flex flex-col"
-          >
-            <span>{awayTeam} (Black)</span>
-            <span className="text-sm font-bold">3.00</span>
-          </Button>
-        </CardContent>
-      </Card>
-      
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Number of Moves</CardTitle>
-        </CardHeader>
-        <CardContent className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => handleAddBet('Number of Moves', 'Under 40.5', 1.85)}
-            className="flex-1 flex flex-col"
-          >
-            <span>Under 40.5</span>
-            <span className="text-sm font-bold">1.85</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => handleAddBet('Number of Moves', 'Over 40.5', 1.95)}
-            className="flex-1 flex flex-col"
-          >
-            <span>Over 40.5</span>
-            <span className="text-sm font-bold">1.95</span>
           </Button>
         </CardContent>
       </Card>
@@ -1180,18 +1119,10 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         markets.push(renderRacingSportsMarkets());
         break;
 
-      case 'olympics':
       case 'athletics':
       case 'swimming':
-      case 'alpine-skiing':
-      case 'surfing':
         // Individual sports/competitions
         markets.push(renderIndividualSportsMarkets());
-        break;
-
-      case 'chess':
-        // Mind sports
-        markets.push(renderChessMarkets());
         break;
 
       case 'horse-racing':

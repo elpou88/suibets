@@ -123,10 +123,7 @@ export default function SportsSidebar() {
               onClick={() => setLocation(`/sports-live/${sport.slug}`)}
             >
               <div className="flex items-center">
-                <div className="text-cyan-400">
-                  {getSportIcon(sport.id)}
-                </div>
-                <span className="ml-2">{sport.name}</span>
+                <span>{sport.name}</span>
               </div>
               <ChevronRight className="h-4 w-4 text-cyan-400" />
             </Button>

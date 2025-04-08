@@ -192,14 +192,12 @@ export default function SportPage() {
               value="live" 
               className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:font-bold"
             >
-              <Flame className="h-4 w-4 mr-2" />
               Live Matches
             </TabsTrigger>
             <TabsTrigger 
               value="upcoming" 
               className="data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:font-bold"
             >
-              <CalendarIcon className="h-4 w-4 mr-2" />
               Upcoming
             </TabsTrigger>
           </TabsList>
@@ -244,19 +242,13 @@ export default function SportPage() {
                             <span className="text-cyan-300">{event.leagueName || 'League'}</span>
                             {selectedTab === 'live' && (
                               <Badge className="ml-2 bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
-                                <span className="flex items-center">
-                                  <Flame className="h-3 w-3 mr-1" />
+                                <span>
                                   LIVE
                                 </span>
                               </Badge>
                             )}
                           </CardTitle>
                           <CardDescription className="flex items-center text-sm mt-1">
-                            {selectedTab === 'live' ? (
-                              <Clock className="h-3 w-3 mr-1 text-cyan-400" />
-                            ) : (
-                              <CalendarIcon className="h-3 w-3 mr-1 text-cyan-400" />
-                            )}
                             <span>
                               {selectedTab === 'live' 
                                 ? 'In Progress' 

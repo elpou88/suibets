@@ -197,9 +197,8 @@ export default function HomeReal() {
                               <div className="flex justify-between items-center mb-2">
                                 <h4 className="font-medium text-white">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h4>
                                 <div className="flex items-center text-sm text-gray-400">
-                                  <Calendar className="w-4 h-4 mr-1" />
                                   {format(new Date(event.startTime), 'dd MMM')}
-                                  <Clock className="w-4 h-4 ml-3 mr-1" />
+                                  <span className="mx-2">|</span>
                                   {format(new Date(event.startTime), 'HH:mm')}
                                 </div>
                               </div>

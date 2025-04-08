@@ -31,6 +31,8 @@ import LiveExact from "@/pages/live-exact";
 import SportsExact from "@/pages/sports-exact";
 import GotoSports from "@/pages/goto-sports";
 import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
+import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
+import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 
 function App() {
   console.log("Starting React application");
@@ -70,6 +72,10 @@ function App() {
               
               {/* Floating deposit/withdraw buttons that appear on all pages */}
               <DepositWithdrawFAB />
+              
+              {/* Universal betting handlers to enable betting across all pages */}
+              <UniversalClickHandler />
+              <SportBettingWrapper />
             </div>
             <SpecialLinks />
             <Toaster />

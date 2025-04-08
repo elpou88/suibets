@@ -1,9 +1,35 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { LiveImageOverlays } from "@/components/betting/LiveImageOverlays";
+import { useBetting } from "@/context/BettingContext";
 
 /**
  * Live page that shows the exact image with precise click regions
  */
 export default function LiveExact() {
+  const [imagePath, setImagePath] = useState<string>('/images/live_actual.png');
+  const { addBet } = useBetting();
+  
+  // Create a click handler for betting from the image
+  const handleBetClick = (
+    selectionName: string, 
+    odds: number,
+    market: string
+  ) => {
+    // Create a unique bet ID
+    const betId = `live-${market}-${selectionName}-${Date.now()}`;
+    
+    // Add the bet to the betting slip
+    addBet({
+      id: betId,
+      eventId: 9999, // Live events use a placeholder ID
+      eventName: `Live: ${selectionName.split(' ')[0]} match`,
+      selectionName,
+      odds,
+      stake: 10, // Default stake amount
+      market
+    });
+  };
+  
   useEffect(() => {
     document.title = 'Live Events - SuiBets';
     
@@ -14,18 +40,26 @@ export default function LiveExact() {
     body.style.overflow = 'hidden';
     body.style.backgroundColor = 'black';
     
-    // Remove all existing content
-    body.innerHTML = '';
+    // Remove all existing content except our overlays
+    const root = document.getElementById('root');
+    if (root) {
+      // Just clear content inside the root element
+      while (root.firstChild) {
+        root.removeChild(root.firstChild);
+      }
+    }
     
     // Create a container for better positioning
     const container = document.createElement('div');
     container.style.position = 'relative';
-    body.appendChild(container);
+    container.id = 'live-container';
+    root?.appendChild(container);
     
     // Create the image element - using the full original image
     const img = document.createElement('img');
-    img.src = '/images/live_actual.png';
+    img.src = imagePath;
     img.alt = 'Live Events';
+    img.id = 'live-image';
     img.style.width = '100%';
     img.style.display = 'block';
     img.useMap = '#livemap';
@@ -174,14 +208,106 @@ export default function LiveExact() {
     map.appendChild(connectWalletArea);
     
     // Add tennis match betting options
-    // Note: These are disabled because we're focusing on navigation only
-    // We keep the code for reference but they will not be active
-    const filsButton = document.createElement('area');
-    filsButton.shape = 'rect';
-    filsButton.coords = '318,235,365,262';
-    filsButton.alt = 'Arthur Fils Bet';
-    filsButton.href = '/bet-slip';
-    map.appendChild(filsButton);
+    // Create clickable betting areas for the tennis matches
+    
+    // Match 1: Arthur Fils vs Pablo Carreno
+    const filsButton = document.createElement('div');
+    filsButton.style.position = 'absolute';
+    filsButton.style.left = '318px';
+    filsButton.style.top = '235px';
+    filsButton.style.width = '47px';
+    filsButton.style.height = '27px';
+    filsButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
+    filsButton.style.cursor = 'pointer';
+    filsButton.style.zIndex = '1002';
+    filsButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Arthur Fils bet clicked');
+      handleBetClick('Arthur Fils', 1.57, 'Match Winner');
+    };
+    container.appendChild(filsButton);
+    
+    const carrenoButton = document.createElement('div');
+    carrenoButton.style.position = 'absolute';
+    carrenoButton.style.left = '318px';
+    carrenoButton.style.top = '262px';
+    carrenoButton.style.width = '47px';
+    carrenoButton.style.height = '27px';
+    carrenoButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
+    carrenoButton.style.cursor = 'pointer';
+    carrenoButton.style.zIndex = '1002';
+    carrenoButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Pablo Carreno bet clicked');
+      handleBetClick('Pablo Carreno', 2.42, 'Match Winner');
+    };
+    container.appendChild(carrenoButton);
+    
+    // Match 2: Alex Pujolas vs Dominik Kellovsky
+    const pujolasButton = document.createElement('div');
+    pujolasButton.style.position = 'absolute';
+    pujolasButton.style.left = '779px';
+    pujolasButton.style.top = '371px';
+    pujolasButton.style.width = '47px';
+    pujolasButton.style.height = '27px';
+    pujolasButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
+    pujolasButton.style.cursor = 'pointer';
+    pujolasButton.style.zIndex = '1002';
+    pujolasButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Alex Pujolas bet clicked');
+      handleBetClick('Alex M Pujolas', 1.07, 'Match Winner');
+    };
+    container.appendChild(pujolasButton);
+    
+    const kellovskyButton = document.createElement('div');
+    kellovskyButton.style.position = 'absolute';
+    kellovskyButton.style.left = '779px';
+    kellovskyButton.style.top = '386px';
+    kellovskyButton.style.width = '47px';
+    kellovskyButton.style.height = '27px';
+    kellovskyButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
+    kellovskyButton.style.cursor = 'pointer';
+    kellovskyButton.style.zIndex = '1002';
+    kellovskyButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Dominik Kellovsky bet clicked');
+      handleBetClick('Dominik Kellovsky', 6.96, 'Match Winner');
+    };
+    container.appendChild(kellovskyButton);
+    
+    // Handicap betting buttons
+    const pujolasHandicapButton = document.createElement('div');
+    pujolasHandicapButton.style.position = 'absolute';
+    pujolasHandicapButton.style.left = '842px';
+    pujolasHandicapButton.style.top = '371px';
+    pujolasHandicapButton.style.width = '47px';
+    pujolasHandicapButton.style.height = '27px';
+    pujolasHandicapButton.style.backgroundColor = debugMode ? 'rgba(255,0,0,0.3)' : 'transparent';
+    pujolasHandicapButton.style.cursor = 'pointer';
+    pujolasHandicapButton.style.zIndex = '1002';
+    pujolasHandicapButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Pujolas handicap bet clicked');
+      handleBetClick('Alex M Pujolas -3.5', 1.57, 'Handicap');
+    };
+    container.appendChild(pujolasHandicapButton);
+    
+    const kellovskyHandicapButton = document.createElement('div');
+    kellovskyHandicapButton.style.position = 'absolute';
+    kellovskyHandicapButton.style.left = '842px';
+    kellovskyHandicapButton.style.top = '386px';
+    kellovskyHandicapButton.style.width = '47px';
+    kellovskyHandicapButton.style.height = '27px';
+    kellovskyHandicapButton.style.backgroundColor = debugMode ? 'rgba(0,255,0,0.3)' : 'transparent';
+    kellovskyHandicapButton.style.cursor = 'pointer';
+    kellovskyHandicapButton.style.zIndex = '1002';
+    kellovskyHandicapButton.onclick = (e) => {
+      e.preventDefault();
+      console.log('Kellovsky handicap bet clicked');
+      handleBetClick('Dominik Kellovsky +3.5', 2.25, 'Handicap');
+    };
+    container.appendChild(kellovskyHandicapButton);
     
     // Disable all other links to ensure only our navigation buttons work
     // This helps prevent any conflicts with other elements on the page

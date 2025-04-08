@@ -12,6 +12,7 @@ import { format, isSameDay } from 'date-fns';
 import { BetSlip } from '@/components/betting/BetSlip';
 import { formatOdds } from '@/lib/utils';
 import { useBetting } from '@/context/BettingContext';
+import { SportPageOverlays } from '@/components/betting/SportPageOverlays';
 
 // Map sport slug to sportId for the API
 const sportIdMap: Record<string, number> = {
@@ -139,6 +140,9 @@ export default function Sport() {
   return (
     <Layout>
       <div className="container mx-auto px-4 py-6 min-h-screen flex flex-col md:flex-row gap-6">
+        {/* Add the sport page overlays component for clickable bets without changing UI */}
+        <SportPageOverlays sportSlug={sportSlug} />
+        
         <div className="flex-1">
           <div className="flex items-center mb-6">
             <Button variant="ghost" onClick={() => setLocation('/')} className="mr-2 p-2">

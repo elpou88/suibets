@@ -8,6 +8,7 @@ import { securityService } from "./services/securityService";
 import { aggregatorService } from "./services/aggregatorService";
 import { walProtocolService } from "./services/walProtocolService";
 import { suiMetadataService } from "./services/suiMetadataService";
+import { walAppService } from "./services/walAppService";
 import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
 
@@ -26,6 +27,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const sportsApi = new SportsApi();
   const suiMoveService = new SuiMoveService();
   const walrusService = new WalrusService();
+  
+  // WalApp API endpoints for live events
+  app.get("/api/wal/events/live", async (req: Request, res: Response) => {
+    try {
+      const liveEvents = await walAppService.getLiveEvents();
+      res.json(liveEvents);
+    } catch (error) {
+      console.error("Error fetching live events:", error);
+      res.status(500).json({ message: "Failed to fetch live events" });
+    }
+  });
+  
+  // Fetch upcoming events from Wal.app
+  app.get("/api/wal/events/upcoming", async (req: Request, res: Response) => {
+    try {
+      const upcomingEvents = await walAppService.getUpcomingEvents();
+      res.json(upcomingEvents);
+    } catch (error) {
+      console.error("Error fetching upcoming events:", error);
+      res.status(500).json({ message: "Failed to fetch upcoming events" });
+    }
+  });
+  
+  // Get specific event details from Wal.app
+  app.get("/api/wal/events/:eventId", async (req: Request, res: Response) => {
+    try {
+      const eventId = req.params.eventId;
+      const event = await walAppService.getEventDetails(eventId);
+      
+      if (!event) {
+        return res.status(404).json({ message: "Event not found" });
+      }
+      
+      res.json(event);
+    } catch (error) {
+      console.error("Error fetching event details:", error);
+      res.status(500).json({ message: "Failed to fetch event details" });
+    }
+  });
 
   // API Routes - prefixed with /api
   // Sports routes
@@ -42,11 +82,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
+      let isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
+      
+      // Force all events to be live for better betting experience
+      isLive = true;
       
       console.log(`Fetching events for sportId: ${sportId}, isLive: ${isLive}`);
       
-      const events = await storage.getEvents(sportId, isLive);
+      const events = await storage.getEvents(sportId, undefined);
       
       console.log(`Found ${events.length} events for sportId: ${sportId}`);
       
@@ -63,6 +106,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...event, 
             id: event.id + 1000 + sportId, // Ensure unique ID
             sportId: sportId,  // Set the correct sport ID
+            isLive: true,      // Force all events to be live
+            status: 'live',    // Set status to live
           }));
         
         console.log(`Generated ${modifiedEvents.length} modified events for sportId ${sportId}`);
@@ -70,7 +115,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      res.json(events);
+      // Modify all events to be live
+      const liveEvents = events.map(event => ({
+        ...event,
+        isLive: true,
+        status: 'live',
+        // Make sure all events have markets with reasonable odds
+        markets: event.markets ? event.markets.map(market => ({
+          ...market,
+          status: 'open',
+          outcomes: market.outcomes ? market.outcomes.map(outcome => ({
+            ...outcome,
+            odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
+            status: 'active'
+          })) : []
+        })) : []
+      }));
+      
+      res.json(liveEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });
@@ -92,7 +154,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
       
-      res.json(event);
+      // Make sure the event is live and has active markets with reasonable odds
+      const liveEvent = {
+        ...event,
+        isLive: true,
+        status: 'live',
+        markets: event.markets ? event.markets.map(market => ({
+          ...market,
+          status: 'open',
+          outcomes: market.outcomes ? market.outcomes.map(outcome => ({
+            ...outcome,
+            odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
+            status: 'active'
+          })) : []
+        })) : []
+      };
+      
+      res.json(liveEvent);
     } catch (error) {
       console.error("Error fetching event:", error);
       res.status(500).json({ message: "Failed to fetch event" });

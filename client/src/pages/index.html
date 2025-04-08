@@ -62,7 +62,8 @@
         e.preventDefault();
         const href = this.getAttribute('href');
         console.log('Navigating to:', href);
-        window.location.href = href; // Direct navigation instead of pushState
+        window.history.pushState({}, '', href);
+        setPageImage();
       });
     });
     

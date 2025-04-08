@@ -15,9 +15,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: "ok", time: new Date().toISOString() });
   });
   
-  // Special route for promotions page outside of React router
-  app.get("/promo", (req, res) => {
-    res.sendFile('promo.html', { root: './client/public' });
+  // Special routes for direct HTML access - bypassing React completely
+  app.get("/sports.html", (req, res) => {
+    res.sendFile('sports.html', { root: './client/public' });
+  });
+  
+  app.get("/sports", (req, res) => {
+    res.sendFile('sports.html', { root: './client/public' });
+  });
+  
+  app.get("/live.html", (req, res) => {
+    res.sendFile('live.html', { root: './client/public' });
+  });
+  
+  app.get("/live", (req, res) => {
+    res.sendFile('live.html', { root: './client/public' });
+  });
+  
+  app.get("/promotions.html", (req, res) => {
+    res.sendFile('promotions.html', { root: './client/public' });
+  });
+  
+  app.get("/promotions", (req, res) => {
+    res.sendFile('promotions.html', { root: './client/public' });
   });
   
   // Initialize services
@@ -1465,5 +1485,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Direct HTML file routes for main navigation - bypass React entirely
+  app.get("/", (req, res) => {
+    res.sendFile('sports.html', { root: './client/public' });
+  });
+  
+  // Fall back to index.html for any unmatched routes to handle client-side routing
+  app.get('*', (req, res) => {
+    // Check if it's a specific HTML page we want to handle directly
+    if (req.path === '/sports' || req.path === '/live' || req.path === '/promotions') {
+      const htmlFile = `${req.path.substring(1)}.html`;
+      return res.sendFile(htmlFile, { root: './client/public' });
+    }
+    
+    // For everything else, use index.html which will initialize React router
+    res.sendFile('index.html', { root: './client/public' });
+  });
+
   return httpServer;
 }

@@ -4,6 +4,7 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { getWallets, type Wallet } from '@wallet-standard/core';
 
 // Define types for wallet balances and state
 export type TokenBalances = {
@@ -129,12 +130,73 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      // Try to connect to an actual wallet if available
+      // Get available wallets from wallet-standard
+      const availableWallets = getWallets().get();
+      console.log('Available wallets:', availableWallets);
+      
+      // Find a Sui wallet
+      const suiWallets = availableWallets.filter(wallet => 
+        wallet.features['sui:chains'] || 
+        (wallet.name && wallet.name.toLowerCase().includes('sui'))
+      );
+      
+      if (suiWallets.length > 0) {
+        try {
+          // Use the first available Sui wallet
+          const selectedWallet = suiWallets[0];
+          console.log('Using wallet:', selectedWallet.name);
+          
+          // Try to connect using wallet-standard
+          if (selectedWallet.features['standard:connect']) {
+            const connectFeature = selectedWallet.features['standard:connect'];
+            const connectResult = await connectFeature.connect();
+            
+            // Get account from connection result
+            if (connectResult && connectResult.accounts && connectResult.accounts.length > 0) {
+              const account = connectResult.accounts[0];
+              const walletAddress = account.address;
+              
+              console.log('Connected to wallet address:', walletAddress);
+              
+              // Set the wallet state
+              setAccount({ address: walletAddress });
+              setAddress(walletAddress);
+              setConnected(true);
+              
+              // Connect wallet on server
+              connectMutation.mutate(walletAddress);
+              setConnecting(false);
+              
+              toast({
+                title: 'Wallet Connected',
+                description: `Connected to ${selectedWallet.name}`,
+              });
+              return;
+            }
+          }
+          
+          throw new Error('Wallet connection failed: No accounts returned');
+        } catch (walletError: any) {
+          console.error('Sui wallet connection error:', walletError);
+          toast({
+            title: 'Wallet Connection Error',
+            description: walletError.message || 'Failed to connect to wallet',
+            variant: 'destructive',
+          });
+          // Fall back to legacy connection method
+        }
+      }
+      
+      // Try legacy connection if standard connection fails
+      // @ts-ignore - suiWallet is injected by browser extension
       if (window.suiWallet) {
         try {
+          console.log('Trying legacy wallet connection...');
           // Connect to Sui wallet
+          // @ts-ignore - suiWallet is injected by browser extension
           const response = await window.suiWallet.requestPermissions();
-          if (response.status === 'success') {
+          if (response && response.status === 'success') {
+            // @ts-ignore - suiWallet is injected by browser extension
             const accounts = await window.suiWallet.getAccounts();
             if (accounts && accounts.length > 0) {
               const walletAddress = accounts[0];
@@ -147,17 +209,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               // Connect wallet on server
               connectMutation.mutate(walletAddress);
               setConnecting(false);
+              
+              toast({
+                title: 'Wallet Connected',
+                description: 'Connected using legacy method',
+              });
               return;
             }
           }
-        } catch (walletError) {
-          console.error('Sui wallet error:', walletError);
-          // Fall back to simulated wallet if Sui wallet fails
+          throw new Error('Legacy wallet connection failed');
+        } catch (legacyError) {
+          console.error('Legacy Sui wallet error:', legacyError);
+          // Fall back to development wallet
         }
       }
       
-      // Create Sui client for development/testing
+      // Create Sui client for development/testing as final fallback
       try {
+        console.log('Using development wallet as fallback');
         const client = new SuiClient({ url: getFullnodeUrl('testnet') });
         // Create a keypair for testing
         const keypair = new Ed25519Keypair();
@@ -173,11 +242,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setConnecting(false);
         
         toast({
-          title: 'Test Wallet Connected',
-          description: 'Using test wallet for development',
+          title: 'Development Wallet Connected',
+          description: 'Using test wallet for development. No real wallet detected.',
+          variant: 'default',
         });
       } catch (e) {
-        console.error('Error creating test wallet:', e);
+        console.error('Error creating development wallet:', e);
         
         // Final fallback - generate mock address
         const mockAddress = `0x${Array.from({length: 64}, () => 
@@ -189,6 +259,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         connectMutation.mutate(mockAddress);
         setConnecting(false);
+        
+        toast({
+          title: 'Mock Wallet Connected',
+          description: 'Using mock wallet as last resort',
+          variant: 'default',
+        });
       }
     } catch (error: any) {
       setConnecting(false);

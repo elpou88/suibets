@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { WALLET_TYPES } from "@/lib/utils";
-import { ChevronRight, AlertCircle, Loader2 } from "lucide-react";
+import { ChevronRight, AlertCircle, Loader2, WalletIcon } from "lucide-react";
 import { useWurlusProtocol } from "@/hooks/useWurlusProtocol";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
@@ -15,8 +15,8 @@ interface ConnectWalletModalProps {
 }
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
-  const { setUser } = useAuth();
-  const { connect: connectAdapter } = useWalletAdapter();
+  const { user, connectWallet } = useAuth();
+  const { connect: connectAdapter, address, isConnected, error: walletError } = useWalletAdapter();
   const { connectToWurlusProtocol, checkRegistrationStatus, error: wurlusError } = useWurlusProtocol();
   const { toast } = useToast();
   const modalRef = useRef<HTMLDivElement>(null);
@@ -24,6 +24,41 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const [connectionStep, setConnectionStep] = useState<'selecting' | 'connecting' | 'registering'>('selecting');
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Update UI if wallet connection state changes
+  useEffect(() => {
+    if (isConnected && address) {
+      // Handle successful connection from wallet adapter
+      toast({
+        title: "Wallet Connected",
+        description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
+      });
+      
+      if (connectWallet) {
+        // Sync the wallet connection with auth context
+        connectWallet(address, 'sui')
+          .then(() => {
+            console.log('Wallet synced with auth context');
+          })
+          .catch((syncError) => {
+            console.error('Error syncing wallet with auth:', syncError);
+          });
+      }
+      
+      setConnecting(false);
+      setConnectionStep('selecting');
+      onClose();
+    }
+  }, [isConnected, address, connectWallet, onClose]);
+  
+  // Update UI if there's an error from the wallet adapter
+  useEffect(() => {
+    if (walletError) {
+      setError(walletError);
+      setConnecting(false);
+      setConnectionStep('selecting');
+    }
+  }, [walletError]);
 
   const handleConnectWallet = async (walletId: string) => {
     try {
@@ -32,21 +67,14 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       setConnecting(true);
       setError(null);
       
+      console.log('Initiating wallet connection for:', walletId);
+      
       // Connect using the wallet adapter
       await connectAdapter();
       
-      // At this point, the wallet should be connected via the WalletAdapter
-      // The address will be available in the WalletAdapter context
+      // The rest of the connection process is handled by the useEffect hooks above
+      // that monitor the wallet adapter state changes
       
-      // After wallet connection succeeds, we get the user info from the API
-      // to complete the auth flow
-      
-      toast({
-        title: "Wallet Connected",
-        description: "Your wallet has been successfully connected!",
-      });
-      
-      onClose();
     } catch (err: any) {
       console.error("Error connecting wallet:", err);
       setError(err?.message || wurlusError || "Failed to connect wallet. Please try again.");
@@ -55,7 +83,6 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
         description: err?.message || wurlusError || "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setConnecting(false);
       setConnectionStep('selecting');
     }

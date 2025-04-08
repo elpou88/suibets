@@ -12,7 +12,18 @@ import {
   Dumbbell,
   CircleDot,
   CircleDashed,
-  BarChart4
+  BarChart4,
+  Bike,
+  Car,
+  Swords,
+  Table2,
+  Target,
+  Waves,
+  Rocket,
+  Gamepad2,
+  Flame,
+  Disc,
+  CircleOff
 } from 'lucide-react';
 
 export default function SportsSidebar() {
@@ -31,19 +42,57 @@ export default function SportsSidebar() {
   const getSportIcon = (sportId: number) => {
     switch(sportId) {
       case 1: // Football/Soccer
-        return <Dumbbell className="w-5 h-5" />;
+        return <CircleDot className="w-5 h-5" />;
       case 2: // Basketball
         return <CircleDot className="w-5 h-5" />;
       case 3: // Tennis
-        return <CircleDashed className="w-5 h-5" />;
+        return <Disc className="w-5 h-5" />;
       case 4: // Baseball
-        return <BarChart4 className="w-5 h-5" />;
-      case 5: // Boxing
+        return <Dumbbell className="w-5 h-5" />;
+      case 5: // Hockey
+        return <Flame className="w-5 h-5" />;
+      case 6: // MMA
+        return <Swords className="w-5 h-5" />;
+      case 7: // Boxing
         return <Trophy className="w-5 h-5" />;
-      case 6: // Hockey
+      case 8: // Cricket
+        return <Dumbbell className="w-5 h-5" />;
+      case 9: // Golf
+        return <Target className="w-5 h-5" />;
+      case 10: // Rugby League
+        return <Dumbbell className="w-5 h-5" />;
+      case 11: // Rugby Union
+        return <CircleDot className="w-5 h-5" />;
+      case 12: // American Football
+        return <CircleDot className="w-5 h-5" />;
+      case 13: // Volleyball
+        return <CircleDot className="w-5 h-5" />;
+      case 14: // Handball
+        return <CircleDot className="w-5 h-5" />;
+      case 15: // Badminton
+        return <Disc className="w-5 h-5" />;
+      case 16: // Darts
+        return <Target className="w-5 h-5" />;
+      case 17: // Snooker
+        return <Table2 className="w-5 h-5" />;
+      case 18: // Table Tennis
+        return <Table2 className="w-5 h-5" />;
+      case 19: // Formula 1
+        return <Car className="w-5 h-5" />;
+      case 20: // Cycling
+        return <Bike className="w-5 h-5" />;
+      case 21: // Athletics
         return <Activity className="w-5 h-5" />;
-      case 7: // Esports
-        return <Grid className="w-5 h-5" />;
+      case 22: // Swimming
+        return <Waves className="w-5 h-5" />;
+      case 23: // Esports
+        return <Gamepad2 className="w-5 h-5" />;
+      case 24: // Beach Volleyball
+        return <CircleDot className="w-5 h-5" />;
+      case 25: // Horse Racing
+        return <Activity className="w-5 h-5" />;
+      case 26: // Greyhounds
+        return <Rocket className="w-5 h-5" />;
       default:
         return <Activity className="w-5 h-5" />;
     }

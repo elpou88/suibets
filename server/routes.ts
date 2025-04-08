@@ -981,7 +981,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Sanitize inputs to prevent XSS
-      const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
+      const sanitizedWalletType = walletType || 'Sui';
       
       // Using the imported suiMoveService singleton for wurlus protocol integration
 
@@ -1081,7 +1081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Sanitize inputs to prevent XSS
-      const sanitizedWalletType = securityService.sanitizeInput(walletType || 'Sui');
+      const sanitizedWalletType = walletType || 'Sui';
       
       // Using the imported suiMoveService singleton for wurlus protocol integration
       

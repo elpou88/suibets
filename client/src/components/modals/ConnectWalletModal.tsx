@@ -105,14 +105,14 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
           <div className="space-y-3 py-4">
             {WALLET_TYPES.map((wallet) => (
               <Button
-                key={wallet.id}
+                key={wallet.key}
                 variant="outline"
                 className="w-full justify-between py-6 px-4"
-                onClick={() => handleConnectWallet(wallet.id)}
+                onClick={() => handleConnectWallet(wallet.key)}
                 disabled={connecting}
               >
                 <div className="flex items-center">
-                  <div className={`w-8 h-8 ${wallet.color} rounded-full flex items-center justify-center text-white mr-3`}>
+                  <div className={`w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white mr-3`}>
                     {wallet.name[0]}
                   </div>
                   <span className="font-medium">{wallet.name}</span>
@@ -136,10 +136,10 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             </div>
             {selectedWallet && (
               <div className="flex items-center mt-2">
-                <div className={`w-6 h-6 ${WALLET_TYPES.find(w => w.id === selectedWallet)?.color} rounded-full flex items-center justify-center text-white mr-2`}>
-                  {WALLET_TYPES.find(w => w.id === selectedWallet)?.name[0]}
+                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white mr-2">
+                  {WALLET_TYPES.find(w => w.key === selectedWallet)?.name[0] || '?'}
                 </div>
-                <span>{WALLET_TYPES.find(w => w.id === selectedWallet)?.name}</span>
+                <span>{WALLET_TYPES.find(w => w.key === selectedWallet)?.name || 'Wallet'}</span>
               </div>
             )}
           </div>

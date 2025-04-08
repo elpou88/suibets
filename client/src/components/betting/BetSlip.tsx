@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useBetting } from "@/context/BettingContext";
 import { useAuth } from "@/context/AuthContext";
 import { formatOdds, formatCurrency } from "@/lib/utils";
-import { Trash2, X, ChevronDown } from "lucide-react";
+import { Trash2, X, ChevronDown, Plus, Minus } from "lucide-react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { 
   Select,
@@ -290,8 +290,28 @@ export function BetSlip() {
             </div>
           )}
           
+          <div className="flex flex-wrap gap-2 w-full mb-2">
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setIsWalletModalOpen(true)}
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Deposit
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="flex-1"
+              onClick={() => setIsWalletModalOpen(true)}
+            >
+              <Minus className="h-4 w-4 mr-1" />
+              Withdraw
+            </Button>
+          </div>
+          
           <Button
-            className="w-full mt-2"
+            className="w-full"
             onClick={handlePlaceBet}
             disabled={isSubmitting || totalStake <= 0 || totalStake > currentBalance}
           >

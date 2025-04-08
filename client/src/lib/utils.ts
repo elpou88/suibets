@@ -1,150 +1,185 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { SelectedBet } from "@/types";
 
+// Helper utility for joining tailwind class names
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(value: number, currency: string = "SBETS") {
-  // Use 4 decimal places for SUI (smaller value) and 2 for SBETS
-  const decimals = currency === "SUI" ? 4 : 2;
-  const formattedValue = value.toLocaleString(undefined, {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
-  });
-  return `${formattedValue} ${currency}`;
-}
-
-export function formatOdds(odds: number) {
+// Format odds to display in UI (decimal odds)
+export function formatOdds(odds: number): string {
+  if (!odds) return "-";
   return odds.toFixed(2);
 }
 
-export function formatDate(date: Date | string) {
-  if (typeof date === 'string') {
-    date = new Date(date);
-  }
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+// Format currency ($ format)
+export function formatCurrency(amount: number): string {
+  if (amount === undefined || amount === null) return "$0.00";
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(amount);
 }
 
-export function shortenAddress(address: string, chars: number = 4): string {
-  return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+// Format date to display in UI
+export function formatDate(date?: string | Date): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(d);
 }
 
+// Calculate potential winnings based on stake and odds
 export function calculatePotentialWinnings(stake: number, odds: number): number {
-  // Ensure we handle edge cases with proper validation
-  if (isNaN(stake) || stake <= 0 || isNaN(odds) || odds <= 0) {
-    return 0;
-  }
-  // Round to 2 decimal places to avoid floating point issues
-  return Math.round((stake * odds) * 100) / 100;
+  if (!stake || !odds) return 0;
+  return stake * odds;
 }
 
-export function calculateParlayOdds(selections: { odds: number }[]): number {
-  if (!selections || selections.length === 0) {
-    return 0;
-  }
-  
-  // Multiply all odds together for parlay calculation
-  const totalOdds = selections.reduce((acc, selection) => {
-    const odds = selection.odds || 0;
-    // Skip invalid odds
-    if (odds <= 0) return acc;
-    return acc * odds;
-  }, 1);
-  
-  // Round to 2 decimal places for consistency
-  return Math.round(totalOdds * 100) / 100;
+// Calculate parlay odds (multiple bets)
+export function calculateParlayOdds(bets: { odds: number }[]): number {
+  if (!bets.length) return 0;
+  return bets.reduce((totalOdds, bet) => totalOdds * bet.odds, 1);
 }
 
+// Get sport-specific markets based on sport type
+export function getSportMarkets(sportType: string): { name: string; code: string }[] {
+  // Default markets available for all sports
+  const defaultMarkets = [
+    { name: "Match Result", code: "MR" },
+    { name: "Draw No Bet", code: "DNB" },
+    { name: "Double Chance", code: "DC" },
+    { name: "Handicap", code: "HDP" },
+  ];
+
+  // Sport-specific markets
+  switch (sportType) {
+    case "football":
+    case "soccer":
+      return [
+        ...defaultMarkets,
+        { name: "Both Teams to Score", code: "BTTS" },
+        { name: "Total Goals", code: "TG" },
+        { name: "Correct Score", code: "CS" },
+        { name: "Half-Time/Full-Time", code: "HTFT" },
+        { name: "First Goalscorer", code: "FG" },
+      ];
+    case "basketball":
+      return [
+        ...defaultMarkets,
+        { name: "Total Points", code: "TP" },
+        { name: "Point Spread", code: "PS" },
+        { name: "Quarter Betting", code: "QB" },
+        { name: "Race to Points", code: "RTP" },
+      ];
+    case "tennis":
+      return [
+        ...defaultMarkets,
+        { name: "Set Betting", code: "SB" },
+        { name: "Total Games", code: "TG" },
+        { name: "Games Handicap", code: "GH" },
+        { name: "Player to Win a Set", code: "PWS" },
+      ];
+    case "boxing":
+    case "mma-ufc":
+      return [
+        ...defaultMarkets,
+        { name: "Method of Victory", code: "MOV" },
+        { name: "Round Betting", code: "RB" },
+        { name: "Will the Fight Go the Distance", code: "WFGD" },
+        { name: "Total Rounds", code: "TR" },
+      ];
+    case "cricket":
+      return [
+        ...defaultMarkets,
+        { name: "Top Batsman", code: "TB" },
+        { name: "Top Bowler", code: "TBO" },
+        { name: "Total Runs", code: "TR" },
+        { name: "Man of the Match", code: "MOM" },
+      ];
+    default:
+      return defaultMarkets;
+  }
+}
+
+// Generate UUID for client-side IDs
+export function generateId(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+// Parse blockchain transaction hash
+export function parseTransactionHash(txHash: string): string {
+  if (!txHash) return "";
+  // Only show first and last 6 characters of hash
+  return txHash.length > 12
+    ? `${txHash.substring(0, 6)}...${txHash.substring(txHash.length - 6)}`
+    : txHash;
+}
+
+// Shorten wallet address for display
+export function shortenAddress(address?: string): string {
+  if (!address) return "";
+  return address.length > 12
+    ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}`
+    : address;
+}
+
+// Calculate odds from probabilities
+export function probabilityToDecimalOdds(probability: number): number {
+  if (!probability || probability <= 0 || probability >= 1) return 0;
+  return Number((1 / probability).toFixed(2));
+}
+
+// Validate a bet before adding it to the slip
+export function validateBet(bet: SelectedBet): { valid: boolean; message?: string } {
+  if (!bet.eventId) {
+    return { valid: false, message: "Invalid event" };
+  }
+  if (!bet.odds || bet.odds <= 1) {
+    return { valid: false, message: "Invalid odds" };
+  }
+  if (!bet.stake || bet.stake <= 0) {
+    return { valid: false, message: "Stake must be greater than 0" };
+  }
+  return { valid: true };
+}
+
+// Get default stake amount based on user preferences 
+export function getDefaultStake(): number {
+  return 10; // Default stake
+}
+
+// Get blockchain network fee percentage
+export function getNetworkFeePercentage(): number {
+  return 0.01; // 1% network fee
+}
+
+// Calculate blockchain transaction fees
+export function calculateTransactionFees(amount: number): { 
+  platformFee: number, 
+  networkFee: number,
+  totalFees: number 
+} {
+  const platformFeePercentage = 0; // No platform fee as per requirements
+  const networkFeePercentage = getNetworkFeePercentage();
+  
+  const platformFee = amount * platformFeePercentage;
+  const networkFee = amount * networkFeePercentage;
+  
+  return {
+    platformFee,
+    networkFee,
+    totalFees: platformFee + networkFee,
+  };
+}
+
+// Wallet types for UI display - as array for mapping
 export const WALLET_TYPES = [
-  { id: 'sui', name: 'Sui Wallet', color: 'bg-blue-500' },
-  { id: 'suiet', name: 'Suiet Wallet', color: 'bg-purple-500' },
-  { id: 'nightly', name: 'Nightly Wallet', color: 'bg-indigo-500' },
-  { id: 'walletconnect', name: 'Wallet Connect', color: 'bg-green-500' }
+  { key: 'SUI', name: 'Sui Wallet' },
+  { key: 'ETHOS', name: 'Ethos Wallet' },
+  { key: 'MARTIAN', name: 'Martian Wallet' },
+  { key: 'SUIET', name: 'Suiet Wallet' },
+  { key: 'WEB3AUTH', name: 'Web3Auth' },
 ];
-
-// Calculate correct score odds based on sport type
-export function calculateCorrectScoreOdds(sport: string, homeScore: number, awayScore: number, baseOdds: number = 5.0): number {
-  // Different calculation logics for different sports
-  switch(sport.toLowerCase()) {
-    case 'football':
-    case 'soccer':
-      // Soccer/Football: lower scores are more common
-      const totalGoals = homeScore + awayScore;
-      return baseOdds * (1 + (totalGoals / 2));
-      
-    case 'basketball':
-      // Basketball: higher scores are normal, so use different logic
-      const scoreDiff = Math.abs(homeScore - awayScore);
-      // Close games are more likely than blowouts
-      return baseOdds * (1 + (scoreDiff / 10));
-      
-    case 'tennis':
-      // Tennis scoring (sets)
-      return baseOdds * (1 + (Math.max(homeScore, awayScore) * 0.5));
-      
-    case 'baseball':
-      // Baseball: moderate scoring
-      return baseOdds * (1 + ((homeScore + awayScore) / 5));
-      
-    case 'hockey':
-      // Hockey: low scoring
-      return baseOdds * (1 + ((homeScore + awayScore) * 0.8));
-      
-    case 'cricket':
-      // Cricket: high scoring
-      return baseOdds * (1 + (Math.abs(homeScore - awayScore) / 50));
-      
-    case 'rugby-league':
-    case 'rugby-union':
-      // Rugby: moderate to high scoring
-      return baseOdds * (1 + ((homeScore + awayScore) / 15));
-      
-    case 'boxing':
-    case 'mma-ufc':
-      // Boxing/MMA: rounds/decisions or KO
-      // For these sports, scores might represent rounds won or method of victory
-      return baseOdds * (1 + (Math.abs(homeScore - awayScore) * 0.5));
-      
-    default:
-      // Default calculation for other sports
-      return baseOdds * (1 + ((homeScore + awayScore) / 4));
-  }
-}
-
-// Get sport-specific market types
-export function getSportMarkets(sportType: string): string[] {
-  const baseMarkets = ['Match Winner', 'Double Chance', 'Total'];
-  
-  switch(sportType.toLowerCase()) {
-    case 'football':
-    case 'soccer':
-      return [...baseMarkets, 'Correct Score', 'Both Teams to Score', 'First Goal Scorer', 'Half-Time/Full-Time'];
-      
-    case 'basketball':
-      return [...baseMarkets, 'Point Spread', 'Player Points', 'First Quarter Winner', 'Race to 20 Points'];
-      
-    case 'tennis':
-      return [...baseMarkets, 'Set Betting', 'Total Games', 'Player to Win a Set', 'Correct Set Score'];
-      
-    case 'baseball':
-      return [...baseMarkets, 'Run Line', 'Total Runs', 'First Team to Score', 'Innings Betting'];
-      
-    case 'boxing':
-    case 'mma-ufc':
-      return ['Fight Winner', 'Method of Victory', 'Round Betting', 'Fight to Go the Distance', 'Total Rounds'];
-      
-    case 'hockey':
-      return [...baseMarkets, 'Puck Line', 'Total Goals', 'Period Betting', 'Team to Score First'];
-      
-    case 'cricket':
-      return ['Match Winner', 'Top Batsman', 'Top Bowler', 'Total Match Runs', 'Method of Dismissal'];
-      
-    case 'rugby-league':
-    case 'rugby-union':
-      return [...baseMarkets, 'Handicap', 'First Try Scorer', 'Total Tries', 'Winning Margin'];
-      
-    default:
-      return baseMarkets;
-  }
-}

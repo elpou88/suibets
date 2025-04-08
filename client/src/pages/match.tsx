@@ -126,6 +126,28 @@ export default function Match() {
     }
   };
 
+  // Load sport-specific betting interface behind the scenes
+  // This won't change the UI but will enable all the betting functionality
+  const loadSportBetting = () => {
+    if (!sportParam || !eventDetails) return null;
+    
+    // We don't directly render this but its hooks will be registered
+    return (
+      <div style={{ display: 'none' }}>
+        <SportSpecificBets 
+          sportType={sportParam}
+          eventId={eventDetails.id}
+          eventName={`${eventDetails.homeTeam} vs ${eventDetails.awayTeam}`}
+          homeTeam={eventDetails.homeTeam}
+          awayTeam={eventDetails.awayTeam}
+          homeOdds={eventDetails.homeOdds}
+          awayOdds={eventDetails.awayOdds}
+          drawOdds={eventDetails.drawOdds}
+        />
+      </div>
+    );
+  };
+
   return (
     <div className="w-full min-h-screen flex flex-col">
       <div 
@@ -137,6 +159,9 @@ export default function Match() {
           alt="Match Details" 
           className="w-full h-full object-contain pointer-events-none"
         />
+        
+        {/* Hidden element - contains sport-specific betting functionality without changing UI */}
+        {eventDetails && sportParam && loadSportBetting()}
       </div>
       
       <ConnectWalletModal 

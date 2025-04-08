@@ -30,6 +30,7 @@ import Live from "@/pages/live";
 import LiveExact from "@/pages/live-exact";
 import SportsExact from "@/pages/sports-exact";
 import GotoSports from "@/pages/goto-sports";
+import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 
 function App() {
   console.log("Starting React application");
@@ -66,6 +67,9 @@ function App() {
                 <Route path="/live/:id" component={LiveEventPage} />
                 <Route component={NotFound} />
               </Switch>
+              
+              {/* Floating deposit/withdraw buttons that appear on all pages */}
+              <DepositWithdrawFAB />
             </div>
             <SpecialLinks />
             <Toaster />

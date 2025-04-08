@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, ReactNode } from 'react';
-import { BettingContextType, SelectedBet } from '@/types';
+import { BettingContextType, SelectedBet, PlaceBetOptions } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { calculatePotentialWinnings, calculateParlayOdds } from '@/lib/utils';
 
+// Create betting context
 const BettingContext = createContext<BettingContextType>({
   selectedBets: [],
   addBet: () => {},
@@ -16,190 +17,176 @@ const BettingContext = createContext<BettingContextType>({
   updateStake: () => {},
 });
 
+// Custom hook to use the betting context
 export const useBetting = () => useContext(BettingContext);
 
-interface BettingProviderProps {
-  children: ReactNode;
-}
-
-export const BettingProvider = ({ children }: BettingProviderProps) => {
+// Provider for betting context
+export const BettingProvider = ({ children }: { children: ReactNode }) => {
   const [selectedBets, setSelectedBets] = useState<SelectedBet[]>([]);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Add a bet to the selection
   const addBet = (bet: SelectedBet) => {
-    // Check if bet already exists
+    // Check if we already have a bet for this selection
     const existingBetIndex = selectedBets.findIndex(
-      (selectedBet) => 
-        selectedBet.eventId === bet.eventId && 
-        selectedBet.market === bet.market
+      (existing) => existing.eventId === bet.eventId && existing.market === bet.market
     );
 
     if (existingBetIndex >= 0) {
-      // Replace existing bet
-      const newBets = [...selectedBets];
-      newBets[existingBetIndex] = bet;
-      setSelectedBets(newBets);
+      // Replace the existing bet
+      const updatedBets = [...selectedBets];
+      updatedBets[existingBetIndex] = bet;
+      setSelectedBets(updatedBets);
+      
+      toast({
+        title: "Bet updated",
+        description: `${bet.selectionName} odds updated to ${bet.odds}`,
+      });
     } else {
-      // Add new bet
+      // Add a new bet
       setSelectedBets([...selectedBets, bet]);
+      
+      toast({
+        title: "Bet added",
+        description: `${bet.selectionName} added to bet slip`,
+      });
     }
-
-    toast({
-      title: "Selection Added",
-      description: `${bet.selectionName} added to bet slip`,
-    });
   };
 
-  const removeBet = (betId: string) => {
-    setSelectedBets(selectedBets.filter((bet) => bet.id !== betId));
+  // Remove a bet from the selection
+  const removeBet = (id: string) => {
+    setSelectedBets(selectedBets.filter((bet) => bet.id !== id));
   };
 
+  // Clear all bets
   const clearBets = () => {
     setSelectedBets([]);
   };
 
+  // Update stake amount for a bet
   const updateStake = (id: string, stake: number) => {
     setSelectedBets(
-      selectedBets.map((bet) =>
-        bet.id === id ? { ...bet, stake } : bet
-      )
+      selectedBets.map((bet) => (bet.id === id ? { ...bet, stake } : bet))
     );
   };
 
-  interface PlaceBetOptions {
-    betType?: 'single' | 'parlay';
-    currency?: 'SUI' | 'SBETS';
-    acceptOddsChange?: boolean;
-  }
-
+  // Place a bet (handle both single and parlay bets)
   const placeBet = async (betAmount: number, options?: PlaceBetOptions): Promise<boolean> => {
-    if (!user) {
+    try {
+      if (!user) {
+        toast({
+          title: "Authentication required",
+          description: "Please connect your wallet to place bets",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (selectedBets.length === 0) {
+        toast({
+          title: "No bets selected",
+          description: "Please select at least one bet",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Default options
+      const betOptions: PlaceBetOptions = {
+        betType: selectedBets.length > 1 ? 'parlay' : 'single',
+        currency: 'SUI',
+        acceptOddsChange: true,
+        ...options,
+      };
+
+      // For single bets
+      if (betOptions.betType === 'single' && selectedBets.length === 1) {
+        const bet = selectedBets[0];
+        
+        const response = await apiRequest('POST', '/api/bets', {
+          userId: user.id,
+          walletAddress: user.walletAddress,
+          eventId: bet.eventId,
+          marketId: bet.marketId,
+          outcomeId: bet.outcomeId,
+          odds: bet.odds,
+          betAmount: bet.stake || betAmount,
+          prediction: bet.selectionName,
+          potentialPayout: calculatePotentialWinnings(bet.stake || betAmount, bet.odds),
+          feeCurrency: betOptions.currency,
+        });
+
+        if (response.ok) {
+          toast({
+            title: "Bet placed successfully",
+            description: `${bet.selectionName} bet placed for ${bet.stake || betAmount} ${betOptions.currency}`,
+          });
+          clearBets();
+          return true;
+        } else {
+          const errorData = await response.json();
+          toast({
+            title: "Failed to place bet",
+            description: errorData.message || "An error occurred",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      // For parlay bets
+      if (betOptions.betType === 'parlay' && selectedBets.length > 1) {
+        const parlayOdds = calculateParlayOdds(selectedBets);
+        const potentialPayout = calculatePotentialWinnings(betAmount, parlayOdds);
+
+        const response = await apiRequest('POST', '/api/parlays', {
+          userId: user.id,
+          walletAddress: user.walletAddress,
+          totalOdds: parlayOdds,
+          betAmount: betAmount,
+          potentialPayout: potentialPayout,
+          feeCurrency: betOptions.currency,
+          legs: selectedBets.map(bet => ({
+            eventId: bet.eventId,
+            marketId: bet.marketId,
+            outcomeId: bet.outcomeId,
+            odds: bet.odds,
+            prediction: bet.selectionName,
+          })),
+        });
+
+        if (response.ok) {
+          toast({
+            title: "Parlay bet placed successfully",
+            description: `Parlay with ${selectedBets.length} selections placed for ${betAmount} ${betOptions.currency}`,
+          });
+          clearBets();
+          return true;
+        } else {
+          const errorData = await response.json();
+          toast({
+            title: "Failed to place parlay bet",
+            description: errorData.message || "An error occurred",
+            variant: "destructive",
+          });
+          return false;
+        }
+      }
+
+      return false;
+    } catch (error) {
+      console.error("Error placing bet:", error);
       toast({
-        title: "Authentication Required",
-        description: "Please connect your wallet to place bets",
+        title: "Error placing bet",
+        description: "An unexpected error occurred",
         variant: "destructive",
       });
       return false;
     }
-
-    try {
-      const isSingleBet = options?.betType === 'single' || selectedBets.length === 1;
-      const currency = options?.currency || 'SUI';
-      
-      // If it's a single bet type OR there's only one selection
-      if (isSingleBet) {
-        // Place individual bets
-        for (const bet of selectedBets) {
-          if (bet.stake <= 0) continue;
-
-          // Update the currency based on the selected option
-          const feeCurrency = currency;
-          const betEndpoint = feeCurrency === 'SUI' ? '/api/bets/sui' : '/api/bets/sbets';
-          
-          // Make the API request with the updated currency
-          await apiRequest('POST', betEndpoint, {
-            userId: user.id,
-            eventId: bet.eventId,
-            betAmount: bet.stake,
-            odds: bet.odds,
-            prediction: bet.selectionName,
-            potentialPayout: calculatePotentialWinnings(bet.stake, bet.odds),
-            feeCurrency,
-            marketId: bet.marketId || 1,
-            outcomeId: bet.outcomeId || null,
-            acceptOddsChange: options?.acceptOddsChange !== false, // Default to true if not specified
-            marketName: bet.market
-          });
-        }
-        
-        toast({
-          title: "Bet Placed Successfully",
-          description: `Your ${selectedBets.length > 1 ? 'bets have' : 'bet has'} been placed with ${currency}`,
-        });
-      } else {
-        // Handle as a parlay bet
-        // Calculate total odds for parlay
-        const parlaySelections = selectedBets.map(bet => ({ odds: bet.odds }));
-        const totalOdds = calculateParlayOdds(parlaySelections);
-        
-        // Use the currency from options
-        const feeCurrency = currency;
-        const parlayCurrencyEndpoint = feeCurrency === 'SUI' ? '/api/parlays/sui' : '/api/parlays/sbets';
-        
-        // Create a single parlay bet with all selections
-        const response = await apiRequest('POST', parlayCurrencyEndpoint, {
-          userId: user.id,
-          betAmount: betAmount,
-          totalOdds: totalOdds,
-          potentialPayout: calculatePotentialWinnings(betAmount, totalOdds),
-          feeCurrency: feeCurrency,
-          acceptOddsChange: options?.acceptOddsChange !== false, // Default to true if not specified
-          legs: selectedBets.map(bet => ({
-            eventId: bet.eventId,
-            marketId: bet.marketId || 1,
-            odds: bet.odds,
-            prediction: bet.selectionName,
-            outcomeId: bet.outcomeId || null,
-            marketName: bet.market
-          }))
-        });
-        
-        toast({
-          title: "Parlay Bet Placed Successfully",
-          description: `Your parlay bet with ${selectedBets.length} selections has been placed with ${currency}`,
-        });
-      }
-
-      // Clear selected bets after successful placement
-      clearBets();
-      return true;
-    } catch (error: any) {
-      console.error('Error placing bet:', error);
-      
-      // Handle specific error types
-      if (error.isInsufficientFunds) {
-        toast({
-          title: "Insufficient Funds",
-          description: `You don't have enough ${options?.currency || 'SUI'} to place this bet. Please deposit more funds.`,
-          variant: "destructive",
-        });
-      } else if (error.isNetworkError) {
-        toast({
-          title: "Network Error",
-          description: "Connection issue with the blockchain network. Please try again later.",
-          variant: "destructive",
-        });
-      } else if (error.isAuthError) {
-        toast({
-          title: "Authentication Error",
-          description: "Please reconnect your wallet and try again.",
-          variant: "destructive",
-        });
-      } else if (error.isOddsChanged && !options?.acceptOddsChange) {
-        toast({
-          title: "Odds Have Changed",
-          description: "The odds for one or more of your selections have changed. Please accept the new odds to place your bet.",
-          variant: "destructive",
-        });
-      } else if (error.isWurlusProtocolError) {
-        toast({
-          title: "Wurlus Protocol Error",
-          description: "There was an error while processing your bet on the Wurlus Protocol. Please try again later.",
-          variant: "destructive",
-        });
-      } else {
-        // Generic error message as fallback
-        toast({
-          title: "Failed to Place Bet",
-          description: error.message || "There was an error placing your bet. Please try again.",
-          variant: "destructive",
-        });
-      }
-      return false;
-    }
   };
 
+  // Calculate total stake and potential winnings
   const totalStake = selectedBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
   
   // Calculate potential winnings differently for parlays vs. single bets

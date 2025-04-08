@@ -161,16 +161,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ...event,
         isLive: true,
         status: 'live',
-        // Make sure all events have markets with reasonable odds
-        markets: event.markets ? event.markets.map(market => ({
-          ...market,
-          status: 'open',
-          outcomes: market.outcomes ? market.outcomes.map(outcome => ({
-            ...outcome,
-            odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
-            status: 'active'
-          })) : []
-        })) : []
+        // If no markets exist, create some mock markets
+        markets: event.markets && event.markets.length > 0 ? 
+          // If markets exist, ensure they have valid outcomes with odds
+          event.markets.map(market => ({
+            ...market,
+            status: 'open',
+            outcomes: market.outcomes && market.outcomes.length > 0 ? 
+              market.outcomes.map(outcome => ({
+                ...outcome,
+                odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
+                status: 'active'
+              })) : [
+                // No outcomes, so create some based on market type
+                { id: `outcome-${event.id}-${market.id}-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
+                { id: `outcome-${event.id}-${market.id}-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
+                { id: `outcome-${event.id}-${market.id}-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
+              ]
+          })) : [
+            // No markets, so create standard football markets
+            {
+              id: `market-${event.id}-1`,
+              name: 'Match Result',
+              status: 'open',
+              marketType: '1X2',
+              outcomes: [
+                { id: `outcome-${event.id}-1-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
+                { id: `outcome-${event.id}-1-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
+                { id: `outcome-${event.id}-1-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
+              ]
+            },
+            {
+              id: `market-${event.id}-2`,
+              name: 'Over/Under 2.5 Goals',
+              status: 'open',
+              marketType: 'OVER_UNDER',
+              outcomes: [
+                { id: `outcome-${event.id}-2-1`, name: 'Over 2.5', odds: 1.95 + Math.random() * 0.3, status: 'active' },
+                { id: `outcome-${event.id}-2-2`, name: 'Under 2.5', odds: 1.85 + Math.random() * 0.3, status: 'active' }
+              ]
+            }
+          ]
       }));
       
       res.json(liveEvents);
@@ -195,23 +226,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Event not found" });
       }
       
-      // Make sure the event is live and has active markets with reasonable odds
-      const liveEvent = {
+      // Create a copy of the event with proper typing
+      const eventWithMarkets: any = {
         ...event,
         isLive: true,
         status: 'live',
-        markets: event.markets ? event.markets.map(market => ({
+        name: event.name || `${event.homeTeam} vs ${event.awayTeam}`
+      };
+        
+      // Check if event already has markets
+      if (eventWithMarkets.markets && eventWithMarkets.markets.length > 0 && 
+          eventWithMarkets.markets[0].outcomes && eventWithMarkets.markets[0].outcomes.length > 0) {
+        // If it has markets, ensure they have proper status and odds
+        eventWithMarkets.markets = eventWithMarkets.markets.map((market: any) => ({
           ...market,
           status: 'open',
-          outcomes: market.outcomes ? market.outcomes.map(outcome => ({
+          outcomes: market.outcomes ? market.outcomes.map((outcome: any) => ({
             ...outcome,
             odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
             status: 'active'
           })) : []
-        })) : []
-      };
+        }));
+      } else {
+        // If no markets exist, create standard football markets
+        eventWithMarkets.markets = [
+          {
+            id: `market-${event.id}-1`,
+            name: 'Match Result',
+            status: 'open',
+            marketType: '1X2',
+            outcomes: [
+              { id: `outcome-${event.id}-1-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
+              { id: `outcome-${event.id}-1-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
+              { id: `outcome-${event.id}-1-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
+            ]
+          },
+          {
+            id: `market-${event.id}-2`,
+            name: 'Over/Under 2.5 Goals',
+            status: 'open',
+            marketType: 'OVER_UNDER',
+            outcomes: [
+              { id: `outcome-${event.id}-2-1`, name: 'Over 2.5', odds: 1.95 + Math.random() * 0.3, status: 'active' },
+              { id: `outcome-${event.id}-2-2`, name: 'Under 2.5', odds: 1.85 + Math.random() * 0.3, status: 'active' }
+            ]
+          }
+        ];
+      }
       
-      res.json(liveEvent);
+      res.json(eventWithMarkets);
     } catch (error) {
       console.error("Error fetching event:", error);
       res.status(500).json({ message: "Failed to fetch event" });

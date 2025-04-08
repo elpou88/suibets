@@ -133,8 +133,8 @@ export default function Sidebar() {
           </div>
         </a>
         
-        {/* Esports - Special handling */}
-        <a href="/attached_assets/image_1743933557700.png" className="block">
+        {/* Esports */}
+        <a href="/sport/esports" className="block">
           <div className="flex items-center px-4 py-3 cursor-pointer bg-cyan-400 text-black my-2">
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
               {getSportIcon('esports')}

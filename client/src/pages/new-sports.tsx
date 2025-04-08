@@ -23,7 +23,7 @@ export default function NewSports() {
     container.style.height = '100vh';
     body.appendChild(container);
     
-    // Create the full page image
+    // Create the full page image - just show the original design
     const mainImage = document.createElement('img');
     mainImage.src = '/images/sports-image.png';
     mainImage.alt = 'Sports';
@@ -76,64 +76,7 @@ export default function NewSports() {
     });
     map.appendChild(promotionsNav);
     
-    // Add invisible buttons over the navigation text for better clickability
-    // These are positioned precisely over the navigation items
-    
-    // Sports button - transparent but clickable (current page)
-    const sportsButton = document.createElement('button');
-    sportsButton.textContent = 'Sports';
-    sportsButton.style.position = 'absolute';
-    sportsButton.style.top = '12px';
-    sportsButton.style.left = '435px';
-    sportsButton.style.width = '50px';
-    sportsButton.style.height = '30px';
-    sportsButton.style.background = 'transparent';
-    sportsButton.style.border = 'none';
-    sportsButton.style.color = 'transparent';
-    sportsButton.style.cursor = 'pointer';
-    sportsButton.style.zIndex = '1000';
-    sportsButton.addEventListener('click', () => {
-      console.log('Sports button clicked - already on sports page');
-    });
-    container.appendChild(sportsButton);
-    
-    // Live button - transparent but clickable
-    const liveButton = document.createElement('button');
-    liveButton.textContent = 'Live';
-    liveButton.style.position = 'absolute';
-    liveButton.style.top = '12px';
-    liveButton.style.left = '495px';
-    liveButton.style.width = '40px';
-    liveButton.style.height = '30px';
-    liveButton.style.background = 'transparent';
-    liveButton.style.border = 'none';
-    liveButton.style.color = 'transparent';
-    liveButton.style.cursor = 'pointer';
-    liveButton.style.zIndex = '1000';
-    liveButton.addEventListener('click', () => {
-      console.log('Live button clicked');
-      window.location.href = "/live";
-    });
-    container.appendChild(liveButton);
-    
-    // Promotions button - transparent but clickable
-    const promotionsButton = document.createElement('button');
-    promotionsButton.textContent = 'Promotions';
-    promotionsButton.style.position = 'absolute';
-    promotionsButton.style.top = '12px';
-    promotionsButton.style.left = '553px';
-    promotionsButton.style.width = '80px';
-    promotionsButton.style.height = '30px';
-    promotionsButton.style.background = 'transparent';
-    promotionsButton.style.border = 'none';
-    promotionsButton.style.color = 'transparent';
-    promotionsButton.style.cursor = 'pointer';
-    promotionsButton.style.zIndex = '1000';
-    promotionsButton.addEventListener('click', () => {
-      console.log('Promotions button clicked');
-      window.location.href = "/promotions";
-    });
-    container.appendChild(promotionsButton);
+    // No additional buttons or UI elements - only image map with clickable areas
     
     // Log click coordinates for debugging
     document.addEventListener('click', (e) => {

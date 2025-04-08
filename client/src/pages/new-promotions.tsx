@@ -28,12 +28,20 @@ export default function NewPromotions() {
     
     // Create the full page image - just show the original design
     const mainImage = document.createElement('img');
-    mainImage.src = '/images/promotions-image.png';
+    mainImage.src = '/images/promotions_exact.png';
     mainImage.alt = 'Promotions';
     mainImage.style.width = '100%';
     mainImage.style.height = 'auto';
     mainImage.style.display = 'block';
     mainImage.useMap = '#navMap';
+    mainImage.onload = () => {
+      console.log('Promotions image loaded successfully');
+    };
+    mainImage.onerror = (e) => {
+      console.error('Error loading promotions image:', e);
+      // Try alternative image if primary fails
+      mainImage.src = '/images/promotions-image.png';
+    };
     container.appendChild(mainImage);
     
     // Create the image map for navigation
@@ -82,11 +90,11 @@ export default function NewPromotions() {
     // No additional buttons or UI elements - only image map with clickable areas
     
     // Log click coordinates for debugging
-    document.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
-    });
+    // document.addEventListener('click', (e) => {
+    //   const x = e.clientX;
+    //   const y = e.clientY;
+    //   console.log(`Clicked at coordinates: x=${x}, y=${y}`);
+    // });
     
     // Clean up function
     return () => {

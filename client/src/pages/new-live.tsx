@@ -28,12 +28,20 @@ export default function NewLive() {
     
     // Create the full page image - just show the exact image without any additional elements
     const mainImage = document.createElement('img');
-    mainImage.src = '/images/live-image.png';
+    mainImage.src = '/images/live_exact.png';
     mainImage.alt = 'Live Events';
     mainImage.style.width = '100%';
     mainImage.style.height = 'auto';
     mainImage.style.display = 'block';
     mainImage.useMap = '#navMap';
+    mainImage.onload = () => {
+      console.log('Live image loaded successfully');
+    };
+    mainImage.onerror = (e) => {
+      console.error('Error loading live image:', e);
+      // Try alternative image if primary fails
+      mainImage.src = '/images/live-image.png';
+    };
     container.appendChild(mainImage);
     
     // Create the image map for navigation
@@ -82,11 +90,11 @@ export default function NewLive() {
     // No additional buttons or UI elements - only image map with clickable areas
     
     // Log click coordinates for debugging
-    document.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
-    });
+    // document.addEventListener('click', (e) => {
+    //   const x = e.clientX;
+    //   const y = e.clientY;
+    //   console.log(`Clicked at coordinates: x=${x}, y=${y}`);
+    // });
     
     // Clean up function
     return () => {

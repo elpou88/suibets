@@ -28,12 +28,20 @@ export default function NewSports() {
     
     // Create the full page image - just show the original design
     const mainImage = document.createElement('img');
-    mainImage.src = '/images/sports-image.png';
+    mainImage.src = '/images/sports_exact.png';
     mainImage.alt = 'Sports';
     mainImage.style.width = '100%';
     mainImage.style.height = 'auto';
     mainImage.style.display = 'block';
     mainImage.useMap = '#navMap';
+    mainImage.onload = () => {
+      console.log('Sports image loaded successfully');
+    };
+    mainImage.onerror = (e) => {
+      console.error('Error loading sports image:', e);
+      // Try alternative image if primary fails
+      mainImage.src = '/images/sports-image.png';
+    };
     container.appendChild(mainImage);
     
     // Create the image map for navigation
@@ -83,11 +91,11 @@ export default function NewSports() {
     // No additional buttons or UI elements - only image map with clickable areas
     
     // This was the same debugging code from 12 hours ago that helped identify the optimal click areas
-    document.addEventListener('click', (e) => {
-      const x = e.clientX;
-      const y = e.clientY;
-      console.log(`Clicked at coordinates: x=${x}, y=${y}`);
-    });
+    // document.addEventListener('click', (e) => {
+    //   const x = e.clientX;
+    //   const y = e.clientY;
+    //   console.log(`Clicked at coordinates: x=${x}, y=${y}`);
+    // });
     
     // Clean up function
     return () => {

@@ -59,11 +59,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
               setUser(userData);
               console.log('Successfully reconnected wallet from localStorage');
               
-              // Display a toast for reconnection
-              toast({
-                title: "Wallet Connected",
-                description: "Your wallet has been reconnected.",
-              });
+              // No toast notification for reconnecting wallet
             } else {
               console.error('Failed to reconnect wallet, response not OK:', res.status);
               // Only clear if the error is permanent (not a temporary network issue)
@@ -106,10 +102,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         localStorage.setItem('wallet_address', address);
         localStorage.setItem('wallet_type', walletType);
         
-        toast({
-          title: "Wallet Connected",
-          description: "Your wallet has been successfully connected.",
-        });
+        // No toast notification for wallet connection
       }
     } catch (error) {
       console.error('Wallet connection error:', error);
@@ -128,10 +121,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     localStorage.removeItem('wallet_address');
     localStorage.removeItem('wallet_type');
     
-    toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected.",
-    });
+    // No toast notification for wallet disconnection
   };
   
   // Direct login function for external components
@@ -146,10 +136,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       localStorage.setItem('wallet_type', userData.walletType);
     }
     
-    toast({
-      title: "Logged In",
-      description: `Welcome, ${userData.username}!`,
-    });
+    // No toast notification for login
   };
   
   // Update wallet balance (used for deposits/withdrawals)

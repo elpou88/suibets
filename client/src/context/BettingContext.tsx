@@ -60,13 +60,7 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         // Replace the existing bet in a new array
         const updatedBets = [...prevBets];
         updatedBets[existingBetIndex] = bet;
-        
-        // Show toast notification
-        toast({
-          title: "Bet updated",
-          description: `${bet.selectionName} odds updated to ${bet.odds}`,
-        });
-        
+        // No toast notification for bet updates
         return updatedBets;
       } else {
         console.log("BettingContext: Adding new bet to slip", prevBets.length);
@@ -74,12 +68,7 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         const newBets = [...prevBets, bet];
         console.log("BettingContext: New bets array", newBets);
         
-        // Show toast notification
-        toast({
-          title: "Bet added",
-          description: `${bet.selectionName} added to bet slip`,
-        });
-        
+        // No toast notification for bet additions
         return newBets;
       }
     });

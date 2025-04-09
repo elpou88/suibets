@@ -179,29 +179,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Real wallet mode is the only option - demo wallets completely removed
       
       try {
-        // Check if any wallet APIs are detected (extensions, mobile, QR, etc)
-        // Use in operator to check window object properties
-        const walletChecks: Record<string, boolean> = {};
-        
-        // Define possible wallet objects 
-        const walletNames = [
-          'suiWallet', 'sui', 'suiet', 'ethos', 'martian', 
-          'compass', 'customWallet', 'glass', 'squid', 'walletStandard'
-        ];
-        
-        // Check each wallet name in window object
-        for (const name of walletNames) {
-          try {
-            const key = `${name} in window`;
-            // @ts-ignore - Dynamic property check
-            walletChecks[key] = name in window;
-          } catch (e) {
-            const key = `${name} in window`;
-            walletChecks[key] = false;
-          }
-        }
-        
-        console.log('Checking for wallet APIs in window object:', walletChecks);
+        // IMPORTANT: Skip all wallet detection and proceed directly to connection attempts
+        console.log('Starting direct wallet connection attempt without any detection checks');
         
         // First, try to connect to a real Sui wallet using the wallet-standard
         const walletAdapters = getWallets().get();

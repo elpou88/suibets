@@ -83,15 +83,23 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('connectAdapter() completed in modal, address:', address);
       
-      // If still no address, show clearer error 
+      // If still no address, continue waiting - don't show error yet
+      // User may still be interacting with their wallet extension
       if (!address && !isConnected) {
-        console.log('Connection may have failed - no address available');
+        console.log('Connection in progress - waiting for wallet interaction...');
         setTimeout(() => {
           // Re-check after a short delay
           if (!address && !isConnected) {
-            setError("No wallet was connected. Please make sure you have a Sui wallet extension installed and try again.");
-            setConnecting(false);
-            setConnectionStep('selecting');
+            console.log('Connection still pending after 2s - continuing to wait...');
+            
+            // Wait longer before showing an error, as some wallets take time to respond
+            setTimeout(() => {
+              if (!address && !isConnected) {
+                setError("Wallet connection timed out. Please try again and ensure you approve the connection in your wallet.");
+                setConnecting(false);
+                setConnectionStep('selecting');
+              }
+            }, 5000); // Wait 5 more seconds
           }
         }, 2000);
       }

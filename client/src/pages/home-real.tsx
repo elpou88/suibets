@@ -65,23 +65,23 @@ export default function HomeReal() {
   
   return (
     <Layout>
-      <div className="flex min-h-screen bg-[#112225] relative pr-20">
-        {/* Left Promotional Banner - Vertical Strip */}
-        <div className="fixed left-0 top-0 bottom-0 w-20 z-10 overflow-hidden">
+      <div className="flex min-h-screen bg-[#112225] relative">
+        {/* Left Promotional Banner - Static (not fixed) */}
+        <div className="w-20 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
-            className="h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-blue-900"
+            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"
           >
             <img 
               src="/assets/referral-banner.png" 
               alt="Earn Referral Bonus of up to 500,000 SUIBETS"
-              className="w-full h-full object-cover"
+              className="w-full h-full min-h-screen object-cover"
             />
           </a>
         </div>
         
-        {/* Main Content Area (pushed right by the banner strip) */}
-        <div className="flex flex-1 ml-20">
+        {/* Main Content Area */}
+        <div className="flex flex-1">
           {/* Left sidebar with sports navigation */}
           <div className="w-64 bg-[#0b1618] border-r border-[#1e3a3f] min-h-screen">
             <SportsSidebar />
@@ -255,16 +255,16 @@ export default function HomeReal() {
           </div>
         </div>
         
-        {/* Right Promotional Banner - Vertical Strip */}
-        <div className="fixed right-0 top-0 bottom-0 w-20 z-10 overflow-hidden">
+        {/* Right Promotional Banner - Static (not fixed) */}
+        <div className="w-20 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
-            className="h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-blue-900"
+            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"
           >
             <img 
               src="/assets/referral-banner.png" 
               alt="Earn Referral Bonus of up to 500,000 SUIBETS"
-              className="w-full h-full object-cover"
+              className="w-full h-full min-h-screen object-cover"
             />
           </a>
         </div>

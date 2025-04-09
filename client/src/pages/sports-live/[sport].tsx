@@ -57,12 +57,30 @@ export default function SportPage() {
   } = useQuery({
     queryKey: ['/api/events', { sportId, isLive: selectedTab === 'live' }],
     queryFn: async () => {
-      const isLive = selectedTab === 'live' ? '&isLive=true' : '';
-      const response = await apiRequest('GET', `/api/events?sportId=${sportId}${isLive}`);
-      return response.json();
+      if (!sportId) {
+        console.error("No sport ID available for API request");
+        return [];
+      }
+      
+      const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
+      const url = `/api/events?sportId=${sportId}${isLiveParam}`;
+      console.log(`Fetching events for specific sport: ${sportName} (ID: ${sportId}), Live: ${selectedTab === 'live'}`);
+      console.log(`API URL: ${url}`);
+      
+      const response = await apiRequest('GET', url);
+      const data = await response.json();
+      
+      // Filter data again on the client side to ensure only events for this sport are shown
+      const filteredData = data.filter((event: any) => 
+        event.sportId === sportId || 
+        event.sportId === Number(sportId)
+      );
+      
+      console.log(`Received ${data.length} events, filtered to ${filteredData.length} for sportId: ${sportId}`);
+      return filteredData;
     },
     enabled: !!sportId,
-    refetchInterval: 30000 // Refresh every 30 seconds for live events
+    refetchInterval: selectedTab === 'live' ? 15000 : 60000 // Refresh more frequently for live events
   });
   
   // Format odds in American format

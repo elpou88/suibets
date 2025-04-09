@@ -69,17 +69,11 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('Initiating wallet connection for:', walletId);
       
-      // Check if any Sui wallet extensions are installed
-      const hasWalletExtension = 
-        document.querySelector('wallet-standard-adapter') !== null || 
-        'suiWallet' in window || 
-        'sui' in window || 
-        'suiet' in window || 
-        'ethos' in window;
+      // IMPORTANT: Skip the wallet detection check since it may be unreliable
+      // We'll just proceed with the connection attempt and let the wallet's
+      // own error handling systems report any real issues
       
-      if (!hasWalletExtension) {
-        throw new Error("No Sui wallet extension detected. Please install a wallet extension first.");
-      }
+      console.log('Proceeding with wallet connection attempt without pre-checks');
       
       // Log before wallet connection
       console.log('About to call connectAdapter() in modal');

@@ -61,9 +61,25 @@ export default function Navbar() {
     
     try {
       setIsAttemptingConnection(true);
+      console.log('Connect wallet button clicked');
       
-      // Open the wallet modal to select from available wallet options
-      setIsWalletModalOpen(true);
+      // First try direct connection with adapter
+      try {
+        console.log('Attempting to connect via adapter...');
+        await connectAdapter();
+        console.log('Connect adapter call completed, current address:', address);
+        
+        if (!address) {
+          console.log('No address after connection attempt - user may need to install wallet extension');
+          // If direct connection fails, open the wallet modal
+          setIsWalletModalOpen(true);
+        }
+      } catch (err) {
+        console.log('Direct connection failed, opening wallet modal');
+        // If direct connection fails, open the wallet modal
+        setIsWalletModalOpen(true);
+      }
+      
       setIsAttemptingConnection(false);
     } catch (error) {
       console.error('Wallet connection error:', error);

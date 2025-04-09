@@ -433,40 +433,58 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } catch (error) {
         console.error('Error connecting to wallet:', error);
       }
-      // If we get here, no real wallet was found, so we'll show an error message
-      console.log('No Sui wallet found - user needs to install a wallet');
       
-      // Provide more detailed error based on device and browser
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
-                     navigator.userAgent.includes('Firefox') ? 'Firefox' : 
-                     navigator.userAgent.includes('Safari') ? 'Safari' : 'your browser';
+      // If we get here, we had trouble connecting to the wallet
+      console.log('Connection attempts unsuccessful - checking if this is a wallet access issue');
       
-      let installMessage = '';
-      let title = '';
-      let description = '';
+      // Check if window.walletStandard exists - different approach to detection
+      // @ts-ignore - Dynamic property check
+      const hasWalletStandard = typeof window.walletStandard !== 'undefined';
+      // @ts-ignore - Dynamic property check
+      const hasWalletExtension = typeof window.suiWallet !== 'undefined';
       
-      if (isMobile) {
-        // Mobile device guidance
-        title = 'No Sui Mobile Wallet Detected';
-        installMessage = 'Install a Sui-compatible mobile wallet like Sui Wallet, Ethos, or Suiet.';
-        description = 'Please install a Sui-compatible mobile wallet to connect to our platform.';
+      if (hasWalletStandard || hasWalletExtension) {
+        // We likely have a wallet but couldn't connect - might be a permissions issue
+        console.log('Wallet API detected but couldn\'t connect - might be a permissions issue');
+        
+        toast({
+          title: 'Wallet Connection Failed',
+          description: 'We detected a wallet but couldn\'t connect to it. Please check your wallet settings and try again.',
+          variant: 'destructive',
+        });
+        
+        setError('Connection to wallet failed. Please make sure your wallet is unlocked and try again.');
       } else {
-        // Desktop guidance
-        title = 'No Sui Wallet Extension Detected';
-        installMessage = browser === 'Chrome' ? 
-          'Install from Chrome Web Store: Sui Wallet, Ethos Wallet, or Suiet' :
-          'Please install a Sui wallet extension compatible with ' + browser;
-        description = `Please install a Sui wallet extension for ${browser} to connect to the platform.`;
+        // No wallet detected - give installation guidance
+        console.log('No wallet detected - providing installation guidance');
+        
+        // Provide more detailed error based on device and browser
+        const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+        const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                       navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                       navigator.userAgent.includes('Safari') ? 'Safari' : 'your browser';
+        
+        let title = '';
+        let description = '';
+        
+        if (isMobile) {
+          // Mobile device guidance
+          title = 'No Sui Mobile Wallet Detected';
+          description = 'Please install a Sui-compatible mobile wallet to connect to our platform.';
+        } else {
+          // Desktop guidance
+          title = 'No Sui Wallet Extension Detected';
+          description = `Please install a Sui wallet extension for ${browser} to connect to the platform.`;
+        }
+        
+        setError('Wallet connection failed. If you have a wallet installed, make sure it\'s unlocked.');
+        
+        toast({
+          title,
+          description,
+          variant: 'destructive',
+        });
       }
-      
-      setError(`No Sui wallet detected. ${installMessage}`);
-      
-      toast({
-        title,
-        description,
-        variant: 'destructive',
-      });
       
       setConnecting(false);
     } catch (error: any) {

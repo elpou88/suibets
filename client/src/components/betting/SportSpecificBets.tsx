@@ -300,6 +300,33 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
           <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Total Games
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex gap-3 p-4">
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Total Games', 'Over 22.5', 1.95)}
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
+          >
+            <span className="text-cyan-200">Over 22.5</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => handleAddBet('Total Games', 'Under 22.5', 1.85)}
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
+          >
+            <span className="text-cyan-200">Under 22.5</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
+          </Button>
+        </CardContent>
+      </Card>
+
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
             Set Betting
           </CardTitle>
         </CardHeader>
@@ -308,6 +335,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
             variant="outline"
             onClick={() => handleAddBet('Set Betting', `${homeTeam} 2-0`, 2.20)}
             className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
+            key="set-2-0"
           >
             <span className="text-cyan-200">{`${homeTeam} 2-0`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.20</span>

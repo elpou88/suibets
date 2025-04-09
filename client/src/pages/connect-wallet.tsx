@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from "@/components/ui/loader";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
 
 export default function ConnectWallet() {
   const [, setLocation] = useLocation();
@@ -145,8 +146,9 @@ export default function ConnectWallet() {
                 </div>
               </div>
               
+              {/* Traditional connection button */}
               <Button 
-                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold mb-3"
                 disabled={connecting}
                 onClick={connectWallet}
               >
@@ -157,11 +159,29 @@ export default function ConnectWallet() {
                   </>
                 ) : (
                   <>
-                    Connect Sui Wallet
+                    Connect Legacy Sui Wallet
                     <ArrowRight className="ml-2 h-4 w-4" />
                   </>
                 )}
               </Button>
+              
+              {/* Suiet Wallet Kit connection */}
+              <div className="mb-3">
+                <p className="text-xs text-center mb-2 text-gray-400">- OR -</p>
+                <div className="w-full">
+                  <SuietWalletConnect 
+                    onConnect={(address) => {
+                      // When Suiet wallet connects, check registration status
+                      if (address) {
+                        checkWurlusRegistration(address);
+                      }
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-center mt-2 text-gray-400">
+                  Recommended: Connect using Suiet Wallet Kit
+                </p>
+              </div>
               
               {/* Show real wallet connection status */}
               {(address || user?.walletAddress) && (

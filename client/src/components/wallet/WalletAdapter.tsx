@@ -263,39 +263,27 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         console.error('Error connecting to wallet:', error);
       }
       
-      // If we get here, no real wallet was found - offer demo wallet
-      const useDemoWallet = window.confirm("No Sui wallet detected. Would you like to use a demo wallet instead?");
+      // If we get here, no real wallet was found, so we'll show a message but still use the demo wallet
+      // This prioritizes real wallets but still provides a fallback
+      console.log('No real wallet found - falling back to demo wallet');
+      const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
       
-      if (useDemoWallet) {
-        console.log('Using demo wallet as fallback');
-        const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
-        
-        // Update connection state
-        updateConnectionState(demoAddress, 'sui');
-        
-        // Set mock balances for demo
-        setBalances({
-          SUI: 25.5,
-          SBETS: 1000.0
-        });
-        
-        toast({
-          title: 'Demo Wallet Connected',
-          description: 'Connected to demo wallet for testing',
-          variant: 'default',
-        });
-        
-        setConnecting(false);
-      } else {
-        toast({
-          title: 'No Wallet Available',
-          description: 'No Sui wallet was detected. Please install a Sui wallet extension like SUI Wallet or Ethos Wallet.',
-          variant: 'destructive',
-        });
-        
-        setConnecting(false);
-        setError('No Sui wallet detected. Please install a Sui wallet extension.');
-      }
+      // Update connection state with demo wallet
+      updateConnectionState(demoAddress, 'sui');
+      
+      // Set mock balances for demo
+      setBalances({
+        SUI: 25.5,
+        SBETS: 1000.0
+      });
+      
+      toast({
+        title: 'Demo Mode Active',
+        description: 'No Sui wallet detected. Using demo wallet. Install a Sui wallet for full functionality.',
+        variant: 'default',
+      });
+      
+      setConnecting(false);
     } catch (error: any) {
       console.error('Connection error:', error);
       setConnecting(false);

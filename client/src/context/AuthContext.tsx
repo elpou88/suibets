@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import { AuthContextType, User } from '@/types';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
 
 // Define wallet type here since it might be missing from types file
 type WalletType = string;
@@ -34,6 +35,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
+  const { 
+    address: walletAddress, 
+    isConnected: isWalletConnected,
+    disconnect: disconnectWalletAdapter 
+  } = useWalletAdapter();
+
+  // Sync user state with wallet adapter
+  useEffect(() => {
+    const syncWithWalletAdapter = async () => {
+      try {
+        if (isWalletConnected && walletAddress) {
+          // If wallet is connected in adapter but not in auth context, connect it
+          if (!user?.walletAddress) {
+            console.log('Wallet connected in adapter but not in auth, syncing:', walletAddress);
+            setIsLoading(true);
+            
+            try {
+              const res = await apiRequest('POST', '/api/wallet/connect', {
+                address: walletAddress,
+                walletType: 'sui'
+              });
+              
+              if (res.ok) {
+                const userData = await res.json();
+                setUser(userData);
+                console.log('Successfully synced wallet from adapter');
+              }
+            } catch (error) {
+              console.error('Error syncing wallet from adapter:', error);
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        } else if (!isWalletConnected && user?.walletAddress) {
+          // If wallet is disconnected in adapter but still in auth context, disconnect it
+          console.log('Wallet disconnected in adapter but still in auth, cleaning up');
+          disconnectWallet();
+        }
+      } catch (error) {
+        console.error('Error syncing with wallet adapter:', error);
+      }
+    };
+    
+    syncWithWalletAdapter();
+  }, [isWalletConnected, walletAddress, user?.walletAddress]);
 
   // Check if user is authenticated on mount
   useEffect(() => {
@@ -45,7 +91,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         const savedWalletType = localStorage.getItem('wallet_type');
         
         // If we have saved wallet data, try to reconnect
-        if (savedAddress && savedWalletType) {
+        if (savedAddress && savedWalletType && !isWalletConnected) {
           console.log('Found saved wallet data, attempting to reconnect:', { savedAddress, savedWalletType });
           
           try {
@@ -73,7 +119,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
             // Don't clear the data on network errors - might be temporary
           }
         } else {
-          console.log('No saved wallet data found');
+          console.log('No saved wallet data found or wallet already connected');
         }
       } catch (error) {
         console.error('Auth check error:', error);
@@ -83,7 +129,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     };
     
     checkAuth();
-  }, [toast]);
+  }, [toast, isWalletConnected]);
 
   const connectWallet = async (address: string, walletType: WalletType) => {
     try {
@@ -120,6 +166,16 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(null);
     localStorage.removeItem('wallet_address');
     localStorage.removeItem('wallet_type');
+    
+    // Also disconnect from wallet adapter
+    try {
+      // Only call disconnect if we're not already processing a disconnect from the adapter
+      if (isWalletConnected) {
+        disconnectWalletAdapter();
+      }
+    } catch (error) {
+      console.error('Error disconnecting wallet adapter:', error);
+    }
     
     // No toast notification for wallet disconnection
   };

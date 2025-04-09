@@ -160,6 +160,46 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               Privacy Policy
             </Button>
           </p>
+          
+          {window.location.hostname.includes("replit") && (
+            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+              <p className="mb-2 text-gray-600 dark:text-gray-400">Demo & Debugging Options:</p>
+              
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600 dark:text-gray-400">
+                  {localStorage.getItem('use_real_wallets') === 'true' 
+                    ? '✅ Using real Sui wallets' 
+                    : '🔄 Using demo wallet in Replit'}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => {
+                    // Toggle "use real wallets" flag
+                    const currentValue = localStorage.getItem('use_real_wallets') === 'true';
+                    localStorage.setItem('use_real_wallets', (!currentValue).toString());
+                    toast({
+                      title: currentValue ? 'Using Demo Wallet' : 'Using Real Wallets',
+                      description: currentValue 
+                        ? 'Switched to demo wallet mode for Replit environment' 
+                        : 'Will attempt to connect to real Sui wallets',
+                      variant: currentValue ? 'default' : 'default',
+                    });
+                  }}
+                >
+                  {localStorage.getItem('use_real_wallets') === 'true' 
+                    ? 'Switch to Demo Wallet' 
+                    : 'Use Real Sui Wallets'}
+                </Button>
+              </div>
+              
+              <p className="text-gray-600 dark:text-gray-400 text-[10px]">
+                Note: If the connection doesn't work after switching to real wallets, try refreshing the page and 
+                installing a Sui wallet browser extension.
+              </p>
+            </div>
+          )}
         </div>
       </DialogContent>
     </Dialog>

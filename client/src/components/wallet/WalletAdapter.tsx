@@ -57,6 +57,24 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [balances, setBalances] = useState<TokenBalances>({ SUI: 0, SBETS: 0 });
 
+  // Utility function to update connection state consistently
+  const updateConnectionState = (walletAddress: string, walletType: string = 'sui') => {
+    // Set local state
+    setAccount({ address: walletAddress });
+    setAddress(walletAddress);
+    setConnected(true);
+    setIsConnected(true);
+    
+    // Save wallet address in localStorage for reconnection
+    localStorage.setItem('wallet_address', walletAddress);
+    localStorage.setItem('wallet_type', walletType);
+    
+    // Connect wallet on server if not already connected
+    if (!isConnected) {
+      connectMutation.mutate(walletAddress);
+    }
+  };
+  
   // Fetch wallet balances when connected
   const { data: balanceData, isLoading: isBalanceLoading, refetch: refetchBalance } = useQuery({
     queryKey: ['wallet-balance', address],
@@ -64,11 +82,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       if (!address) return { sui: 0, sbets: 0 };
       
       try {
-        const response = await apiRequest<{ sui: number; sbets: number }>(
-          'GET', 
-          `/api/wallet/${address}/balance`
-        );
-        return response;
+        const response = await apiRequest('GET', `/api/wallet/${address}/balance`);
+        return await response.json();
       } catch (error) {
         console.error('Error fetching wallet balance:', error);
         return { sui: 0, sbets: 0 };
@@ -91,9 +106,10 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Mutation for connecting wallet to server
   const connectMutation = useMutation({
     mutationFn: async (walletAddress: string) => {
-      return await apiRequest<{ success: boolean }>('POST', '/api/wallet/connect', {
+      const response = await apiRequest('POST', '/api/wallet/connect', {
         walletAddress,
       });
+      return await response.json();
     },
     onSuccess: (data) => {
       if (data && data.success) {
@@ -130,20 +146,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      // For Replit environment: immediately use test wallet for better experience
-      if (window.location.hostname.includes("replit") || 
-          window.location.hostname.includes("riker.replit")) {
-        console.log('Replit environment detected, using demo wallet');
+      // Support both Replit and actual Sui wallets
+      // Check if user has explicitly requested to use actual wallets
+      const useRealWallets = localStorage.getItem('use_real_wallets') === 'true';
+      
+      if ((window.location.hostname.includes("replit") || 
+          window.location.hostname.includes("riker.replit")) && !useRealWallets) {
+        console.log('Using demo wallet for Replit environment');
         // Create a deterministic test wallet for Replit environment
         const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
         
-        // Set the wallet state with the demo address
-        setAccount({ address: demoAddress });
-        setAddress(demoAddress);
-        setConnected(true);
-        
-        // Connect wallet on server
-        connectMutation.mutate(demoAddress);
+        // Update connection state with demo wallet
+        updateConnectionState(demoAddress, 'sui');
         
         // Set mock balances for demo
         setBalances({
@@ -193,13 +207,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 
                 console.log('Connected to wallet address:', walletAddress);
                 
-                // Set the wallet state
-                setAccount({ address: walletAddress });
-                setAddress(walletAddress);
-                setConnected(true);
-                
-                // Connect wallet on server
-                connectMutation.mutate(walletAddress);
+                // Update connection state with the wallet address
+                updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
@@ -227,13 +236,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const account = suiConnectResult.accounts[0];
                 const walletAddress = account.address;
                 
-                // Set the wallet state
-                setAccount({ address: walletAddress });
-                setAddress(walletAddress);
-                setConnected(true);
-                
-                // Connect wallet on server
-                connectMutation.mutate(walletAddress);
+                // Update connection state with the wallet address
+                updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
@@ -270,13 +274,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             if (accounts && accounts.length > 0) {
               const walletAddress = accounts[0];
               
-              // Set the wallet state
-              setAccount({ address: walletAddress });
-              setAddress(walletAddress);
-              setConnected(true);
-              
-              // Connect wallet on server
-              connectMutation.mutate(walletAddress);
+              // Update connection state with the wallet address
+              updateConnectionState(walletAddress, 'sui');
               
               toast({
                 title: 'Wallet Connected',
@@ -302,13 +301,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const keypair = new Ed25519Keypair();
         const testWalletAddress = keypair.getPublicKey().toSuiAddress();
         
-        // Set the wallet state with the test address
-        setAccount({ address: testWalletAddress });
-        setAddress(testWalletAddress);
-        setConnected(true);
-        
-        // Connect wallet on server
-        connectMutation.mutate(testWalletAddress);
+        // Update connection state with the test wallet address
+        updateConnectionState(testWalletAddress, 'sui');
         
         toast({
           title: 'Development Wallet Connected',
@@ -324,11 +318,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         const mockAddress = `0x${Array.from({length: 64}, () => 
           Math.floor(Math.random() * 16).toString(16)).join('')}`;
             
-        setAccount({ address: mockAddress });
-        setAddress(mockAddress);
-        setConnected(true);
-        
-        connectMutation.mutate(mockAddress);
+        // Update connection state with the mock wallet address
+        updateConnectionState(mockAddress, 'sui');
         
         toast({
           title: 'Mock Wallet Connected',
@@ -355,6 +346,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setAddress(null);
     setConnected(false);
     setIsConnected(false);
+    
+    // Clear localStorage
+    localStorage.removeItem('wallet_address');
+    localStorage.removeItem('wallet_type');
+    
     toast({
       title: 'Wallet Disconnected',
       description: 'Your wallet has been disconnected',
@@ -368,11 +364,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Wallet not connected');
       }
       
-      const response = await apiRequest<{ txHash: string }>('POST', '/api/wallet/transfer/sui', {
+      const response = await apiRequest('POST', '/api/wallet/transfer/sui', {
         sender: address,
         recipient,
         amount,
       });
+      
+      const result = await response.json();
       
       toast({
         title: 'SUI Sent',
@@ -382,7 +380,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Refresh balance after transaction
       refetchBalance();
       
-      return response.txHash;
+      return result.txHash;
     } catch (error: any) {
       toast({
         title: 'Transfer Failed',
@@ -400,11 +398,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Wallet not connected');
       }
       
-      const response = await apiRequest<{ txHash: string }>('POST', '/api/wallet/transfer/sbets', {
+      const response = await apiRequest('POST', '/api/wallet/transfer/sbets', {
         sender: address,
         recipient,
         amount,
       });
+      
+      const result = await response.json();
       
       toast({
         title: 'SBETS Sent',
@@ -414,7 +414,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Refresh balance after transaction
       refetchBalance();
       
-      return response.txHash;
+      return result.txHash;
     } catch (error: any) {
       toast({
         title: 'Transfer Failed',
@@ -432,10 +432,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Wallet not connected');
       }
       
-      const response = await apiRequest<{ txHash: string }>('POST', '/api/wurlus/stake', {
+      const response = await apiRequest('POST', '/api/wurlus/stake', {
         walletAddress: address,
         amount,
       });
+      
+      const result = await response.json();
       
       toast({
         title: 'Tokens Staked',
@@ -445,7 +447,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Refresh balance after transaction
       refetchBalance();
       
-      return response.txHash;
+      return result.txHash;
     } catch (error: any) {
       toast({
         title: 'Staking Failed',
@@ -463,10 +465,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Wallet not connected');
       }
       
-      const response = await apiRequest<{ txHash: string }>('POST', '/api/wurlus/unstake', {
+      const response = await apiRequest('POST', '/api/wurlus/unstake', {
         walletAddress: address,
         amount,
       });
+      
+      const result = await response.json();
       
       toast({
         title: 'Tokens Unstaked',
@@ -476,7 +480,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Refresh balance after transaction
       refetchBalance();
       
-      return response.txHash;
+      return result.txHash;
     } catch (error: any) {
       toast({
         title: 'Unstaking Failed',
@@ -494,9 +498,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         throw new Error('Wallet not connected');
       }
       
-      const response = await apiRequest<{ txHash: string }>('POST', '/api/wurlus/claim-dividends', {
+      const response = await apiRequest('POST', '/api/wurlus/claim-dividends', {
         walletAddress: address,
       });
+      
+      const result = await response.json();
       
       toast({
         title: 'Dividends Claimed',
@@ -506,7 +512,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Refresh balance after transaction
       refetchBalance();
       
-      return response.txHash;
+      return result.txHash;
     } catch (error: any) {
       toast({
         title: 'Claim Failed',
@@ -517,14 +523,22 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // Sync with wallet connection status
+  // Sync with wallet connection status and check saved wallet on mount
   useEffect(() => {
     if (connected && account?.address) {
-      setAddress(account.address);
-      if (!isConnected) {
-        connectMutation.mutate(account.address);
-      }
+      updateConnectionState(account.address);
     }
+    
+    // Check for saved wallet on mount
+    const checkSavedWallet = async () => {
+      const savedAddress = localStorage.getItem('wallet_address');
+      if (savedAddress && !isConnected && !address) {
+        console.log('Found saved wallet, reconnecting:', savedAddress);
+        updateConnectionState(savedAddress);
+      }
+    };
+    
+    checkSavedWallet();
   }, [connected, account]);
 
   return (

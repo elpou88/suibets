@@ -66,7 +66,7 @@ export default function HomeReal() {
   
   return (
     <Layout>
-      <div className="flex min-h-screen bg-[#112225] relative">
+      <div className="flex min-h-screen bg-[#112225] relative max-w-full w-full">
         
         {/* Main Content Area */}
         <div className="flex flex-1">
@@ -76,7 +76,7 @@ export default function HomeReal() {
           </div>
           
           {/* Main content */}
-          <div className="flex-1 p-4">
+          <div className="flex-1 p-4 w-full">
             {/* Featured Content Section */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-4">
@@ -98,7 +98,7 @@ export default function HomeReal() {
                     Live Events
                   </h2>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {liveEvents.slice(0, 4).map((event: any) => (
                       <Card key={event.id} className="bg-[#0b1618] border-[#1e3a3f] text-white overflow-hidden">
                         <CardContent className="p-0">

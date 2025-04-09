@@ -126,203 +126,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Events routes
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
-      const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      let isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
+      const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;
+      const isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
       
-      console.log(`Fetching events for sportId: ${sportId}, isLive: ${isLive}`);
+      console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
-      // Get events from storage
-      let events = await storage.getEvents(sportId, isLive);
-      
-      console.log(`Found ${events.length} events for sportId: ${sportId} in database`);
-      
-      // If requesting live events and none found, try to get from API
-      if (isLive === true && events.length === 0) {
-        console.log("No live events found in database, fetching from API");
+      // Check if we need to generate basketball events
+      if (reqSportId === 2 && isLive === true) {
+        console.log("Generating basketball events");
         
-        // Determine which sport to fetch
-        const sportToFetch = sportId 
-          ? (await storage.getSport(sportId))?.slug || 'football'
-          : 'football';
-          
-        console.log(`Fetching live events for sport ${sportToFetch} from API`);
+        // Generate synthetic basketball events
+        const basketballEvents = [];
+        const teams = [
+          'LA Lakers', 'Boston Celtics', 'Miami Heat', 'Golden State Warriors', 
+          'Chicago Bulls', 'Brooklyn Nets', 'Dallas Mavericks', 'Phoenix Suns'
+        ];
         
-        // Get live events from API
-        const liveApiEvents = await apiSportsService.getLiveEvents(sportToFetch);
-        
-        if (liveApiEvents.length > 0) {
-          console.log(`Found ${liveApiEvents.length} live events from API`);
+        for (let i = 0; i < 5; i++) {
+          const homeTeamIndex = i * 2 % teams.length;
+          const awayTeamIndex = (i * 2 + 1) % teams.length;
           
-          // Return the live API events directly
-          return res.json(liveApiEvents);
-        } else {
-          console.log(`No live events found in API for ${sportToFetch}, generating synthetic events`);
+          const homeTeam = teams[homeTeamIndex];
+          const awayTeam = teams[awayTeamIndex];
           
-          // No real API events found, let's immediately create synthetic ones
-          const footballEvents = await apiSportsService.getLiveEvents('football');
+          const homeScore = Math.floor(Math.random() * 110) + 20;
+          const awayScore = Math.floor(Math.random() * 100) + 20;
           
-          if (footballEvents && footballEvents.length > 0) {
-            // Use football events as template but customize for this sport
-            const sportSlug = sportToFetch;
-            const sportTeams = getSportSpecificTeams(sportSlug);
-            const sportLeague = getSportLeagueName(sportSlug);
-            
-            // Create 5 events based on football template
-            const sportEvents = footballEvents.slice(0, 5).map((event, index) => {
-              const teamIndex = index % Math.floor(sportTeams.length / 2);
-              const homeTeamIndex = teamIndex * 2;
-              const awayTeamIndex = homeTeamIndex + 1;
-              
-              const homeTeam = sportTeams[homeTeamIndex] || `${sportSlug.charAt(0).toUpperCase() + sportSlug.slice(1)} Team ${index*2+1}`;
-              const awayTeam = sportTeams[awayTeamIndex] || `${sportSlug.charAt(0).toUpperCase() + sportSlug.slice(1)} Team ${index*2+2}`;
-              
-              // For sports like tennis that don't have draws
-              const hasDraw = !['tennis', 'table_tennis', 'badminton', 'snooker', 'darts', 'boxing', 'mma'].includes(sportSlug);
-              
-              // Modify the template event with sport-specific data
-              return {
-                ...event,
-                id: `${sportSlug}-${index+1}-${Date.now()}`,
-                sportId: sportId || getSportId(sportSlug),
-                homeTeam: homeTeam,
-                awayTeam: awayTeam,
-                leagueName: sportLeague,
-                isLive: true,
-                // Ensure markets are sport-appropriate
-                markets: [
-                  {
-                    id: `market-${sportSlug}-${index+1}-match-winner`,
-                    name: 'Match Result',
-                    status: 'open',
-                    marketType: hasDraw ? '1X2' : '12',
-                    outcomes: hasDraw ? [
-                      { id: `outcome-${sportSlug}-${index+1}-home`, name: homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
-                      { id: `outcome-${sportSlug}-${index+1}-draw`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
-                      { id: `outcome-${sportSlug}-${index+1}-away`, name: awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
-                    ] : [
-                      { id: `outcome-${sportSlug}-${index+1}-home`, name: homeTeam, odds: 1.7 + Math.random() * 0.4, status: 'active' },
-                      { id: `outcome-${sportSlug}-${index+1}-away`, name: awayTeam, odds: 1.9 + Math.random() * 0.5, status: 'active' }
-                    ]
-                  },
-                  {
-                    id: `market-${sportSlug}-${index+1}-total`,
-                    name: getSportTotalPointsName(sportSlug),
-                    status: 'open',
-                    marketType: 'total',
-                    outcomes: [
-                      { id: `outcome-${sportSlug}-${index+1}-over`, name: 'Over 2.5', odds: 1.95 + Math.random() * 0.3, status: 'active' },
-                      { id: `outcome-${sportSlug}-${index+1}-under`, name: 'Under 2.5', odds: 1.85 + Math.random() * 0.3, status: 'active' }
-                    ]
-                  }
+          basketballEvents.push({
+            id: `basketball-${i+1}-${Date.now()}`,
+            sportId: 2,
+            leagueName: 'NBA',
+            homeTeam: homeTeam,
+            awayTeam: awayTeam,
+            startTime: new Date().toISOString(),
+            status: 'live',
+            score: `${homeScore} - ${awayScore}`,
+            isLive: true,
+            markets: [
+              {
+                id: `market-basketball-${i+1}-match-winner`,
+                name: 'Match Result',
+                status: 'open',
+                marketType: '12',
+                outcomes: [
+                  { id: `outcome-basketball-${i+1}-home`, name: homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active', probability: 0.55 },
+                  { id: `outcome-basketball-${i+1}-away`, name: awayTeam, odds: 1.95 + Math.random() * 0.5, status: 'active', probability: 0.45 }
                 ]
-              };
-            });
-            
-            console.log(`Generated ${sportEvents.length} events for sport ${sportSlug}`);
-            return res.json(sportEvents);
-          }
-        }
-      }
-      
-      // Create realistic events for sports with no data
-      if (sportId && events.length === 0) {
-        console.log(`No events found for sportId ${sportId}, generating realistic events`);
-        
-        // Determine the sport slug
-        const sportSlug = (await storage.getSport(sportId))?.slug || 'football';
-        
-        // Get live football events as template
-        const templateEvents = await apiSportsService.getLiveEvents('football');
-        
-        if (templateEvents && templateEvents.length > 0) {
-          // Generate realistic events for this sport
-          const sportTeams = getSportSpecificTeams(sportSlug);
-          const sportLeague = getSportLeagueName(sportSlug);
-          
-          // Create 5 events based on football template but with sport-specific data
-          const sportEvents = templateEvents.slice(0, 5).map((event, index) => {
-            const teamIndex = index % Math.floor(sportTeams.length / 2);
-            const homeTeamIndex = teamIndex * 2;
-            const awayTeamIndex = homeTeamIndex + 1;
-            
-            const homeTeam = sportTeams[homeTeamIndex] || `${sportSlug.charAt(0).toUpperCase() + sportSlug.slice(1)} Team ${index*2+1}`;
-            const awayTeam = sportTeams[awayTeamIndex] || `${sportSlug.charAt(0).toUpperCase() + sportSlug.slice(1)} Team ${index*2+2}`;
-            
-            // For sports like tennis that don't have draws
-            const hasDraw = !['tennis', 'table_tennis', 'badminton', 'snooker', 'darts', 'boxing', 'mma'].includes(sportSlug);
-            
-            // Modify the template event with sport-specific data
-            return {
-              ...event,
-              id: `${sportSlug}-${index+1}-${Date.now()}`,
-              sportId: sportId,
-              homeTeam: homeTeam,
-              awayTeam: awayTeam,
-              leagueName: sportLeague,
-              isLive: true,
-              // Ensure markets are sport-appropriate
-              markets: [
-                {
-                  id: `market-${sportSlug}-${index+1}-match-winner`,
-                  name: 'Match Result',
-                  status: 'open',
-                  marketType: hasDraw ? '1X2' : '12',
-                  outcomes: hasDraw ? [
-                    { id: `outcome-${sportSlug}-${index+1}-home`, name: homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
-                    { id: `outcome-${sportSlug}-${index+1}-draw`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
-                    { id: `outcome-${sportSlug}-${index+1}-away`, name: awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
-                  ] : [
-                    { id: `outcome-${sportSlug}-${index+1}-home`, name: homeTeam, odds: 1.7 + Math.random() * 0.4, status: 'active' },
-                    { id: `outcome-${sportSlug}-${index+1}-away`, name: awayTeam, odds: 1.9 + Math.random() * 0.5, status: 'active' }
-                  ]
-                },
-                {
-                  id: `market-${sportSlug}-${index+1}-total`,
-                  name: getSportTotalPointsName(sportSlug),
-                  status: 'open',
-                  marketType: 'total',
-                  outcomes: [
-                    { id: `outcome-${sportSlug}-${index+1}-over`, name: 'Over 2.5', odds: 1.95 + Math.random() * 0.3, status: 'active' },
-                    { id: `outcome-${sportSlug}-${index+1}-under`, name: 'Under 2.5', odds: 1.85 + Math.random() * 0.3, status: 'active' }
-                  ]
-                }
-              ]
-            };
+              },
+              {
+                id: `market-basketball-${i+1}-total`,
+                name: 'Total Points',
+                status: 'open',
+                marketType: 'total',
+                outcomes: [
+                  { id: `outcome-basketball-${i+1}-over`, name: 'Over 195.5', odds: 1.95, status: 'active', probability: 0.49 },
+                  { id: `outcome-basketball-${i+1}-under`, name: 'Under 195.5', odds: 1.85, status: 'active', probability: 0.51 }
+                ]
+              }
+            ]
           });
-          
-          console.log(`Generated ${sportEvents.length} events for sport ${sportSlug}`);
-          return res.json(sportEvents);
         }
         
-        console.log(`No template events available, returning empty array`);
-        return res.json([]);
+        console.log(`Generated ${basketballEvents.length} basketball events`);
+        return res.json(basketballEvents);
       }
       
-      // Helper functions moved outside the block scope to fix strict mode issues
-      const enhancedEvents = events.map(event => ({
-        ...event,
-        // Keep original isLive and status values if defined, otherwise use defaults
-        isLive: isLive !== undefined ? isLive : (event.isLive || false),
-        status: event.status || 'scheduled',
-        // If no markets exist, create some mock markets
-        markets: event.markets && event.markets.length > 0 ? 
-          // If markets exist, ensure they have valid outcomes with odds
-          event.markets.map(market => ({
-            ...market,
-            status: 'open',
-            outcomes: market.outcomes && market.outcomes.length > 0 ? 
-              market.outcomes.map(outcome => ({
-                ...outcome,
-                odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
-                status: 'active'
-              })) : [
-                // No outcomes, so create some based on market type
-                { id: `outcome-${event.id}-${market.id}-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
-                { id: `outcome-${event.id}-${market.id}-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
-                { id: `outcome-${event.id}-${market.id}-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
-              ]
-          })) : [
-            // No markets, so create standard football markets
+      // Check if we need to generate tennis events  
+      if (reqSportId === 3 && isLive === true) {
+        console.log("Generating tennis events");
+        
+        // Generate synthetic tennis events
+        const tennisEvents = [];
+        const players = [
+          'Rafael Nadal', 'Novak Djokovic', 'Roger Federer', 'Andy Murray',
+          'Carlos Alcaraz', 'Daniil Medvedev', 'Stefanos Tsitsipas', 'Alexander Zverev'
+        ];
+        
+        for (let i = 0; i < 4; i++) {
+          const player1Index = i * 2 % players.length;
+          const player2Index = (i * 2 + 1) % players.length;
+          
+          const player1 = players[player1Index];
+          const player2 = players[player2Index];
+          
+          const score1 = Math.floor(Math.random() * 3) + 1;
+          const score2 = Math.floor(Math.random() * 3);
+          
+          tennisEvents.push({
+            id: `tennis-${i+1}-${Date.now()}`,
+            sportId: 3,
+            leagueName: 'ATP Tour',
+            homeTeam: player1,
+            awayTeam: player2,
+            startTime: new Date().toISOString(),
+            status: 'live',
+            score: `${score1} - ${score2}`,
+            isLive: true,
+            markets: [
+              {
+                id: `market-tennis-${i+1}-match-winner`,
+                name: 'Match Winner',
+                status: 'open',
+                marketType: '12',
+                outcomes: [
+                  { id: `outcome-tennis-${i+1}-home`, name: player1, odds: 1.7 + Math.random() * 0.4, status: 'active', probability: 0.55 },
+                  { id: `outcome-tennis-${i+1}-away`, name: player2, odds: 1.9 + Math.random() * 0.5, status: 'active', probability: 0.45 }
+                ]
+              },
+              {
+                id: `market-tennis-${i+1}-total`,
+                name: 'Total Games',
+                status: 'open',
+                marketType: 'total',
+                outcomes: [
+                  { id: `outcome-tennis-${i+1}-over`, name: 'Over 22.5', odds: 1.95, status: 'active', probability: 0.49 },
+                  { id: `outcome-tennis-${i+1}-under`, name: 'Under 22.5', odds: 1.85, status: 'active', probability: 0.51 }
+                ]
+              }
+            ]
+          });
+        }
+        
+        console.log(`Generated ${tennisEvents.length} tennis events`);
+        return res.json(tennisEvents);
+      }
+      
+      // Get events from storage for other cases
+      let events = await storage.getEvents(reqSportId, isLive);
+      console.log(`Found ${events.length} events for sportId: ${reqSportId} in database`);
+      
+      // Try to get live football events from API if needed
+      if ((!reqSportId || reqSportId === 1) && isLive === true && events.length === 0) {
+        console.log("Fetching real football events from API");
+        const footballEvents = await apiSportsService.getLiveEvents('football');
+        
+        if (footballEvents && footballEvents.length > 0) {
+          console.log(`Found ${footballEvents.length} real football events from API`);
+          return res.json(footballEvents);
+        }
+      }
+      
+      // Add any needed market data to database events
+      let enhancedEvents = events.map(event => {
+        const hasMarkets = event.markets && Array.isArray(event.markets) && event.markets.length > 0;
+        return {
+          ...event,
+          isLive: isLive !== undefined ? isLive : (event.isLive || false),
+          status: event.status || 'scheduled',
+          markets: hasMarkets ? event.markets : [
             {
               id: `market-${event.id}-1`,
               name: 'Match Result',
@@ -345,9 +296,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               ]
             }
           ]
-      }));
+        };
+      });
       
-      res.json(enhancedEvents);
+      return res.json(enhancedEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });
@@ -469,54 +421,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return totalPointsMap[sport] || 'Total Goals';
       }
       
-      // Only modify events if needed, don't force them to be live if they're not
-      const enhancedEvents = events.map(event => ({
-        ...event,
-        // Keep original isLive and status values if defined, otherwise use defaults
-        isLive: isLive !== undefined ? isLive : (event.isLive || false),
-        status: event.status || 'scheduled',
-        // If no markets exist, create some mock markets
-        markets: event.markets && event.markets.length > 0 ? 
-          // If markets exist, ensure they have valid outcomes with odds
-          event.markets.map(market => ({
-            ...market,
-            status: 'open',
-            outcomes: market.outcomes && market.outcomes.length > 0 ? 
-              market.outcomes.map(outcome => ({
-                ...outcome,
-                odds: outcome.odds < 1.1 ? 1.5 + Math.random() * 3 : outcome.odds,
-                status: 'active'
-              })) : [
-                // No outcomes, so create some based on market type
-                { id: `outcome-${event.id}-${market.id}-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
-                { id: `outcome-${event.id}-${market.id}-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
-                { id: `outcome-${event.id}-${market.id}-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
-              ]
-          })) : [
-            // No markets, so create standard football markets
-            {
-              id: `market-${event.id}-1`,
-              name: 'Match Result',
-              status: 'open',
-              marketType: '1X2',
-              outcomes: [
-                { id: `outcome-${event.id}-1-1`, name: event.homeTeam, odds: 1.85 + Math.random() * 0.5, status: 'active' },
-                { id: `outcome-${event.id}-1-2`, name: 'Draw', odds: 3.2 + Math.random() * 0.7, status: 'active' },
-                { id: `outcome-${event.id}-1-3`, name: event.awayTeam, odds: 2.05 + Math.random() * 0.6, status: 'active' }
-              ]
-            },
-            {
-              id: `market-${event.id}-2`,
-              name: 'Over/Under 2.5 Goals',
-              status: 'open',
-              marketType: 'OVER_UNDER',
-              outcomes: [
-                { id: `outcome-${event.id}-2-1`, name: 'Over 2.5', odds: 1.95 + Math.random() * 0.3, status: 'active' },
-                { id: `outcome-${event.id}-2-2`, name: 'Under 2.5', odds: 1.85 + Math.random() * 0.3, status: 'active' }
-              ]
-            }
-          ]
-      }));
+      // This section has been moved to the enhancedEvents variable inside the main events endpoint
       
       res.json(enhancedEvents);
     } catch (error) {

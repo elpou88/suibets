@@ -1,0 +1,101 @@
+import { OddsData } from '../types/betting';
+import apiSportsService from '../services/apiSportsService';
+
+/**
+ * API-Sports implementation of the IOddsProvider interface
+ */
+export class ApiSportsProvider {
+  private name = "API-Sports";
+  private id = "api-sports";
+  private weight = 50;
+  private enabled = true;
+
+  getName(): string {
+    return this.name;
+  }
+  
+  getId(): string {
+    return this.id;
+  }
+  
+  getWeight(): number {
+    return this.weight;
+  }
+  
+  setWeight(weight: number): void {
+    this.weight = weight;
+  }
+  
+  isEnabled(): boolean {
+    return this.enabled;
+  }
+  
+  setEnabled(enabled: boolean): void {
+    this.enabled = enabled;
+  }
+
+  /**
+   * Get odds data from API-Sports
+   * @returns Promise resolving to array of odds data
+   */
+  async fetchOdds(): Promise<any[]> {
+    try {
+      console.log('[ApiSportsProvider] Fetching odds from API-Sports');
+      
+      // We'll build up a collection of odds from different sports
+      const allOdds: any[] = [];
+      
+      // Get live and upcoming events for main sports
+      const mainSports = ['football', 'basketball', 'tennis', 'baseball', 'hockey'];
+      
+      for (const sport of mainSports) {
+        // Get live events first
+        const liveEvents = await apiSportsService.getLiveEvents(sport);
+        
+        // Get upcoming events
+        const upcomingEvents = await apiSportsService.getUpcomingEvents(sport, 5);
+        
+        // Combine events
+        const events = [...liveEvents, ...upcomingEvents];
+        
+        // Extract odds from events
+        for (const event of events) {
+          // Process each market in the event
+          event.markets.forEach((market: any) => {
+            // Process each outcome in the market
+            market.outcomes.forEach((outcome: any) => {
+              allOdds.push({
+                outcomeId: outcome.id,
+                marketId: market.id,
+                eventId: event.id,
+                odds: outcome.odds,
+                sport: sport,
+                timestamp: new Date()
+              });
+            });
+          });
+        }
+      }
+      
+      console.log(`[ApiSportsProvider] Fetched ${allOdds.length} odds from API-Sports`);
+      return allOdds;
+    } catch (error) {
+      console.error('[ApiSportsProvider] Error fetching odds:', error);
+      return [];
+    }
+  }
+
+  normalizeOdds(rawOdds: any[]): any[] {
+    return rawOdds.map(odds => ({
+      outcomeId: odds.outcomeId,
+      marketId: odds.marketId,
+      eventId: odds.eventId,
+      value: odds.odds,
+      providerId: this.id,
+      timestamp: new Date(),
+      confidence: 0.9 // High confidence level for API-Sports data
+    }));
+  }
+}
+
+export default new ApiSportsProvider();

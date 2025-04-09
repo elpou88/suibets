@@ -46,6 +46,26 @@ class AggregatorService {
     this.providers.push(new WurlusProtocolProvider());
     this.providers.push(new WalAppProvider());
     
+    // Add SportDataProvider for SportsData.io integration
+    this.providers.push(new SportDataProvider());
+    
+    // Add API-Sports provider if API key is available
+    if (process.env.API_SPORTS_KEY) {
+      try {
+        // We'll add this manually after import has been updated
+        // For now, the SportDataProvider will serve as our primary provider
+        import('../providers/ApiSportsProvider.js')
+          .then(module => {
+            this.addProvider(module.default);
+          })
+          .catch(error => {
+            console.warn('Could not load API-Sports provider:', error);
+          });
+      } catch (error) {
+        console.warn('Could not load API-Sports provider:', error);
+      }
+    }
+    
     console.log(`AggregatorService initialized with ${this.providers.length} providers`);
   }
   

@@ -145,8 +145,31 @@ export function BetSlip() {
     }
   };
   
+  // Toggle bet slip expanded state
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Handle bet slip click to expand/collapse
+  const handleBetSlipClick = () => {
+    console.log("BetSlip clicked - toggling expanded state");
+    setIsExpanded(!isExpanded);
+  };
+  
+  // Animate highlight on initial mount or when a new bet is added
+  const [isHighlighted, setIsHighlighted] = useState(false);
+  
+  useEffect(() => {
+    if (selectedBets.length > 0) {
+      setIsHighlighted(true);
+      const timer = setTimeout(() => setIsHighlighted(false), 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [selectedBets.length]);
+  
   return (
-    <Card className="bg-gradient-to-b from-[#0b1618] to-[#081214] border-[#1e3a3f] text-white shadow-lg shadow-cyan-900/20 relative overflow-hidden">
+    <Card 
+      className={`bg-gradient-to-b from-[#0b1618] to-[#081214] border-[#1e3a3f] text-white shadow-lg ${isHighlighted ? 'shadow-[0_0_15px_rgba(0,255,255,0.7)]' : 'shadow-cyan-900/20'} relative overflow-hidden min-h-[150px] cursor-pointer transition-all duration-300 ${isExpanded ? 'scale-105' : ''} hover:border-cyan-400/30`}
+      onClick={handleBetSlipClick}
+    >
       {/* Cyan glow at the top */}
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-80"></div>
       
@@ -156,12 +179,21 @@ export function BetSlip() {
       
       <CardHeader className="pb-2 relative z-10">
         <CardTitle className="text-xl flex justify-between items-center">
-          <span className="text-cyan-300 font-bold tracking-wide">Bet Slip</span>
+          <div className="flex items-center">
+            <span className="text-cyan-300 font-bold tracking-wide">Bet Slip</span>
+            <div className={`ml-2 flex items-center text-cyan-400/80 text-xs ${isExpanded ? 'rotate-180' : ''} transition-transform duration-300`}>
+              <ChevronDown className="h-3 w-3 animate-pulse" />
+              <span className="ml-1">{isExpanded ? 'Hide' : 'Show'}</span>
+            </div>
+          </div>
           {selectedBets.length > 0 && (
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={clearBets}
+              onClick={(e) => {
+                e.stopPropagation(); // Prevent event from bubbling up
+                clearBets();
+              }}
               className="text-cyan-300/80 hover:text-cyan-400 p-0 h-auto hover:bg-transparent"
             >
               <Trash className="h-4 w-4" />
@@ -202,7 +234,10 @@ export function BetSlip() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => removeBet(bet.id)}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Prevent event from bubbling up
+                      removeBet(bet.id);
+                    }}
                     className="h-5 w-5 p-0 text-cyan-300/60 hover:text-cyan-400 hover:bg-transparent"
                   >
                     <X className="h-4 w-4" />
@@ -211,7 +246,10 @@ export function BetSlip() {
                 
                 <div 
                   className="flex justify-between items-center cursor-pointer group-hover:bg-[#1e3a3f]/20 p-1 rounded-sm transition-colors"
-                  onClick={() => toggleDetails(bet.id)}
+                  onClick={(e) => {
+                    e.stopPropagation(); // Stop click from propagating to bet slip
+                    toggleDetails(bet.id);
+                  }}
                 >
                   <div className="flex items-center">
                     <div className="text-sm font-medium text-cyan-200">{bet.selectionName}</div>
@@ -234,9 +272,19 @@ export function BetSlip() {
                       <Input
                         className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-cyan-200 text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={bet.stake}
-                        onChange={(e) => handleStakeChange(bet.id, e.target.value)}
-                        onFocus={() => setIsStakeInputFocused(true)}
-                        onBlur={() => setIsStakeInputFocused(false)}
+                        onChange={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
+                          handleStakeChange(bet.id, e.target.value);
+                        }}
+                        onFocus={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
+                          setIsStakeInputFocused(true);
+                        }}
+                        onBlur={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
+                          setIsStakeInputFocused(false);
+                        }}
+                        onClick={(e) => e.stopPropagation()} // Prevent click from toggling bet slip
                         ref={stakeInputRef}
                         data-bet-id={bet.id}
                         type="number"
@@ -292,6 +340,7 @@ export function BetSlip() {
                         className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right text-cyan-200 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
                         value={totalStake}
                         onChange={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
                           const value = parseFloat(e.target.value);
                           if (!isNaN(value) && value >= 0) {
                             // Update all stakes proportionally
@@ -300,8 +349,15 @@ export function BetSlip() {
                             });
                           }
                         }}
-                        onFocus={() => setIsStakeInputFocused(true)}
-                        onBlur={() => setIsStakeInputFocused(false)}
+                        onFocus={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
+                          setIsStakeInputFocused(true);
+                        }}
+                        onBlur={(e) => {
+                          e.stopPropagation(); // Prevent event from bubbling up
+                          setIsStakeInputFocused(false);
+                        }}
+                        onClick={(e) => e.stopPropagation()} // Prevent click from toggling bet slip
                         type="number"
                         min="0"
                         step="1"
@@ -351,7 +407,10 @@ export function BetSlip() {
         <CardFooter className="pt-2 relative z-10">
           <Button 
             className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold shadow-[0_0_10px_rgba(0,255,255,0.3)] hover:shadow-[0_0_15px_rgba(0,255,255,0.5)] transition-all"
-            onClick={handlePlaceBet}
+            onClick={(e) => {
+              e.stopPropagation(); // Prevent event from bubbling up
+              handlePlaceBet();
+            }}
             disabled={isLoading || totalStake <= 0}
           >
             {isLoading ? (

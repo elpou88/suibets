@@ -161,23 +161,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a copy of events for each sport to ensure all sports have data
       if (sportId && events.length === 0) {
         const allEvents = await storage.getEvents();
-        console.log(`No events found for sportId ${sportId}, using default events`);
+        console.log(`No events found for sportId ${sportId}, returning empty array`);
         
-        // Clone events from another sport (usually football which has ID 1)
-        const modifiedEvents = allEvents
-          .filter(e => e.sportId === 1)  // Get football events
-          .slice(0, 4)  // Limit to 4 events
-          .map(event => ({ 
-            ...event, 
-            id: event.id + 1000 + sportId, // Ensure unique ID
-            sportId: sportId,  // Set the correct sport ID
-            isLive: isLive !== undefined ? isLive : (event.isLive || false), // Respect isLive parameter
-            status: isLive ? 'live' : (event.status || 'scheduled') // Status based on isLive parameter
-          }));
-        
-        console.log(`Generated ${modifiedEvents.length} modified events for sportId ${sportId}`);
-        res.json(modifiedEvents);
-        return;
+        // Return an empty array instead of generating fake events
+        // This ensures accurate sport data representation
+        return res.json([]);
       }
       
       // Only modify events if needed, don't force them to be live if they're not

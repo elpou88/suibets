@@ -1808,6 +1808,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // API endpoint to fetch all live events across all sports
+  app.get("/api/events/live", async (req: Request, res: Response) => {
+    try {
+      console.log("Fetching all live events across all sports");
+      
+      // First refresh the data to ensure it's current
+      await aggregatorService.refreshOdds();
+      
+      // Use our existing endpoint to get live events
+      const events = await db.query.sportEvents.findMany({
+        where: (sportEvents, { eq }) => eq(sportEvents.isLive, true),
+        orderBy: (sportEvents, { desc }) => [desc(sportEvents.updatedAt)],
+        with: {
+          markets: {
+            with: {
+              outcomes: true
+            }
+          }
+        }
+      });
+      
+      console.log(`Found ${events.length} live events across all sports`);
+      
+      res.json(events);
+    } catch (error) {
+      console.error('Error fetching live events:', error);
+      res.status(500).json({ error: 'Failed to fetch live events' });
+    }
+  });
 
   // New wallet protocol-specific endpoints using Wal.app integration
   

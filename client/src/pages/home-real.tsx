@@ -29,8 +29,15 @@ export default function HomeReal() {
     refetchInterval: 15000 // Refetch every 15 seconds
   });
   
-  // Separate live and upcoming events
-  const liveEvents = events.filter((event: any) => event.status === 'live');
+  // Fetch live events using the isLive parameter instead
+  const { data: liveEvents = [], isLoading: liveEventsLoading } = useQuery({
+    queryKey: ['/api/events', { isLive: true }],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/events?isLive=true');
+      return response.json();
+    },
+    refetchInterval: 15000 // Refetch every 15 seconds
+  });
   const upcomingEvents = events.filter((event: any) => event.status === 'upcoming');
   
   // Fetch sports for the sidebar

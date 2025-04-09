@@ -45,35 +45,54 @@ export class ApiSportsProvider {
       // We'll build up a collection of odds from different sports
       const allOdds: any[] = [];
       
-      // Get live and upcoming events for main sports
-      const mainSports = ['football', 'basketball', 'tennis', 'baseball', 'hockey'];
+      // Get live and upcoming events for main sports plus additional sports
+      const allSports = [
+        'football', 'basketball', 'tennis', 'baseball', 'hockey', 
+        'handball', 'volleyball', 'rugby', 'cricket', 'golf', 
+        'boxing', 'mma', 'motorsport', 'cycling'
+      ];
       
-      for (const sport of mainSports) {
-        // Get live events first
-        const liveEvents = await apiSportsService.getLiveEvents(sport);
-        
-        // Get upcoming events
-        const upcomingEvents = await apiSportsService.getUpcomingEvents(sport, 5);
-        
-        // Combine events
-        const events = [...liveEvents, ...upcomingEvents];
-        
-        // Extract odds from events
-        for (const event of events) {
-          // Process each market in the event
-          event.markets.forEach((market: any) => {
-            // Process each outcome in the market
-            market.outcomes.forEach((outcome: any) => {
-              allOdds.push({
-                outcomeId: outcome.id,
-                marketId: market.id,
-                eventId: event.id,
-                odds: outcome.odds,
-                sport: sport,
-                timestamp: new Date()
+      // First fetch all live events across all sports
+      console.log('[ApiSportsProvider] Fetching live events for all sports');
+      
+      // Process main sports first (these are most likely to have live events)
+      for (const sport of allSports) {
+        try {
+          // Get live events first (most important)
+          const liveEvents = await apiSportsService.getLiveEvents(sport);
+          
+          // Get upcoming events
+          const upcomingEvents = await apiSportsService.getUpcomingEvents(sport, 10);
+          
+          // Combine events
+          const events = [...liveEvents, ...upcomingEvents];
+          
+          console.log(`[ApiSportsProvider] Found ${events.length} events for ${sport}`);
+          
+          // Extract odds from events
+          for (const event of events) {
+            // Process each market in the event
+            if (event.markets && Array.isArray(event.markets)) {
+              event.markets.forEach((market: any) => {
+                // Process each outcome in the market
+                if (market.outcomes && Array.isArray(market.outcomes)) {
+                  market.outcomes.forEach((outcome: any) => {
+                    allOdds.push({
+                      outcomeId: outcome.id,
+                      marketId: market.id,
+                      eventId: event.id,
+                      odds: outcome.odds,
+                      sport: sport,
+                      timestamp: new Date()
+                    });
+                  });
+                }
               });
-            });
-          });
+            }
+          }
+        } catch (error) {
+          console.error(`[ApiSportsProvider] Error fetching ${sport} events:`, error);
+          // Continue with next sport
         }
       }
       

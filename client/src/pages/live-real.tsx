@@ -18,9 +18,9 @@ export default function LiveReal() {
   const { addBet } = useBetting();
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
   
-  // Fetch all live events
+  // Fetch all live events using the isLive parameter
   const { data: events = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['/api/events', 'live'],
+    queryKey: ['/api/events', { isLive: true }],
     queryFn: async () => {
       const response = await apiRequest('GET', '/api/events?isLive=true');
       const data = await response.json();

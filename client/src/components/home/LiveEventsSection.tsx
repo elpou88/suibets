@@ -8,7 +8,15 @@ import { cn } from "@/lib/utils";
 
 export function LiveEventsSection() {
   const { data: liveEvents = [], isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', { isLive: true }]
+    queryKey: ['/api/events', { isLive: true }],
+    queryFn: async () => {
+      const response = await fetch('/api/events?isLive=true');
+      if (!response.ok) {
+        throw new Error('Failed to fetch live events');
+      }
+      return response.json();
+    },
+    refetchInterval: 15000 // Refresh every 15 seconds
   });
 
   if (isLoading) {
@@ -38,7 +46,7 @@ export function LiveEventsSection() {
 
   // Group events by league
   const groupedEvents = liveEvents.reduce((acc, event) => {
-    const key = event.leagueSlug;
+    const key = event.leagueSlug || event.leagueName?.toLowerCase().replace(/\s+/g, '-') || 'unknown';
     if (!acc[key]) {
       acc[key] = [];
     }

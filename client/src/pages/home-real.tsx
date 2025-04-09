@@ -69,8 +69,18 @@ export default function HomeReal() {
   return (
     <Layout>
       <div className="flex min-h-screen bg-[#112225]">
-        {/* Left sidebar */}
-        <div className="w-64 bg-[#0b1618] border-r border-[#1e3a3f] min-h-screen">
+        {/* Left sidebar with promo banner */}
+        <div className="flex flex-col w-64 bg-[#0b1618] border-r border-[#1e3a3f] min-h-screen">
+          {/* Promotional Banner - Left Side */}
+          <div className="p-2 bg-[#0b1618]">
+            <a href="/promotions/referral" className="block mb-2">
+              <img 
+                src="/images/referral-bonus-banner.png" 
+                alt="Earn Referral Bonus of up to 500,000 SUIBETS" 
+                className="w-full h-auto object-cover rounded-lg"
+              />
+            </a>
+          </div>
           <SportsSidebar />
         </div>
         
@@ -87,17 +97,6 @@ export default function HomeReal() {
               >
                 View All Live Events
               </Button>
-            </div>
-            
-            {/* Promotional Banner - Added as requested */}
-            <div className="mb-6">
-              <a href="/promotions/referral" className="block">
-                <img 
-                  src="/images/referral-bonus-banner.png" 
-                  alt="Earn Referral Bonus of up to 500,000 SUIBETS" 
-                  className="w-full h-auto object-cover rounded-lg border-2 border-[#00ffff]"
-                />
-              </a>
             </div>
             
             {/* Featured Live Events */}
@@ -248,7 +247,17 @@ export default function HomeReal() {
         </div>
         
         {/* Right sidebar with bet slip */}
-        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4">
+        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4 flex flex-col">
+          {/* Promotional Banner - Right Side */}
+          <div className="mb-4">
+            <a href="/promotions/referral" className="block">
+              <img 
+                src="/images/referral-bonus-banner.png" 
+                alt="Earn Referral Bonus of up to 500,000 SUIBETS" 
+                className="w-full h-auto object-cover rounded-lg"
+              />
+            </a>
+          </div>
           <BetSlip />
         </div>
       </div>

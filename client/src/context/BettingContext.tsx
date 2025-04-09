@@ -44,29 +44,34 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
     localStorage.setItem('selectedBets', JSON.stringify(selectedBets));
   }, [selectedBets]);
 
-  // Add a bet to the selection - with fixes for double-adding prevention
+  // Add a bet to the selection - with improved handling for better user experience
   const addBet = (bet: SelectedBet) => {
     console.log("BettingContext: Adding bet to slip", bet);
     
-    // Use a reference flag to prevent duplicate async calls
-    const currentBets = JSON.parse(localStorage.getItem('selectedBets') || '[]');
-    
-    // Check if we already have a bet for this exact selection (using eventId and market)
-    const isDuplicate = currentBets.some(
-      (existing: any) => 
-        existing.eventId === bet.eventId && 
-        existing.market === bet.market && 
-        existing.selectionName === bet.selectionName
-    );
-    
-    if (isDuplicate) {
-      console.log("BettingContext: Preventing duplicate bet", bet.id);
-      return; // Don't add a duplicate bet
-    }
-    
     // Ensure we have the current state by using a callback with setSelectedBets
     setSelectedBets(prevBets => {
-      // Check if we already have a bet for this selection
+      // First, check if this is a duplicate bet with the same selection
+      // but allow duplicates if there's a uniqueId (which is used to prevent auto-duplication)
+      const isDuplicate = !bet.uniqueId && prevBets.some(
+        (existing) => 
+          existing.eventId === bet.eventId && 
+          existing.market === bet.market && 
+          existing.selectionName === bet.selectionName
+      );
+      
+      if (isDuplicate) {
+        console.log("BettingContext: Potential duplicate bet detected", bet.id);
+        
+        // Show a toast to inform user this bet is already in the slip
+        toast({
+          title: "Bet Already in Slip",
+          description: `${bet.selectionName} is already in your bet slip`,
+        });
+        
+        return prevBets; // Don't change the bet array
+      }
+      
+      // Check if we already have this specific bet by ID (for updates)
       const existingBetIndex = prevBets.findIndex(
         (existing) => existing.id === bet.id
       );
@@ -76,27 +81,34 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         // Replace the existing bet in a new array
         const updatedBets = [...prevBets];
         updatedBets[existingBetIndex] = bet;
-        // No toast notification for bet updates
+        
+        toast({
+          title: "Bet Updated",
+          description: `Updated ${bet.selectionName} in your bet slip`,
+        });
+        
         return updatedBets;
       } else {
         console.log("BettingContext: Adding new bet to slip", prevBets.length);
         // Add a new bet to the array
         const newBets = [...prevBets, bet];
-        console.log("BettingContext: New bets array", newBets.length);
+        console.log("BettingContext: New bets array length:", newBets.length);
+        
+        // Always show a toast for successful bet addition
         toast({
           title: "Bet Added",
           description: `Added ${bet.selectionName} to your bet slip`,
           variant: "default",
         });
+        
         return newBets;
       }
     });
     
-    // Log the current bets after the state update
+    // Log the current bets after the state update for debugging
     setTimeout(() => {
-      // This is just for debugging, not needed for functionality
       const updatedBets = JSON.parse(localStorage.getItem('selectedBets') || '[]');
-      console.log("BettingContext: Current bets from localStorage", updatedBets);
+      console.log("BettingContext: Current bets count:", updatedBets.length);
     }, 500);
   };
 

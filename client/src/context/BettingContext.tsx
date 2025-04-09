@@ -107,6 +107,11 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
           description: "Please connect your wallet to place bets",
           variant: "destructive",
         });
+        
+        // Auto-show connect wallet modal when user tries to place a bet
+        const connectWalletEvent = new CustomEvent('suibets:connect-wallet-required');
+        window.dispatchEvent(connectWalletEvent);
+        
         return false;
       }
 

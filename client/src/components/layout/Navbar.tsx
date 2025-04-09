@@ -7,6 +7,8 @@ import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
 import { Bell, Settings, LogOut, Wallet } from "lucide-react";
+import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,10 +20,13 @@ import {
 
 export default function Navbar() {
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, disconnectWallet } = useAuth();
+  const { user, isAuthenticated, disconnectWallet, connectWallet } = useAuth();
+  const { connect: connectAdapter, address, isConnected } = useWalletAdapter();
+  const { toast } = useToast();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isAttemptingConnection, setIsAttemptingConnection] = useState(false);
   
   // Debug wallet status in console
   useEffect(() => {
@@ -29,9 +34,64 @@ export default function Navbar() {
       user,
       userWalletAddress: user?.walletAddress,
       isAuthenticated,
-      hasWalletAddress: !!user?.walletAddress
+      hasWalletAddress: !!user?.walletAddress,
+      walletAdapterAddress: address,
+      walletAdapterIsConnected: isConnected
     });
-  }, [user, isAuthenticated]);
+  }, [user, isAuthenticated, address, isConnected]);
+  
+  // Listen for wallet connection requests from other components
+  useEffect(() => {
+    const handleWalletConnectionRequired = () => {
+      console.log('Wallet connection requested from another component');
+      if (!user?.walletAddress) {
+        attemptQuickWalletConnection();
+      }
+    };
+    
+    window.addEventListener('suibets:connect-wallet-required', handleWalletConnectionRequired);
+    return () => {
+      window.removeEventListener('suibets:connect-wallet-required', handleWalletConnectionRequired);
+    };
+  }, [user?.walletAddress]);
+  
+  // Attempt quick wallet connection with demo wallet
+  const attemptQuickWalletConnection = async () => {
+    if (isAttemptingConnection) return; // Prevent multiple attempts
+    
+    try {
+      setIsAttemptingConnection(true);
+      
+      // Ensure demo wallet mode is enabled
+      localStorage.setItem('use_demo_wallet', 'true');
+      
+      // Connect using the wallet adapter
+      await connectAdapter();
+      
+      // Wait for connection to be established
+      setTimeout(async () => {
+        if (address && isConnected) {
+          console.log('Quick wallet connection successful:', address);
+          
+          // Sync with auth context
+          await connectWallet(address, 'sui');
+          
+          toast({
+            title: 'Wallet Connected',
+            description: 'Demo wallet connected automatically',
+          });
+        } else {
+          console.log('Quick wallet connection failed - opening modal');
+          setIsWalletModalOpen(true);
+        }
+        setIsAttemptingConnection(false);
+      }, 500);
+    } catch (error) {
+      console.error('Quick wallet connection error:', error);
+      setIsAttemptingConnection(false);
+      setIsWalletModalOpen(true);
+    }
+  };
 
   const goToLive = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -147,9 +207,13 @@ export default function Navbar() {
                 Join Now
               </Button>
             </Link>
-            <Button className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium ml-3" onClick={() => setIsWalletModalOpen(true)}>
+            <Button 
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium ml-3" 
+              onClick={attemptQuickWalletConnection}
+              disabled={isAttemptingConnection}
+            >
               <Wallet className="h-4 w-4 mr-2" />
-              Connect Wallet
+              {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
             </Button>
           </>
         )}

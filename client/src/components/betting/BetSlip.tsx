@@ -76,6 +76,11 @@ export function BetSlip() {
         description: "Please connect your wallet to place bets",
         variant: "destructive",
       });
+      
+      // Auto-trigger wallet connection via custom event
+      const connectWalletEvent = new CustomEvent('suibets:connect-wallet-required');
+      window.dispatchEvent(connectWalletEvent);
+      
       return;
     }
     

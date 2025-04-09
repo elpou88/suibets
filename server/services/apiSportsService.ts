@@ -234,6 +234,10 @@ export class ApiSportsService {
     console.log(`[ApiSportsService] Attempting to fetch live events for ${sport} with API key`);
     
     try {
+      // Get the appropriate sport ID for our system
+      const sportId = this.getSportId(sport);
+      console.log(`[ApiSportsService] Sport ID for ${sport} is ${sportId}`);
+      
       // Use a shorter cache expiry for live events
       const cacheKey = `live_events_${sport}`;
       
@@ -242,7 +246,6 @@ export class ApiSportsService {
         console.log(`[ApiSportsService] Fetching live events for ${sport}`);
         
         // Try to use the sport-specific API endpoint if available
-        // The sportEndpoints mapping is defined in getApiClient method
         const sportEndpoints: Record<string, string> = {
           football: 'https://v3.football.api-sports.io/fixtures',
           soccer: 'https://v3.football.api-sports.io/fixtures',
@@ -253,13 +256,30 @@ export class ApiSportsService {
           american_football: 'https://v1.american-football.api-sports.io/games',
           tennis: 'https://v1.tennis.api-sports.io/games',
           cricket: 'https://v1.cricket.api-sports.io/fixtures',
+          handball: 'https://v1.handball.api-sports.io/games',
+          volleyball: 'https://v1.volleyball.api-sports.io/games',
+          mma: 'https://v1.mma.api-sports.io/fixtures',
+          boxing: 'https://v1.boxing.api-sports.io/fights',
+          golf: 'https://v1.golf.api-sports.io/tournaments',
+          formula_1: 'https://v1.formula-1.api-sports.io/races',
+          cycling: 'https://v1.cycling.api-sports.io/races'
         };
         
         // Create params based on API endpoint format
         // Different APIs may use different parameter names
-        const getParams = (endpoint: string) => {
+        const getParams = (endpoint: string): Record<string, string> => {
           if (endpoint.includes('football')) {
             return { live: 'all' };
+          } else if (endpoint.includes('boxing')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('mma')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('golf')) {
+            return { status: 'inplay' };
+          } else if (endpoint.includes('formula-1')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('cycling')) {
+            return { status: 'inprogress' };
           } else {
             // Most other sport APIs use this format
             return { live: 'true' };
@@ -268,7 +288,7 @@ export class ApiSportsService {
         
         // Find the right API endpoint URL for this sport
         let apiUrl = 'https://v3.football.api-sports.io/fixtures'; // Default to football
-        let params = { live: 'all' };
+        let params: Record<string, string> = { live: 'all' };
         
         if (sportEndpoints[sport]) {
           apiUrl = sportEndpoints[sport];
@@ -291,29 +311,48 @@ export class ApiSportsService {
           });
           
           if (response.data && response.data.response) {
-            console.log(`[ApiSportsService] Found ${response.data.response.length} live events for ${sport}`);
-            return response.data.response;
+            const rawEvents = response.data.response;
+            console.log(`[ApiSportsService] Found ${rawEvents.length} raw live events for ${sport} from direct API call`);
+            
+            // For sports with direct API support, return the raw data for sport-specific transformation
+            if (sportEndpoints[sport]) {
+              return rawEvents.map((event: any) => {
+                // Inject the correct sportId into the raw event data
+                return {
+                  ...event,
+                  _sportId: sportId,  // Add a temporary field for the transformer to use
+                  _sportName: sport   // Add the sport name for reference
+                };
+              });
+            }
+            
+            return rawEvents;
           } else {
             console.log(`[ApiSportsService] Response structure unexpected:`, 
                         Object.keys(response.data).join(', '));
-            
-            // If we get an unexpected response format, try the football API as fallback
-            if (apiUrl !== 'https://v3.football.api-sports.io/fixtures') {
-              console.log(`[ApiSportsService] Falling back to football API for ${sport}`);
-              
-              const fallbackResponse = await axios.get('https://v3.football.api-sports.io/fixtures', {
-                params: { live: 'all' },
-                headers: {
-                  'x-apisports-key': this.apiKey,
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (fallbackResponse.data && fallbackResponse.data.response) {
-                console.log(`[ApiSportsService] Found ${fallbackResponse.data.response.length} live events from football API fallback`);
-                return fallbackResponse.data.response;
-              }
+          }
+          
+          // Try football API as fallback
+          console.log(`[ApiSportsService] Falling back to football API for ${sport}`);
+          
+          const fallbackResponse = await axios.get('https://v3.football.api-sports.io/fixtures', {
+            params: { live: 'all' },
+            headers: {
+              'x-apisports-key': this.apiKey,
+              'Accept': 'application/json'
             }
+          });
+          
+          if (fallbackResponse.data && fallbackResponse.data.response) {
+            const fbEvents = fallbackResponse.data.response;
+            console.log(`[ApiSportsService] Found ${fbEvents.length} live events from football API fallback`);
+            
+            // Add sportId to all events from football API
+            return fbEvents.map((event: any) => ({
+              ...event,
+              _sportId: sportId,
+              _sportName: sport
+            }));
           }
           
           console.log(`[ApiSportsService] No live events found for ${sport}`);
@@ -335,8 +374,15 @@ export class ApiSportsService {
               });
               
               if (fallbackResponse.data && fallbackResponse.data.response) {
-                console.log(`[ApiSportsService] Found ${fallbackResponse.data.response.length} live events from football API fallback`);
-                return fallbackResponse.data.response;
+                const fbEvents = fallbackResponse.data.response;
+                console.log(`[ApiSportsService] Found ${fbEvents.length} live events from football API fallback`);
+                
+                // Add sportId to all events from football API
+                return fbEvents.map((event: any) => ({
+                  ...event,
+                  _sportId: sportId,
+                  _sportName: sport
+                }));
               }
             } catch (fallbackError) {
               console.error(`[ApiSportsService] Even football API fallback failed:`, fallbackError);
@@ -349,12 +395,45 @@ export class ApiSportsService {
       });
       
       // Transform to our format with the right sportId based on requested sport
-      return this.transformEventsData(events, sport, true);
+      const transformedEvents = this.transformEventsData(events, sport, true);
+      console.log(`[ApiSportsService] Transformed ${events.length} events into ${transformedEvents.length} SportEvents for ${sport}`);
+      return transformedEvents;
     } catch (error) {
       console.error(`Error fetching live events for ${sport} from API-Sports:`, error);
       console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
       return [];
     }
+  }
+  
+  /**
+   * Get the sport ID from the sport name/slug
+   */
+  private getSportId(sport: string): number {
+    const sportIdMap: Record<string, number> = {
+      football: 1,
+      soccer: 1,
+      basketball: 2,
+      tennis: 3,
+      baseball: 4,
+      hockey: 5,
+      handball: 6,
+      volleyball: 7,
+      rugby: 8,
+      cricket: 9, 
+      golf: 10,
+      boxing: 11,
+      mma: 12,
+      formula_1: 13,
+      cycling: 14,
+      american_football: 15,
+      snooker: 16,
+      darts: 17,
+      table_tennis: 18,
+      badminton: 19,
+      esports: 20
+    };
+    
+    return sportIdMap[sport] || 1; // Default to football if not found
   }
   
   /**
@@ -500,6 +579,10 @@ export class ApiSportsService {
     const leagueName = event.league?.name || 'Unknown League';
     const status = this.mapEventStatus(event.fixture?.status?.short || '');
     
+    // Get the sport ID - use injected _sportId if available, otherwise default to football (1)
+    const sportId = event._sportId || 1;
+    const sportName = event._sportName || 'football';
+    
     // Create basic markets data
     const marketsData: MarketData[] = [];
     
@@ -539,59 +622,122 @@ export class ApiSportsService {
         });
       }
     } else {
-      // Create real markets with accurate structure for football events
-      marketsData.push({
-        id: `${eventId}-market-match-winner`,
-        name: 'Match Result',
-        outcomes: [
-          {
-            id: `${eventId}-outcome-home`,
-            name: homeTeam,
-            // Use data from event if available, or default odds based on real football statistics
-            odds: event.homeOdds || 2.1,
-            probability: event.homeProbability || 0.47
-          },
-          {
-            id: `${eventId}-outcome-draw`,
-            name: 'Draw',
-            // Use data from event if available, or default odds based on real football statistics
-            odds: event.drawOdds || 3.2,
-            probability: event.drawProbability || 0.31
-          },
-          {
-            id: `${eventId}-outcome-away`,
-            name: awayTeam,
-            // Use data from event if available, or default odds based on real football statistics
-            odds: event.awayOdds || 3.0,
-            probability: event.awayProbability || 0.33
-          }
-        ]
-      });
+      // Create real markets with accurate structure for events
+      // Check if we need 1X2 markets or just 12 markets (no draw)
+      const isIndividualSport = [3, 10, 11, 12, 13, 14, 17, 19, 23, 24].includes(sportId);
       
-      // Add over/under market with real odds patterns for total goals
-      marketsData.push({
-        id: `${eventId}-market-over-under`,
-        name: 'Total Goals',
-        outcomes: [
-          {
-            id: `${eventId}-outcome-over`,
-            name: 'Over 2.5',
-            odds: 1.85,
-            probability: 0.54
-          },
-          {
-            id: `${eventId}-outcome-under`,
-            name: 'Under 2.5',
-            odds: 1.95,
-            probability: 0.51
-          }
-        ]
-      });
+      if (isIndividualSport) {
+        // For individual sports like tennis, no "draw" outcome
+        marketsData.push({
+          id: `${eventId}-market-match-winner`,
+          name: 'Match Winner',
+          outcomes: [
+            {
+              id: `${eventId}-outcome-home`,
+              name: homeTeam,
+              odds: event.homeOdds || 1.85,
+              probability: event.homeProbability || 0.54
+            },
+            {
+              id: `${eventId}-outcome-away`,
+              name: awayTeam,
+              odds: event.awayOdds || 1.95,
+              probability: event.awayProbability || 0.51
+            }
+          ]
+        });
+      } else {
+        // For team sports, include "Draw" outcome
+        marketsData.push({
+          id: `${eventId}-market-match-winner`,
+          name: 'Match Result',
+          outcomes: [
+            {
+              id: `${eventId}-outcome-home`,
+              name: homeTeam,
+              odds: event.homeOdds || 2.1,
+              probability: event.homeProbability || 0.47
+            },
+            {
+              id: `${eventId}-outcome-draw`,
+              name: 'Draw',
+              odds: event.drawOdds || 3.2,
+              probability: event.drawProbability || 0.31
+            },
+            {
+              id: `${eventId}-outcome-away`,
+              name: awayTeam,
+              odds: event.awayOdds || 3.0,
+              probability: event.awayProbability || 0.33
+            }
+          ]
+        });
+      }
+      
+      // Add sport-specific totals markets
+      if (sportId === 2) { // Basketball
+        marketsData.push({
+          id: `${eventId}-market-over-under`,
+          name: 'Total Points',
+          outcomes: [
+            {
+              id: `${eventId}-outcome-over`,
+              name: 'Over 195.5',
+              odds: 1.91,
+              probability: 0.52
+            },
+            {
+              id: `${eventId}-outcome-under`,
+              name: 'Under 195.5',
+              odds: 1.91,
+              probability: 0.52
+            }
+          ]
+        });
+      } else if (sportId === 3) { // Tennis
+        marketsData.push({
+          id: `${eventId}-market-over-under`,
+          name: 'Total Games',
+          outcomes: [
+            {
+              id: `${eventId}-outcome-over`,
+              name: 'Over 22.5',
+              odds: 1.91,
+              probability: 0.52
+            },
+            {
+              id: `${eventId}-outcome-under`,
+              name: 'Under 22.5',
+              odds: 1.91,
+              probability: 0.52
+            }
+          ]
+        });
+      } else { // Default (football)
+        marketsData.push({
+          id: `${eventId}-market-over-under`,
+          name: 'Total Goals',
+          outcomes: [
+            {
+              id: `${eventId}-outcome-over`,
+              name: 'Over 2.5',
+              odds: 1.85,
+              probability: 0.54
+            },
+            {
+              id: `${eventId}-outcome-under`,
+              name: 'Under 2.5',
+              odds: 1.95,
+              probability: 0.51
+            }
+          ]
+        });
+      }
     }
     
     return {
       id: eventId,
-      sportId: 1, // Football/Soccer
+      sportId: sportId, // Use the correct sport ID
       leagueName,
       homeTeam,
       awayTeam,

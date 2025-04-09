@@ -68,11 +68,16 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <ImageBanner
-          href="/promotions/referral"
-          imageSrc="/promo-vertical.png"
-          altText="Earn Referral Bonus"
-        />
+        <div className="w-56 min-h-screen">
+          <a href="/promotions/referral" className="block h-full">
+            <img 
+              src="/promo-vertical.png" 
+              alt="Earn Referral Bonus" 
+              className="h-full object-cover"
+              style={{ maxWidth: "none", width: "100%" }}
+            />
+          </a>
+        </div>
         
         {/* Main Content Area */}
         <div className="flex flex-1">
@@ -250,11 +255,16 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <ImageBanner
-          href="/promotions/referral"
-          imageSrc="/promo-vertical.png"
-          altText="Earn Referral Bonus"
-        />
+        <div className="w-56 min-h-screen">
+          <a href="/promotions/referral" className="block h-full">
+            <img 
+              src="/promo-vertical.png" 
+              alt="Earn Referral Bonus" 
+              className="h-full object-cover"
+              style={{ maxWidth: "none", width: "100%" }}
+            />
+          </a>
+        </div>
       </div>
     </Layout>
   );

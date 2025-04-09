@@ -61,51 +61,31 @@ export class BasketballService {
   async getBasketballGames(isLive: boolean = false): Promise<BasketballGame[]> {
     try {
       const today = new Date();
-      const yesterday = new Date(today);
-      yesterday.setDate(today.getDate() - 1);
       
+      // Create date strings for today and future dates
       const todayStr = today.toISOString().split('T')[0];
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      
+      // Get dates for the next 7 days for upcoming games
+      const futureDates = [];
+      for (let i = 0; i < 7; i++) {
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + i);
+        futureDates.push(futureDate.toISOString().split('T')[0]);
+      }
       
       // Major basketball leagues to query
-      const leagueIds = [12, 76, 18, 10, 73]; // NBA, BSN, Argentina Liga A, Italy Lega A, Spain ACB
+      const leagueIds = [12, 76, 18, 10, 73, 120]; // NBA, BSN, Argentina Liga A, Italy Lega A, Spain ACB, EuroLeague
       let allGames: any[] = [];
       
       // For live games, we need to check all leagues with live status
       if (isLive) {
-        for (const leagueId of leagueIds) {
-          try {
-            console.log(`[BasketballService] Checking for live games in league ${leagueId}`);
-            
-            const liveResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
-              params: {
-                league: leagueId,
-                season: new Date().getFullYear(),
-                timezone: 'UTC',
-                status: '1Q-2Q-3Q-4Q-HT-BT'  // All possible in-game statuses
-              },
-              headers: {
-                'x-apisports-key': this.apiKey,
-                'Accept': 'application/json'
-              }
-            });
-            
-            if (liveResponse.data?.response && Array.isArray(liveResponse.data.response)) {
-              console.log(`[BasketballService] Found ${liveResponse.data.response.length} live games for league ${leagueId}`);
-              allGames = [...allGames, ...liveResponse.data.response];
-            }
-          } catch (error) {
-            console.error(`[BasketballService] Error fetching live games for league ${leagueId}:`, error);
-          }
-        }
-      } 
-      // For regular games, we need to query by date
-      else {
-        // Try today's games first
+        console.log(`[BasketballService] Fetching live basketball games`);
+        
+        // First try the general live query
         try {
-          const todayResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
+          const liveResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
             params: {
-              date: todayStr,
+              live: 'all',
               timezone: 'UTC'
             },
             headers: {
@@ -114,20 +94,55 @@ export class BasketballService {
             }
           });
           
-          if (todayResponse.data?.response && Array.isArray(todayResponse.data.response)) {
-            console.log(`[BasketballService] Found ${todayResponse.data.response.length} games for today`);
-            allGames = [...allGames, ...todayResponse.data.response];
+          if (liveResponse.data?.response && Array.isArray(liveResponse.data.response)) {
+            console.log(`[BasketballService] Found ${liveResponse.data.response.length} live games using 'live=all' param`);
+            allGames = [...allGames, ...liveResponse.data.response];
           }
         } catch (error) {
-          console.error('[BasketballService] Error fetching today\'s games:', error);
+          console.error(`[BasketballService] Error fetching live games with 'live=all':`, error);
         }
         
-        // If we didn't find any games for today, try yesterday
-        if (allGames.length < 5) {
+        // If that doesn't work, try by league and status
+        if (allGames.length === 0) {
+          for (const leagueId of leagueIds) {
+            try {
+              console.log(`[BasketballService] Checking for live games in league ${leagueId}`);
+              
+              const liveResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
+                params: {
+                  league: leagueId,
+                  season: new Date().getFullYear(),
+                  timezone: 'UTC',
+                  status: '1Q-2Q-3Q-4Q-HT-BT'  // All possible in-game statuses
+                },
+                headers: {
+                  'x-apisports-key': this.apiKey,
+                  'Accept': 'application/json'
+                }
+              });
+              
+              if (liveResponse.data?.response && Array.isArray(liveResponse.data.response)) {
+                console.log(`[BasketballService] Found ${liveResponse.data.response.length} live games for league ${leagueId}`);
+                allGames = [...allGames, ...liveResponse.data.response];
+              }
+            } catch (error) {
+              console.error(`[BasketballService] Error fetching live games for league ${leagueId}:`, error);
+            }
+          }
+        }
+      } 
+      // For upcoming games, we need to query by future dates
+      else {
+        console.log(`[BasketballService] Fetching upcoming basketball games`);
+        
+        // Try each future date for the next 7 days
+        for (const futureDate of futureDates) {
           try {
-            const yesterdayResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
+            console.log(`[BasketballService] Checking for games on ${futureDate}`);
+            
+            const dateResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
               params: {
-                date: yesterdayStr,
+                date: futureDate,
                 timezone: 'UTC'
               },
               headers: {
@@ -136,26 +151,32 @@ export class BasketballService {
               }
             });
             
-            if (yesterdayResponse.data?.response && Array.isArray(yesterdayResponse.data.response)) {
-              console.log(`[BasketballService] Found ${yesterdayResponse.data.response.length} games for yesterday`);
-              allGames = [...allGames, ...yesterdayResponse.data.response];
+            if (dateResponse.data?.response && Array.isArray(dateResponse.data.response)) {
+              console.log(`[BasketballService] Found ${dateResponse.data.response.length} games for ${futureDate}`);
+              allGames = [...allGames, ...dateResponse.data.response];
+            }
+            
+            // If we have at least some games, let's stop to avoid too many API calls
+            if (allGames.length >= 10) {
+              break;
             }
           } catch (error) {
-            console.error('[BasketballService] Error fetching yesterday\'s games:', error);
+            console.error(`[BasketballService] Error fetching games for ${futureDate}:`, error);
           }
         }
         
-        // If we still don't have enough games, try specific leagues
+        // If we still don't have enough upcoming games, try by league with status=NS
         if (allGames.length < 10) {
           for (const leagueId of leagueIds) {
             try {
-              console.log(`[BasketballService] Checking for games in league ${leagueId}`);
+              console.log(`[BasketballService] Checking for upcoming games in league ${leagueId}`);
               
               const leagueResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
                 params: {
                   league: leagueId,
                   season: new Date().getFullYear(),
-                  timezone: 'UTC'
+                  timezone: 'UTC',
+                  status: 'NS' // Not Started
                 },
                 headers: {
                   'x-apisports-key': this.apiKey,
@@ -164,7 +185,7 @@ export class BasketballService {
               });
               
               if (leagueResponse.data?.response && Array.isArray(leagueResponse.data.response)) {
-                console.log(`[BasketballService] Found ${leagueResponse.data.response.length} games for league ${leagueId}`);
+                console.log(`[BasketballService] Found ${leagueResponse.data.response.length} upcoming games for league ${leagueId}`);
                 allGames = [...allGames, ...leagueResponse.data.response];
               }
               
@@ -173,8 +194,40 @@ export class BasketballService {
                 break;
               }
             } catch (error) {
-              console.error(`[BasketballService] Error fetching games for league ${leagueId}:`, error);
+              console.error(`[BasketballService] Error fetching upcoming games for league ${leagueId}:`, error);
             }
+          }
+        }
+        
+        // If we STILL don't have enough games, add today's games (which might include some upcoming games)
+        if (allGames.length < 5) {
+          try {
+            console.log(`[BasketballService] Checking for today's games as last resort`);
+            
+            const todayResponse = await axios.get('https://v1.basketball.api-sports.io/games', {
+              params: {
+                date: todayStr,
+                timezone: 'UTC'
+              },
+              headers: {
+                'x-apisports-key': this.apiKey,
+                'Accept': 'application/json'
+              }
+            });
+            
+            if (todayResponse.data?.response && Array.isArray(todayResponse.data.response)) {
+              console.log(`[BasketballService] Found ${todayResponse.data.response.length} games for today`);
+              
+              // For today's games, only get the ones that are scheduled and not yet started
+              const scheduledGames = todayResponse.data.response.filter(
+                (game: any) => game.status && game.status.short === 'NS'
+              );
+              
+              console.log(`[BasketballService] Filtered to ${scheduledGames.length} scheduled games for today`);
+              allGames = [...allGames, ...scheduledGames];
+            }
+          } catch (error) {
+            console.error(`[BasketballService] Error fetching today's games:`, error);
           }
         }
       }
@@ -186,12 +239,22 @@ export class BasketballService {
       
       console.log(`[BasketballService] Found ${uniqueGames.length} unique basketball games total`);
       
-      // If looking for live games, filter further
-      const filteredGames = isLive 
-        ? uniqueGames.filter(game => ['1Q', '2Q', '3Q', '4Q', 'HT', 'BT'].includes(game.status?.short))
-        : uniqueGames;
+      // Apply proper filtering
+      let filteredGames = uniqueGames;
       
-      console.log(`[BasketballService] Filtered to ${filteredGames.length} ${isLive ? 'live' : ''} basketball games`);
+      if (isLive) {
+        // Filter for live games only
+        filteredGames = uniqueGames.filter(game => 
+          ['1Q', '2Q', '3Q', '4Q', 'HT', 'BT'].includes(game.status?.short)
+        );
+      } else {
+        // Filter for upcoming games only
+        filteredGames = uniqueGames.filter(game => 
+          game.status?.short === 'NS' && new Date(game.date) > today
+        );
+      }
+      
+      console.log(`[BasketballService] Filtered to ${filteredGames.length} ${isLive ? 'live' : 'upcoming'} basketball games`);
       
       // Format the data to match our EventGame format
       return filteredGames.map(this.formatBasketballGame);

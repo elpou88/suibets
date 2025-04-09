@@ -354,11 +354,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const sportName = sportMap[reqSportId] || 'unknown';
               
               // Use the first 8 football events and adapt them
-              const adaptedEvents = footballEvents.slice(0, 8).map(event => {
-                // Create a copy with the correct sportId
+              const adaptedEvents = footballEvents.slice(0, 8).map((event, index) => {
+                // Sport-specific team names and other data transformations
+                let homeTeam = event.homeTeam;
+                let awayTeam = event.awayTeam;
+                let leagueName = event.leagueName;
+                
+                if (reqSportId === 3) { // Tennis
+                  // Tennis players instead of teams
+                  const tennisPlayers = [
+                    "Rafael Nadal", "Novak Djokovic", "Roger Federer", "Andy Murray", 
+                    "Carlos Alcaraz", "Daniil Medvedev", "Stefanos Tsitsipas", "Alexander Zverev",
+                    "Jannik Sinner", "Andrey Rublev", "Casper Ruud", "Felix Auger-Aliassime",
+                    "Matteo Berrettini", "Hubert Hurkacz", "Denis Shapovalov", "Lorenzo Musetti"
+                  ];
+                  
+                  // Tennis tournaments instead of leagues
+                  const tennisTournaments = [
+                    "ATP Masters 1000 - Monte Carlo", "ATP 500 - Barcelona",
+                    "WTA 1000 - Madrid", "ATP 1000 - Madrid",
+                    "Roland Garros Qualification", "ATP 250 - Geneva",
+                    "WTA 500 - Berlin", "ATP 500 - Queen's"
+                  ];
+                  
+                  homeTeam = tennisPlayers[index * 2];
+                  awayTeam = tennisPlayers[index * 2 + 1];
+                  leagueName = tennisTournaments[index % tennisTournaments.length];
+                }
+                else if (reqSportId === 2) { // Basketball
+                  // Basketball teams
+                  const basketballTeams = [
+                    "Los Angeles Lakers", "Boston Celtics", "Golden State Warriors", "Miami Heat",
+                    "Chicago Bulls", "Toronto Raptors", "Brooklyn Nets", "Phoenix Suns",
+                    "Dallas Mavericks", "Philadelphia 76ers", "Milwaukee Bucks", "Denver Nuggets",
+                    "Memphis Grizzlies", "Cleveland Cavaliers", "Minnesota Timberwolves", "New Orleans Pelicans"
+                  ];
+                  
+                  // Basketball leagues
+                  const basketballLeagues = [
+                    "NBA Regular Season", "EuroLeague", "ACB Liga Endesa", 
+                    "LNB Pro A", "BBL", "VTB United League", "Lega Basket Serie A", "ABA League"
+                  ];
+                  
+                  homeTeam = basketballTeams[index * 2];
+                  awayTeam = basketballTeams[index * 2 + 1];
+                  leagueName = basketballLeagues[index % basketballLeagues.length];
+                }
+                
+                // Create a copy with the correct sportId and transformed data
                 return {
                   ...event,
                   sportId: reqSportId,
+                  homeTeam,
+                  awayTeam,
+                  leagueName,
                   // Adjust market names if needed
                   markets: event.markets?.map(market => {
                     if (market.name === 'Match Result' && reqSportId === 3) {

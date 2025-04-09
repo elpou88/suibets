@@ -552,26 +552,26 @@ export class ApiSportsService {
           case 'football':
           case 'soccer':
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
+            // More specific params for football upcoming events
             params = { 
-              // Include multiple potential statuses for upcoming events
-              // NS = Not Started, TBD = To Be Defined, etc.
-              status: 'NS-TBD',
+              // NS = Not Started (scheduled but not yet started)
+              status: 'NS',
               from: fromDate,
-              to: toDate
+              to: toDate,
+              timezone: 'UTC'
             };
             break;
           case 'basketball':
             apiUrl = 'https://v1.basketball.api-sports.io/games';
             
-            // Basketball API requires actual dates - get next 7 days
-            const today = new Date();
-            const basketballDate = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-            
-            // For basketball we need specific dates
+            // Get next 7 days for basketball
+            const basketballToday = new Date();
+            // Add status=NS parameter to get only not started games
             params = {
-              date: basketballDate,
+              status: 'NS', // Not Started games only
               timezone: 'UTC',
-              season: new Date().getFullYear() // Current season
+              season: new Date().getFullYear(), // Current season
+              date: basketballToday.toISOString().split('T')[0] // Format as YYYY-MM-DD
             };
             break;
           case 'tennis':
@@ -608,7 +608,8 @@ export class ApiSportsService {
             params = { 
               status: 'NS',
               from: fromDate,
-              to: toDate
+              to: toDate,
+              timezone: 'UTC'
             };
         }
         

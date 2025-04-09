@@ -162,8 +162,9 @@ export class ApiSportsService {
           return [];
         } catch (error) {
           console.error(`[ApiSportsService] Error fetching live events for ${sport}:`, error);
-          // Fall back to mock data in case of error
-          return this.getMockLiveEvents(sport);
+          // Don't fall back to mock data, return empty array instead
+          console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check API_SPORTS_KEY.`);
+          return [];
         }
       });
       
@@ -171,7 +172,8 @@ export class ApiSportsService {
       return this.transformEventsData(events, sport, true);
     } catch (error) {
       console.error(`Error fetching live events for ${sport} from API-Sports:`, error);
-      return this.getMockLiveEvents(sport);
+      console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check API_SPORTS_KEY.`);
+      return [];
     }
   }
   

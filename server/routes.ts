@@ -125,12 +125,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       let isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
       
-      // Force all events to be live for better betting experience
-      isLive = true;
+      // Do not force all events to be live, use the provided query parameter
+      // isLive remains as defined by the query parameter
       
       console.log(`Fetching events for sportId: ${sportId}, isLive: ${isLive}`);
       
-      const events = await storage.getEvents(sportId, undefined);
+      const events = await storage.getEvents(sportId, isLive);
       
       console.log(`Found ${events.length} events for sportId: ${sportId}`);
       
@@ -156,11 +156,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
       
-      // Modify all events to be live
-      const liveEvents = events.map(event => ({
+      // Only modify events if needed, don't force them to be live if they're not
+      const enhancedEvents = events.map(event => ({
         ...event,
-        isLive: true,
-        status: 'live',
+        // Keep original isLive and status values if defined, otherwise use defaults
+        isLive: isLive !== undefined ? isLive : (event.isLive || false),
+        status: event.status || 'scheduled',
         // If no markets exist, create some mock markets
         markets: event.markets && event.markets.length > 0 ? 
           // If markets exist, ensure they have valid outcomes with odds
@@ -204,7 +205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ]
       }));
       
-      res.json(liveEvents);
+      res.json(enhancedEvents);
     } catch (error) {
       console.error("Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });
@@ -229,8 +230,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a copy of the event with proper typing
       const eventWithMarkets: any = {
         ...event,
-        isLive: true,
-        status: 'live',
+        // Use existing values or defaults, don't force live status
+        isLive: event.isLive !== undefined ? event.isLive : false,
+        status: event.status || 'scheduled',
         name: event.name || `${event.homeTeam} vs ${event.awayTeam}`
       };
         

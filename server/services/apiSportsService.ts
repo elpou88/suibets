@@ -262,11 +262,12 @@ export class ApiSportsService {
           hockey: 'https://v1.hockey.api-sports.io/games',
           rugby: 'https://v1.rugby.api-sports.io/games',
           american_football: 'https://v1.american-football.api-sports.io/games',
-          tennis: 'https://v1.tennis.api-sports.io/games',
+          tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - should be matches, not games
           cricket: 'https://v1.cricket.api-sports.io/fixtures',
           handball: 'https://v1.handball.api-sports.io/games',
           volleyball: 'https://v1.volleyball.api-sports.io/games',
-          mma: 'https://v1.mma.api-sports.io/fixtures',
+          mma: 'https://v1.mma.api-sports.io/fights',
+          'mma-ufc': 'https://v1.mma.api-sports.io/fights', // Added specific key for mma-ufc
           boxing: 'https://v1.boxing.api-sports.io/fights',
           golf: 'https://v1.golf.api-sports.io/tournaments',
           formula_1: 'https://v1.formula-1.api-sports.io/races',
@@ -343,17 +344,11 @@ export class ApiSportsService {
           // Don't use fallback, just return empty list
           console.log(`[ApiSportsService] No live events found for ${sport}`);
           return [];
-          
-          console.log(`[ApiSportsService] No live events found for ${sport}`);
-          return [];
         } catch (error) {
           console.error(`[ApiSportsService] Error fetching live events for ${sport} from ${apiUrl}:`, error);
           
           // Don't use fallback for API failures, just return empty array
           console.log(`[ApiSportsService] API unavailable for ${sport} - returning empty array`);
-          return [];
-          
-          console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}`);
           return [];
         }
       });
@@ -416,7 +411,7 @@ export class ApiSportsService {
       // Try accessing the dedicated tennis API first
       console.log(`[ApiSportsService] Trying tennis-specific API`);
       try {
-        const response = await axios.get('https://v1.tennis.api-sports.io/games', {
+        const response = await axios.get('https://v1.tennis.api-sports.io/matches', {
           params: { live: 'true' },
           headers: {
             'x-apisports-key': this.apiKey,
@@ -546,7 +541,7 @@ export class ApiSportsService {
             };
         }
         
-        // Try alternate approach if date-based search is used
+        // Try direct approach for upcoming events
         console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming ${sport} events with params:`, params);
         
         try {
@@ -584,11 +579,22 @@ export class ApiSportsService {
           if (['basketball', 'tennis', 'baseball', 'hockey', 'mma-ufc'].includes(sport)) {
             console.log(`[ApiSportsService] Trying alternate API request for upcoming ${sport} events`);
             
-            const altParams = {
-              season: String(new Date().getFullYear()),
-              // For days in the future (between 1-21 days ahead)
-              next: '21'
-            };
+            // Different parameters for alternative approach
+            let altParams: Record<string, string> = {};
+            
+            if (sport === 'tennis') {
+              altParams = {
+                season: String(new Date().getFullYear())
+              };
+            } else {
+              altParams = {
+                season: String(new Date().getFullYear()),
+                // For days in the future (between 1-21 days ahead)
+                next: '21'
+              };
+            }
+            
+            console.log(`[ApiSportsService] Using alternative params:`, altParams);
             
             const altResponse = await axios.get(apiUrl, {
               params: altParams,

@@ -28,6 +28,8 @@ export class ApiSportsService {
     hockey: 'https://v1.hockey.api-sports.io/games',
     rugby: 'https://v1.rugby.api-sports.io/games',
     american_football: 'https://v1.american-football.api-sports.io/games',
+    nfl: 'https://v1.american-football.api-sports.io/games', // NFL uses american football endpoint
+    nba: 'https://v1.basketball.api-sports.io/games', // NBA uses basketball endpoint
     tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - matches is correct
     cricket: 'https://v1.cricket.api-sports.io/fixtures',
     handball: 'https://v1.handball.api-sports.io/games',
@@ -37,7 +39,9 @@ export class ApiSportsService {
     boxing: 'https://v1.boxing.api-sports.io/fights',
     golf: 'https://v1.golf.api-sports.io/tournaments',
     formula_1: 'https://v1.formula-1.api-sports.io/races',
-    cycling: 'https://v1.cycling.api-sports.io/races'
+    'formula-1': 'https://v1.formula-1.api-sports.io/races', // Support either format
+    cycling: 'https://v1.cycling.api-sports.io/races',
+    afl: 'https://v1.aussie-rules.api-sports.io/games' // AFL uses aussie rules API
   };
   
   // Status check endpoint for each API
@@ -46,7 +50,17 @@ export class ApiSportsService {
     basketball: 'https://v1.basketball.api-sports.io/status',
     tennis: 'https://v1.tennis.api-sports.io/status',
     baseball: 'https://v1.baseball.api-sports.io/status',
-    cricket: 'https://v1.cricket.api-sports.io/status'
+    cricket: 'https://v1.cricket.api-sports.io/status',
+    hockey: 'https://v1.hockey.api-sports.io/status',
+    handball: 'https://v1.handball.api-sports.io/status',
+    volleyball: 'https://v1.volleyball.api-sports.io/status',
+    rugby: 'https://v1.rugby.api-sports.io/status',
+    formula_1: 'https://v1.formula-1.api-sports.io/status',
+    'formula-1': 'https://v1.formula-1.api-sports.io/status',
+    american_football: 'https://v1.american-football.api-sports.io/status',
+    nba: 'https://v1.basketball.api-sports.io/status',
+    nfl: 'https://v1.american-football.api-sports.io/status',
+    afl: 'https://v1.aussie-rules.api-sports.io/status'
   };
 
   constructor(apiKey?: string) {
@@ -441,6 +455,7 @@ export class ApiSportsService {
       football: 1,
       soccer: 1,
       basketball: 2,
+      nba: 2, // NBA maps to basketball
       tennis: 3,
       baseball: 4,
       hockey: 5,
@@ -453,10 +468,14 @@ export class ApiSportsService {
       mma: 12,
       'mma-ufc': 12, // Added this entry to support mma-ufc as slug
       formula_1: 13,
+      'formula-1': 13, // Support either format
       cycling: 14,
       american_football: 15,
-      snooker: 16,
-      darts: 17,
+      nfl: 15, // NFL maps to american_football
+      afl: 16, // Australian Football League
+      aussie_rules: 16, // Alternative name for AFL
+      snooker: 17,
+      darts: 18,
       table_tennis: 18,
       badminton: 19,
       esports: 20
@@ -581,16 +600,68 @@ export class ApiSportsService {
             break;
           case 'baseball':
             apiUrl = 'https://v1.baseball.api-sports.io/games';
-            // For baseball, search by date range
+            // For baseball, search for not started games
             params = {
-              date: 'upcoming',
+              date: fromDate,
+              status: 'NS', // Not Started games only
               season: new Date().getFullYear()
             };
             break;
           case 'hockey':
             apiUrl = 'https://v1.hockey.api-sports.io/games';
             params = {
-              date: 'upcoming'
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'american_football':
+          case 'nfl':
+            apiUrl = 'https://v1.american-football.api-sports.io/games';
+            params = {
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'formula_1':
+          case 'formula-1':
+            apiUrl = 'https://v1.formula-1.api-sports.io/races';
+            params = {
+              status: 'scheduled',
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'handball':
+            apiUrl = 'https://v1.handball.api-sports.io/games';
+            params = {
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'volleyball':
+            apiUrl = 'https://v1.volleyball.api-sports.io/games';
+            params = {
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'rugby':
+            apiUrl = 'https://v1.rugby.api-sports.io/games';
+            params = {
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
+            };
+            break;
+          case 'afl':
+            apiUrl = 'https://v1.aussie-rules.api-sports.io/games';
+            params = {
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
             };
             break;
           case 'mma-ufc':
@@ -785,16 +856,22 @@ export class ApiSportsService {
           { id: 1, name: 'football' },
           { id: 2, name: 'basketball' },
           { id: 3, name: 'tennis' },
+          { id: 4, name: 'baseball' },
+          { id: 15, name: 'american_football' }, // NFL
           { id: 12, name: 'mma-ufc' }
         ];
         
         // Secondary sports to try if we need more events
         const secondarySports = [
-          { id: 4, name: 'baseball' },
           { id: 5, name: 'hockey' },
+          { id: 6, name: 'handball' },
+          { id: 7, name: 'volleyball' },
+          { id: 8, name: 'rugby' },
           { id: 9, name: 'cricket' },
           { id: 11, name: 'boxing' },
-          { id: 15, name: 'american_football' }
+          { id: 13, name: 'formula_1' },
+          { id: 16, name: 'afl' },
+          { id: 2, name: 'nba' }  // Using NBA alias for basketball
         ];
         
         let allEvents: SportEvent[] = [];

@@ -47,6 +47,7 @@ import DividendsReal from "@/pages/dividends-real";
 import Parlay from "@/pages/parlay";
 import SportPage from "@/pages/sports-live/[sport]";
 import DefiStaking from "@/pages/defi-staking";
+import StoragePage from "@/pages/storage";
 
 function App() {
   console.log("Starting React application");
@@ -75,6 +76,7 @@ function App() {
                 <Route path="/bet-history" component={BetHistoryReal} />
                 <Route path="/dividends" component={DividendsReal} />
                 <Route path="/defi-staking" component={DefiStaking} />
+                <Route path="/storage" component={StoragePage} />
                 <Route path="/connect-wallet" component={ConnectWallet} />
                 <Route path="/join" component={HomeReal} />
                 

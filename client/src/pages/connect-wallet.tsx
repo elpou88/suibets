@@ -89,13 +89,24 @@ export default function ConnectWallet() {
   
   // Connect using the wallet adapter
   const connectWallet = async () => {
+    console.log("Connect wallet button clicked");
     setConnecting(true);
     try {
+      console.log("Attempting to connect via adapter...");
       await connectAdapter();
+      console.log("Connect adapter call completed, current address:", address);
       
       if (address) {
+        console.log("Address available, checking Wurlus registration");
         // Check Wurlus registration status for this wallet
         checkWurlusRegistration(address);
+      } else {
+        console.log("No address after connection attempt - user may need to install wallet extension");
+        toast({
+          title: "No Wallet Detected",
+          description: "Please install a Sui wallet extension to connect to the platform.",
+          variant: "destructive",
+        });
       }
     } catch (error: any) {
       console.error("Error connecting wallet:", error);

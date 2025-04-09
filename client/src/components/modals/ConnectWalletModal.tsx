@@ -81,8 +81,26 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
         throw new Error("No Sui wallet extension detected. Please install a wallet extension first.");
       }
       
+      // Log before wallet connection
+      console.log('About to call connectAdapter() in modal');
+      
       // Connect using the wallet adapter
       await connectAdapter();
+      
+      console.log('connectAdapter() completed in modal, address:', address);
+      
+      // If still no address, show clearer error 
+      if (!address && !isConnected) {
+        console.log('Connection may have failed - no address available');
+        setTimeout(() => {
+          // Re-check after a short delay
+          if (!address && !isConnected) {
+            setError("No wallet was connected. Please make sure you have a Sui wallet extension installed and try again.");
+            setConnecting(false);
+            setConnectionStep('selecting');
+          }
+        }, 2000);
+      }
       
       // The rest of the connection process is handled by the useEffect hooks above
       // that monitor the wallet adapter state changes

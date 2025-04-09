@@ -174,20 +174,35 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      console.log('Starting wallet connection process...');
+      console.log('Starting wallet connection process in WalletAdapter...');
       
       // Real wallet mode is the only option - demo wallets completely removed
       
       try {
+        // Check if any wallet extension APIs are detected
+        console.log('Checking for wallet extensions in window object:', {
+          'suiWallet in window': 'suiWallet' in window,
+          'sui in window': 'sui' in window, 
+          'suiet in window': 'suiet' in window,
+          'ethos in window': 'ethos' in window,
+          'martian in window': 'martian' in window,
+        });
+        
         // First, try to connect to a real Sui wallet using the wallet-standard
         const walletAdapters = getWallets().get();
-        console.log('Available wallets:', walletAdapters);
+        console.log('Available wallet adapters found:', walletAdapters.length);
+        walletAdapters.forEach(wallet => {
+          console.log(`Wallet: ${wallet.name}, Features:`, Object.keys(wallet.features).join(', '));
+        });
         
         // Find available Sui wallets
         const suiWallets = walletAdapters.filter(wallet => 
           wallet.features['sui:chains'] || 
           (wallet.name && wallet.name.toLowerCase().includes('sui'))
         );
+        
+        console.log(`Found ${suiWallets.length} Sui-compatible wallets:`, 
+          suiWallets.map(w => w.name).join(', '));
         
         if (suiWallets.length > 0) {
           // Use the first available Sui wallet
@@ -292,11 +307,20 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // If we get here, no real wallet was found, so we'll show an error message
       console.log('No real wallet found - please install a Sui wallet extension');
       
-      setError('No Sui wallet extension detected. Please install a Sui wallet extension like Sui Wallet, Ethos Wallet, or Suiet.');
+      // Provide more detailed error based on browser type
+      const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
+                     navigator.userAgent.includes('Firefox') ? 'Firefox' : 
+                     navigator.userAgent.includes('Safari') ? 'Safari' : 'your browser';
+                     
+      const installMessage = browser === 'Chrome' ? 
+        'Install from Chrome Web Store: Sui Wallet, Ethos Wallet, or Suiet' :
+        'Please install a Sui wallet extension compatible with ' + browser;
+      
+      setError(`No Sui wallet extension detected. ${installMessage}`);
       
       toast({
-        title: 'No Wallet Detected',
-        description: 'Please install a Sui wallet extension to connect to the platform.',
+        title: 'No Wallet Extension Detected',
+        description: `Please install a Sui wallet extension for ${browser} to connect to the platform.`,
         variant: 'destructive',
       });
       

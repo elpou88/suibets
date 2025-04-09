@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
+import SidePromoBanner from '@/components/promotions/SidePromoBanner';
 
 /**
  * Home page that displays featured events across various sports using HTML/CSS components
@@ -67,18 +68,12 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <div className="w-24 min-h-screen flex">
-          <a 
-            href="/promotions/referral" 
-            className="h-full w-full hover:opacity-90 transition-opacity"
-          >
-            <img 
-              src="/promoStrip.png" 
-              alt="Earn Referral Bonus"
-              className="h-full object-cover"
-            />
-          </a>
-        </div>
+        <SidePromoBanner 
+          imageUrl="/promotionBanner.png"
+          altText="Earn Referral Bonus" 
+          targetUrl="/promotions/referral"
+          position="left"
+        />
         
         {/* Main Content Area */}
         <div className="flex flex-1">
@@ -256,18 +251,12 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <div className="w-24 min-h-screen flex">
-          <a 
-            href="/promotions/referral" 
-            className="h-full w-full hover:opacity-90 transition-opacity"
-          >
-            <img 
-              src="/promoStrip.png" 
-              alt="Earn Referral Bonus"
-              className="h-full object-cover"
-            />
-          </a>
-        </div>
+        <SidePromoBanner 
+          imageUrl="/promotionBanner.png"
+          altText="Earn Referral Bonus" 
+          targetUrl="/promotions/referral"
+          position="right"
+        />
       </div>
     </Layout>
   );

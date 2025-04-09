@@ -146,12 +146,12 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      // Support both Replit and actual Sui wallets
-      // Check if user has explicitly requested to use actual wallets
-      const useRealWallets = localStorage.getItem('use_real_wallets') === 'true';
+      // We want to use real Sui wallets by default
+      // Only use demo wallet if explicitly requested by the user
+      const useDemoWallet = localStorage.getItem('use_demo_wallet') === 'true';
       
       if ((window.location.hostname.includes("replit") || 
-          window.location.hostname.includes("riker.replit")) && !useRealWallets) {
+          window.location.hostname.includes("riker.replit")) && useDemoWallet) {
         console.log('Using demo wallet for Replit environment');
         // Create a deterministic test wallet for Replit environment
         const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";

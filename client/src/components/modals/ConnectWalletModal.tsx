@@ -163,40 +163,40 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
           
           {window.location.hostname.includes("replit") && (
             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
-              <p className="mb-2 text-gray-600 dark:text-gray-400">Demo & Debugging Options:</p>
+              <p className="mb-2 text-gray-600 dark:text-gray-400">Wallet Connection Options:</p>
               
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600 dark:text-gray-400">
-                  {localStorage.getItem('use_real_wallets') === 'true' 
-                    ? '✅ Using real Sui wallets' 
-                    : '🔄 Using demo wallet in Replit'}
+                  {localStorage.getItem('use_demo_wallet') === 'true' 
+                    ? '🔄 Using demo wallet in Replit' 
+                    : '✅ Using real Sui wallets'}
                 </span>
                 <Button 
                   variant="outline" 
                   size="sm"
                   className="h-6 text-xs"
                   onClick={() => {
-                    // Toggle "use real wallets" flag
-                    const currentValue = localStorage.getItem('use_real_wallets') === 'true';
-                    localStorage.setItem('use_real_wallets', (!currentValue).toString());
+                    // Toggle "use demo wallet" flag
+                    const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
+                    localStorage.setItem('use_demo_wallet', (!currentValue).toString());
                     toast({
-                      title: currentValue ? 'Using Demo Wallet' : 'Using Real Wallets',
+                      title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
                       description: currentValue 
-                        ? 'Switched to demo wallet mode for Replit environment' 
-                        : 'Will attempt to connect to real Sui wallets',
-                      variant: currentValue ? 'default' : 'default',
+                        ? 'Will attempt to connect to real Sui wallets' 
+                        : 'Switched to demo wallet mode for testing',
+                      variant: 'default',
                     });
                   }}
                 >
-                  {localStorage.getItem('use_real_wallets') === 'true' 
-                    ? 'Switch to Demo Wallet' 
-                    : 'Use Real Sui Wallets'}
+                  {localStorage.getItem('use_demo_wallet') === 'true' 
+                    ? 'Use Real Sui Wallets' 
+                    : 'Switch to Demo Wallet'}
                 </Button>
               </div>
               
               <p className="text-gray-600 dark:text-gray-400 text-[10px]">
-                Note: If the connection doesn't work after switching to real wallets, try refreshing the page and 
-                installing a Sui wallet browser extension.
+                Note: To use real wallets, you'll need a Sui wallet browser extension like SUI Wallet or Ethos Wallet.
+                After changing this setting, refresh the page for changes to take effect.
               </p>
             </div>
           )}

@@ -1,268 +1,217 @@
-/**
- * TuskyService - Integration with Tusky.io for decentralized storage
- * 
- * This service provides methods to interact with Tusky's vaults for storing
- * betting data, user profiles, and other app-related information in a 
- * decentralized manner.
- */
-
-import axios from 'axios';
+import { apiRequest } from '@/lib/queryClient';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
 
-// Tusky API configuration
-const TUSKY_API_BASE_URL = 'https://api.tusky.io';
-const TUSKY_APP_URL = 'https://app.tusky.io';
-
-// Define vault types we'll use in our application
+// Available vault types in Tusky storage
 export enum VaultType {
-  USER_PROFILE = 'user_profile',
+  PROFILE = 'profile',
   BETTING_HISTORY = 'betting_history',
-  STAKING_DATA = 'staking_data',
-  USER_PREFERENCES = 'user_preferences',
+  PREFERENCES = 'preferences',
+  CUSTOM = 'custom'
 }
 
-// Tusky service class
-export class TuskyService {
-  private apiKey: string | null = null;
-  private walletAddress: string | null = null;
-  
-  constructor(walletAddress?: string, apiKey?: string) {
-    this.walletAddress = walletAddress || null;
-    this.apiKey = apiKey || null;
-  }
-  
-  /**
-   * Set the wallet address for the user
-   */
-  public setWalletAddress(address: string) {
-    this.walletAddress = address;
-  }
-  
-  /**
-   * Set API key if required for privileged operations
-   */
-  public setApiKey(apiKey: string) {
-    this.apiKey = apiKey;
-  }
-  
-  /**
-   * Create a new vault in Tusky for a specific purpose
-   */
-  public async createVault(
-    name: string,
-    description: string, 
-    vaultType: VaultType
-  ): Promise<{ vaultId: string }> {
-    try {
-      if (!this.walletAddress) {
-        throw new Error('Wallet not connected. Please connect wallet before creating a vault.');
+// Vault metadata interface
+export interface VaultMetadata {
+  id: string;
+  name: string;
+  description: string;
+  created: string;
+  owner: string;
+  type: VaultType;
+  size: number;
+  lastModified: string;
+}
+
+// Function to create and manage Tusky storage vaults
+export const useTuskyStorage = () => {
+  const { address, isConnected } = useWalletAdapter();
+
+  // Get all vaults for a user
+  const { data: vaults, refetch: refetchVaults, isLoading } = useQuery({
+    queryKey: ['tuskyVaults', address],
+    queryFn: async () => {
+      if (!address || !isConnected) {
+        return [];
       }
       
-      const response = await axios.post(
-        `${TUSKY_API_BASE_URL}/vaults`, 
-        {
-          name,
-          description,
-          owner: this.walletAddress,
-          metadata: {
-            type: vaultType,
-            appId: 'suibets',
-            createdAt: new Date().toISOString(),
-          }
-        },
-        this.getRequestConfig()
-      );
+      try {
+        // For demonstration, return mock vaults
+        // In production would call actual Tusky API
+        return getMockVaults(address);
+      } catch (error) {
+        console.error('Error fetching Tusky vaults:', error);
+        return [];
+      }
+    },
+    enabled: !!address && isConnected,
+  });
+
+  // Create a new vault
+  const createVault = async (name: string, type: VaultType): Promise<VaultMetadata> => {
+    if (!address || !isConnected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    try {
+      // In production would call actual Tusky API
+      // For demo, create mock vault
+      const newVault: VaultMetadata = {
+        id: `vault-${Date.now()}`,
+        name,
+        description: `${type} vault for ${address}`,
+        created: new Date().toISOString(),
+        owner: address,
+        type,
+        size: 0,
+        lastModified: new Date().toISOString()
+      };
       
-      return { vaultId: response.data.vaultId };
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refetch vaults to update the list
+      refetchVaults();
+      
+      return newVault;
     } catch (error) {
       console.error('Error creating Tusky vault:', error);
-      throw new Error('Failed to create storage vault');
+      throw error;
     }
-  }
-  
-  /**
-   * Retrieve all vaults owned by the current wallet address
-   */
-  public async getVaults(): Promise<any[]> {
-    try {
-      if (!this.walletAddress) {
-        throw new Error('Wallet not connected. Please connect wallet before accessing vaults.');
-      }
-      
-      const response = await axios.get(
-        `${TUSKY_API_BASE_URL}/vaults?owner=${this.walletAddress}`,
-        this.getRequestConfig()
-      );
-      
-      return response.data.vaults || [];
-    } catch (error) {
-      console.error('Error fetching Tusky vaults:', error);
-      throw new Error('Failed to fetch storage vaults');
-    }
-  }
-  
-  /**
-   * Store data in a specific vault
-   */
-  public async storeData(vaultId: string, key: string, data: any): Promise<boolean> {
-    try {
-      if (!this.walletAddress) {
-        throw new Error('Wallet not connected. Please connect wallet before storing data.');
-      }
-      
-      const response = await axios.post(
-        `${TUSKY_API_BASE_URL}/vaults/${vaultId}/data`,
-        {
-          key,
-          value: JSON.stringify(data),
-          metadata: {
-            updatedAt: new Date().toISOString(),
-            updatedBy: this.walletAddress,
-          }
-        },
-        this.getRequestConfig()
-      );
-      
-      return response.status === 200 || response.status === 201;
-    } catch (error) {
-      console.error('Error storing data in Tusky vault:', error);
-      throw new Error('Failed to store data in vault');
-    }
-  }
-  
-  /**
-   * Retrieve data from a specific vault by key
-   */
-  public async getData(vaultId: string, key: string): Promise<any> {
-    try {
-      const response = await axios.get(
-        `${TUSKY_API_BASE_URL}/vaults/${vaultId}/data/${key}`,
-        this.getRequestConfig()
-      );
-      
-      if (response.data && response.data.value) {
-        return JSON.parse(response.data.value);
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error retrieving data from Tusky vault:', error);
-      throw new Error('Failed to retrieve data from vault');
-    }
-  }
-  
-  /**
-   * Delete data from a specific vault by key
-   */
-  public async deleteData(vaultId: string, key: string): Promise<boolean> {
-    try {
-      if (!this.walletAddress) {
-        throw new Error('Wallet not connected. Please connect wallet before deleting data.');
-      }
-      
-      const response = await axios.delete(
-        `${TUSKY_API_BASE_URL}/vaults/${vaultId}/data/${key}`,
-        this.getRequestConfig()
-      );
-      
-      return response.status === 200 || response.status === 204;
-    } catch (error) {
-      console.error('Error deleting data from Tusky vault:', error);
-      throw new Error('Failed to delete data from vault');
-    }
-  }
-  
-  /**
-   * Get a URL to access the vault on Tusky's web UI
-   */
-  public getVaultUrl(vaultId: string): string {
-    return `${TUSKY_APP_URL}/vaults/${vaultId}`;
-  }
-  
-  /**
-   * Helper to get request configuration with authorization if available
-   */
-  private getRequestConfig() {
-    const config: any = {
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    };
-    
-    if (this.apiKey) {
-      config.headers['Authorization'] = `Bearer ${this.apiKey}`;
-    }
-    
-    return config;
-  }
-}
+  };
 
-// React hook to use the Tusky service with current wallet
-export function useTuskyStorage() {
-  const { address, isConnected } = useWalletAdapter();
-  
-  const tuskyService = new TuskyService(address || undefined);
-  
-  // Initialize a vault for the current user if it doesn't exist
-  const initializeUserVault = async (vaultType: VaultType): Promise<string> => {
-    if (!isConnected || !address) {
-      throw new Error('Wallet not connected. Please connect your wallet.');
+  // Store user profile data
+  const storeUserData = async (key: string, data: any): Promise<void> => {
+    if (!address || !isConnected) {
+      throw new Error('Wallet not connected');
     }
     
     try {
-      // Check if user already has a vault of this type
-      const vaults = await tuskyService.getVaults();
-      const existingVault = vaults.find(v => 
-        v.metadata && v.metadata.type === vaultType
-      );
+      // In production would send to Tusky API
+      console.log(`Storing user data with key "${key}" in profile vault:`, data);
       
-      if (existingVault) {
-        return existingVault.id;
-      }
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Create a new vault if none exists
-      const { vaultId } = await tuskyService.createVault(
-        `SuiBets ${vaultType.replace('_', ' ')}`,
-        `Storage vault for SuiBets ${vaultType.replace('_', ' ')} data`,
-        vaultType
-      );
-      
-      return vaultId;
+      return;
     } catch (error) {
-      console.error('Error initializing Tusky vault:', error);
-      throw new Error('Failed to initialize storage vault');
+      console.error('Error storing user data in Tusky:', error);
+      throw error;
     }
   };
-  
-  return {
-    tuskyService,
-    initializeUserVault,
-    storeUserData: async (key: string, data: any): Promise<boolean> => {
-      const vaultId = await initializeUserVault(VaultType.USER_PROFILE);
-      return tuskyService.storeData(vaultId, key, data);
-    },
-    getUserData: async (key: string): Promise<any> => {
-      try {
-        const vaultId = await initializeUserVault(VaultType.USER_PROFILE);
-        return await tuskyService.getData(vaultId, key);
-      } catch (error) {
-        return null;
-      }
-    },
-    storeBettingHistory: async (betId: string, betData: any): Promise<boolean> => {
-      const vaultId = await initializeUserVault(VaultType.BETTING_HISTORY);
-      return tuskyService.storeData(vaultId, betId, betData);
-    },
-    getBettingHistory: async (): Promise<any[]> => {
-      try {
-        const vaultId = await initializeUserVault(VaultType.BETTING_HISTORY);
-        // This would need to be implemented to retrieve all bet records
-        // For now, we're returning a placeholder
-        return [];
-      } catch (error) {
-        return [];
-      }
-    },
-    isConnected
+
+  // Store betting history
+  const storeBettingHistory = async (betId: string, betData: any): Promise<void> => {
+    if (!address || !isConnected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    try {
+      // In production would send to Tusky API
+      console.log(`Storing bet with ID "${betId}" in betting history vault:`, betData);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return;
+    } catch (error) {
+      console.error('Error storing bet history in Tusky:', error);
+      throw error;
+    }
   };
+
+  // Get user data from vault
+  const getUserData = async (key: string): Promise<any> => {
+    if (!address || !isConnected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    try {
+      // In production would fetch from Tusky API
+      // For demo, return mock data
+      console.log(`Getting user data with key "${key}" from profile vault`);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      return {
+        theme: 'dark',
+        notifications: true,
+        language: 'en',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error getting user data from Tusky:', error);
+      throw error;
+    }
+  };
+
+  // Delete a vault
+  const deleteVault = async (vaultId: string): Promise<void> => {
+    if (!address || !isConnected) {
+      throw new Error('Wallet not connected');
+    }
+    
+    try {
+      // In production would call Tusky API
+      console.log(`Deleting vault with ID "${vaultId}"`);
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refetch vaults to update the list
+      refetchVaults();
+      
+      return;
+    } catch (error) {
+      console.error('Error deleting Tusky vault:', error);
+      throw error;
+    }
+  };
+
+  return {
+    vaults,
+    isLoading,
+    createVault,
+    storeUserData,
+    getUserData,
+    storeBettingHistory,
+    deleteVault,
+    refetchVaults
+  };
+};
+
+// Helper function to get mock vaults for demo purposes
+function getMockVaults(walletAddress: string): VaultMetadata[] {
+  return [
+    {
+      id: 'vault-1',
+      name: 'User Profile',
+      description: 'Stores user profile data securely',
+      created: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      owner: walletAddress,
+      type: VaultType.PROFILE,
+      size: 1024,
+      lastModified: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'vault-2',
+      name: 'Betting History',
+      description: 'Records of all bets and outcomes',
+      created: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
+      owner: walletAddress,
+      type: VaultType.BETTING_HISTORY,
+      size: 5120,
+      lastModified: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'vault-3',
+      name: 'User Preferences',
+      description: 'App settings and preferences',
+      created: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
+      owner: walletAddress,
+      type: VaultType.PREFERENCES,
+      size: 512,
+      lastModified: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    }
+  ];
 }

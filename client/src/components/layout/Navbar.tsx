@@ -120,8 +120,18 @@ export default function Navbar() {
               <DropdownMenuContent>
                 <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>My Bets</DropdownMenuItem>
-                <DropdownMenuItem>Transactions</DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/bet-history">My Bets</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/dividends">Dividends</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/defi-staking">DeFi Staking</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/storage">Storage Vaults</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={disconnectWallet}>
                   <LogOut className="mr-2 h-4 w-4" />

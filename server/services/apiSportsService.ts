@@ -387,6 +387,7 @@ export class ApiSportsService {
       golf: 10,
       boxing: 11,
       mma: 12,
+      'mma-ufc': 12, // Added this entry to support mma-ufc as slug
       formula_1: 13,
       cycling: 14,
       american_football: 15,

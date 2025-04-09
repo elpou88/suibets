@@ -24,51 +24,90 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
-      // First try to get data from API for any sport if it's live
+      // Get data from API for any sport if it's live - NO SYNTHETIC DATA, ONLY REAL API DATA
       if (isLive === true) {
-        // If we have a sport ID, get the sport name from our mapping
-        const sportName = reqSportId ? getSportName(reqSportId) : 'football';
-        console.log(`Attempting to fetch live ${sportName} (ID: ${reqSportId}) events from API`);
+        // Try every sport from the database to get the widest possible range of live events
+        const allSports = await storage.getSports();
+        console.log(`Fetching real-time data for all ${allSports.length} sports from API`);
+        
+        // Create an array to store all fetched events
+        let allApiEvents: any[] = [];
+        
+        // If we have a specific sport ID requested, prioritize that one
+        if (reqSportId) {
+          const sportName = getSportName(reqSportId);
+          console.log(`Attempting to fetch live ${sportName} (ID: ${reqSportId}) events from API`);
+          
+          try {
+            const sportEvents = await apiSportsService.getLiveEvents(sportName.toLowerCase());
+            
+            if (sportEvents && sportEvents.length > 0) {
+              console.log(`Found ${sportEvents.length} live ${sportName} events from API`);
+              
+              // Filter events to match requested sport ID and add to our collection
+              const filteredEvents = sportEvents.filter(event => event.sportId === reqSportId);
+              
+              if (filteredEvents.length > 0) {
+                console.log(`Using ${filteredEvents.length} API events for sport ${sportName}`);
+                return res.json(filteredEvents);
+              } else {
+                console.log(`No API events match sport ID ${reqSportId}, will try to fetch all sports`);
+              }
+            } else {
+              console.log(`No live ${sportName} events found from API, will try to fetch all sports`);
+            }
+          } catch (error) {
+            console.error(`Error fetching live ${sportName} events from API:`, error);
+          }
+        }
+        
+        // If we didn't find sport-specific events or no sport ID was specified,
+        // get all live events from the API
+        console.log(`Fetching all live events from the API for all sports`);
         
         try {
-          const apiEvents = await apiSportsService.getLiveEvents(sportName.toLowerCase());
+          // Fetch football events (most reliable API endpoint with good structure)
+          const footballEvents = await apiSportsService.getLiveEvents('football');
+          if (footballEvents && footballEvents.length > 0) {
+            allApiEvents = [...allApiEvents, ...footballEvents];
+          }
           
-          if (apiEvents && apiEvents.length > 0) {
-            console.log(`Found ${apiEvents.length} live ${sportName} events from API`);
+          // Try fetching events for basketball and other popular sports
+          const basketballEvents = await apiSportsService.getLiveEvents('basketball');
+          if (basketballEvents && basketballEvents.length > 0) {
+            allApiEvents = [...allApiEvents, ...basketballEvents];
+          }
+          
+          const tennisEvents = await apiSportsService.getLiveEvents('tennis');
+          if (tennisEvents && tennisEvents.length > 0) {
+            allApiEvents = [...allApiEvents, ...tennisEvents];
+          }
+          
+          // Add more sports here as needed
+          
+          console.log(`Found a total of ${allApiEvents.length} live events from all sports combined`);
+          
+          // If we have a specific sport ID, filter all events to match that ID
+          if (reqSportId) {
+            const filteredEvents = allApiEvents.filter(event => event.sportId === reqSportId);
             
-            // If we have a specific sport ID, filter the results to only include that sport
-            const filteredEvents = reqSportId 
-              ? apiEvents.filter(event => event.sportId === reqSportId)
-              : apiEvents;
-              
             if (filteredEvents.length > 0) {
-              console.log(`Using ${filteredEvents.length} API events for sport ${sportName}`);
+              console.log(`Found ${filteredEvents.length} events matching sport ID ${reqSportId} across all APIs`);
               return res.json(filteredEvents);
             } else {
-              console.log(`No API events match sport ID ${reqSportId}, using fallback`);
+              console.log(`No events found matching sport ID ${reqSportId} across all APIs`);
             }
           } else {
-            console.log(`No live ${sportName} events found from API, using fallback`);
+            // If no specific sport is requested, return all events
+            return res.json(allApiEvents);
           }
         } catch (error) {
-          console.error(`Error fetching live ${sportName} events from API:`, error);
+          console.error(`Error fetching all live sports events from API:`, error);
         }
         
-        // Fall back to synthetic data generation if API fetch fails or returns no events
-        if (reqSportId === 2) {
-          console.log("Falling back to synthetic basketball events");
-          const basketballEvents = generateBasketballEvents();
-          return res.json(basketballEvents);
-        } else if (reqSportId === 3) {
-          console.log("Falling back to synthetic tennis events");
-          const tennisEvents = generateTennisEvents();
-          return res.json(tennisEvents);
-        } else if (reqSportId && reqSportId > 3) {
-          const sportName = getSportName(reqSportId);
-          console.log(`Falling back to synthetic ${sportName} events`);
-          const sportEvents = generateSportEvents(reqSportId, sportName);
-          return res.json(sportEvents);
-        }
+        // If we reached here, we couldn't find any events from the API
+        console.log(`No live events found from ANY API for the requested sport (${reqSportId})`);
+        return res.json([]);
       }
       
       // Get events from storage for other cases

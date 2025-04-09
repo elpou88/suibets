@@ -165,35 +165,46 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
               <p className="mb-2 text-gray-600 dark:text-gray-400">Wallet Connection Options:</p>
               
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-gray-600 dark:text-gray-400">
-                  {localStorage.getItem('use_demo_wallet') === 'true' 
-                    ? '🔄 Using demo wallet in Replit' 
-                    : '✅ Using real Sui wallets'}
-                </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => {
-                    // Toggle "use demo wallet" flag
-                    const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
-                    localStorage.setItem('use_demo_wallet', (!currentValue).toString());
-                    toast({
-                      title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
-                      description: currentValue 
-                        ? 'Will attempt to connect to real Sui wallets' 
-                        : 'Switched to demo wallet mode for testing',
-                      variant: 'default',
-                    });
-                    // Reload the page to apply changes immediately
-                    window.location.reload();
-                  }}
-                >
-                  {localStorage.getItem('use_demo_wallet') === 'true' 
-                    ? 'Use Real Sui Wallets' 
-                    : 'Switch to Demo Wallet'}
-                </Button>
+              <div className="flex flex-col justify-center items-center mb-4">
+                <p className="text-center text-gray-600 dark:text-gray-400 mb-2">
+                  <span className="font-semibold">Note:</span> To use a real Sui wallet, you need to have a wallet extension like Sui Wallet or Ethos Wallet installed in your browser.
+                </p>
+                
+                <div className="flex items-center my-2">
+                  <span className="text-green-500 mr-2">✅</span>
+                  <span className="text-gray-700 dark:text-gray-300">Real wallets are prioritized by default</span>
+                </div>
+                
+                <div className="flex justify-between items-center w-full mt-2">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                    {localStorage.getItem('use_demo_wallet') === 'true' 
+                      ? '🔄 Using demo wallet for testing' 
+                      : '✅ Using real Sui wallets (preferred)'}
+                  </span>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="h-6 text-xs"
+                    onClick={() => {
+                      // Toggle "use demo wallet" flag
+                      const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
+                      localStorage.setItem('use_demo_wallet', (!currentValue).toString());
+                      toast({
+                        title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
+                        description: currentValue 
+                          ? 'Will attempt to connect to real Sui wallets' 
+                          : 'Switched to demo wallet mode for testing',
+                        variant: 'default',
+                      });
+                      // Reload the page to apply changes immediately
+                      window.location.reload();
+                    }}
+                  >
+                    {localStorage.getItem('use_demo_wallet') === 'true' 
+                      ? 'Use Real Sui Wallets' 
+                      : 'Switch to Demo Wallet'}
+                  </Button>
+                </div>
               </div>
               
               <p className="text-gray-600 dark:text-gray-400 text-[10px]">

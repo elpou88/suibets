@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Card, 
   CardContent, 
@@ -16,364 +16,507 @@ import {
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useTuskyStorage, VaultType, VaultMetadata } from '@/services/TuskyService';
-import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
 import { useToast } from '@/hooks/use-toast';
-import { Database, Trash2, Clock, HardDrive, Plus, RefreshCw, LockKeyhole } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
+import { tuskyService, TuskyVault, TuskyFile } from '@/services/TuskyService';
+import { 
+  Trash2, 
+  FolderPlus, 
+  Upload, 
+  FileText, 
+  ChevronDown, 
+  ChevronUp, 
+  Download, 
+  ExternalLink 
+} from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
-export const TuskyVaultManager: React.FC = () => {
-  const { vaults, isLoading, createVault, deleteVault, refetchVaults } = useTuskyStorage();
+/**
+ * TuskyVaultManager component for managing decentralized storage vaults
+ * 
+ * This component provides a UI for creating, viewing, and managing storage
+ * vaults on the Tusky.io decentralized storage platform.
+ */
+const TuskyVaultManager: React.FC = () => {
   const { address, isConnected } = useWalletAdapter();
   const { toast } = useToast();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [selectedVault, setSelectedVault] = useState<VaultMetadata | null>(null);
-  const [newVaultName, setNewVaultName] = useState('');
-  const [newVaultType, setNewVaultType] = useState<VaultType>(VaultType.CUSTOM);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
-  // Function to handle creating a new vault
+  const [vaults, setVaults] = useState<TuskyVault[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [openVaultId, setOpenVaultId] = useState<string | null>(null);
+  const [createVaultOpen, setCreateVaultOpen] = useState(false);
+  const [newVaultName, setNewVaultName] = useState('');
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [selectedVaultId, setSelectedVaultId] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
+  // Fetch vaults for the connected wallet
+  useEffect(() => {
+    const loadVaults = async () => {
+      if (isConnected && address) {
+        setLoading(true);
+        try {
+          const userVaults = await tuskyService.getVaults(address);
+          setVaults(userVaults);
+        } catch (error) {
+          console.error('Error loading vaults:', error);
+          toast({
+            title: 'Failed to load vaults',
+            description: 'Could not retrieve your storage vaults',
+            variant: 'destructive'
+          });
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+    
+    loadVaults();
+  }, [address, isConnected, toast]);
+  
+  // Create a new vault
   const handleCreateVault = async () => {
+    if (!isConnected || !address) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to create a vault',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
     if (!newVaultName.trim()) {
       toast({
-        title: 'Validation Error',
-        description: 'Please enter a vault name',
-        variant: 'destructive',
-      });
-      return;
-    }
-    
-    if (!newVaultType) {
-      toast({
-        title: 'Validation Error',
-        description: 'Please select a vault type',
-        variant: 'destructive',
+        title: 'Invalid vault name',
+        description: 'Please enter a valid name for your vault',
+        variant: 'destructive'
       });
       return;
     }
     
     try {
-      setIsCreating(true);
-      await createVault(newVaultName, newVaultType);
-      
-      toast({
-        title: 'Vault Created',
-        description: `Successfully created vault "${newVaultName}"`,
+      const newVault = await tuskyService.createVault({
+        name: newVaultName,
+        walletAddress: address
       });
       
-      // Reset form and close dialog
-      setNewVaultName('');
-      setNewVaultType(VaultType.CUSTOM);
-      setIsCreateDialogOpen(false);
-    } catch (error: any) {
+      if (newVault) {
+        setVaults(prev => [...prev, newVault]);
+        setCreateVaultOpen(false);
+        setNewVaultName('');
+        
+        toast({
+          title: 'Vault created',
+          description: `Your vault '${newVault.name}' has been created successfully`,
+        });
+      }
+    } catch (error) {
+      console.error('Error creating vault:', error);
       toast({
-        title: 'Creation Failed',
-        description: error.message || 'Failed to create vault',
-        variant: 'destructive',
+        title: 'Failed to create vault',
+        description: 'An error occurred while creating your vault',
+        variant: 'destructive'
       });
-    } finally {
-      setIsCreating(false);
     }
   };
   
-  // Function to handle deleting a vault
-  const handleDeleteVault = async () => {
-    if (!selectedVault) return;
+  // Delete a vault
+  const handleDeleteVault = async (vaultId: string) => {
+    if (!isConnected || !address) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to delete a vault',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (!window.confirm('Are you sure you want to delete this vault? This action cannot be undone.')) {
+      return;
+    }
     
     try {
-      setIsDeleting(true);
-      await deleteVault(selectedVault.id);
+      const success = await tuskyService.deleteVault(vaultId, address);
       
+      if (success) {
+        setVaults(prev => prev.filter(vault => vault.id !== vaultId));
+        
+        toast({
+          title: 'Vault deleted',
+          description: 'Your vault has been deleted successfully',
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting vault:', error);
       toast({
-        title: 'Vault Deleted',
-        description: `Successfully deleted vault "${selectedVault.name}"`,
+        title: 'Failed to delete vault',
+        description: 'An error occurred while deleting your vault',
+        variant: 'destructive'
       });
-      
-      // Reset selected vault and close dialog
-      setSelectedVault(null);
-      setIsDeleteDialogOpen(false);
-    } catch (error: any) {
-      toast({
-        title: 'Deletion Failed',
-        description: error.message || 'Failed to delete vault',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsDeleting(false);
     }
   };
   
-  // Function to format file size
-  const formatFileSize = (bytes: number): string => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
-  
-  // Function to get icon for vault type
-  const getVaultIcon = (type: VaultType) => {
-    switch (type) {
-      case VaultType.PROFILE:
-        return <Database className="h-4 w-4 text-blue-500" />;
-      case VaultType.BETTING_HISTORY:
-        return <Clock className="h-4 w-4 text-green-500" />;
-      case VaultType.PREFERENCES:
-        return <HardDrive className="h-4 w-4 text-purple-500" />;
-      case VaultType.CUSTOM:
-      default:
-        return <Database className="h-4 w-4 text-gray-500" />;
+  // Upload a file to a vault
+  const handleUploadFile = async () => {
+    if (!isConnected || !address) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to upload a file',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (!selectedVaultId) {
+      toast({
+        title: 'No vault selected',
+        description: 'Please select a vault to upload to',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (!selectedFile) {
+      toast({
+        title: 'No file selected',
+        description: 'Please select a file to upload',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    try {
+      const uploadedFile = await tuskyService.uploadFile({
+        vaultId: selectedVaultId,
+        file: selectedFile,
+        walletAddress: address
+      });
+      
+      if (uploadedFile) {
+        // Update the vaults list with the new file
+        setVaults(prev => prev.map(vault => {
+          if (vault.id === selectedVaultId) {
+            return {
+              ...vault,
+              files: [...vault.files, uploadedFile],
+              size: vault.size + uploadedFile.size
+            };
+          }
+          return vault;
+        }));
+        
+        setUploadDialogOpen(false);
+        setSelectedFile(null);
+        
+        toast({
+          title: 'File uploaded',
+          description: `Your file '${uploadedFile.name}' has been uploaded successfully`,
+        });
+      }
+    } catch (error) {
+      console.error('Error uploading file:', error);
+      toast({
+        title: 'Failed to upload file',
+        description: 'An error occurred while uploading your file',
+        variant: 'destructive'
+      });
     }
   };
   
-  if (!isConnected) {
+  // Delete a file from a vault
+  const handleDeleteFile = async (vaultId: string, fileId: string, fileName: string) => {
+    if (!isConnected || !address) {
+      toast({
+        title: 'Wallet not connected',
+        description: 'Please connect your wallet to delete a file',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    if (!window.confirm(`Are you sure you want to delete the file '${fileName}'? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      const success = await tuskyService.deleteFile(vaultId, fileId, address);
+      
+      if (success) {
+        // Update the vaults list without the deleted file
+        setVaults(prev => prev.map(vault => {
+          if (vault.id === vaultId) {
+            const fileToRemove = vault.files.find(f => f.id === fileId);
+            return {
+              ...vault,
+              files: vault.files.filter(f => f.id !== fileId),
+              size: vault.size - (fileToRemove?.size || 0)
+            };
+          }
+          return vault;
+        }));
+        
+        toast({
+          title: 'File deleted',
+          description: `The file '${fileName}' has been deleted successfully`,
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      toast({
+        title: 'Failed to delete file',
+        description: 'An error occurred while deleting your file',
+        variant: 'destructive'
+      });
+    }
+  };
+  
+  // Format file size for display
+  const formatFileSize = (sizeInBytes: number): string => {
+    if (sizeInBytes < 1024) {
+      return sizeInBytes + ' B';
+    } else if (sizeInBytes < 1024 * 1024) {
+      return (sizeInBytes / 1024).toFixed(2) + ' KB';
+    } else if (sizeInBytes < 1024 * 1024 * 1024) {
+      return (sizeInBytes / (1024 * 1024)).toFixed(2) + ' MB';
+    } else {
+      return (sizeInBytes / (1024 * 1024 * 1024)).toFixed(2) + ' GB';
+    }
+  };
+
+  // Display message if wallet is not connected
+  if (!isConnected || !address) {
     return (
-      <Card>
+      <Card className="border-[#1e3a3f] bg-[#0b1618] text-white">
         <CardHeader>
-          <CardTitle>Connect Wallet</CardTitle>
-          <CardDescription>Please connect your wallet to manage storage vaults</CardDescription>
+          <CardTitle>Storage Vaults</CardTitle>
+          <CardDescription className="text-gray-400">Tusky.io decentralized storage</CardDescription>
         </CardHeader>
-        <CardContent className="flex items-center justify-center p-8">
-          <div className="text-center space-y-4">
-            <LockKeyhole className="h-16 w-16 mx-auto text-gray-400" />
-            <p>Wallet connection required to access your Tusky storage vaults</p>
-          </div>
+        <CardContent className="text-center py-8">
+          <p>Please connect your wallet to access your storage vaults</p>
         </CardContent>
       </Card>
     );
   }
-  
+
+  // Display loading state
+  if (loading) {
+    return (
+      <Card className="border-[#1e3a3f] bg-[#0b1618] text-white">
+        <CardHeader>
+          <CardTitle>Storage Vaults</CardTitle>
+          <CardDescription className="text-gray-400">Loading your vaults...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-[#00FFFF] border-solid"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
-    <>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-[#00FFFF]">Your Storage Vaults</h2>
-        <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => refetchVaults()}
-            disabled={isLoading}
-          >
-            <RefreshCw className="h-4 w-4 mr-1" />
-            Refresh
-          </Button>
-          <Button 
-            variant="default" 
-            size="sm" 
-            className="bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80"
-            onClick={() => setIsCreateDialogOpen(true)}
-          >
-            <Plus className="h-4 w-4 mr-1" />
-            New Vault
-          </Button>
-        </div>
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-white">Your Storage Vaults</h2>
+        <Button 
+          onClick={() => setCreateVaultOpen(true)}
+          className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black"
+        >
+          <FolderPlus className="h-4 w-4 mr-2" />
+          Create Vault
+        </Button>
       </div>
       
-      {isLoading ? (
-        <div className="w-full flex justify-center items-center p-12">
-          <div className="animate-spin w-8 h-8 border-4 border-[#00FFFF] border-t-transparent rounded-full" />
-        </div>
+      {vaults.length === 0 ? (
+        <Card className="border-[#1e3a3f] bg-[#0b1618] text-white">
+          <CardContent className="text-center py-8">
+            <p>You don't have any storage vaults yet. Create one to get started!</p>
+          </CardContent>
+        </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {vaults && vaults.length > 0 ? (
-            vaults.map((vault) => (
-              <Card key={vault.id} className="bg-[#112225] border border-[#1e3a3f]">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {getVaultIcon(vault.type)}
-                      <CardTitle className="ml-2 text-base">{vault.name}</CardTitle>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-red-500"
-                      onClick={() => {
-                        setSelectedVault(vault);
-                        setIsDeleteDialogOpen(true);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <CardDescription className="text-xs">{vault.description}</CardDescription>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Size:</span>
-                      <span>{formatFileSize(vault.size)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Last Modified:</span>
-                      <span>{formatDistanceToNow(new Date(vault.lastModified), { addSuffix: true })}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400">Created:</span>
-                      <span>{formatDistanceToNow(new Date(vault.created), { addSuffix: true })}</span>
-                    </div>
-                  </div>
-                </CardContent>
-                <CardFooter className="pt-2">
+        <div className="space-y-4">
+          {vaults.map(vault => (
+            <Card key={vault.id} className="border-[#1e3a3f] bg-[#0b1618] text-white">
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-center">
+                  <CardTitle>{vault.name}</CardTitle>
                   <Button 
-                    variant="default" 
-                    size="sm"
-                    className="w-full bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80"
+                    variant="ghost" 
+                    size="icon"
+                    className="text-red-500 hover:text-red-700 hover:bg-red-200/10"
+                    onClick={() => handleDeleteVault(vault.id)}
                   >
-                    Manage Data
+                    <Trash2 className="h-5 w-5" />
                   </Button>
-                </CardFooter>
-              </Card>
-            ))
-          ) : (
-            <div className="col-span-full p-8 text-center border rounded-md border-dashed border-gray-600 bg-[#0b1618]">
-              <Database className="h-10 w-10 text-gray-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-[#00FFFF] mb-2">No Storage Vaults Found</h3>
-              <p className="text-gray-400 mb-4">
-                Create your first Tusky storage vault to securely store your betting data on the Sui blockchain
-              </p>
-              <Button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Create First Vault
-              </Button>
-            </div>
-          )}
+                </div>
+                <CardDescription className="text-gray-400">
+                  Created: {new Date(vault.created).toLocaleDateString()} • Size: {formatFileSize(vault.size)}
+                </CardDescription>
+              </CardHeader>
+              
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  className="w-full border-[#1e3a3f] text-[#00FFFF] hover:bg-[#1e3a3f]/30"
+                  onClick={() => {
+                    setSelectedVaultId(vault.id);
+                    setUploadDialogOpen(true);
+                  }}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload File
+                </Button>
+                
+                <div className="mt-4">
+                  <Accordion type="single" collapsible>
+                    <AccordionItem value={vault.id} className="border-[#1e3a3f]">
+                      <AccordionTrigger className="text-[#00FFFF]">
+                        Files ({vault.files.length})
+                      </AccordionTrigger>
+                      <AccordionContent>
+                        {vault.files.length === 0 ? (
+                          <p className="text-gray-400 py-2">No files in this vault yet</p>
+                        ) : (
+                          <div className="space-y-2 mt-2">
+                            {vault.files.map(file => (
+                              <div 
+                                key={file.id} 
+                                className="flex items-center justify-between bg-[#112225] p-3 rounded-md"
+                              >
+                                <div className="flex items-center">
+                                  <FileText className="h-5 w-5 mr-3 text-[#00FFFF]" />
+                                  <div>
+                                    <p className="font-medium">{file.name}</p>
+                                    <p className="text-sm text-gray-400">
+                                      {formatFileSize(file.size)} • {new Date(file.uploaded).toLocaleDateString()}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex space-x-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="text-[#00FFFF] hover:bg-[#1e3a3f]/30"
+                                    onClick={() => window.open(file.url, '_blank')}
+                                  >
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon"
+                                    className="text-red-500 hover:text-red-700 hover:bg-red-200/10"
+                                    onClick={() => handleDeleteFile(vault.id, file.id, file.name)}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
       )}
       
       {/* Create Vault Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+      <Dialog open={createVaultOpen} onOpenChange={setCreateVaultOpen}>
+        <DialogContent className="bg-[#0b1618] text-white border-[#1e3a3f]">
           <DialogHeader>
-            <DialogTitle>Create New Storage Vault</DialogTitle>
-            <DialogDescription>
-              Create a new secure storage vault on the Tusky network
+            <DialogTitle>Create New Vault</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Create a new decentralized storage vault on the Sui blockchain
             </DialogDescription>
           </DialogHeader>
-          
           <div className="space-y-4 py-4">
             <div className="space-y-2">
               <Label htmlFor="vault-name">Vault Name</Label>
-              <Input
+              <Input 
                 id="vault-name"
                 placeholder="My Vault"
                 value={newVaultName}
                 onChange={(e) => setNewVaultName(e.target.value)}
+                className="bg-[#112225] border-[#1e3a3f] text-white"
               />
             </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="vault-type">Vault Type</Label>
-              <Select
-                value={newVaultType}
-                onValueChange={(value) => setNewVaultType(value as VaultType)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select vault type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={VaultType.PROFILE}>Profile Data</SelectItem>
-                  <SelectItem value={VaultType.BETTING_HISTORY}>Betting History</SelectItem>
-                  <SelectItem value={VaultType.PREFERENCES}>User Preferences</SelectItem>
-                  <SelectItem value={VaultType.CUSTOM}>Custom Data</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-          
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsCreateDialogOpen(false)}
-              disabled={isCreating}
+            <Button 
+              variant="outline" 
+              onClick={() => setCreateVaultOpen(false)}
+              className="border-[#1e3a3f] text-white"
             >
               Cancel
             </Button>
-            <Button
+            <Button 
               onClick={handleCreateVault}
-              disabled={isCreating}
-              className="bg-[#00FFFF] text-black hover:bg-[#00FFFF]/80"
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black"
             >
-              {isCreating ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent border-black" />
-                  Creating...
-                </>
-              ) : (
-                'Create Vault'
-              )}
+              Create Vault
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      {/* Delete Vault Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent>
+      {/* Upload File Dialog */}
+      <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
+        <DialogContent className="bg-[#0b1618] text-white border-[#1e3a3f]">
           <DialogHeader>
-            <DialogTitle>Delete Storage Vault</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this vault? This action cannot be undone.
+            <DialogTitle>Upload File</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Upload a file to your decentralized storage vault
             </DialogDescription>
           </DialogHeader>
-          
-          {selectedVault && (
-            <div className="py-4">
-              <Card className="bg-[#112225] border border-[#1e3a3f]">
-                <CardHeader className="py-2">
-                  <div className="flex items-center">
-                    {getVaultIcon(selectedVault.type)}
-                    <CardTitle className="ml-2 text-base">{selectedVault.name}</CardTitle>
-                  </div>
-                </CardHeader>
-                <CardContent className="py-2">
-                  <p className="text-sm text-gray-400">{selectedVault.description}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Size: {formatFileSize(selectedVault.size)}
-                  </p>
-                </CardContent>
-              </Card>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="file-upload">Select File</Label>
+              <Input 
+                id="file-upload"
+                type="file"
+                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
+                className="bg-[#112225] border-[#1e3a3f] text-white"
+              />
+              {selectedFile && (
+                <p className="text-sm text-gray-400">
+                  Selected: {selectedFile.name} ({formatFileSize(selectedFile.size)})
+                </p>
+              )}
             </div>
-          )}
-          
+          </div>
           <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setIsDeleteDialogOpen(false)}
-              disabled={isDeleting}
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setUploadDialogOpen(false);
+                setSelectedFile(null);
+              }}
+              className="border-[#1e3a3f] text-white"
             >
               Cancel
             </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDeleteVault}
-              disabled={isDeleting}
+            <Button 
+              onClick={handleUploadFile}
+              disabled={!selectedFile}
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black"
             >
-              {isDeleting ? (
-                <>
-                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-b-transparent" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete Vault'
-              )}
+              Upload
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
+
+export default TuskyVaultManager;

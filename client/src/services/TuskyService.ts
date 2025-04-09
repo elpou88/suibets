@@ -1,217 +1,209 @@
+/**
+ * TuskyService provides integration with Tusky.io decentralized storage on the SUI blockchain
+ * 
+ * This service handles vault management, file upload/download, and blockchain
+ * storage interactions through the Tusky.io API.
+ */
+
 import { apiRequest } from '@/lib/queryClient';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
 
-// Available vault types in Tusky storage
-export enum VaultType {
-  PROFILE = 'profile',
-  BETTING_HISTORY = 'betting_history',
-  PREFERENCES = 'preferences',
-  CUSTOM = 'custom'
-}
-
-// Vault metadata interface
-export interface VaultMetadata {
+// Types for Tusky storage
+export interface TuskyVault {
   id: string;
   name: string;
-  description: string;
-  created: string;
   owner: string;
-  type: VaultType;
+  created: string;
   size: number;
-  lastModified: string;
+  files: TuskyFile[];
 }
 
-// Function to create and manage Tusky storage vaults
-export const useTuskyStorage = () => {
-  const { address, isConnected } = useWalletAdapter();
+export interface TuskyFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  uploaded: string;
+  url: string;
+  hash: string;
+}
 
-  // Get all vaults for a user
-  const { data: vaults, refetch: refetchVaults, isLoading } = useQuery({
-    queryKey: ['tuskyVaults', address],
-    queryFn: async () => {
-      if (!address || !isConnected) {
-        return [];
-      }
-      
-      try {
-        // For demonstration, return mock vaults
-        // In production would call actual Tusky API
-        return getMockVaults(address);
-      } catch (error) {
-        console.error('Error fetching Tusky vaults:', error);
-        return [];
-      }
-    },
-    enabled: !!address && isConnected,
-  });
+export interface CreateVaultParams {
+  name: string;
+  walletAddress: string;
+}
 
-  // Create a new vault
-  const createVault = async (name: string, type: VaultType): Promise<VaultMetadata> => {
-    if (!address || !isConnected) {
-      throw new Error('Wallet not connected');
-    }
-    
+export interface UploadFileParams {
+  vaultId: string;
+  file: File;
+  walletAddress: string;
+}
+
+// TuskyService class for interacting with Tusky.io
+class TuskyService {
+  private baseUrl = '/api/tusky';
+  
+  /**
+   * Get all vaults for a wallet address
+   */
+  async getVaults(walletAddress: string): Promise<TuskyVault[]> {
     try {
-      // In production would call actual Tusky API
-      // For demo, create mock vault
-      const newVault: VaultMetadata = {
-        id: `vault-${Date.now()}`,
-        name,
-        description: `${type} vault for ${address}`,
-        created: new Date().toISOString(),
-        owner: address,
-        type,
-        size: 0,
-        lastModified: new Date().toISOString()
-      };
+      const response = await apiRequest('GET', `${this.baseUrl}/vaults/${walletAddress}`);
       
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // For demo environment, return mock data
+      if (walletAddress.startsWith('0x7777777')) {
+        return this.getMockVaults();
+      }
       
-      // Refetch vaults to update the list
-      refetchVaults();
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching Tusky vaults:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Create a new vault
+   */
+  async createVault(params: CreateVaultParams): Promise<TuskyVault | null> {
+    try {
+      const response = await apiRequest('POST', `${this.baseUrl}/vaults`, params);
       
-      return newVault;
+      // For demo environment, return mock data
+      if (params.walletAddress.startsWith('0x7777777')) {
+        const mockVaults = this.getMockVaults();
+        const newVault: TuskyVault = {
+          id: `vault-${Date.now()}`,
+          name: params.name,
+          owner: params.walletAddress,
+          created: new Date().toISOString(),
+          size: 0,
+          files: []
+        };
+        mockVaults.push(newVault);
+        return newVault;
+      }
+      
+      return await response.json();
     } catch (error) {
       console.error('Error creating Tusky vault:', error);
-      throw error;
+      return null;
     }
-  };
-
-  // Store user profile data
-  const storeUserData = async (key: string, data: any): Promise<void> => {
-    if (!address || !isConnected) {
-      throw new Error('Wallet not connected');
-    }
-    
+  }
+  
+  /**
+   * Delete a vault
+   */
+  async deleteVault(vaultId: string, walletAddress: string): Promise<boolean> {
     try {
-      // In production would send to Tusky API
-      console.log(`Storing user data with key "${key}" in profile vault:`, data);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return;
-    } catch (error) {
-      console.error('Error storing user data in Tusky:', error);
-      throw error;
-    }
-  };
-
-  // Store betting history
-  const storeBettingHistory = async (betId: string, betData: any): Promise<void> => {
-    if (!address || !isConnected) {
-      throw new Error('Wallet not connected');
-    }
-    
-    try {
-      // In production would send to Tusky API
-      console.log(`Storing bet with ID "${betId}" in betting history vault:`, betData);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return;
-    } catch (error) {
-      console.error('Error storing bet history in Tusky:', error);
-      throw error;
-    }
-  };
-
-  // Get user data from vault
-  const getUserData = async (key: string): Promise<any> => {
-    if (!address || !isConnected) {
-      throw new Error('Wallet not connected');
-    }
-    
-    try {
-      // In production would fetch from Tusky API
-      // For demo, return mock data
-      console.log(`Getting user data with key "${key}" from profile vault`);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      return {
-        theme: 'dark',
-        notifications: true,
-        language: 'en',
-        timestamp: new Date().toISOString()
-      };
-    } catch (error) {
-      console.error('Error getting user data from Tusky:', error);
-      throw error;
-    }
-  };
-
-  // Delete a vault
-  const deleteVault = async (vaultId: string): Promise<void> => {
-    if (!address || !isConnected) {
-      throw new Error('Wallet not connected');
-    }
-    
-    try {
-      // In production would call Tusky API
-      console.log(`Deleting vault with ID "${vaultId}"`);
-      
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refetch vaults to update the list
-      refetchVaults();
-      
-      return;
+      await apiRequest('DELETE', `${this.baseUrl}/vaults/${vaultId}`, { walletAddress });
+      return true;
     } catch (error) {
       console.error('Error deleting Tusky vault:', error);
-      throw error;
+      return false;
     }
-  };
-
-  return {
-    vaults,
-    isLoading,
-    createVault,
-    storeUserData,
-    getUserData,
-    storeBettingHistory,
-    deleteVault,
-    refetchVaults
-  };
-};
-
-// Helper function to get mock vaults for demo purposes
-function getMockVaults(walletAddress: string): VaultMetadata[] {
-  return [
-    {
-      id: 'vault-1',
-      name: 'User Profile',
-      description: 'Stores user profile data securely',
-      created: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-      owner: walletAddress,
-      type: VaultType.PROFILE,
-      size: 1024,
-      lastModified: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'vault-2',
-      name: 'Betting History',
-      description: 'Records of all bets and outcomes',
-      created: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString(),
-      owner: walletAddress,
-      type: VaultType.BETTING_HISTORY,
-      size: 5120,
-      lastModified: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
-    },
-    {
-      id: 'vault-3',
-      name: 'User Preferences',
-      description: 'App settings and preferences',
-      created: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString(),
-      owner: walletAddress,
-      type: VaultType.PREFERENCES,
-      size: 512,
-      lastModified: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+  }
+  
+  /**
+   * Upload a file to a vault
+   */
+  async uploadFile(params: UploadFileParams): Promise<TuskyFile | null> {
+    try {
+      const formData = new FormData();
+      formData.append('file', params.file);
+      formData.append('walletAddress', params.walletAddress);
+      
+      const response = await fetch(`${this.baseUrl}/vaults/${params.vaultId}/files`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      // For demo environment, return mock data
+      if (params.walletAddress.startsWith('0x7777777')) {
+        return {
+          id: `file-${Date.now()}`,
+          name: params.file.name,
+          size: params.file.size,
+          type: params.file.type,
+          uploaded: new Date().toISOString(),
+          url: URL.createObjectURL(params.file),
+          hash: `0x${Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')}`
+        };
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error('Error uploading file to Tusky vault:', error);
+      return null;
     }
-  ];
+  }
+  
+  /**
+   * Delete a file from a vault
+   */
+  async deleteFile(vaultId: string, fileId: string, walletAddress: string): Promise<boolean> {
+    try {
+      await apiRequest('DELETE', `${this.baseUrl}/vaults/${vaultId}/files/${fileId}`, { walletAddress });
+      return true;
+    } catch (error) {
+      console.error('Error deleting file from Tusky vault:', error);
+      return false;
+    }
+  }
+  
+  /**
+   * Get mock vaults for demo/testing environment
+   * @private
+   */
+  private getMockVaults(): TuskyVault[] {
+    return [
+      {
+        id: 'vault-001',
+        name: 'Betting Stats',
+        owner: '0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb',
+        created: '2023-07-15T14:30:00Z',
+        size: 1024 * 1024 * 5, // 5MB
+        files: [
+          {
+            id: 'file-001',
+            name: 'bet-history.json',
+            size: 1024 * 512, // 512KB
+            type: 'application/json',
+            uploaded: '2023-07-15T15:00:00Z',
+            url: 'https://example.com/files/bet-history.json',
+            hash: '0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t'
+          },
+          {
+            id: 'file-002',
+            name: 'winning-strategy.pdf',
+            size: 1024 * 1024 * 3, // 3MB
+            type: 'application/pdf',
+            uploaded: '2023-07-16T10:20:00Z',
+            url: 'https://example.com/files/winning-strategy.pdf',
+            hash: '0x9s8r7q6p5o4n3m2l1k0j9i8h7g6f5e4d3c2b1a'
+          }
+        ]
+      },
+      {
+        id: 'vault-002',
+        name: 'Football Research',
+        owner: '0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb',
+        created: '2023-08-01T09:45:00Z',
+        size: 1024 * 1024 * 10, // 10MB
+        files: [
+          {
+            id: 'file-003',
+            name: 'premier-league-stats.csv',
+            size: 1024 * 1024, // 1MB
+            type: 'text/csv',
+            uploaded: '2023-08-01T10:00:00Z',
+            url: 'https://example.com/files/premier-league-stats.csv',
+            hash: '0xabcdef1234567890abcdef1234567890abcdef12'
+          }
+        ]
+      }
+    ];
+  }
 }
+
+// Export a singleton instance
+export const tuskyService = new TuskyService();

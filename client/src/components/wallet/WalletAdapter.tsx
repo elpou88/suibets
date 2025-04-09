@@ -146,21 +146,131 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
-      // First, set demo wallet mode to false by default
-      if (localStorage.getItem('use_demo_wallet') === null) {
-        localStorage.setItem('use_demo_wallet', 'false');
+      console.log('Starting wallet connection process...');
+      
+      // FORCE real wallet mode by overriding any existing settings
+      localStorage.setItem('use_demo_wallet', 'false');
+      
+      try {
+        // First, try to connect to a real Sui wallet using the wallet-standard
+        const walletAdapters = getWallets().get();
+        console.log('Available wallets:', walletAdapters);
+        
+        // Find available Sui wallets
+        const suiWallets = walletAdapters.filter(wallet => 
+          wallet.features['sui:chains'] || 
+          (wallet.name && wallet.name.toLowerCase().includes('sui'))
+        );
+        
+        if (suiWallets.length > 0) {
+          // Use the first available Sui wallet
+          const selectedWallet = suiWallets[0];
+          console.log('Found wallet:', selectedWallet.name);
+          
+          // Try wallet-standard connect method
+          if (selectedWallet.features['standard:connect']) {
+            try {
+              // @ts-ignore - TypeScript error with 'connect' property
+              const connectFeature = selectedWallet.features['standard:connect'];
+              // @ts-ignore - TypeScript error with 'connect' method
+              const connectResult = await connectFeature.connect();
+              
+              if (connectResult && connectResult.accounts && connectResult.accounts.length > 0) {
+                const account = connectResult.accounts[0];
+                const walletAddress = account.address;
+                
+                console.log('Connected to wallet address:', walletAddress);
+                
+                // Update connection state
+                updateConnectionState(walletAddress, 'sui');
+                
+                toast({
+                  title: 'Wallet Connected',
+                  description: `Connected to ${selectedWallet.name}`,
+                });
+                
+                setConnecting(false);
+                return;
+              }
+            } catch (e) {
+              console.error('Standard connect error:', e);
+            }
+          }
+          
+          // Try Sui-specific connect method
+          if (selectedWallet.features['sui:connect']) {
+            try {
+              // @ts-ignore - TypeScript error with property 
+              const suiConnectFeature = selectedWallet.features['sui:connect'];
+              // @ts-ignore - TypeScript error with method
+              const suiConnectResult = await suiConnectFeature.connect();
+              
+              if (suiConnectResult && suiConnectResult.accounts && suiConnectResult.accounts.length > 0) {
+                const account = suiConnectResult.accounts[0];
+                const walletAddress = account.address;
+                
+                console.log('Connected to wallet address:', walletAddress);
+                
+                // Update connection state
+                updateConnectionState(walletAddress, 'sui');
+                
+                toast({
+                  title: 'Wallet Connected',
+                  description: `Connected to ${selectedWallet.name}`,
+                });
+                
+                setConnecting(false);
+                return;
+              }
+            } catch (e) {
+              console.error('Sui connect error:', e);
+            }
+          }
+        }
+        
+        // Try legacy wallet API if available
+        try {
+          // @ts-ignore - suiWallet may be injected
+          if (typeof window.suiWallet !== 'undefined') {
+            console.log('Trying legacy wallet connection...');
+            // @ts-ignore - suiWallet is injected
+            const response = await window.suiWallet.requestPermissions();
+            if (response && response.status === 'success') {
+              // @ts-ignore - suiWallet is injected
+              const accounts = await window.suiWallet.getAccounts();
+              if (accounts && accounts.length > 0) {
+                const walletAddress = accounts[0];
+                
+                console.log('Connected to legacy wallet:', walletAddress);
+                
+                // Update connection state
+                updateConnectionState(walletAddress, 'sui');
+                
+                toast({
+                  title: 'Wallet Connected',
+                  description: 'Connected using legacy method',
+                });
+                
+                setConnecting(false);
+                return;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Legacy wallet error:', e);
+        }
+      } catch (error) {
+        console.error('Error connecting to wallet:', error);
       }
       
-      // We want to use real Sui wallets by default
-      // Only use demo wallet if explicitly requested by the user
-      const useDemoWallet = localStorage.getItem('use_demo_wallet') === 'true';
+      // If we get here, no real wallet was found - offer demo wallet
+      const useDemoWallet = window.confirm("No Sui wallet detected. Would you like to use a demo wallet instead?");
       
       if (useDemoWallet) {
-        console.log('Using demo wallet (explicitly requested by user)');
-        // Create a deterministic test wallet for demo mode
+        console.log('Using demo wallet as fallback');
         const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
         
-        // Update connection state with demo wallet
+        // Update connection state
         updateConnectionState(demoAddress, 'sui');
         
         // Set mock balances for demo
@@ -171,169 +281,23 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         
         toast({
           title: 'Demo Wallet Connected',
-          description: 'Connected to demo wallet for testing in Replit',
+          description: 'Connected to demo wallet for testing',
           variant: 'default',
         });
         
         setConnecting(false);
-        return;
-      }
-      
-      // Normal wallet connection flow for non-Replit environments
-      // Get available wallets from wallet-standard
-      const availableWallets = getWallets().get();
-      console.log('Available wallets:', availableWallets);
-      
-      // Find a Sui wallet
-      const suiWallets = availableWallets.filter(wallet => 
-        wallet.features['sui:chains'] || 
-        (wallet.name && wallet.name.toLowerCase().includes('sui'))
-      );
-      
-      if (suiWallets.length > 0) {
-        try {
-          // Use the first available Sui wallet
-          const selectedWallet = suiWallets[0];
-          console.log('Using wallet:', selectedWallet.name);
-          
-          // Try to connect using wallet-standard
-          if (selectedWallet.features['standard:connect']) {
-            try {
-              // @ts-ignore - TypeScript error with 'connect' property
-              const connectFeature = selectedWallet.features['standard:connect'];
-              // @ts-ignore - TypeScript error with 'connect' method
-              const connectResult = await connectFeature.connect();
-              
-              // Get account from connection result
-              if (connectResult && connectResult.accounts && connectResult.accounts.length > 0) {
-                const account = connectResult.accounts[0];
-                const walletAddress = account.address;
-                
-                console.log('Connected to wallet address:', walletAddress);
-                
-                // Update connection state with the wallet address
-                updateConnectionState(walletAddress, 'sui');
-                
-                toast({
-                  title: 'Wallet Connected',
-                  description: `Connected to ${selectedWallet.name}`,
-                });
-                
-                setConnecting(false);
-                return;
-              }
-            } catch (stdConnectError) {
-              console.error('Standard connect error:', stdConnectError);
-              // Continue to next method
-            }
-          }
-          
-          // Try alternate connect method if available
-          if (selectedWallet.features['sui:connect']) {
-            try {
-              // @ts-ignore - TypeScript error with property
-              const suiConnectFeature = selectedWallet.features['sui:connect'];
-              // @ts-ignore - TypeScript error with method
-              const suiConnectResult = await suiConnectFeature.connect();
-              
-              if (suiConnectResult && suiConnectResult.accounts && suiConnectResult.accounts.length > 0) {
-                const account = suiConnectResult.accounts[0];
-                const walletAddress = account.address;
-                
-                // Update connection state with the wallet address
-                updateConnectionState(walletAddress, 'sui');
-                
-                toast({
-                  title: 'Wallet Connected',
-                  description: `Connected to ${selectedWallet.name}`,
-                });
-                
-                setConnecting(false);
-                return;
-              }
-            } catch (suiConnectError) {
-              console.error('Sui connect error:', suiConnectError);
-              // Continue to legacy method
-            }
-          }
-          
-          throw new Error('Wallet connection failed: Could not connect with available methods');
-        } catch (walletError: any) {
-          console.error('Sui wallet connection error:', walletError);
-          // Fall back to legacy connection method
-        }
-      }
-      
-      // Try legacy connection if standard connection fails
-      try {
-        // @ts-ignore - suiWallet may be injected by browser extension
-        if (typeof window.suiWallet !== 'undefined') {
-          console.log('Trying legacy wallet connection...');
-          // Connect to Sui wallet
-          // @ts-ignore - suiWallet is injected by browser extension
-          const response = await window.suiWallet.requestPermissions();
-          if (response && response.status === 'success') {
-            // @ts-ignore - suiWallet is injected by browser extension
-            const accounts = await window.suiWallet.getAccounts();
-            if (accounts && accounts.length > 0) {
-              const walletAddress = accounts[0];
-              
-              // Update connection state with the wallet address
-              updateConnectionState(walletAddress, 'sui');
-              
-              toast({
-                title: 'Wallet Connected',
-                description: 'Connected using legacy method',
-              });
-              
-              setConnecting(false);
-              return;
-            }
-          }
-          throw new Error('Legacy wallet connection failed');
-        }
-      } catch (legacyError) {
-        console.error('Legacy Sui wallet error:', legacyError);
-        // Fall back to development wallet
-      }
-      
-      // Create Sui client for development/testing as final fallback
-      try {
-        console.log('Using development wallet as fallback');
-        const client = new SuiClient({ url: getFullnodeUrl('testnet') });
-        // Create a keypair for testing
-        const keypair = new Ed25519Keypair();
-        const testWalletAddress = keypair.getPublicKey().toSuiAddress();
-        
-        // Update connection state with the test wallet address
-        updateConnectionState(testWalletAddress, 'sui');
-        
+      } else {
         toast({
-          title: 'Development Wallet Connected',
-          description: 'Using test wallet for development. No real wallet detected.',
-          variant: 'default',
+          title: 'No Wallet Available',
+          description: 'No Sui wallet was detected. Please install a Sui wallet extension like SUI Wallet or Ethos Wallet.',
+          variant: 'destructive',
         });
         
         setConnecting(false);
-      } catch (e) {
-        console.error('Error creating development wallet:', e);
-        
-        // Final fallback - generate mock address
-        const mockAddress = `0x${Array.from({length: 64}, () => 
-          Math.floor(Math.random() * 16).toString(16)).join('')}`;
-            
-        // Update connection state with the mock wallet address
-        updateConnectionState(mockAddress, 'sui');
-        
-        toast({
-          title: 'Mock Wallet Connected',
-          description: 'Using mock wallet as last resort',
-          variant: 'default',
-        });
-        
-        setConnecting(false);
+        setError('No Sui wallet detected. Please install a Sui wallet extension.');
       }
     } catch (error: any) {
+      console.error('Connection error:', error);
       setConnecting(false);
       setError(error.message || 'Failed to connect wallet');
       toast({

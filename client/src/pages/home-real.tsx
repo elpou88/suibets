@@ -66,16 +66,19 @@ export default function HomeReal() {
   return (
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
-        {/* Left Promotional Banner - Vertical Yellow Strip */}
+        {/* Left Promotional Banner - Vertical Strip with image */}
         <div className="fixed left-0 top-0 bottom-0 w-16 z-10">
           <a 
             href="/promotions/referral" 
-            className="bg-[#FFD700] h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            className="h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity"
+            style={{ 
+              backgroundImage: 'url(/assets/referral-banner.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'repeat-y'
+            }}
           >
-            <div className="transform rotate-180 text-black font-bold p-2 text-center">
-              Earn Referral Bonus of up to 500,000 SUIBETS
-            </div>
+            {/* Banner image is set as background */}
           </a>
         </div>
         
@@ -254,16 +257,19 @@ export default function HomeReal() {
           </div>
         </div>
         
-        {/* Right Promotional Banner - Vertical Yellow Strip */}
+        {/* Right Promotional Banner - Vertical Strip with image */}
         <div className="fixed right-0 top-0 bottom-0 w-16 z-10">
           <a 
             href="/promotions/referral" 
-            className="bg-[#FFD700] h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity"
-            style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}
+            className="h-full w-full flex items-center justify-center hover:opacity-90 transition-opacity"
+            style={{ 
+              backgroundImage: 'url(/assets/referral-banner.png)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'repeat-y'
+            }}
           >
-            <div className="text-black font-bold p-2 text-center">
-              Earn Referral Bonus of up to 500,000 SUIBETS
-            </div>
+            {/* Banner image is set as background */}
           </a>
         </div>
       </div>

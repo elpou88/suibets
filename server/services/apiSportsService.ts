@@ -335,6 +335,14 @@ export class ApiSportsService {
         const getParams = (endpoint: string): Record<string, string> => {
           if (endpoint.includes('football')) {
             return { live: 'all' };
+          } else if (endpoint.includes('basketball')) {
+            // Basketball requires today's date and status for live games
+            const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            return { 
+              date: today,
+              timezone: 'UTC',
+              status: 'NS-1Q-2Q-3Q-4Q-OT-BT-HT'  // All possible in-game statuses
+            };
           } else if (endpoint.includes('boxing')) {
             return { status: 'live' };
           } else if (endpoint.includes('mma')) {
@@ -549,10 +557,15 @@ export class ApiSportsService {
             break;
           case 'basketball':
             apiUrl = 'https://v1.basketball.api-sports.io/games';
-            // Try date-based search instead of status for basketball
+            
+            // Basketball API requires actual dates - get next 7 days
+            const today = new Date();
+            const basketballDate = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            
+            // For basketball we need specific dates
             params = {
-              date: 'upcoming',
-              league: '', // Empty to get all leagues
+              date: basketballDate,
+              timezone: 'UTC',
               season: new Date().getFullYear() // Current season
             };
             break;

@@ -179,13 +179,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Real wallet mode is the only option - demo wallets completely removed
       
       try {
-        // Check if any wallet extension APIs are detected
-        console.log('Checking for wallet extensions in window object:', {
+        // Check if any wallet APIs are detected (extensions, mobile, QR, etc)
+        console.log('Checking for wallet APIs in window object:', {
           'suiWallet in window': 'suiWallet' in window,
           'sui in window': 'sui' in window, 
           'suiet in window': 'suiet' in window,
           'ethos in window': 'ethos' in window,
           'martian in window': 'martian' in window,
+          'compass in window': 'compass' in window,
+          'customWallet in window': 'customWallet' in window,
+          'glass in window': 'glass' in window,
+          'squid in window': 'squid' in window,
+          'walletStandard in window': 'walletStandard' in window,
         });
         
         // First, try to connect to a real Sui wallet using the wallet-standard
@@ -270,11 +275,13 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         }
         
-        // Try legacy wallet API if available
+        // Try additional wallet connection methods
+        
+        // 1. Try legacy Sui wallet API
         try {
           // @ts-ignore - suiWallet may be injected
           if (typeof window.suiWallet !== 'undefined') {
-            console.log('Trying legacy wallet connection...');
+            console.log('Trying legacy Sui wallet connection...');
             // @ts-ignore - suiWallet is injected
             const response = await window.suiWallet.requestPermissions();
             if (response && response.status === 'success') {
@@ -299,28 +306,155 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             }
           }
         } catch (e) {
-          console.error('Legacy wallet error:', e);
+          console.error('Legacy Sui wallet error:', e);
+        }
+        
+        // 2. Try Ethos wallet
+        try {
+          // @ts-ignore
+          if (typeof window.ethos !== 'undefined') {
+            console.log('Trying Ethos wallet connection...');
+            // @ts-ignore
+            const response = await window.ethos.connect();
+            if (response && response.address) {
+              const walletAddress = response.address;
+              
+              console.log('Connected to Ethos wallet:', walletAddress);
+              
+              // Update connection state
+              updateConnectionState(walletAddress, 'sui');
+              
+              toast({
+                title: 'Wallet Connected',
+                description: 'Connected to Ethos Wallet',
+              });
+              
+              setConnecting(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Ethos wallet error:', e);
+        }
+        
+        // 3. Try Suiet wallet
+        try {
+          // @ts-ignore
+          if (typeof window.suiet !== 'undefined') {
+            console.log('Trying Suiet wallet connection...');
+            // @ts-ignore
+            const response = await window.suiet.connect();
+            if (response && response.accounts && response.accounts.length > 0) {
+              const walletAddress = response.accounts[0].address;
+              
+              console.log('Connected to Suiet wallet:', walletAddress);
+              
+              // Update connection state
+              updateConnectionState(walletAddress, 'sui');
+              
+              toast({
+                title: 'Wallet Connected',
+                description: 'Connected to Suiet Wallet',
+              });
+              
+              setConnecting(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Suiet wallet error:', e);
+        }
+        
+        // 4. Try Glass wallet
+        try {
+          // @ts-ignore
+          if (typeof window.glass !== 'undefined') {
+            console.log('Trying Glass wallet connection...');
+            // @ts-ignore
+            const response = await window.glass.connect();
+            if (response && response.accounts && response.accounts.length > 0) {
+              const walletAddress = response.accounts[0];
+              
+              console.log('Connected to Glass wallet:', walletAddress);
+              
+              // Update connection state
+              updateConnectionState(walletAddress, 'sui');
+              
+              toast({
+                title: 'Wallet Connected',
+                description: 'Connected to Glass Wallet',
+              });
+              
+              setConnecting(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Glass wallet error:', e);
+        }
+        
+        // 5. Try Martian wallet
+        try {
+          // @ts-ignore
+          if (typeof window.martian !== 'undefined') {
+            console.log('Trying Martian wallet connection...');
+            // @ts-ignore
+            const response = await window.martian.sui.connect();
+            if (response && response.address) {
+              const walletAddress = response.address;
+              
+              console.log('Connected to Martian wallet:', walletAddress);
+              
+              // Update connection state
+              updateConnectionState(walletAddress, 'sui');
+              
+              toast({
+                title: 'Wallet Connected',
+                description: 'Connected to Martian Wallet',
+              });
+              
+              setConnecting(false);
+              return;
+            }
+          }
+        } catch (e) {
+          console.error('Martian wallet error:', e);
         }
       } catch (error) {
         console.error('Error connecting to wallet:', error);
       }
       // If we get here, no real wallet was found, so we'll show an error message
-      console.log('No real wallet found - please install a Sui wallet extension');
+      console.log('No Sui wallet found - user needs to install a wallet');
       
-      // Provide more detailed error based on browser type
+      // Provide more detailed error based on device and browser
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const browser = navigator.userAgent.includes('Chrome') ? 'Chrome' : 
                      navigator.userAgent.includes('Firefox') ? 'Firefox' : 
                      navigator.userAgent.includes('Safari') ? 'Safari' : 'your browser';
-                     
-      const installMessage = browser === 'Chrome' ? 
-        'Install from Chrome Web Store: Sui Wallet, Ethos Wallet, or Suiet' :
-        'Please install a Sui wallet extension compatible with ' + browser;
       
-      setError(`No Sui wallet extension detected. ${installMessage}`);
+      let installMessage = '';
+      let title = '';
+      let description = '';
+      
+      if (isMobile) {
+        // Mobile device guidance
+        title = 'No Sui Mobile Wallet Detected';
+        installMessage = 'Install a Sui-compatible mobile wallet like Sui Wallet, Ethos, or Suiet.';
+        description = 'Please install a Sui-compatible mobile wallet to connect to our platform.';
+      } else {
+        // Desktop guidance
+        title = 'No Sui Wallet Extension Detected';
+        installMessage = browser === 'Chrome' ? 
+          'Install from Chrome Web Store: Sui Wallet, Ethos Wallet, or Suiet' :
+          'Please install a Sui wallet extension compatible with ' + browser;
+        description = `Please install a Sui wallet extension for ${browser} to connect to the platform.`;
+      }
+      
+      setError(`No Sui wallet detected. ${installMessage}`);
       
       toast({
-        title: 'No Wallet Extension Detected',
-        description: `Please install a Sui wallet extension for ${browser} to connect to the platform.`,
+        title,
+        description,
         variant: 'destructive',
       });
       

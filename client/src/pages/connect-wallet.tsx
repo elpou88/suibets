@@ -192,45 +192,108 @@ export default function ConnectWallet() {
                 </div>
               )}
               
-              {/* Extension installation info */}
+              {/* Wallet options info */}
               <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md">
-                <h4 className="text-sm font-medium text-blue-400 mb-2">Wallet Extension Required</h4>
-                <p className="text-xs text-gray-300">
-                  To connect your wallet, you need to have one of these Sui wallet browser extensions installed:
+                <h4 className="text-sm font-medium text-blue-400 mb-2">Connect With Any Sui Wallet</h4>
+                <p className="text-xs text-gray-300 mb-2">
+                  You can connect with any type of Sui wallet - browser extensions, mobile wallets, or hardware wallets:
                 </p>
-                <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
-                  <a 
-                    href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    • Sui Wallet
-                  </a>
-                  <a 
-                    href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    • Ethos Wallet
-                  </a>
-                  <a 
-                    href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    • Suiet Wallet
-                  </a>
-                  <a 
-                    href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:underline"
-                  >
-                    • Martian Wallet
-                  </a>
+                
+                <div className="flex flex-col space-y-3">
+                  {/* Browser Extension Options */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-200">Browser Extensions:</p>
+                    <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
+                      <a 
+                        href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Sui Wallet
+                      </a>
+                      <a 
+                        href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Ethos Wallet
+                      </a>
+                      <a 
+                        href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Suiet Wallet
+                      </a>
+                      <a 
+                        href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Martian Wallet
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* Mobile Wallet Options */}
+                  <div>
+                    <p className="text-xs font-medium text-gray-200">Mobile Wallets:</p>
+                    <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
+                      <a 
+                        href="https://suiwallet.io/download" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Sui Mobile Wallet
+                      </a>
+                      <a 
+                        href="https://ethoswallet.xyz/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Ethos Mobile
+                      </a>
+                      <a 
+                        href="https://suiet.app/download" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Suiet Mobile
+                      </a>
+                      <a 
+                        href="https://martianwallet.xyz/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:underline"
+                      >
+                        • Martian Mobile
+                      </a>
+                    </div>
+                  </div>
+                  
+                  {/* QR Code Wallet Connect */}
+                  <div className="bg-[#112225] p-2 rounded border border-[#1e3a3f] mt-2">
+                    <p className="text-xs font-medium text-gray-200 mb-1">Using a Mobile Wallet?</p>
+                    <p className="text-xs text-gray-400">
+                      You can also connect by scanning this QR code with your Sui mobile wallet:
+                    </p>
+                    
+                    {/* QR Code Placeholder - would typically be generated by the wallet provider SDK */}
+                    <div className="mt-2 bg-white p-2 mx-auto w-32 h-32 flex items-center justify-center rounded">
+                      <div className="w-full h-full bg-gradient-to-br from-black to-gray-800 bg-opacity-90 flex items-center justify-center">
+                        <p className="text-center text-white text-[8px]">
+                          QR connection <br/> coming soon
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

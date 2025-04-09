@@ -62,16 +62,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let events = await storage.getEvents(reqSportId, isLive);
       console.log(`Found ${events.length} events for sportId: ${reqSportId} in database`);
       
-      // For non-live events, try to get them from the API first if no database events
+      // For non-live events, always try to get fresh data from the API
+      // This ensures we're showing the most current upcoming events
       if (!isLive) {
-        // If we already have events in the database, return them
-        if (events.length > 0) {
-          return res.json(events);
-        }
+        console.log(`Fetching upcoming events from API for ${reqSportId ? `sportId: ${reqSportId}` : 'all sports'}`);
         
-        // If no events in the database, try to get upcoming events from the API
+        // If a specific sport is requested, get upcoming events for that sport
         if (reqSportId) {
-          // Map sport ID to sport name
+          // Map sport ID to sport name with correct format for API
           const sportMap: Record<number, string> = {
             1: 'football',
             2: 'basketball',
@@ -84,7 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             9: 'cricket',
             10: 'golf',
             11: 'boxing',
-            12: 'mma-ufc',
+            12: 'mma-ufc', // Make sure this matches what's in the API service
             13: 'formula_1',
             14: 'cycling',
             15: 'american_football'
@@ -93,12 +91,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const sportName = sportMap[reqSportId] || 'football';
           console.log(`Attempting to fetch upcoming ${sportName} (ID: ${reqSportId}) events from API directly`);
           
-          // Get upcoming events for this specific sport
-          const upcomingEvents = await apiSportsService.getUpcomingEvents(sportName, 10);
+          // Get upcoming events for this specific sport - increased limit to 20 to ensure we get enough results
+          const upcomingEvents = await apiSportsService.getUpcomingEvents(sportName, 20);
           
           if (upcomingEvents && upcomingEvents.length > 0) {
             console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
-            return res.json(upcomingEvents);
+            
+            // Filter events to make sure they match the requested sport ID
+            const filteredEvents = upcomingEvents.filter(event => event.sportId === reqSportId);
+            console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
+            
+            return res.json(filteredEvents);
           } else {
             console.log(`No upcoming ${sportName} events found from API, returning empty array`);
             return res.json([]);
@@ -107,8 +110,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // No specific sport ID requested, get upcoming events for all sports
           console.log("Fetching upcoming events for all sports from API");
           
-          // Get upcoming events for all sports
-          const allUpcomingEvents = await apiSportsService.getAllUpcomingEvents(5);
+          // Get upcoming events for all sports - with increased per-sport limit
+          const allUpcomingEvents = await apiSportsService.getAllUpcomingEvents(10);
           
           if (allUpcomingEvents && allUpcomingEvents.length > 0) {
             console.log(`Found ${allUpcomingEvents.length} upcoming events for all sports combined from API`);

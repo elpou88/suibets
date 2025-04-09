@@ -13,11 +13,14 @@ export class ApiSportsService {
   private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes cache expiry
 
   constructor() {
-    this.baseUrl = 'https://v1.baseball.api-sports.io';
-    this.apiKey = process.env.API_SPORTS_KEY || '';
+    this.baseUrl = 'https://api-football-v1.p.rapidapi.com/v3';
+    // Use the SPORTSDATA_API_KEY as the primary key, fall back to SPORTSDATA_API_KEY if not available
+    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.SPORTSDATA_API_KEY || '';
     
     if (!this.apiKey) {
-      console.warn('No API_SPORTS_KEY environment variable found. API-Sports functionality will be limited.');
+      console.warn('No SPORTSDATA_API_KEY environment variable found. API-Sports functionality will be limited.');
+    } else {
+      console.log('[ApiSportsService] API key found, length:', this.apiKey.length);
     }
   }
 
@@ -48,7 +51,8 @@ export class ApiSportsService {
       baseURL: baseUrl,
       headers: {
         'x-rapidapi-key': this.apiKey,
-        'x-rapidapi-host': new URL(baseUrl).hostname
+        'x-rapidapi-host': new URL(baseUrl).hostname,
+        'Accept': 'application/json'
       }
     });
   }
@@ -107,10 +111,12 @@ export class ApiSportsService {
    */
   async getLiveEvents(sport: string = 'football'): Promise<SportEvent[]> {
     if (!this.apiKey) {
-      console.warn('No API_SPORTS_KEY available, returning empty live events');
+      console.warn('No SPORTSDATA_API_KEY available, returning empty live events');
       return [];
     }
 
+    console.log(`[ApiSportsService] Attempting to fetch live events for ${sport} with API key`);
+    
     try {
       // Use a shorter cache expiry for live events
       const cacheKey = `live_events_${sport}`;
@@ -124,19 +130,20 @@ export class ApiSportsService {
         let params = {};
         
         if (sport === 'football' || sport === 'soccer') {
+          // Use the updated API-Football endpoint with v3
           apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
           params = { live: 'all' };
         } else if (sport === 'basketball') {
-          apiUrl = 'https://api-basketball-v1.p.rapidapi.com/games';
+          apiUrl = 'https://api-basketball.p.rapidapi.com/games';
           params = { live: 'all' };
         } else if (sport === 'baseball') {
-          apiUrl = 'https://api-baseball-v1.p.rapidapi.com/games';
+          apiUrl = 'https://api-baseball.p.rapidapi.com/games';
           params = { status: 'LIVE' };
         } else if (sport === 'hockey') {
-          apiUrl = 'https://api-hockey-v1.p.rapidapi.com/games';
+          apiUrl = 'https://api-hockey.p.rapidapi.com/games';
           params = { status: 'LIVE' };
         } else if (sport === 'tennis') {
-          apiUrl = 'https://api-tennis-v1.p.rapidapi.com/games';
+          apiUrl = 'https://api-tennis.p.rapidapi.com/games';
           params = { status: 'LIVE' };
         } else {
           // Default to football if sport not supported directly
@@ -145,25 +152,30 @@ export class ApiSportsService {
         }
         
         try {
+          console.log(`[ApiSportsService] Making API request to ${apiUrl}`);
+          
           const response = await axios.get(apiUrl, {
             params,
             headers: {
-              'x-rapidapi-key': this.apiKey,
-              'x-rapidapi-host': new URL(apiUrl).hostname
+              'X-RapidAPI-Key': this.apiKey,
+              'X-RapidAPI-Host': new URL(apiUrl).hostname,
+              'Accept': 'application/json'
             }
           });
           
           if (response.data && response.data.response) {
             console.log(`[ApiSportsService] Found ${response.data.response.length} live events for ${sport}`);
             return response.data.response;
+          } else {
+            console.log(`[ApiSportsService] Response structure unexpected:`, 
+                        Object.keys(response.data).join(', '));
           }
           
           console.log(`[ApiSportsService] No live events found for ${sport}`);
           return [];
         } catch (error) {
           console.error(`[ApiSportsService] Error fetching live events for ${sport}:`, error);
-          // Don't fall back to mock data, return empty array instead
-          console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check API_SPORTS_KEY.`);
+          console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}`);
           return [];
         }
       });
@@ -172,7 +184,7 @@ export class ApiSportsService {
       return this.transformEventsData(events, sport, true);
     } catch (error) {
       console.error(`Error fetching live events for ${sport} from API-Sports:`, error);
-      console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check API_SPORTS_KEY.`);
+      console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
       return [];
     }
   }
@@ -230,46 +242,97 @@ export class ApiSportsService {
    */
   async getUpcomingEvents(sport: string = 'football', limit: number = 10): Promise<SportEvent[]> {
     if (!this.apiKey) {
-      console.warn('No API_SPORTS_KEY available, returning empty upcoming events');
+      console.warn('No SPORTSDATA_API_KEY available, returning empty upcoming events');
       return [];
     }
 
+    console.log(`[ApiSportsService] Attempting to fetch upcoming events for ${sport} with API key`);
+    
     try {
       const cacheKey = `upcoming_events_${sport}_${limit}`;
       
       const events = await this.getCachedOrFetch(cacheKey, async () => {
-        const apiClient = this.getApiClient(sport);
+        console.log(`[ApiSportsService] Fetching upcoming events for ${sport}`);
         const date = new Date().toISOString().split('T')[0]; // Today's date
         
-        // Different endpoints based on sport
-        let response;
+        // Different API routes based on sport type
+        let apiUrl;
+        let params = {};
+        
         if (sport === 'football' || sport === 'soccer') {
-          response = await apiClient.get('/fixtures', {
-            params: {
-              date: date,
-              status: 'NS' // Not started
-            }
-          });
+          // Use the updated API-Football endpoint with v3
+          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          params = { 
+            date: date,
+            status: 'NS' // Not started
+          };
+        } else if (sport === 'basketball') {
+          apiUrl = 'https://api-basketball.p.rapidapi.com/games';
+          params = { 
+            date: date,
+            status: 'scheduled'
+          };
+        } else if (sport === 'baseball') {
+          apiUrl = 'https://api-baseball.p.rapidapi.com/games';
+          params = { 
+            date: date,
+            status: 'scheduled'
+          };
+        } else if (sport === 'hockey') {
+          apiUrl = 'https://api-hockey.p.rapidapi.com/games';
+          params = { 
+            date: date,
+            status: 'scheduled'
+          };
+        } else if (sport === 'tennis') {
+          apiUrl = 'https://api-tennis.p.rapidapi.com/games';
+          params = { 
+            date: date,
+            status: 'scheduled'
+          };
         } else {
-          response = await apiClient.get('/games', {
-            params: {
-              date: date,
-              status: 'scheduled'
-            }
-          });
-        }
-
-        if (response.data && response.data.response) {
-          return response.data.response.slice(0, limit);
+          // Default to football if sport not supported directly
+          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          params = { 
+            date: date,
+            status: 'NS'
+          };
         }
         
-        return [];
+        try {
+          console.log(`[ApiSportsService] Making API request to ${apiUrl} for upcoming events`);
+          
+          const response = await axios.get(apiUrl, {
+            params,
+            headers: {
+              'X-RapidAPI-Key': this.apiKey,
+              'X-RapidAPI-Host': new URL(apiUrl).hostname,
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.data && response.data.response) {
+            console.log(`[ApiSportsService] Found ${response.data.response.length} upcoming events for ${sport}`);
+            return response.data.response.slice(0, limit);
+          } else {
+            console.log(`[ApiSportsService] Response structure unexpected:`, 
+                        Object.keys(response.data).join(', '));
+          }
+          
+          console.log(`[ApiSportsService] No upcoming events found for ${sport}`);
+          return [];
+        } catch (error) {
+          console.error(`[ApiSportsService] Error fetching upcoming events for ${sport}:`, error);
+          console.log(`[ApiSportsService] Cannot fetch upcoming ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
+          return [];
+        }
       });
       
       // Transform to our format
       return this.transformEventsData(events, sport, false);
     } catch (error) {
       console.error(`Error fetching upcoming events for ${sport} from API-Sports:`, error);
+      console.log(`[ApiSportsService] Cannot fetch upcoming ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
       return [];
     }
   }
@@ -538,7 +601,7 @@ export class ApiSportsService {
    */
   async getOdds(eventId: string, sport: string = 'football'): Promise<OddsData[]> {
     if (!this.apiKey) {
-      console.warn('No API_SPORTS_KEY available, returning empty odds data');
+      console.warn('No SPORTSDATA_API_KEY available, returning empty odds data');
       return [];
     }
 

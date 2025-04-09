@@ -1,5 +1,6 @@
 import { securityService } from './securityService';
 import { sportDataService } from './sportDataService';
+import axios from 'axios';
 
 // Mock data provider interface
 export interface IOddsProvider {
@@ -213,13 +214,25 @@ class WurlusProtocolProvider implements IOddsProvider {
     
     if (wurlusApiKey) {
       try {
-        // TODO: Implement real API call to Wurlus Protocol
-        // const response = await axios.get(`https://api.wurlus.com/v1/odds`, {
-        //   headers: { 'Authorization': `Bearer ${wurlusApiKey}` }
-        // });
-        // return response.data;
+        // Implement real API call to Wurlus Protocol using Wal.app Web API
+        const response = await axios.get(`https://api.wal.app/v1/markets/odds`, {
+          headers: { 
+            'Authorization': `Bearer ${wurlusApiKey}`,
+            'X-API-Key': wurlusApiKey
+          },
+          params: {
+            provider: 'wurlus',
+            limit: 100,
+            status: 'open'
+          }
+        });
         
-        console.log("[AggregatorService] Using real Wurlus Protocol API not implemented yet");
+        if (response.data && Array.isArray(response.data.odds)) {
+          console.log(`[AggregatorService] Successfully fetched ${response.data.odds.length} odds from Wurlus Protocol API`);
+          return response.data.odds;
+        }
+        
+        throw new Error('Invalid response from Wurlus Protocol API');
       } catch (error) {
         console.error("[AggregatorService] Error fetching from real Wurlus Protocol API:", error);
       }
@@ -355,13 +368,47 @@ class WalAppProvider implements IOddsProvider {
     
     if (walAppApiKey) {
       try {
-        // TODO: Implement real API call to Wal.app
-        // const response = await axios.get(`https://api.wal.app/v1/odds`, {
-        //   headers: { 'X-API-Key': walAppApiKey }
-        // });
-        // return response.data;
+        // Implement real API call to Wal.app
+        const response = await axios.get(`https://api.wal.app/v1/events/odds`, {
+          headers: { 
+            'X-API-Key': walAppApiKey 
+          },
+          params: {
+            status: 'live', // Get odds for live events
+            limit: 100
+          }
+        });
         
-        console.log("[AggregatorService] Using real Wal.app API not implemented yet");
+        if (response.data && Array.isArray(response.data.events)) {
+          console.log(`[AggregatorService] Successfully fetched ${response.data.events.length} events from Wal.app API`);
+          
+          // Extract odds from events
+          const odds: any[] = [];
+          
+          response.data.events.forEach((event: any) => {
+            if (event.markets && Array.isArray(event.markets)) {
+              event.markets.forEach((market: any) => {
+                if (market.outcomes && Array.isArray(market.outcomes)) {
+                  market.outcomes.forEach((outcome: any) => {
+                    odds.push({
+                      outcomeId: outcome.id,
+                      marketId: market.id,
+                      eventId: event.id,
+                      odds: outcome.odds,
+                      sport: event.sport_id ? event.sport_id : 'unknown',
+                      timestamp: new Date()
+                    });
+                  });
+                }
+              });
+            }
+          });
+          
+          console.log(`[AggregatorService] Successfully fetched ${odds.length} odds from Wal.app`);
+          return odds;
+        }
+        
+        throw new Error('Invalid response from Wal.app API');
       } catch (error) {
         console.error("[AggregatorService] Error fetching from real Wal.app API:", error);
       }

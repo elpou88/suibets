@@ -5,6 +5,7 @@ import { db } from "./db";
 import { ApiSportsService } from "./services/apiSportsService";
 import { aggregatorService } from "./services/aggregatorService"; 
 import { initBasketballService } from "./services/basketballService";
+import { initEventTrackingService } from "./services/eventTrackingService";
 import { registerDebugRoutes } from "./debug-routes";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
@@ -22,7 +23,14 @@ const apiSportsService = new ApiSportsService(sportsApiKey);
 // Initialize basketball service
 const basketballService = initBasketballService(sportsApiKey);
 
+// Initialize event tracking service to monitor upcoming events for live status
+const eventTrackingService = initEventTrackingService(apiSportsService);
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Start the event tracking service to monitor upcoming events
+  eventTrackingService.start();
+  console.log("[Routes] Started event tracking service to monitor upcoming events for live status");
+  
   // Register debug routes
   registerDebugRoutes(app);
   
@@ -270,6 +278,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error in live events redirect:', error);
       return res.status(500).json({ error: 'Failed to fetch live events' });
+    }
+  });
+  
+  // Endpoint to track events that have gone live - MUST be before :id endpoint
+  app.get("/api/events/tracked", async (_req: Request, res: Response) => {
+    try {
+      const trackedEvents = eventTrackingService.getTrackedEvents();
+      return res.json({
+        tracked: trackedEvents,
+        count: trackedEvents.length,
+        message: "Events that have transitioned from upcoming to live"
+      });
+    } catch (error) {
+      console.error("Error fetching tracked events:", error);
+      return res.status(500).json({ message: "Failed to fetch tracked events" });
     }
   });
   

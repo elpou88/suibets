@@ -10,12 +10,13 @@ const ImageBanner: React.FC<{
   altText: string;
 }> = ({ href, imageSrc, altText }) => {
   return (
-    <div className="w-24 min-h-screen">
+    <div className="w-56 min-h-screen overflow-hidden">
       <Link href={href} className="h-full w-full block">
         <img
           src={imageSrc}
           alt={altText}
           className="h-full w-full object-cover"
+          style={{ maxWidth: 'none' }}
         />
       </Link>
     </div>

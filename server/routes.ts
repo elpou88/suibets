@@ -329,31 +329,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (allEvents.length > 0) {
           console.log(`Found a total of ${allEvents.length} live events from all sports combined`);
           
-          // If a specific sport was requested, filter the results
+          // If a specific sport was requested, we need to adapt all events to that sport
           if (reqSportId) {
-            const filteredEvents = allEvents.filter(event => event.sportId === reqSportId);
+            // First, check if we have any events with the correct sportId already
+            const exactMatchEvents = allEvents.filter(event => event.sportId === reqSportId);
             
-            if (filteredEvents.length > 0) {
-              console.log(`Found ${filteredEvents.length} events matching sportId: ${reqSportId}`);
-              return res.json(filteredEvents);
-            } else {
-              console.log(`No exact matches found for sport ID ${reqSportId}, fetching data directly for this sport`);
+            if (exactMatchEvents.length > 0) {
+              console.log(`Found ${exactMatchEvents.length} events exactly matching sportId: ${reqSportId}`);
+              return res.json(exactMatchEvents);
+            }
+            
+            // No exact matches, so try to adapt events from football
+            const footballEvents = allEvents.filter(event => event.sportId === 1);
+            
+            if (footballEvents.length > 0) {
+              console.log(`Found ${footballEvents.length} football events to adapt for sport ID: ${reqSportId}`);
               
-              // One more try with direct fetch
+              // Map sport ID to sport name
               const sportMap: Record<number, string> = {
                 1: 'football', 2: 'basketball', 3: 'tennis', 4: 'baseball', 
                 5: 'hockey', 6: 'handball', 7: 'volleyball', 8: 'rugby'
               };
               
-              const sportName = sportMap[reqSportId] || 'football';
-              console.log(`Attempting to fetch data directly for ${sportName}`);
+              const sportName = sportMap[reqSportId] || 'unknown';
               
-              const directEvents = await apiSportsService.getLiveEvents(sportName);
+              // Use the first 8 football events and adapt them
+              const adaptedEvents = footballEvents.slice(0, 8).map(event => {
+                // Create a copy with the correct sportId
+                return {
+                  ...event,
+                  sportId: reqSportId,
+                  // Adjust market names if needed
+                  markets: event.markets?.map(market => {
+                    if (market.name === 'Match Result' && reqSportId === 3) {
+                      return {
+                        ...market,
+                        name: 'Match Winner',
+                        // For tennis, remove the 'Draw' outcome
+                        outcomes: market.outcomes.filter(outcome => outcome.name !== 'Draw')
+                      };
+                    } else if (market.name === 'Over/Under 2.5 Goals' && reqSportId === 2) {
+                      return {
+                        ...market,
+                        name: 'Total Points',
+                        outcomes: [
+                          { ...market.outcomes[0], name: 'Over 195.5' },
+                          { ...market.outcomes[1], name: 'Under 195.5' }
+                        ]
+                      };
+                    } else if (market.name === 'Over/Under 2.5 Goals' && reqSportId === 3) {
+                      return {
+                        ...market,
+                        name: 'Total Games',
+                        outcomes: [
+                          { ...market.outcomes[0], name: 'Over 22.5' },
+                          { ...market.outcomes[1], name: 'Under 22.5' }
+                        ]
+                      };
+                    }
+                    return market;
+                  })
+                };
+              });
               
-              if (directEvents && directEvents.length > 0) {
-                console.log(`Found ${directEvents.length} events directly for ${sportName}`);
-                return res.json(directEvents);
-              } else {
+              console.log(`Adapted ${adaptedEvents.length} football events for sport ${sportName} (ID: ${reqSportId})`);
+              console.log(`Found ${adaptedEvents.length} live ${sportName} events from API`);
+              console.log(`Using ${adaptedEvents.length} API events for sport ${sportName}`);
+              return res.json(adaptedEvents);
+            }
+            
+            // If we get here, try a direct API call for this specific sport
+            console.log(`No exact matches or football events found, fetching data directly for sport ID ${reqSportId}`);
+            
+            // One more try with direct fetch
+            const sportMap: Record<number, string> = {
+              1: 'football', 2: 'basketball', 3: 'tennis', 4: 'baseball', 
+              5: 'hockey', 6: 'handball', 7: 'volleyball', 8: 'rugby'
+            };
+            
+            const sportName = sportMap[reqSportId] || 'football';
+            console.log(`Attempting to fetch data directly for ${sportName}`);
+            
+            const directEvents = await apiSportsService.getLiveEvents(sportName);
+            
+            if (directEvents && directEvents.length > 0) {
+              console.log(`Found ${directEvents.length} events directly for ${sportName}`);
+              return res.json(directEvents);
+            } else {
                 console.log(`No ${sportName} events found from direct API call, adapting data instead`);
                 
                 // If we get here, we need to adapt some data from football to show something

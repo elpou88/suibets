@@ -5,8 +5,17 @@ import { db } from "./db";
 import { ApiSportsService } from "./services/apiSportsService";
 import { aggregatorService } from "./services/aggregatorService";
 
-// Create instance of ApiSportsService with correct API key
-const apiSportsService = new ApiSportsService(process.env.SPORTSDATA_API_KEY || "");
+// Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
+const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "";
+
+if (!sportsApiKey) {
+  console.warn("⚠️ WARNING: No sports data API key found in environment variables!");
+  console.warn("Please set SPORTSDATA_API_KEY for full API functionality.");
+  console.warn("Without an API key, sports data will be limited to what's in the database.");
+}
+
+// Create instance of ApiSportsService with the API key
+const apiSportsService = new ApiSportsService(sportsApiKey);
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Home route

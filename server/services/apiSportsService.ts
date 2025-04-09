@@ -2,28 +2,51 @@ import axios from 'axios';
 import { OddsData, SportEvent, MarketData, OutcomeData } from '../types/betting';
 import config from '../config';
 
-// Constants for API endpoints
-const API_HOSTS = {
-  RAPID_API: 'api-football-v1.p.rapidapi.com',
-  DIRECT_API: 'v3.football.api-sports.io'
-};
-
 /**
- * Service for interacting with the API-Sports API
+ * Enhanced service for interacting with the API-Sports API
  * Documentation: https://api-sports.io/documentation
  */
 export class ApiSportsService {
-  private baseUrl: string;
-  private directBaseUrl: string;
   private apiKey: string;
-  private usingDirectApi: boolean = true; // Switch to direct API first
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
-  private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes cache expiry
+  
+  // Cache settings
+  private shortCacheExpiry: number = 1 * 60 * 1000; // 1 minute for live events
+  private mediumCacheExpiry: number = 5 * 60 * 1000; // 5 minutes for medium-priority data
+  private longCacheExpiry: number = 30 * 60 * 1000; // 30 minutes for stable data
+  private cacheExpiry: number = 5 * 60 * 1000; // Default cache expiry
+  
+  // API endpoints for each sport
+  private sportEndpoints: Record<string, string> = {
+    football: 'https://v3.football.api-sports.io/fixtures',
+    soccer: 'https://v3.football.api-sports.io/fixtures',
+    basketball: 'https://v1.basketball.api-sports.io/games',
+    baseball: 'https://v1.baseball.api-sports.io/games',
+    hockey: 'https://v1.hockey.api-sports.io/games',
+    rugby: 'https://v1.rugby.api-sports.io/games',
+    american_football: 'https://v1.american-football.api-sports.io/games',
+    tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - matches is correct
+    cricket: 'https://v1.cricket.api-sports.io/fixtures',
+    handball: 'https://v1.handball.api-sports.io/games',
+    volleyball: 'https://v1.volleyball.api-sports.io/games',
+    mma: 'https://v1.mma.api-sports.io/fights',
+    'mma-ufc': 'https://v1.mma.api-sports.io/fights',
+    boxing: 'https://v1.boxing.api-sports.io/fights',
+    golf: 'https://v1.golf.api-sports.io/tournaments',
+    formula_1: 'https://v1.formula-1.api-sports.io/races',
+    cycling: 'https://v1.cycling.api-sports.io/races'
+  };
+  
+  // Status check endpoint for each API
+  private statusEndpoints: Record<string, string> = {
+    football: 'https://v3.football.api-sports.io/status',
+    basketball: 'https://v1.basketball.api-sports.io/status',
+    tennis: 'https://v1.tennis.api-sports.io/status',
+    baseball: 'https://v1.baseball.api-sports.io/status',
+    cricket: 'https://v1.cricket.api-sports.io/status'
+  };
 
   constructor(apiKey?: string) {
-    this.baseUrl = `https://${API_HOSTS.RAPID_API}/v3`;
-    this.directBaseUrl = `https://${API_HOSTS.DIRECT_API}`;
-    
     // Accept apiKey parameter, then fall back to environment variables
     this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
     
@@ -32,19 +55,42 @@ export class ApiSportsService {
     } else {
       console.log(`[ApiSportsService] API key found, length: ${this.apiKey.length}`);
       
-      // Verify API key works correctly for direct API
-      this.verifyApiConnection();
+      // Verify API key works correctly for direct API - start with most important APIs
+      this.verifyApiConnections();
       this.checkForLiveFixtures();
     }
   }
   
   /**
-   * Verify that the API connection is working properly
+   * Verify API connections with all major sports APIs
    */
-  private async verifyApiConnection() {
+  private async verifyApiConnections() {
     try {
-      console.log('[ApiSportsService] Verifying API connection...');
-      const response = await axios.get('https://v3.football.api-sports.io/status', {
+      // Try to verify at least the football API connection first
+      await this.verifyApiConnection('football');
+      
+      // Try other important sports APIs in parallel
+      Promise.all([
+        this.verifyApiConnection('basketball'),
+        this.verifyApiConnection('tennis'),
+        this.verifyApiConnection('mma-ufc')
+      ]).catch(error => {
+        console.warn(`[ApiSportsService] Some sport APIs may not be available: ${error.message}`);
+      });
+    } catch (error) {
+      console.error('[ApiSportsService] API connections verification failed:', error);
+    }
+  }
+
+  /**
+   * Verify that a specific sport API connection is working properly
+   */
+  private async verifyApiConnection(sport: string = 'football') {
+    try {
+      console.log(`[ApiSportsService] Verifying ${sport} API connection...`);
+      const statusEndpoint = this.statusEndpoints[sport] || 'https://v3.football.api-sports.io/status';
+      
+      const response = await axios.get(statusEndpoint, {
         headers: {
           'x-apisports-key': this.apiKey,
           'Accept': 'application/json'
@@ -56,17 +102,17 @@ export class ApiSportsService {
         const subscription = response.data.response.subscription;
         const requests = response.data.response.requests;
         
-        console.log(`[ApiSportsService] API connection successful! Account: ${account.firstname} ${account.lastname}`);
+        console.log(`[ApiSportsService] ${sport} API connection successful! Account: ${account.firstname} ${account.lastname}`);
         console.log(`[ApiSportsService] Subscription: ${subscription.plan}, expires: ${subscription.end}`);
         console.log(`[ApiSportsService] API usage: ${requests.current}/${requests.limit_day} requests today`);
-        
-        // Check for live fixtures
-        this.checkForLiveFixtures();
+        return true;
       } else {
-        console.warn('[ApiSportsService] API connection verification returned unexpected response format');
+        console.warn(`[ApiSportsService] ${sport} API connection verification returned unexpected response format`);
+        return false;
       }
     } catch (error) {
-      console.error('[ApiSportsService] API connection verification failed:', error);
+      console.error(`[ApiSportsService] ${sport} API connection verification failed:`, error);
+      return false;
     }
   }
   
@@ -177,22 +223,32 @@ export class ApiSportsService {
 
   /**
    * Get cached data or make API request
+   * @param cacheKey The key to cache the data under
+   * @param fetchFn The function to fetch the data
+   * @param cacheExpiryOverride Optional override for cache expiry in milliseconds
    */
-  private async getCachedOrFetch(cacheKey: string, fetchFn: () => Promise<any>): Promise<any> {
+  private async getCachedOrFetch(
+    cacheKey: string, 
+    fetchFn: () => Promise<any>,
+    cacheExpiryOverride?: number
+  ): Promise<any> {
     const cached = this.cache.get(cacheKey);
+    const expiryToUse = cacheExpiryOverride || this.cacheExpiry;
     
-    if (cached && Date.now() - cached.timestamp < this.cacheExpiry) {
+    if (cached && Date.now() - cached.timestamp < expiryToUse) {
+      console.log(`[ApiSportsService] Using cached data for ${cacheKey}`);
       return cached.data;
     }
     
     try {
+      console.log(`[ApiSportsService] Fetching fresh data for ${cacheKey}`);
       const data = await fetchFn();
       this.cache.set(cacheKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
       // If we have stale cache, return it rather than failing
       if (cached) {
-        console.warn(`Failed to fetch fresh data for ${cacheKey}, using stale cache`);
+        console.warn(`[ApiSportsService] Failed to fetch fresh data for ${cacheKey}, using stale cache`);
         return cached.data;
       }
       throw error;
@@ -249,7 +305,7 @@ export class ApiSportsService {
       // Use a shorter cache expiry for live events
       const cacheKey = `live_events_${sport}`;
       
-      // Get data from the cache or fetch it fresh
+      // Get data from the cache or fetch it fresh - Use short expiry for live events
       const events = await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching live events for ${sport}`);
         
@@ -447,10 +503,7 @@ export class ApiSportsService {
     return sportEvents;
   }
   
-  /**
-   * This method has been removed to comply with the requirement
-   * that we only use real API data. We don't generate mock events anymore.
-   */
+
 
   /**
    * Get upcoming events for a specific sport

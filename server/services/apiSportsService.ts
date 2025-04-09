@@ -293,7 +293,7 @@ export class ApiSportsService {
         if (sportEndpoints[sport]) {
           apiUrl = sportEndpoints[sport];
           params = getParams(apiUrl);
-          console.log(`[ApiSportsService] Using sport-specific API endpoint: ${apiUrl}`);
+          console.log(`[ApiSportsService] Using sport-specific API endpoint: ${apiUrl} with params: ${JSON.stringify(params)}`);
         } else {
           console.log(`[ApiSportsService] No specific API endpoint for ${sport}, using football API`);
         }

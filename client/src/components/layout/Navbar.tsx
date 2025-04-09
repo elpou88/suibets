@@ -55,43 +55,19 @@ export default function Navbar() {
     };
   }, [user?.walletAddress]);
   
-  // Attempt quick wallet connection with real wallet first, then fallback to demo
+  // Open connect wallet modal or attempt quick connection if wallet detected
   const attemptQuickWalletConnection = async () => {
     if (isAttemptingConnection) return; // Prevent multiple attempts
     
     try {
       setIsAttemptingConnection(true);
       
-      // Force real wallet mode - try to connect to a real wallet first
-      localStorage.setItem('use_demo_wallet', 'false');
-      
-      console.log('Attempting to connect to real wallet first...');
-      
-      // Connect using the wallet adapter
-      await connectAdapter();
-      
-      // Wait for connection to be established
-      setTimeout(async () => {
-        if (address && isConnected) {
-          console.log('Wallet connection successful:', address);
-          
-          // Sync with auth context
-          await connectWallet(address, 'sui');
-          
-          toast({
-            title: 'Wallet Connected',
-            description: 'Wallet connected successfully',
-          });
-        } else {
-          console.log('Quick wallet connection failed - opening modal');
-          setIsWalletModalOpen(true);
-        }
-        setIsAttemptingConnection(false);
-      }, 1000); // Longer timeout to allow for wallet popup
-    } catch (error) {
-      console.error('Quick wallet connection error:', error);
-      setIsAttemptingConnection(false);
+      // Open the wallet modal to select from available wallet options
       setIsWalletModalOpen(true);
+      setIsAttemptingConnection(false);
+    } catch (error) {
+      console.error('Wallet connection error:', error);
+      setIsAttemptingConnection(false);
     }
   };
 

@@ -290,25 +290,15 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       } catch (error) {
         console.error('Error connecting to wallet:', error);
       }
+      // If we get here, no real wallet was found, so we'll show an error message
+      console.log('No real wallet found - please install a Sui wallet extension');
       
-      // If we get here, no real wallet was found, so we'll show a message but still use the demo wallet
-      // This prioritizes real wallets but still provides a fallback
-      console.log('No real wallet found - falling back to demo wallet');
-      const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
-      
-      // Update connection state with demo wallet
-      updateConnectionState(demoAddress, 'sui');
-      
-      // Set mock balances for demo
-      setBalances({
-        SUI: 25.5,
-        SBETS: 1000.0
-      });
+      setError('No Sui wallet extension detected. Please install a Sui wallet extension like Sui Wallet, Ethos Wallet, or Suiet.');
       
       toast({
-        title: 'Demo Mode Active',
-        description: 'No Sui wallet detected. Using demo wallet. Install a Sui wallet for full functionality.',
-        variant: 'default',
+        title: 'No Wallet Detected',
+        description: 'Please install a Sui wallet extension to connect to the platform.',
+        variant: 'destructive',
       });
       
       setConnecting(false);

@@ -69,6 +69,17 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('Initiating wallet connection for:', walletId);
       
+      // Check if any Sui wallet extensions are installed
+      const hasWalletExtension = !!window.suiWallet || 
+        document.querySelector('wallet-standard-adapter') !== null || 
+        typeof window.sui !== 'undefined' || 
+        typeof window.suiet !== 'undefined' || 
+        typeof window.ethos !== 'undefined';
+      
+      if (!hasWalletExtension) {
+        throw new Error("No Sui wallet extension detected. Please install a wallet extension first.");
+      }
+      
       // Connect using the wallet adapter
       await connectAdapter();
       
@@ -175,34 +186,9 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               </div>
               
               <div className="flex justify-between items-center w-full mt-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">
-                  {localStorage.getItem('use_demo_wallet') === 'true' 
-                    ? '🔄 Using demo wallet for testing' 
-                    : '✅ Using real Sui wallets (preferred)'}
+                <span className="text-sm text-green-600 dark:text-green-400">
+                  ✅ Using real Sui wallets only
                 </span>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  className="h-6 text-xs"
-                  onClick={() => {
-                    // Toggle "use demo wallet" flag
-                    const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
-                    localStorage.setItem('use_demo_wallet', (!currentValue).toString());
-                    toast({
-                      title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
-                      description: currentValue 
-                        ? 'Will attempt to connect to real Sui wallets' 
-                        : 'Switched to demo wallet mode for testing',
-                      variant: 'default',
-                    });
-                    // Force reload the page to apply changes immediately
-                    window.location.reload();
-                  }}
-                >
-                  {localStorage.getItem('use_demo_wallet') === 'true' 
-                    ? 'Use Real Sui Wallets' 
-                    : 'Switch to Demo Wallet'}
-                </Button>
               </div>
             </div>
             

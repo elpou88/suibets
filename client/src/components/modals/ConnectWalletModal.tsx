@@ -186,6 +186,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
                         : 'Switched to demo wallet mode for testing',
                       variant: 'default',
                     });
+                    // Reload the page to apply changes immediately
+                    window.location.reload();
                   }}
                 >
                   {localStorage.getItem('use_demo_wallet') === 'true' 

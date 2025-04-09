@@ -146,14 +146,18 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setError(null);
       setConnecting(true);
       
+      // First, set demo wallet mode to false by default
+      if (localStorage.getItem('use_demo_wallet') === null) {
+        localStorage.setItem('use_demo_wallet', 'false');
+      }
+      
       // We want to use real Sui wallets by default
       // Only use demo wallet if explicitly requested by the user
       const useDemoWallet = localStorage.getItem('use_demo_wallet') === 'true';
       
-      if ((window.location.hostname.includes("replit") || 
-          window.location.hostname.includes("riker.replit")) && useDemoWallet) {
-        console.log('Using demo wallet for Replit environment');
-        // Create a deterministic test wallet for Replit environment
+      if (useDemoWallet) {
+        console.log('Using demo wallet (explicitly requested by user)');
+        // Create a deterministic test wallet for demo mode
         const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
         
         // Update connection state with demo wallet

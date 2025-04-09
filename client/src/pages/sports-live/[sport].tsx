@@ -230,17 +230,21 @@ export default function SportPage() {
                 ))}
               </div>
             ) : events.length === 0 ? (
-              <Card>
-                <CardHeader>
-                  <CardTitle>No {selectedTab} events found</CardTitle>
+              <Card className="border border-[#1e3a3f] shadow-xl shadow-cyan-900/10 bg-gradient-to-b from-[#112225] to-[#14292e]">
+                <CardHeader className="pb-3 bg-gradient-to-r from-[#0b1618] to-[#0f1d20] relative border-b border-[#1e3a3f]">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+                  <CardTitle className="text-cyan-400">No {selectedTab} events found</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <p>
-                    There are currently no {selectedTab} {sportName.toLowerCase()} matches available.
-                    {selectedTab === 'live' 
-                      ? ' Check back later or view upcoming matches.' 
-                      : ' Check back later for updates.'}
-                  </p>
+                <CardContent className="pt-4">
+                  <div className="flex items-center space-x-4 mb-3">
+                    <div className="h-8 w-1 bg-cyan-400 rounded-full"></div>
+                    <p className="text-cyan-100">
+                      There are currently no {selectedTab} {sportName.toLowerCase()} matches available.
+                      {selectedTab === 'live' 
+                        ? ' Check back later or view upcoming matches.' 
+                        : ' Check back later for updates.'}
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             ) : (

@@ -49,7 +49,9 @@ export class ApiSportsProvider {
       const allSports = [
         'football', 'basketball', 'tennis', 'baseball', 'hockey', 
         'handball', 'volleyball', 'rugby', 'cricket', 'golf', 
-        'boxing', 'mma', 'motorsport', 'cycling'
+        'boxing', 'mma', 'motorsport', 'cycling', 'american_football',
+        'snooker', 'darts', 'table_tennis', 'badminton', 'esports',
+        'surfing', 'horse_racing', 'swimming', 'skiing', 'water_polo'
       ];
       
       // First fetch all live events across all sports

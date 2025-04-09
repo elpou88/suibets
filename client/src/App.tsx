@@ -36,6 +36,7 @@ import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 import { SuietWalletProvider } from "@/components/wallet/SuietWalletProvider";
+import { SuiDappKitProvider } from "@/components/wallet/SuiDappKitProvider";
 
 // New real-time data pages
 import HomeReal from "@/pages/home-real";

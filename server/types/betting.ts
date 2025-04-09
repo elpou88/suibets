@@ -17,6 +17,8 @@ export interface SportEvent {
 export interface MarketData {
   id: string;
   name: string;
+  status?: string; // Optional status field ('open', 'suspended', 'closed', etc.)
+  marketType?: string; // Optional market type classification
   outcomes: OutcomeData[];
 }
 
@@ -26,6 +28,7 @@ export interface OutcomeData {
   name: string;
   odds: number;
   probability: number;
+  status?: string; // Optional status field for the outcome ('active', 'suspended', etc.)
 }
 
 // Types for odds data

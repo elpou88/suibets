@@ -442,7 +442,7 @@ export class ApiSportsService {
       
       // Return empty array - we won't use mock data per user requirements
       return [];
-    }, 30);
+    });
     
     // Transform the events to our SportEvent format (if any)
     const sportEvents = this.transformEventsData(events, 'tennis', true);

@@ -62,8 +62,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let events = await storage.getEvents(reqSportId, isLive);
       console.log(`Found ${events.length} events for sportId: ${reqSportId} in database`);
       
-      // For non-live events, just return what's in the database
+      // For non-live events, try to get them from the API first if no database events
       if (!isLive) {
+        // If we already have events in the database, return them
+        if (events.length > 0) {
+          return res.json(events);
+        }
+        
+        // If no events in the database, try to get upcoming events from the API
+        if (reqSportId) {
+          // Map sport ID to sport name
+          const sportMap: Record<number, string> = {
+            1: 'football',
+            2: 'basketball',
+            3: 'tennis',
+            4: 'baseball',
+            5: 'hockey',
+            6: 'handball',
+            7: 'volleyball',
+            8: 'rugby',
+            9: 'cricket',
+            10: 'golf',
+            11: 'boxing',
+            12: 'mma-ufc',
+            13: 'formula_1',
+            14: 'cycling',
+            15: 'american_football'
+          };
+          
+          const sportName = sportMap[reqSportId] || 'football';
+          console.log(`Attempting to fetch upcoming ${sportName} (ID: ${reqSportId}) events from API directly`);
+          
+          // Get upcoming events for this specific sport
+          const upcomingEvents = await apiSportsService.getUpcomingEvents(sportName, 10);
+          
+          if (upcomingEvents && upcomingEvents.length > 0) {
+            console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
+            return res.json(upcomingEvents);
+          } else {
+            console.log(`No upcoming ${sportName} events found from API, returning empty array`);
+            return res.json([]);
+          }
+        }
+        
         return res.json(events);
       }
       
@@ -85,7 +126,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           9: 'cricket',
           10: 'golf',
           11: 'boxing',
-          12: 'mma',
+          12: 'mma-ufc',
           13: 'formula_1',
           14: 'cycling',
           15: 'american_football'
@@ -127,7 +168,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allSports = [
         { id: 1, name: 'football' },
         { id: 2, name: 'basketball' },
-        { id: 3, name: 'tennis' }
+        { id: 3, name: 'tennis' },
+        { id: 4, name: 'baseball' },
+        { id: 5, name: 'hockey' },
+        { id: 6, name: 'handball' },
+        { id: 7, name: 'volleyball' },
+        { id: 8, name: 'rugby' },
+        { id: 9, name: 'cricket' },
+        { id: 10, name: 'golf' },
+        { id: 11, name: 'boxing' },
+        { id: 12, name: 'mma-ufc' },
+        { id: 13, name: 'formula_1' },
+        { id: 14, name: 'cycling' },
+        { id: 15, name: 'american_football' }
       ];
       
       let allEvents: any[] = [];

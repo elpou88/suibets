@@ -40,7 +40,7 @@ export interface Outcome {
 // Selected bet for the betting slip
 export interface SelectedBet {
   id: string; // Unique identifier for this bet
-  eventId: number;
+  eventId: string; // Changed to string to handle API-Sports IDs which are strings
   eventName: string;
   selectionName: string;
   odds: number;
@@ -50,6 +50,7 @@ export interface SelectedBet {
   outcomeId?: string | null;
   isLive?: boolean; // Indicates if this is a live betting event
   currency?: 'SUI' | 'SBETS'; // Currency for this specific bet
+  uniqueId?: string; // Optional unique identifier to prevent duplicates
 }
 
 // Betting context interface

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { BettingContextType, SelectedBet, PlaceBetOptions } from '@/types';
+import { BettingContextType, SelectedBet, PlaceBetOptions } from '@/types/index';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';

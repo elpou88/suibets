@@ -41,16 +41,18 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
     const uniqueIdentifier = Math.random().toString(36).substring(2, 8);
     const betId = `${eventId}-${marketName}-${selectionName}-${Date.now()}`;
     
-    // Create bet object
+    // Create bet object with correct types to match SelectedBet interface
     const bet = {
       id: betId,
-      eventId,
+      eventId: typeof eventId === 'string' ? eventId : String(eventId), // Ensure it's converted to string
       eventName,
       selectionName,
       odds,
       stake: 10, // Default stake amount
       market: marketName,
-      isLive,
+      marketId: undefined, // Add marketId to prevent type error
+      outcomeId: undefined, // Add outcomeId to prevent type error
+      isLive: isLive || false,
       uniqueId: uniqueIdentifier
     };
     

@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
-import { SelectedBet } from "@/types";
+import { SelectedBet } from "@/types/index";
 
 // Helper utility for joining tailwind class names
 export function cn(...inputs: ClassValue[]) {

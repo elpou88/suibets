@@ -57,18 +57,18 @@ const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     const uniqueIdentifier = Math.random().toString(36).substring(2, 8);
     const betId = `${eventId}-${marketName.replace(/\s+/g, '-')}-${selectionName.replace(/\s+/g, '-')}-${Date.now()}`;
     
-    // Create bet object
+    // Create bet object with correct types to match SelectedBet interface
     const bet = {
       id: betId,
-      eventId,
-      eventName,
+      eventId: typeof eventId === 'string' ? eventId : String(eventId), // Always convert to string
+      eventName, 
       selectionName,
       odds,
       stake: 10, // Default stake amount
       market: marketName,
-      marketId, // Keep as number or undefined, don't convert to string
+      marketId, // Keep as number or undefined
       outcomeId: outcomeId || undefined,
-      isLive, // Pass the isLive flag
+      isLive: isLive || false, 
       uniqueId: uniqueIdentifier, // Add a random component to prevent duplicates
     };
     

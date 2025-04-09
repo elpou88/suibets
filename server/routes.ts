@@ -5,6 +5,7 @@ import { db } from "./db";
 import { ApiSportsService } from "./services/apiSportsService";
 import { aggregatorService } from "./services/aggregatorService"; 
 import { initBasketballService } from "./services/basketballService";
+import { registerDebugRoutes } from "./debug-routes";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
 const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "";
@@ -22,6 +23,9 @@ const apiSportsService = new ApiSportsService(sportsApiKey);
 const basketballService = initBasketballService(sportsApiKey);
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register debug routes
+  registerDebugRoutes(app);
+  
   // Home route
   app.get("/api", (_req: Request, res: Response) => {
     return res.json({ message: "Welcome to the WAL.app Crypto Betting API" });

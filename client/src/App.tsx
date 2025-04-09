@@ -12,7 +12,6 @@ import Promotions from "@/pages/promotions";
 import ReferralPage from "@/pages/promotions/referral";
 import Notifications from "@/pages/notifications";
 import Settings from "@/pages/settings";
-import BetHistory from "@/pages/bet-history";
 import BetSlip from "@/pages/bet-slip";
 import BetSlip2 from "@/pages/bet-slip-2";
 import ConnectWallet from "@/pages/connect-wallet";
@@ -43,6 +42,7 @@ import LiveReal from "@/pages/live-real";
 import SportsLive from "@/pages/sports-live";
 import PromotionsReal from "@/pages/promotions-real";
 import BetHistoryReal from "@/pages/bet-history-real";
+import BetHistoryPage from "@/pages/bet-history"; // Our new bet history page
 import DividendsReal from "@/pages/dividends-real";
 import Parlay from "@/pages/parlay";
 import SportPage from "@/pages/sports-live/[sport]";
@@ -73,7 +73,7 @@ function App() {
                 <Route path="/promotions/referral" component={ReferralPage} />
                 <Route path="/notifications" component={Notifications} />
                 <Route path="/settings" component={Settings} />
-                <Route path="/bet-history" component={BetHistoryReal} />
+                <Route path="/bet-history" component={BetHistoryPage} />
                 <Route path="/dividends" component={DividendsReal} />
                 <Route path="/defi-staking" component={DefiStaking} />
                 <Route path="/storage" component={StoragePage} />

@@ -3,148 +3,21 @@ import { useLocation } from "wouter";
 import Layout from "@/components/layout/Layout";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Wallet, ArrowRight, Info, Scan, CheckCircle2, AlertCircle } from "lucide-react";
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Loader } from "@/components/ui/loader";
+import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 
 export default function ConnectWallet() {
   const [, setLocation] = useLocation();
-  const { user, login } = useAuth();
+  const { user } = useAuth();
   const { toast } = useToast();
-  const [walletAddress, setWalletAddress] = useState<string>('');
+  const { connect: connectAdapter, address, isConnected, balances } = useWalletAdapter();
   const [connecting, setConnecting] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<string>('sui');
   const [wurlusRegistered, setWurlusRegistered] = useState<boolean | null>(null);
   const [registering, setRegistering] = useState<boolean>(false);
-  
-  // New state for direct wallet connection
-  const [connectedWallet, setConnectedWallet] = useState<string | null>(null);
-  const [walletBalances, setWalletBalances] = useState({ SUI: 0, SBETS: 0 });
-  
-  // Connect wallet function - simplified direct implementation
-  const connectWallet = async (walletType: 'sui' | 'wurlus') => {
-    setConnecting(true);
-    try {
-      if (walletType === 'sui') {
-        // Special behavior for Replit environment - use demo wallet
-        console.log('Using demo wallet for Replit environment');
-        const demoAddress = "0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb";
-        
-        // Set the local state for the wallet
-        setConnectedWallet(demoAddress);
-        setWalletBalances({
-          SUI: 25.5,
-          SBETS: 1000.0
-        });
-        
-        // Register with server
-        const response = await apiRequest('POST', '/api/wallet/connect', {
-          walletType: 'sui',
-          address: demoAddress
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to register demo wallet with server');
-        }
-        
-        // Check Wurlus registration status
-        checkWurlusRegistration(demoAddress);
-        
-        toast({
-          title: "Demo Wallet Connected",
-          description: `Connected to demo wallet for testing in Replit`,
-          variant: "default",
-        });
-        
-        // Sync with auth context
-        if (!user) {
-          login({ 
-            id: 1, 
-            username: `demo_user`,
-            password: 'password123', // Required field 
-            email: `demo_user@example.com`, // Required field
-            walletAddress: demoAddress,
-            walletFingerprint: null,
-            walletType: 'sui',
-            balance: 1000, 
-            suiBalance: 25.5,
-            sbetsBalance: 1000.0,
-            wurlusProfileId: null,
-            wurlusRegistered: false,
-            wurlusProfileCreatedAt: null,
-            createdAt: new Date(),
-            lastLoginAt: new Date()
-          });
-        }
-      } else {
-        // Manual connection logic
-        if (!walletAddress || !walletAddress.startsWith('0x')) {
-          throw new Error('Please enter a valid Sui wallet address starting with 0x');
-        }
-        
-        // Connect using the API
-        const response = await apiRequest('POST', '/api/wallet/connect', {
-          walletType,
-          address: walletAddress
-        });
-        
-        if (!response.ok) {
-          throw new Error('Failed to connect wallet');
-        }
-        
-        const data = await response.json();
-        
-        // Set the local state
-        setConnectedWallet(walletAddress);
-        setWalletBalances({
-          SUI: 10.0,
-          SBETS: 500.0
-        });
-        
-        // Check Wurlus registration status
-        checkWurlusRegistration(walletAddress);
-        
-        toast({
-          title: "Wallet Connected",
-          description: `Successfully connected to ${walletAddress.slice(0, 8)}...`,
-          variant: "default",
-        });
-        
-        // Sync with auth context if needed
-        if (!user) {
-          login({ 
-            id: 1, 
-            username: `user_${walletAddress.slice(0, 6)}`,
-            password: 'password123', // Required field
-            email: `user_${walletAddress.slice(0, 6)}@example.com`, // Required field
-            walletAddress: walletAddress,
-            walletFingerprint: null,
-            walletType: 'manual',
-            balance: 1000, 
-            suiBalance: 10.0,
-            sbetsBalance: 500.0,
-            wurlusProfileId: null,
-            wurlusRegistered: false,
-            wurlusProfileCreatedAt: null,
-            createdAt: new Date(),
-            lastLoginAt: new Date()
-          });
-        }
-      }
-    } catch (error: any) {
-      console.error("Wallet connection error:", error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Could not connect wallet. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setConnecting(false);
-    }
-  };
   
   // Check if wallet is registered with Wurlus protocol
   const checkWurlusRegistration = async (address: string) => {
@@ -213,6 +86,28 @@ export default function ConnectWallet() {
       setRegistering(false);
     }
   };
+  
+  // Connect using the wallet adapter
+  const connectWallet = async () => {
+    setConnecting(true);
+    try {
+      await connectAdapter();
+      
+      if (address) {
+        // Check Wurlus registration status for this wallet
+        checkWurlusRegistration(address);
+      }
+    } catch (error: any) {
+      console.error("Error connecting wallet:", error);
+      toast({
+        title: "Connection Failed",
+        description: error.message || "Could not connect wallet. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   return (
     <Layout title="Connect Wallet" showBackButton={true}>
@@ -221,119 +116,113 @@ export default function ConnectWallet() {
           <CardHeader>
             <CardTitle className="text-2xl">Connect Your Wallet</CardTitle>
             <CardDescription className="text-gray-400">
-              Connect your wallet to start betting with the Wurlus Protocol
+              Connect your Sui wallet to start betting with the Wurlus Protocol
             </CardDescription>
           </CardHeader>
           
           <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-[#112225]">
-                <TabsTrigger 
-                  value="sui" 
-                  className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
-                >
-                  Sui Wallet
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="manual" 
-                  className="data-[state=active]:bg-cyan-500 data-[state=active]:text-black"
-                >
-                  Manual Connect
-                </TabsTrigger>
-              </TabsList>
+            <div className="space-y-4">
+              <div className="rounded-md bg-[#112225] p-4">
+                <div className="flex items-center">
+                  <div className="bg-cyan-900 p-3 rounded-full mr-3">
+                    <Wallet className="h-6 w-6 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium">Sui Wallet</h3>
+                    <p className="text-sm text-gray-400">Connect using your Sui browser extension</p>
+                  </div>
+                </div>
+              </div>
               
-              <TabsContent value="sui" className="mt-4">
-                <div className="space-y-4">
-                  <div className="rounded-md bg-[#112225] p-4">
-                    <div className="flex items-center">
-                      <div className="bg-cyan-900 p-3 rounded-full mr-3">
-                        <Wallet className="h-6 w-6 text-cyan-400" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium">Sui Wallet</h3>
-                        <p className="text-sm text-gray-400">Connect using your Sui browser extension</p>
-                      </div>
-                    </div>
+              <Button 
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
+                disabled={connecting}
+                onClick={connectWallet}
+              >
+                {connecting ? (
+                  <>
+                    <Loader size="sm" className="text-black" />
+                    <span className="ml-2">Connecting...</span>
+                  </>
+                ) : (
+                  <>
+                    Connect Sui Wallet
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+              
+              {/* Show real wallet connection status */}
+              {(address || user?.walletAddress) && (
+                <div className="mt-4 p-3 bg-[#112225] rounded-md">
+                  <div className="flex items-center">
+                    <CheckCircle2 className="h-5 w-5 text-green-400 mr-2" />
+                    <p className="text-sm text-gray-300">
+                      Connected: {(address || user?.walletAddress || '').slice(0, 6)}...
+                      {(address || user?.walletAddress || '').slice(-4)}
+                    </p>
                   </div>
                   
-                  <Button 
-                    className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
-                    disabled={connecting}
-                    onClick={() => connectWallet('sui')}
-                  >
-                    {connecting ? (
-                      <>
-                        <Loader size="sm" className="text-black" />
-                        <span className="ml-2">Connecting...</span>
-                      </>
-                    ) : (
-                      <>
-                        Connect Sui Wallet
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
-                  
-                  {/* Show connected state from either user context or direct wallet state */}
-                  {(connectedWallet || user?.walletAddress) && (
-                    <div className="mt-4 p-3 bg-[#112225] rounded-md">
-                      <div className="flex items-center">
-                        <CheckCircle2 className="h-5 w-5 text-green-400 mr-2" />
-                        <p className="text-sm text-gray-300">
-                          Connected: {(connectedWallet || user?.walletAddress || '').slice(0, 6)}...
-                          {(connectedWallet || user?.walletAddress || '').slice(-4)}
-                        </p>
-                      </div>
-                      
-                      {/* Show balances */}
-                      <div className="mt-2 pt-2 border-t border-[#1e3a3f] text-sm text-gray-300">
-                        <div className="flex justify-between items-center">
-                          <span>SUI Balance:</span>
-                          <span className="font-medium text-cyan-400">{walletBalances.SUI.toFixed(4)} SUI</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span>SBETS Balance:</span>
-                          <span className="font-medium text-cyan-400">{walletBalances.SBETS.toFixed(2)} SBETS</span>
-                        </div>
-                      </div>
+                  {/* Show balances from wallet adapter */}
+                  <div className="mt-2 pt-2 border-t border-[#1e3a3f] text-sm text-gray-300">
+                    <div className="flex justify-between items-center">
+                      <span>SUI Balance:</span>
+                      <span className="font-medium text-cyan-400">
+                        {balances?.SUI ? Number(balances.SUI).toFixed(4) : '0.0000'} SUI
+                      </span>
                     </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="manual" className="mt-4">
-                <div className="space-y-4">
-                  <div className="rounded-md bg-[#112225] p-4">
-                    <label className="block text-sm font-medium mb-1">Wallet Address</label>
-                    <input 
-                      type="text"
-                      className="w-full bg-[#0b1618] border border-[#1e3a3f] rounded-md p-2 text-white"
-                      placeholder="Enter your Sui wallet address (0x...)"
-                      value={walletAddress}
-                      onChange={(e) => setWalletAddress(e.target.value)}
-                    />
+                    <div className="flex justify-between items-center mt-1">
+                      <span>SBETS Balance:</span>
+                      <span className="font-medium text-cyan-400">
+                        {balances?.SBETS ? Number(balances.SBETS).toFixed(2) : '0.00'} SBETS
+                      </span>
+                    </div>
                   </div>
-                  
-                  <Button 
-                    className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
-                    disabled={connecting || !walletAddress}
-                    onClick={() => connectWallet('wurlus')}
-                  >
-                    {connecting ? (
-                      <>
-                        <Loader size="sm" className="text-black" />
-                        <span className="ml-2">Connecting...</span>
-                      </>
-                    ) : (
-                      <>
-                        Connect Manually
-                        <ArrowRight className="ml-2 h-4 w-4" />
-                      </>
-                    )}
-                  </Button>
                 </div>
-              </TabsContent>
-            </Tabs>
+              )}
+              
+              {/* Extension installation info */}
+              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md">
+                <h4 className="text-sm font-medium text-blue-400 mb-2">Wallet Extension Required</h4>
+                <p className="text-xs text-gray-300">
+                  To connect your wallet, you need to have one of these Sui wallet browser extensions installed:
+                </p>
+                <div className="mt-2 grid grid-cols-2 gap-1 text-xs">
+                  <a 
+                    href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    • Sui Wallet
+                  </a>
+                  <a 
+                    href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    • Ethos Wallet
+                  </a>
+                  <a 
+                    href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    • Suiet Wallet
+                  </a>
+                  <a 
+                    href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:underline"
+                  >
+                    • Martian Wallet
+                  </a>
+                </div>
+              </div>
+            </div>
             
             {/* Wurlus Protocol Registration */}
             {user?.walletAddress && wurlusRegistered === false && (

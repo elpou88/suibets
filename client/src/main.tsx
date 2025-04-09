@@ -16,10 +16,10 @@ console.log("Debug script loaded");
 `;
 document.body.appendChild(debugScript);
 
-// Configure wallet defaults - use real wallets by default
-if (localStorage.getItem('use_demo_wallet') === null) {
-  localStorage.setItem('use_demo_wallet', 'false');
-  console.log('Set default to use real Sui wallets instead of demo wallet');
+// Clean up any wallet settings - we now use only real wallets
+if (localStorage.getItem('use_demo_wallet') !== null) {
+  localStorage.removeItem('use_demo_wallet');
+  console.log('Removed demo wallet setting - only real wallets are now supported');
 }
 
 // Clean up any old wallet settings

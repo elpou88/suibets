@@ -176,8 +176,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       console.log('Starting wallet connection process...');
       
-      // FORCE real wallet mode by overriding any existing settings
-      localStorage.setItem('use_demo_wallet', 'false');
+      // Real wallet mode is the only option - demo wallets completely removed
       
       try {
         // First, try to connect to a real Sui wallet using the wallet-standard

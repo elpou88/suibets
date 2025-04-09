@@ -70,11 +70,12 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       console.log('Initiating wallet connection for:', walletId);
       
       // Check if any Sui wallet extensions are installed
-      const hasWalletExtension = !!window.suiWallet || 
+      const hasWalletExtension = 
         document.querySelector('wallet-standard-adapter') !== null || 
-        typeof window.sui !== 'undefined' || 
-        typeof window.suiet !== 'undefined' || 
-        typeof window.ethos !== 'undefined';
+        'suiWallet' in window || 
+        'sui' in window || 
+        'suiet' in window || 
+        'ethos' in window;
       
       if (!hasWalletExtension) {
         throw new Error("No Sui wallet extension detected. Please install a wallet extension first.");

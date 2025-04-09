@@ -76,75 +76,45 @@ export default function SportPage() {
         event.sportId === Number(sportId)
       );
       
-      // For Tennis and other non-football sports, completely replace the data with sport-specific content
+      // For Tennis and other non-football sports, adapt the data structure but don't replace real API data
       if (sportId === 3) { // Tennis
-        console.log(`Replacing tennis data with proper player matches`);
+        console.log(`Adapting ${filteredData.length} events for tennis`);
         
-        // Tennis players for player-vs-player matchups
-        const tennisPlayers = [
-          "Rafael Nadal", "Novak Djokovic", "Roger Federer", "Andy Murray", 
-          "Carlos Alcaraz", "Daniil Medvedev", "Stefanos Tsitsipas", "Alexander Zverev",
-          "Jannik Sinner", "Andrey Rublev", "Casper Ruud", "Felix Auger-Aliassime",
-          "Matteo Berrettini", "Hubert Hurkacz", "Denis Shapovalov", "Lorenzo Musetti"
-        ];
-        
-        // Tennis tournaments
-        const tennisTournaments = [
-          "ATP Masters 1000 - Monte Carlo", "ATP 500 - Barcelona",
-          "WTA 1000 - Madrid", "ATP 1000 - Madrid",
-          "Roland Garros Qualification", "ATP 250 - Geneva",
-          "WTA 500 - Berlin", "ATP 500 - Queen's"
-        ];
-        
-        // Create completely new tennis matches based on real player data
-        const tennisEvents = filteredData.map((event: any, index: number) => {
-          // Create a sport-specific tennis match
-          const homePlayer = tennisPlayers[index * 2 % tennisPlayers.length];
-          const awayPlayer = tennisPlayers[(index * 2 + 1) % tennisPlayers.length];
-          const tournament = tennisTournaments[index % tennisTournaments.length];
-          
+        // Just modify market types and remove draw odds for tennis
+        const adaptedEvents = filteredData.map((event: any) => {
           return {
-            id: event.id,
-            sportId: 3, // Tennis
-            leagueName: tournament,
-            leagueSlug: tournament.toLowerCase().replace(/\s+/g, '-'),
-            homeTeam: homePlayer,
-            awayTeam: awayPlayer,
-            homeOdds: event.homeOdds || 1.7 + Math.random() * 0.5,
-            awayOdds: event.awayOdds || 1.9 + Math.random() * 0.5,
+            ...event,
             drawOdds: null, // Tennis has no draws
-            startTime: event.startTime,
-            status: event.status || 'live',
-            score: event.score || `${Math.floor(Math.random() * 2) + 1} - ${Math.floor(Math.random() * 2)}`,
-            isLive: true,
-            isMapped: true,
-            markets: [
-              {
-                id: `market-tennis-${index+1}-match-winner`,
-                name: 'Match Winner',
-                status: 'open',
-                marketType: '12', // No draw in tennis
-                outcomes: [
-                  { id: `outcome-tennis-${index+1}-home`, name: homePlayer, odds: 1.7 + Math.random() * 0.4, status: 'active', probability: 0.55 },
-                  { id: `outcome-tennis-${index+1}-away`, name: awayPlayer, odds: 1.9 + Math.random() * 0.5, status: 'active', probability: 0.45 }
-                ]
-              },
-              {
-                id: `market-tennis-${index+1}-total`,
-                name: 'Total Games',
-                status: 'open',
-                marketType: 'total',
-                outcomes: [
-                  { id: `outcome-tennis-${index+1}-over`, name: 'Over 22.5', odds: 1.95, status: 'active', probability: 0.49 },
-                  { id: `outcome-tennis-${index+1}-under`, name: 'Under 22.5', odds: 1.85, status: 'active', probability: 0.51 }
-                ]
+            // Convert any "Match Result" markets to "Match Winner" for tennis terminology
+            markets: event.markets?.map((market: any) => {
+              if (market.name === "Match Result") {
+                return {
+                  ...market,
+                  name: "Match Winner",
+                  // Remove "Draw" outcome for tennis
+                  outcomes: market.outcomes.filter((outcome: any) => 
+                    outcome.name !== "Draw"
+                  )
+                };
               }
-            ]
+              // Rename "Total Goals" to "Total Games" for tennis 
+              else if (market.name === "Total Goals" || market.name === "Over/Under 2.5 Goals") {
+                return {
+                  ...market,
+                  name: "Total Games",
+                  outcomes: [
+                    { ...market.outcomes[0], name: "Over 22.5" },
+                    { ...market.outcomes[1], name: "Under 22.5" }
+                  ]
+                };
+              }
+              return market;
+            }) || []
           };
         });
         
-        console.log(`Created ${tennisEvents.length} tennis-specific events`);
-        return tennisEvents;
+        console.log(`Adapted ${adaptedEvents.length} events for tennis display`);
+        return adaptedEvents;
       } 
       else if (sportId === 2) { // Basketball
         // Basketball has specific market types like total points

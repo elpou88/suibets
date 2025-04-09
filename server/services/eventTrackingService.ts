@@ -67,51 +67,115 @@ export class EventTrackingService {
       
       console.log(`[EventTrackingService] Found ${upcomingEvents.length} upcoming events and ${liveEvents.length} live events`);
       
-      // Track each event by ID for easier lookup
-      const liveEventsMap = new Map<string, any>();
-      liveEvents.forEach(event => {
-        liveEventsMap.set(String(event.id), event);
-      });
+      // First pass: Directly handle events that match by ID
+      await this.processMatchingEvents(upcomingEvents, liveEvents);
       
-      // Check each upcoming event to see if it's now live
-      for (const upcomingEvent of upcomingEvents) {
-        const eventId = String(upcomingEvent.id);
-        
-        // If the event is in the live events map, it has gone live
-        if (liveEventsMap.has(eventId)) {
-          console.log(`[EventTrackingService] Event ${eventId} (${upcomingEvent.homeTeam} vs ${upcomingEvent.awayTeam}) has gone live!`);
-          
-          // Update the event status in storage
-          const liveEvent = liveEventsMap.get(eventId);
-          await this.updateEventToLive(upcomingEvent.id, liveEvent);
-          
-          // Add to tracked events
-          this.trackedEvents.set(eventId, {
-            id: eventId,
-            homeTeam: upcomingEvent.homeTeam,
-            awayTeam: upcomingEvent.awayTeam,
-            startTime: upcomingEvent.startTime,
-            wentLiveAt: new Date().toISOString()
-          });
-        }
-        // Check if event should be live based on start time
-        else {
-          const startTime = new Date(upcomingEvent.startTime);
-          const now = new Date();
-          
-          // If the event should have started in the last 3 hours but isn't in live events,
-          // check if it might be live but with a different ID format
-          if (startTime < now && (now.getTime() - startTime.getTime()) < 3 * 60 * 60 * 1000) {
-            await this.checkSpecificEventLiveStatus(upcomingEvent);
-          }
-        }
-      }
+      // Second pass: Store all new live events regardless of if they were upcoming
+      await this.processAllLiveEvents(liveEvents);
+      
+      // Third pass: Check if any upcoming events should have started based on time
+      await this.processEventsByStartTime(upcomingEvents, liveEvents);
       
       console.log(`[EventTrackingService] Tracking ${this.trackedEvents.size} events that have gone live`);
     } catch (error) {
       console.error('[EventTrackingService] Error checking upcoming events:', error);
     } finally {
       this.isChecking = false;
+    }
+  }
+  
+  /**
+   * Process events that match exactly by ID between upcoming and live lists
+   */
+  private async processMatchingEvents(upcomingEvents: any[], liveEvents: any[]): Promise<void> {
+    // Track each event by ID for easier lookup
+    const liveEventsMap = new Map<string, any>();
+    liveEvents.forEach(event => {
+      liveEventsMap.set(String(event.id), event);
+    });
+    
+    // Check each upcoming event to see if it's now live
+    for (const upcomingEvent of upcomingEvents) {
+      const eventId = String(upcomingEvent.id);
+      
+      // If the event is in the live events map, it has gone live
+      if (liveEventsMap.has(eventId)) {
+        console.log(`[EventTrackingService] Event ${eventId} (${upcomingEvent.homeTeam} vs ${upcomingEvent.awayTeam}) has gone live!`);
+        
+        // Update the event status in storage
+        const liveEvent = liveEventsMap.get(eventId);
+        await this.updateEventToLive(upcomingEvent.id, liveEvent);
+        
+        // Add to tracked events
+        this.trackedEvents.set(eventId, {
+          id: eventId,
+          homeTeam: upcomingEvent.homeTeam,
+          awayTeam: upcomingEvent.awayTeam,
+          startTime: upcomingEvent.startTime,
+          wentLiveAt: new Date().toISOString()
+        });
+      }
+    }
+  }
+  
+  /**
+   * Ensure all currently live events are stored properly
+   */
+  private async processAllLiveEvents(liveEvents: any[]): Promise<void> {
+    // Get all events currently in storage
+    const allStoredEvents = await storage.getEvents();
+    const storedEventIds = new Set(allStoredEvents.map(event => String(event.id)));
+    
+    // For each live event, check if it exists in storage
+    for (const liveEvent of liveEvents) {
+      const eventId = String(liveEvent.id);
+      
+      // If this live event doesn't exist in storage at all, create it
+      if (!storedEventIds.has(eventId)) {
+        console.log(`[EventTrackingService] Found new live event ${eventId} (${liveEvent.homeTeam} vs ${liveEvent.awayTeam}) not in storage`);
+        await this.updateEventToLive(eventId, liveEvent);
+      } 
+      // If it exists but might not be marked as live, make sure it's updated
+      else {
+        const storedEvent = allStoredEvents.find(e => String(e.id) === eventId);
+        if (storedEvent && (!storedEvent.isLive || storedEvent.status !== 'live')) {
+          console.log(`[EventTrackingService] Updating existing event ${eventId} to live status`);
+          await this.updateEventToLive(eventId, liveEvent);
+        }
+      }
+    }
+  }
+  
+  /**
+   * Check for events that should be live based on their start time
+   */
+  private async processEventsByStartTime(upcomingEvents: any[], liveEvents: any[]): Promise<void> {
+    const now = new Date();
+    const liveTeamPairs = new Set(liveEvents.map(e => `${e.homeTeam}:${e.awayTeam}`));
+    
+    // Check each upcoming event to see if it should be live based on start time
+    for (const upcomingEvent of upcomingEvents) {
+      const eventId = String(upcomingEvent.id);
+      const startTime = new Date(upcomingEvent.startTime);
+      
+      // Skip events we've already processed
+      if (this.trackedEvents.has(eventId)) continue;
+      
+      // If the event should have started in the last 3 hours
+      if (startTime < now && (now.getTime() - startTime.getTime()) < 3 * 60 * 60 * 1000) {
+        // Check if there's a matching event by team names (might have different ID)
+        const teamPair = `${upcomingEvent.homeTeam}:${upcomingEvent.awayTeam}`;
+        const reversePair = `${upcomingEvent.awayTeam}:${upcomingEvent.homeTeam}`;
+        
+        // If we already have this match as live in another format, skip it
+        if (liveTeamPairs.has(teamPair) || liveTeamPairs.has(reversePair)) {
+          console.log(`[EventTrackingService] Event ${eventId} teams match a live event, skipping specific check`);
+          continue;
+        }
+        
+        // Otherwise do a specific check for this event with the API
+        await this.checkSpecificEventLiveStatus(upcomingEvent);
+      }
     }
   }
   
@@ -228,6 +292,12 @@ export class EventTrackingService {
           awayScore: liveEventData.awayScore || 0,
           // Update any other fields from the live event
           score: liveEventData.score || existingEvent.score,
+          // Add timestamp for when event went live
+          liveStartTime: new Date().toISOString(),
+          // Copy additional properties from live event data if they exist
+          ...(liveEventData.time && { time: liveEventData.time }),
+          ...(liveEventData.elapsed && { elapsed: liveEventData.elapsed }),
+          ...(liveEventData.period && { period: liveEventData.period }),
         };
         
         // Save the updated event
@@ -235,6 +305,49 @@ export class EventTrackingService {
         console.log(`[EventTrackingService] Successfully updated event ${eventId} to live status`);
       } else {
         console.warn(`[EventTrackingService] Could not find event ${eventId} in storage to update its status`);
+        
+        // If we can't find the event in storage, but we have live data,
+        // we should consider creating a new live event in storage
+        if (liveEventData && liveEventData.id) {
+          console.log(`[EventTrackingService] Attempting to create new live event from API data`);
+          try {
+            // Prepare event data for insertion
+            const newLiveEvent = {
+              id: typeof liveEventData.id === 'string' ? parseInt(liveEventData.id, 10) : liveEventData.id,
+              sportId: liveEventData.sportId,
+              leagueName: liveEventData.leagueName || 'Unknown League',
+              leagueSlug: liveEventData.leagueSlug || liveEventData.leagueName?.toLowerCase().replace(/\\s+/g, '-') || 'unknown-league',
+              homeTeam: liveEventData.homeTeam,
+              awayTeam: liveEventData.awayTeam,
+              startTime: new Date(liveEventData.startTime || Date.now()),
+              homeOdds: liveEventData.homeOdds || null,
+              drawOdds: liveEventData.drawOdds || null,
+              awayOdds: liveEventData.awayOdds || null,
+              homeScore: liveEventData.homeScore || 0,
+              awayScore: liveEventData.awayScore || 0,
+              isLive: true,
+              status: 'live',
+              score: liveEventData.score || `${liveEventData.homeScore || 0}-${liveEventData.awayScore || 0}`,
+              providerId: liveEventData.providerId || 'api-sports',
+            };
+            
+            // Try to create the event in storage
+            const insertedEvent = await storage.createEvent(newLiveEvent);
+            console.log(`[EventTrackingService] Successfully created new live event ${insertedEvent.id}`);
+            
+            // Add to tracked events
+            this.trackedEvents.set(String(insertedEvent.id), {
+              id: insertedEvent.id,
+              homeTeam: insertedEvent.homeTeam,
+              awayTeam: insertedEvent.awayTeam,
+              startTime: insertedEvent.startTime,
+              wentLiveAt: new Date().toISOString(),
+              createdFromLiveData: true
+            });
+          } catch (createError) {
+            console.error(`[EventTrackingService] Failed to create new live event:`, createError);
+          }
+        }
       }
     } catch (error) {
       console.error(`[EventTrackingService] Error updating event ${eventId} to live status:`, error);

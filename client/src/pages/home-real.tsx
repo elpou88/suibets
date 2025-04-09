@@ -67,7 +67,7 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <div className="w-20 min-h-screen overflow-hidden">
+        <div className="w-28 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
             className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"
@@ -256,7 +256,7 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <div className="w-20 min-h-screen overflow-hidden">
+        <div className="w-28 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
             className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"

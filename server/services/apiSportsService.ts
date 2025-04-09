@@ -2,18 +2,27 @@ import axios from 'axios';
 import { OddsData, SportEvent, MarketData, OutcomeData } from '../types/betting';
 import config from '../config';
 
+// Constants for API endpoints
+const API_HOSTS = {
+  RAPID_API: 'api-football-v1.p.rapidapi.com',
+  DIRECT_API: 'v3.football.api-sports.io'
+};
+
 /**
  * Service for interacting with the API-Sports API
  * Documentation: https://api-sports.io/documentation
  */
 export class ApiSportsService {
   private baseUrl: string;
+  private directBaseUrl: string;
   private apiKey: string;
+  private usingDirectApi: boolean = true; // Switch to direct API first
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes cache expiry
 
   constructor() {
-    this.baseUrl = 'https://api-football-v1.p.rapidapi.com/v3';
+    this.baseUrl = `https://${API_HOSTS.RAPID_API}/v3`;
+    this.directBaseUrl = `https://${API_HOSTS.DIRECT_API}`;
     // Use the SPORTSDATA_API_KEY as the primary key, fall back to SPORTSDATA_API_KEY if not available
     this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.SPORTSDATA_API_KEY || '';
     
@@ -21,6 +30,81 @@ export class ApiSportsService {
       console.warn('No SPORTSDATA_API_KEY environment variable found. API-Sports functionality will be limited.');
     } else {
       console.log('[ApiSportsService] API key found, length:', this.apiKey.length);
+      
+      // Verify API key works correctly for direct API
+      this.verifyApiConnection();
+    }
+  }
+  
+  /**
+   * Verify that the API connection is working properly
+   */
+  private async verifyApiConnection() {
+    try {
+      console.log('[ApiSportsService] Verifying API connection...');
+      const response = await axios.get('https://v3.football.api-sports.io/status', {
+        headers: {
+          'x-apisports-key': this.apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.response) {
+        const account = response.data.response.account;
+        const subscription = response.data.response.subscription;
+        const requests = response.data.response.requests;
+        
+        console.log(`[ApiSportsService] API connection successful! Account: ${account.firstname} ${account.lastname}`);
+        console.log(`[ApiSportsService] Subscription: ${subscription.plan}, expires: ${subscription.end}`);
+        console.log(`[ApiSportsService] API usage: ${requests.current}/${requests.limit_day} requests today`);
+        
+        // Check for live fixtures
+        this.checkForLiveFixtures();
+      } else {
+        console.warn('[ApiSportsService] API connection verification returned unexpected response format');
+      }
+    } catch (error) {
+      console.error('[ApiSportsService] API connection verification failed:', error);
+    }
+  }
+  
+  /**
+   * Check for any current live fixtures
+   */
+  private async checkForLiveFixtures() {
+    try {
+      console.log('[ApiSportsService] Checking for live fixtures...');
+      const response = await axios.get('https://v3.football.api-sports.io/fixtures', {
+        params: { 
+          live: 'all'
+        },
+        headers: {
+          'x-apisports-key': this.apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.response) {
+        const liveFixtures = response.data.response;
+        console.log(`[ApiSportsService] Found ${liveFixtures.length} live fixtures`);
+        
+        if (liveFixtures.length > 0) {
+          console.log('[ApiSportsService] Live events available! The application can display real-time data.');
+          
+          // Log a few sample fixtures
+          liveFixtures.slice(0, 3).forEach((fixture: any, index: number) => {
+            const homeTeam = fixture.teams?.home?.name || 'Unknown';
+            const awayTeam = fixture.teams?.away?.name || 'Unknown';
+            const score = `${fixture.goals?.home || 0}-${fixture.goals?.away || 0}`;
+            const status = fixture.fixture?.status?.short || 'Unknown';
+            console.log(`[ApiSportsService] Live fixture #${index+1}: ${homeTeam} vs ${awayTeam}, Score: ${score}, Status: ${status}`);
+          });
+        } else {
+          console.log('[ApiSportsService] No live fixtures found at this time. Using fallback data when needed.');
+        }
+      }
+    } catch (error) {
+      console.error('[ApiSportsService] Error checking for live fixtures:', error);
     }
   }
 
@@ -121,7 +205,7 @@ export class ApiSportsService {
       // Use a shorter cache expiry for live events
       const cacheKey = `live_events_${sport}`;
       
-      // Use direct access to RapidAPI endpoints
+      // Use direct API endpoints with the API-football.com format
       const events = await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching live events for ${sport}`);
         
@@ -130,35 +214,35 @@ export class ApiSportsService {
         let params = {};
         
         if (sport === 'football' || sport === 'soccer') {
-          // Use the updated API-Football endpoint with v3
-          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          // Try direct API access first
+          apiUrl = 'https://v3.football.api-sports.io/fixtures';
           params = { live: 'all' };
         } else if (sport === 'basketball') {
-          apiUrl = 'https://api-basketball.p.rapidapi.com/games';
+          apiUrl = 'https://v1.basketball.api-sports.io/games';
           params = { live: 'all' };
         } else if (sport === 'baseball') {
-          apiUrl = 'https://api-baseball.p.rapidapi.com/games';
+          apiUrl = 'https://v1.baseball.api-sports.io/games';
           params = { status: 'LIVE' };
         } else if (sport === 'hockey') {
-          apiUrl = 'https://api-hockey.p.rapidapi.com/games';
+          apiUrl = 'https://v1.hockey.api-sports.io/games';
           params = { status: 'LIVE' };
         } else if (sport === 'tennis') {
-          apiUrl = 'https://api-tennis.p.rapidapi.com/games';
+          apiUrl = 'https://v1.tennis.api-sports.io/games';
           params = { status: 'LIVE' };
         } else {
           // Default to football if sport not supported directly
-          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          apiUrl = 'https://v3.football.api-sports.io/fixtures';
           params = { live: 'all' };
         }
         
         try {
-          console.log(`[ApiSportsService] Making API request to ${apiUrl}`);
+          console.log(`[ApiSportsService] Making direct API request to ${apiUrl}`);
           
           const response = await axios.get(apiUrl, {
             params,
             headers: {
-              'X-RapidAPI-Key': this.apiKey,
-              'X-RapidAPI-Host': new URL(apiUrl).hostname,
+              // For direct API-Sports access
+              'x-apisports-key': this.apiKey,
               'Accept': 'application/json'
             }
           });
@@ -260,39 +344,39 @@ export class ApiSportsService {
         let params = {};
         
         if (sport === 'football' || sport === 'soccer') {
-          // Use the updated API-Football endpoint with v3
-          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          // Try direct API access
+          apiUrl = 'https://v3.football.api-sports.io/fixtures';
           params = { 
             date: date,
             status: 'NS' // Not started
           };
         } else if (sport === 'basketball') {
-          apiUrl = 'https://api-basketball.p.rapidapi.com/games';
+          apiUrl = 'https://v1.basketball.api-sports.io/games';
           params = { 
             date: date,
             status: 'scheduled'
           };
         } else if (sport === 'baseball') {
-          apiUrl = 'https://api-baseball.p.rapidapi.com/games';
+          apiUrl = 'https://v1.baseball.api-sports.io/games';
           params = { 
             date: date,
             status: 'scheduled'
           };
         } else if (sport === 'hockey') {
-          apiUrl = 'https://api-hockey.p.rapidapi.com/games';
+          apiUrl = 'https://v1.hockey.api-sports.io/games';
           params = { 
             date: date,
             status: 'scheduled'
           };
         } else if (sport === 'tennis') {
-          apiUrl = 'https://api-tennis.p.rapidapi.com/games';
+          apiUrl = 'https://v1.tennis.api-sports.io/games';
           params = { 
             date: date,
             status: 'scheduled'
           };
         } else {
           // Default to football if sport not supported directly
-          apiUrl = 'https://api-football-v1.p.rapidapi.com/v3/fixtures';
+          apiUrl = 'https://v3.football.api-sports.io/fixtures';
           params = { 
             date: date,
             status: 'NS'
@@ -300,13 +384,13 @@ export class ApiSportsService {
         }
         
         try {
-          console.log(`[ApiSportsService] Making API request to ${apiUrl} for upcoming events`);
+          console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming events`);
           
           const response = await axios.get(apiUrl, {
             params,
             headers: {
-              'X-RapidAPI-Key': this.apiKey,
-              'X-RapidAPI-Host': new URL(apiUrl).hostname,
+              // For direct API-Sports access
+              'x-apisports-key': this.apiKey,
               'Accept': 'application/json'
             }
           });
@@ -609,27 +693,60 @@ export class ApiSportsService {
       const cacheKey = `odds_${sport}_${eventId}`;
       
       const oddsData = await this.getCachedOrFetch(cacheKey, async () => {
-        const apiClient = this.getApiClient(sport);
+        // Different API routes based on sport type
+        let apiUrl;
+        let params = {};
         
-        let response;
         if (sport === 'football' || sport === 'soccer') {
-          response = await apiClient.get('/odds', {
-            params: {
-              fixture: eventId
-            }
-          });
+          apiUrl = 'https://v3.football.api-sports.io/odds';
+          params = { 
+            fixture: eventId
+          };
+        } else if (sport === 'basketball') {
+          apiUrl = 'https://v1.basketball.api-sports.io/odds';
+          params = { 
+            game: eventId
+          };
+        } else if (sport === 'baseball') {
+          apiUrl = 'https://v1.baseball.api-sports.io/odds';
+          params = { 
+            game: eventId
+          };
+        } else if (sport === 'hockey') {
+          apiUrl = 'https://v1.hockey.api-sports.io/odds';
+          params = { 
+            game: eventId
+          };
+        } else if (sport === 'tennis') {
+          apiUrl = 'https://v1.tennis.api-sports.io/odds';
+          params = { 
+            game: eventId
+          };
         } else {
-          response = await apiClient.get('/odds', {
-            params: {
-              game: eventId
-            }
-          });
+          // Default to football if sport not supported directly
+          apiUrl = 'https://v3.football.api-sports.io/odds';
+          params = { 
+            fixture: eventId
+          };
         }
-
+        
+        console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for odds`);
+        
+        const response = await axios.get(apiUrl, {
+          params,
+          headers: {
+            // For direct API-Sports access
+            'x-apisports-key': this.apiKey,
+            'Accept': 'application/json'
+          }
+        });
+        
         if (response.data && response.data.response) {
+          console.log(`[ApiSportsService] Found odds data for event ${eventId}`);
           return response.data.response;
         }
         
+        console.log(`[ApiSportsService] No odds found for event ${eventId}`);
         return [];
       });
       

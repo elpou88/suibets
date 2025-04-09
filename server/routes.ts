@@ -10,8 +10,12 @@ import { walProtocolService } from "./services/walProtocolService";
 import { suiMetadataService } from "./services/suiMetadataService";
 import { walAppService } from "./services/walAppService";
 import { sportDataService } from "./services/sportDataService";
+import { ApiSportsService } from "./services/apiSportsService";
 import config from "./config";
 import { insertUserSchema, insertBetSchema, insertNotificationSchema } from "@shared/schema";
+
+// Create API Sports service instance
+const apiSportsService = new ApiSportsService();
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Add a simple health check endpoint
@@ -125,14 +129,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       let isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
       
-      // Do not force all events to be live, use the provided query parameter
-      // isLive remains as defined by the query parameter
-      
       console.log(`Fetching events for sportId: ${sportId}, isLive: ${isLive}`);
       
-      const events = await storage.getEvents(sportId, isLive);
+      // Get events from storage
+      let events = await storage.getEvents(sportId, isLive);
       
-      console.log(`Found ${events.length} events for sportId: ${sportId}`);
+      console.log(`Found ${events.length} events for sportId: ${sportId} in database`);
+      
+      // If requesting live events and none found, try to get from API
+      if (isLive === true && events.length === 0) {
+        console.log("No live events found in database, fetching from API");
+        
+        // Determine which sport to fetch
+        const sportToFetch = sportId 
+          ? (await storage.getSport(sportId))?.slug || 'football'
+          : 'football';
+          
+        console.log(`Fetching live events for sport ${sportToFetch} from API`);
+        
+        // Get live events from API
+        const liveApiEvents = await apiSportsService.getLiveEvents(sportToFetch);
+        
+        if (liveApiEvents.length > 0) {
+          console.log(`Found ${liveApiEvents.length} live events from API`);
+          
+          // Return the live API events directly
+          return res.json(liveApiEvents);
+        }
+      }
       
       // Create a copy of events for each sport to ensure all sports have data
       if (sportId && events.length === 0) {
@@ -212,6 +236,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // IMPORTANT: Add the live events endpoint BEFORE the :id endpoint to avoid routing conflicts
+  app.get("/api/events/live", async (req: Request, res: Response) => {
+    try {
+      // Redirect to our standard events endpoint with isLive=true
+      // This ensures consistent behavior between both endpoints
+      const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
+      
+      // Construct the redirect URL with all query parameters
+      const redirectUrl = `/api/events?isLive=true${sportId ? `&sportId=${sportId}` : ''}`;
+      
+      console.log(`Redirecting /api/events/live to ${redirectUrl}`);
+      
+      // Issue a redirect to the events endpoint with isLive=true
+      return res.redirect(302, redirectUrl);
+    } catch (error) {
+      console.error('Error in live events redirect:', error);
+      res.status(500).json({ error: 'Failed to fetch live events' });
+    }
+  });
+  
+  // Individual event endpoint - MUST come after specific endpoints like /api/events/live
   app.get("/api/events/:id", async (req: Request, res: Response) => {
     try {
       // Ensure id is a valid number
@@ -1814,27 +1859,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API endpoint to fetch all live events across all sports
   app.get("/api/events/live", async (req: Request, res: Response) => {
     try {
-      console.log("Fetching all live events across all sports");
+      // Redirect to our standard events endpoint with isLive=true
+      // This ensures consistent behavior between both endpoints
+      const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       
-      // First refresh the data to ensure it's current
-      await aggregatorService.refreshOdds();
+      // Construct the redirect URL with all query parameters
+      const redirectUrl = `/api/events?isLive=true${sportId ? `&sportId=${sportId}` : ''}`;
       
-      // Use our existing endpoint to get live events
-      const events = await db.query.sportEvents.findMany({
-        where: (sportEvents, { eq }) => eq(sportEvents.isLive, true),
-        orderBy: (sportEvents, { desc }) => [desc(sportEvents.updatedAt)],
-        with: {
-          markets: {
-            with: {
-              outcomes: true
-            }
-          }
-        }
-      });
+      console.log(`Redirecting /api/events/live to ${redirectUrl}`);
       
-      console.log(`Found ${events.length} live events across all sports`);
-      
-      res.json(events);
+      // Issue a 307 temporary redirect to maintain the same HTTP method
+      return res.redirect(307, redirectUrl);
     } catch (error) {
       console.error('Error fetching live events:', error);
       res.status(500).json({ error: 'Failed to fetch live events' });

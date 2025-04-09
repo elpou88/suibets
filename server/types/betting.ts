@@ -10,7 +10,7 @@ export interface SportEvent {
   awayOdds?: number; // Main odds for away team
   drawOdds?: number | null; // Main odds for draw (null for sports with no draws)
   startTime: string;
-  status: 'scheduled' | 'live' | 'finished';
+  status: 'scheduled' | 'live' | 'finished' | 'upcoming';
   score?: string;
   markets: MarketData[];
   isLive: boolean;

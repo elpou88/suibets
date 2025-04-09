@@ -19,26 +19,31 @@ export default function HomeReal() {
   const [, setLocation] = useLocation();
   const { addBet } = useBetting();
   
-  // Fetch all events - including live and upcoming
-  const { data: events = [], isLoading: eventsLoading } = useQuery({
-    queryKey: ['/api/events'],
+  // Fetch upcoming events
+  const { data: upcomingEvents = [], isLoading: upcomingEventsLoading } = useQuery({
+    queryKey: ['/api/events', { type: 'upcoming' }],
     queryFn: async () => {
+      console.log('Fetching upcoming events from API');
       const response = await apiRequest('GET', '/api/events');
-      return response.json();
+      const data = await response.json();
+      console.log(`Received ${data.length} events, filtering for upcoming events`);
+      return data.filter((event: any) => event.status === 'upcoming' || event.status === 'scheduled');
     },
-    refetchInterval: 15000 // Refetch every 15 seconds
+    refetchInterval: 60000 // Refetch every minute - upcoming events don't change as frequently
   });
   
-  // Fetch live events using the isLive parameter instead
+  // Fetch live events using the isLive parameter
   const { data: liveEvents = [], isLoading: liveEventsLoading } = useQuery({
     queryKey: ['/api/events', { isLive: true }],
     queryFn: async () => {
+      console.log('Fetching live events from API');
       const response = await apiRequest('GET', '/api/events?isLive=true');
-      return response.json();
+      const data = await response.json();
+      console.log(`Received ${data.length} live events`);
+      return data;
     },
     refetchInterval: 15000 // Refetch every 15 seconds
   });
-  const upcomingEvents = events.filter((event: any) => event.status === 'upcoming');
   
   // Fetch sports for the sidebar
   const { data: sports = [] } = useQuery({
@@ -71,7 +76,7 @@ export default function HomeReal() {
   };
   
   // Log the events for debugging
-  console.log('Loaded events for display:', events.length);
+  console.log('Loaded events for display:', upcomingEvents.length);
   
   return (
     <Layout>
@@ -175,7 +180,7 @@ export default function HomeReal() {
             <div>
               <h2 className="text-xl font-semibold text-white mb-4">Popular Events</h2>
               
-              {eventsLoading ? (
+              {upcomingEventsLoading ? (
                 <div className="flex justify-center items-center h-40">
                   <div className="animate-spin w-8 h-8 border-4 border-[#00ffff] border-t-transparent rounded-full"></div>
                 </div>

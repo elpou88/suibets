@@ -475,37 +475,97 @@ export class ApiSportsService {
       
       const events = await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching upcoming events for ${sport}`);
-        const date = new Date().toISOString().split('T')[0]; // Today's date
+        let apiUrl: string;
+        let params: any = {};
+        const today = new Date();
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + 7); // Get events for the next 7 days
         
-        // Use the football API for all sports since we know it works
-        // We'll modify the events to match the requested sport
-        const apiUrl = 'https://v3.football.api-sports.io/fixtures';
-        const params = { 
-          date: date,
-          status: 'NS' // Not started
-        };
+        const fromDate = today.toISOString().split('T')[0];
+        const toDate = futureDate.toISOString().split('T')[0];
         
-        // Note: We're getting all upcoming events from the football API
-        // and will manually adjust them for different sports in transformEventsData
+        // Use different API endpoints based on the sport
+        switch(sport) {
+          case 'football':
+          case 'soccer':
+            apiUrl = 'https://v3.football.api-sports.io/fixtures';
+            params = { 
+              status: 'NS', // Not started
+              from: fromDate,
+              to: toDate
+            };
+            break;
+          case 'basketball':
+            apiUrl = 'https://v1.basketball.api-sports.io/games';
+            params = { 
+              status: 'NS', // Not started
+              date: fromDate
+            };
+            break;
+          case 'tennis':
+            apiUrl = 'https://v1.tennis.api-sports.io/matches';
+            params = { 
+              status: 'NS', // Not started
+              date: fromDate
+            };
+            break;
+          case 'baseball':
+            apiUrl = 'https://v1.baseball.api-sports.io/games';
+            params = { 
+              status: 'NS', // Not started
+              date: fromDate
+            };
+            break;
+          case 'hockey':
+            apiUrl = 'https://v1.hockey.api-sports.io/games';
+            params = { 
+              status: 'NS', // Not started
+              date: fromDate
+            };
+            break;
+          case 'mma-ufc':
+            apiUrl = 'https://v1.mma.api-sports.io/fights';
+            params = { 
+              status: 'NS', // Not started
+              date: fromDate
+            };
+            break;
+          default:
+            // Default to football API for other sports
+            apiUrl = 'https://v3.football.api-sports.io/fixtures';
+            params = { 
+              status: 'NS', // Not started
+              from: fromDate,
+              to: toDate
+            };
+        }
         
         try {
-          console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming events`);
+          console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming ${sport} events with params:`, params);
           
           const response = await axios.get(apiUrl, {
             params,
             headers: {
-              // For direct API-Sports access
               'x-apisports-key': this.apiKey,
               'Accept': 'application/json'
             }
           });
           
-          if (response.data && response.data.response) {
+          if (response.data && response.data.response && Array.isArray(response.data.response)) {
             console.log(`[ApiSportsService] Found ${response.data.response.length} upcoming events for ${sport}`);
-            return response.data.response.slice(0, limit);
+            
+            // Set _sportId and _sportName properties on each event
+            const sportId = this.getSportId(sport);
+            const eventsWithSportInfo = response.data.response.map((event: any) => ({
+              ...event,
+              _sportId: sportId,
+              _sportName: sport
+            }));
+            
+            return eventsWithSportInfo.slice(0, limit);
           } else {
-            console.log(`[ApiSportsService] Response structure unexpected:`, 
-                        Object.keys(response.data).join(', '));
+            console.log(`[ApiSportsService] Response structure unexpected for ${sport}:`, 
+                        response.data ? Object.keys(response.data).join(', ') : 'No data');
           }
           
           console.log(`[ApiSportsService] No upcoming events found for ${sport}`);
@@ -518,7 +578,15 @@ export class ApiSportsService {
       });
       
       // Transform to our format
-      return this.transformEventsData(events, sport, false);
+      const transformedEvents = this.transformEventsData(events, sport, false);
+      console.log(`[ApiSportsService] Transformed ${events.length} events into ${transformedEvents.length} SportEvents for ${sport}`);
+      
+      // Set status to "upcoming" explicitly for these events
+      return transformedEvents.map(event => ({
+        ...event,
+        status: "upcoming",
+        isLive: false
+      }));
     } catch (error) {
       console.error(`Error fetching upcoming events for ${sport} from API-Sports:`, error);
       console.log(`[ApiSportsService] Cannot fetch upcoming ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);

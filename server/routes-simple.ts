@@ -87,7 +87,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           
           console.log(`Found a total of ${allApiEvents.length} live events from all sports combined`);
           
-          // If we have a specific sport ID, adapt events to match that sport
+          // If we have a specific sport ID, try to load sport-specific data directly
           if (reqSportId) {
             // First check for direct match by sport ID
             const filteredEvents = allApiEvents.filter(event => event.sportId === reqSportId);
@@ -96,14 +96,33 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
               console.log(`Found ${filteredEvents.length} events matching sport ID ${reqSportId} across all APIs`);
               return res.json(filteredEvents);
             } else {
-              console.log(`No exact matches found for sport ID ${reqSportId}, adapting real data for this sport`);
+              console.log(`No exact matches found for sport ID ${reqSportId}, fetching data directly for this sport`);
               
-              // Take football events and adapt them for the requested sport
-              // This ensures we always have live data for any sport
+              // Try to fetch data directly for this sport from the appropriate API endpoint
+              try {
+                // Get the sport name from our mapping
+                const sportName = getSportName(reqSportId).toLowerCase();
+                console.log(`Attempting to fetch data directly for ${sportName}`);
+                
+                // Try to get sport-specific data directly from API
+                const sportEvents = await apiSportsService.getLiveEvents(sportName);
+                
+                if (sportEvents && sportEvents.length > 0) {
+                  console.log(`Successfully fetched ${sportEvents.length} real ${sportName} events from API`);
+                  return res.json(sportEvents);
+                } else {
+                  console.log(`No ${sportName} events found from direct API call, adapting data instead`);
+                }
+              } catch (error) {
+                console.error(`Error fetching specific data for sport ID ${reqSportId}:`, error);
+              }
+              
+              // If direct API call failed, adapt football events for the requested sport as fallback
+              console.log(`Using adapted data for sport ID ${reqSportId} as fallback`);
               const sportName = getSportName(reqSportId);
               const eventsToAdapt = allApiEvents.slice(0, 8);
               
-              // Adapt the events with the correct sport ID and naming
+              // Adapt the events with the correct sport ID and proper naming conventions
               const adaptedEvents = eventsToAdapt.map(event => {
                 // Check if this sport needs a different market structure
                 const isIndividualSport = [3, 10, 13, 14, 17, 19, 23, 24].includes(reqSportId); // Tennis, golf, etc.
@@ -113,31 +132,31 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
                 
                 if (isIndividualSport) {
                   // For individual sports like tennis, no "draw" outcome
-                  sportSpecificMarkets = event.markets.map(market => {
-                    if (market.name === 'Match Result') {
+                  sportSpecificMarkets = event.markets?.map(market => {
+                    if (market?.name === 'Match Result') {
                       // Filter out "Draw" outcome for individual sports
-                      const filteredOutcomes = market.outcomes.filter(outcome => 
-                        outcome.name !== 'Draw' && !outcome.name.includes('Draw'));
+                      const filteredOutcomes = market.outcomes?.filter(outcome => 
+                        outcome?.name !== 'Draw' && !outcome?.name?.includes('Draw')) || [];
                       
                       return {
                         ...market,
                         outcomes: filteredOutcomes.map(outcome => ({
                           ...outcome,
                           // Update odds for this sport (using real odds ratios)
-                          odds: outcome.name.includes(event.homeTeam) ? 1.85 : 1.95
+                          odds: outcome?.name?.includes(event.homeTeam) ? 1.85 : 1.95
                         }))
                       };
                     }
                     return market;
-                  });
+                  }) || [];
                 } else {
                   // For team sports, keep the markets but update names
-                  sportSpecificMarkets = event.markets;
+                  sportSpecificMarkets = event.markets || [];
                 }
                 
                 // Get appropriate team naming for this sport
-                let homeTeam = event.homeTeam;
-                let awayTeam = event.awayTeam;
+                let homeTeam = event.homeTeam || 'Home Team';
+                let awayTeam = event.awayTeam || 'Away Team';
                 
                 // For basketball, rename teams to sound like basketball teams
                 if (reqSportId === 2) { // Basketball
@@ -153,9 +172,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
                   const firstNames = ['Rafael', 'Roger', 'Novak', 'Serena', 'Naomi', 'Andy', 'Emma', 'Daniil', 'Alexander', 'Iga'];
                   const lastNames = ['Williams', 'Federer', 'Djokovic', 'Nadal', 'Osaka', 'Murray', 'Raducanu', 'Medvedev', 'Zverev', 'Swiatek'];
                   
-                  // Create random but consistent player names
-                  const homePlayerIndex = Math.abs(event.homeTeam.charCodeAt(0) % firstNames.length);
-                  const awayPlayerIndex = Math.abs(event.awayTeam.charCodeAt(0) % lastNames.length);
+                  // Create consistent player names based on original team names
+                  const homePlayerIndex = Math.abs(homeTeam.charCodeAt(0) % firstNames.length);
+                  const awayPlayerIndex = Math.abs(awayTeam.charCodeAt(0) % lastNames.length);
                   
                   homeTeam = `${firstNames[homePlayerIndex]} ${lastNames[(homePlayerIndex + 3) % lastNames.length]}`;
                   awayTeam = `${firstNames[awayPlayerIndex]} ${lastNames[(awayPlayerIndex + 5) % lastNames.length]}`;
@@ -168,7 +187,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
                   homeTeam: homeTeam,
                   awayTeam: awayTeam,
                   // Update the league name to match the requested sport
-                  leagueName: `${sportName} ${event.leagueName.split(' ').pop() || 'League'}`,
+                  leagueName: `${sportName} ${event.leagueName?.split(' ').pop() || 'League'}`,
                   // Add real markets for this sport with accurate structure
                   markets: sportSpecificMarkets,
                   // Flag that indicates this is adapted from real data

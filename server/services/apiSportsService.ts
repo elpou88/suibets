@@ -17,7 +17,7 @@ export class ApiSportsService {
   private cacheExpiry: number = 1 * 60 * 1000; // Default cache expiry - reduced to 1 minute for more frequent updates
   
   // Cache version to force refresh when code changes
-  private cacheVersionKey: string = "v2"; // Increment this when making changes to force cache refresh
+  private cacheVersionKey: string = "v3"; // Increment this when making changes to force cache refresh
   
   // API endpoints for each sport
   private sportEndpoints: Record<string, string> = {
@@ -552,12 +552,10 @@ export class ApiSportsService {
           case 'football':
           case 'soccer':
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
-            // More specific params for football upcoming events
+            // Football API works differently - need to use 'next' parameter instead of dates
             params = { 
-              // NS = Not Started (scheduled but not yet started)
-              status: 'NS',
-              from: fromDate,
-              to: toDate,
+              // Use next parameter instead of date ranges
+              next: '20', // Get next 20 fixtures
               timezone: 'UTC'
             };
             break;
@@ -606,9 +604,7 @@ export class ApiSportsService {
             // Default to football API for other sports
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
-              status: 'NS',
-              from: fromDate,
-              to: toDate,
+              next: '20', // Default to next 20 fixtures for generic sports
               timezone: 'UTC'
             };
         }

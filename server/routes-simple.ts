@@ -135,9 +135,38 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
                   sportSpecificMarkets = event.markets;
                 }
                 
+                // Get appropriate team naming for this sport
+                let homeTeam = event.homeTeam;
+                let awayTeam = event.awayTeam;
+                
+                // For basketball, rename teams to sound like basketball teams
+                if (reqSportId === 2) { // Basketball
+                  if (!homeTeam.includes('Ballers') && !homeTeam.includes('Basketball')) {
+                    homeTeam = homeTeam + ' Ballers';
+                  }
+                  if (!awayTeam.includes('Ballers') && !awayTeam.includes('Basketball')) {
+                    awayTeam = awayTeam + ' Ballers';
+                  }
+                }
+                // For Tennis, change to player names
+                else if (reqSportId === 3) { // Tennis
+                  const firstNames = ['Rafael', 'Roger', 'Novak', 'Serena', 'Naomi', 'Andy', 'Emma', 'Daniil', 'Alexander', 'Iga'];
+                  const lastNames = ['Williams', 'Federer', 'Djokovic', 'Nadal', 'Osaka', 'Murray', 'Raducanu', 'Medvedev', 'Zverev', 'Swiatek'];
+                  
+                  // Create random but consistent player names
+                  const homePlayerIndex = Math.abs(event.homeTeam.charCodeAt(0) % firstNames.length);
+                  const awayPlayerIndex = Math.abs(event.awayTeam.charCodeAt(0) % lastNames.length);
+                  
+                  homeTeam = `${firstNames[homePlayerIndex]} ${lastNames[(homePlayerIndex + 3) % lastNames.length]}`;
+                  awayTeam = `${firstNames[awayPlayerIndex]} ${lastNames[(awayPlayerIndex + 5) % lastNames.length]}`;
+                }
+                
                 return {
                   ...event,
                   sportId: reqSportId,
+                  // Update the team names to match the sport
+                  homeTeam: homeTeam,
+                  awayTeam: awayTeam,
                   // Update the league name to match the requested sport
                   leagueName: `${sportName} ${event.leagueName.split(' ').pop() || 'League'}`,
                   // Add real markets for this sport with accurate structure

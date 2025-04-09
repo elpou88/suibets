@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
+import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 export function BetSlip() {
   const { selectedBets, removeBet, clearBets, updateStake, placeBet, totalStake, potentialWinnings } = useBetting();
   const { user } = useAuth();
+  const walletAdapter = useWalletAdapter();
   const { toast } = useToast();
   const [betType, setBetType] = useState<'single' | 'parlay'>(selectedBets.length > 1 ? 'parlay' : 'single');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,7 +72,7 @@ export function BetSlip() {
   
   // Handle place bet button click
   const handlePlaceBet = async () => {
-    if (!user) {
+    if (!user || !walletAdapter.isConnected) {
       toast({
         title: "Not logged in",
         description: "Please connect your wallet to place bets",

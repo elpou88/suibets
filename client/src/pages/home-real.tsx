@@ -90,7 +90,15 @@ export default function HomeReal() {
             </div>
             
             {/* Promotional Banner - Added as requested */}
-            <PromoSection />
+            <div className="mb-6">
+              <a href="/promotions/referral" className="block">
+                <img 
+                  src="/images/referral-bonus-banner.png" 
+                  alt="Earn Referral Bonus of up to 500,000 SUIBETS" 
+                  className="w-full h-auto object-cover rounded-lg border-2 border-[#00ffff]"
+                />
+              </a>
+            </div>
             
             {/* Featured Live Events */}
             {liveEvents.length > 0 && (

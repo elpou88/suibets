@@ -19,15 +19,15 @@ const PromoBanner: React.FC<PromoBannerProps> = ({
   className = ''
 }) => {
   return (
-    <Link href={targetUrl}>
-      <a className={`block w-full overflow-hidden rounded-lg transition-transform duration-200 hover:scale-[1.01] ${className}`}>
+    <div className={`block w-full overflow-hidden rounded-lg transition-transform duration-200 hover:scale-[1.01] ${className}`}>
+      <Link href={targetUrl}>
         <img 
           src={imageUrl} 
           alt={altText} 
-          className="w-full object-cover" 
+          className="w-full object-cover cursor-pointer" 
         />
-      </a>
-    </Link>
+      </Link>
+    </div>
   );
 };
 

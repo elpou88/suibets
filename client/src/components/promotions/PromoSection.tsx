@@ -44,7 +44,7 @@ const PromoSection: React.FC = () => {
     id: 0,
     title: "Earn Referral Bonus",
     description: "Earn Referral Bonus of up to 500,000 SUIBETS",
-    imageUrl: "/images/referral-bonus-banner.png",
+    imageUrl: "/images/referral-bonus-banner.png", // Use the image we copied earlier
     targetUrl: "/promotions/referral",
     isActive: true,
     priority: 1,
@@ -64,14 +64,14 @@ const PromoSection: React.FC = () => {
   
   return (
     <div className="mb-6">
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 gap-4 border-2 border-[#00ffff] rounded-lg overflow-hidden">
         {displayPromotions.map((promo) => (
           <PromoBanner
             key={promo.id}
             imageUrl={promo.imageUrl}
             altText={promo.title}
             targetUrl={promo.targetUrl}
-            className="h-20"
+            className="h-auto"
           />
         ))}
       </div>

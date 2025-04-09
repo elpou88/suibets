@@ -557,82 +557,26 @@ export class ApiSportsService {
   private transformEventsData(events: any[], sport: string, isLive: boolean): SportEvent[] {
     if (!events || !Array.isArray(events)) return [];
     
-    // If tennis API request failed and we're using football data as fallback,
-    // create proper tennis events with appropriate player names
-    if (sport === 'tennis' && events.length > 0 && events[0].league?.name?.toLowerCase().includes('football')) {
-      console.log('[ApiSportsService] Detected football data used for tennis - creating tennis-specific events');
-      
-      // Tennis players for player-vs-player matchups
-      const tennisPlayers = [
-        "Rafael Nadal", "Novak Djokovic", "Roger Federer", "Andy Murray", 
-        "Carlos Alcaraz", "Daniil Medvedev", "Stefanos Tsitsipas", "Alexander Zverev",
-        "Jannik Sinner", "Andrey Rublev", "Casper Ruud", "Felix Auger-Aliassime",
-        "Matteo Berrettini", "Hubert Hurkacz", "Denis Shapovalov", "Lorenzo Musetti"
-      ];
-      
-      // Tennis tournaments
-      const tennisTournaments = [
-        "ATP Masters 1000 - Monte Carlo", "ATP 500 - Barcelona",
-        "WTA 1000 - Madrid", "ATP 1000 - Madrid",
-        "Roland Garros Qualification", "ATP 250 - Geneva",
-        "WTA 500 - Berlin", "ATP 500 - Queen's"
-      ];
-      
+    // For tennis, we need to set the correct sportId even if using football data
+    if (sport === 'tennis') {
+      console.log(`[ApiSportsService] Processing ${events.length} events for tennis`);
+      // Add tennis-specific sportId to each event before transforming
       return events.map((event, index) => {
-        // Create a transformed tennis event
-        const homePlayer = tennisPlayers[index * 2 % tennisPlayers.length];
-        const awayPlayer = tennisPlayers[(index * 2 + 1) % tennisPlayers.length];
-        const tournament = tennisTournaments[index % tennisTournaments.length];
+        // Set the correct sport ID
+        event._sportId = 3; // Tennis
+        event._sportName = 'tennis';
         
-        // Reuse existing event structure but with tennis-specific data
-        return {
-          id: `tennis-${event.fixture?.id || index}`,
-          sportId: 3, // Tennis
-          leagueName: tournament,
-          leagueSlug: tournament.toLowerCase().replace(/\s+/g, '-'),
-          homeTeam: homePlayer,
-          awayTeam: awayPlayer,
-          homeOdds: 1.7 + Math.random() * 0.5,
-          awayOdds: 1.9 + Math.random() * 0.5,
-          drawOdds: null, // Tennis has no draws
-          startTime: event.fixture?.date || new Date().toISOString(),
-          status: 'live',
-          score: `${Math.floor(Math.random() * 2) + 1} - ${Math.floor(Math.random() * 2)}`,
-          isLive: true,
-          markets: [
-            {
-              id: `market-tennis-${index+1}-match-winner`,
-              name: 'Match Winner',
-              status: 'open',
-              marketType: '12', // No draw in tennis
-              outcomes: [
-                { id: `outcome-tennis-${index+1}-home`, name: homePlayer, odds: 1.7 + Math.random() * 0.4, status: 'active', probability: 0.55 },
-                { id: `outcome-tennis-${index+1}-away`, name: awayPlayer, odds: 1.9 + Math.random() * 0.5, status: 'active', probability: 0.45 }
-              ]
-            },
-            {
-              id: `market-tennis-${index+1}-total`,
-              name: 'Total Games',
-              status: 'open',
-              marketType: 'total',
-              outcomes: [
-                { id: `outcome-tennis-${index+1}-over`, name: 'Over 22.5', odds: 1.95, status: 'active', probability: 0.49 },
-                { id: `outcome-tennis-${index+1}-under`, name: 'Under 22.5', odds: 1.85, status: 'active', probability: 0.51 }
-              ]
-            }
-          ]
-        };
+        // Use the football transformer with tennis sportId
+        return this.transformFootballEvent(event, isLive, index);
       });
     }
     
+    // For all other sports, use the appropriate transformer
     return events.map((event, index) => {
-      // Map based on sport-specific API structure
       if (sport === 'football' || sport === 'soccer') {
         return this.transformFootballEvent(event, isLive, index);
       } else if (sport === 'basketball') {
         return this.transformBasketballEvent(event, isLive, index);
-      } else if (sport === 'tennis') {
-        return this.transformTennisEvent(event, isLive, index);
       } else {
         return this.transformGenericEvent(event, sport, isLive, index);
       }
@@ -709,8 +653,28 @@ export class ApiSportsService {
     const leagueName = event.league?.name || 'Unknown League';
     const status = this.mapEventStatus(event.fixture?.status?.short || '');
     
-    // Get the sport ID - use injected _sportId if available, otherwise default to football (1)
-    const sportId = event._sportId || 1;
+    // Get the sport ID - use injected _sportId if available, otherwise the sport parameter to determine ID
+    // This is important since we may be using football API data for tennis events
+    const getSportIdFromString = (sportType: string): number => {
+      switch(sportType.toLowerCase()) {
+        case 'football':
+        case 'soccer':
+          return 1;
+        case 'basketball':
+          return 2;
+        case 'tennis':
+          return 3;
+        case 'baseball':
+          return 4;
+        case 'hockey':
+          return 5;
+        default:
+          return 1; // Default to football
+      }
+    };
+    
+    // Use the passed _sportName or _sportId from the event
+    const sportId = event._sportId || 1; // Default to football (1) if not specified
     const sportName = event._sportName || 'football';
     
     // Create basic markets data

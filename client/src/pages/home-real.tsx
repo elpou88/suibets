@@ -70,13 +70,11 @@ export default function HomeReal() {
         <div className="w-28 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
-            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-gradient-to-b from-purple-800 to-blue-900"
           >
-            <img 
-              src="/assets/referral-banner.png" 
-              alt="Earn Referral Bonus of up to 500,000 SUIBETS"
-              className="w-full h-full min-h-screen object-cover"
-            />
+            <div className="transform rotate-180 text-[#00ffff] font-bold p-2 text-center" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              Earn Referral Bonus of up to 500,000 SUIBETS
+            </div>
           </a>
         </div>
         
@@ -259,13 +257,11 @@ export default function HomeReal() {
         <div className="w-28 min-h-screen overflow-hidden">
           <a 
             href="/promotions/referral" 
-            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity"
+            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-gradient-to-b from-purple-800 to-blue-900"
           >
-            <img 
-              src="/assets/referral-banner.png" 
-              alt="Earn Referral Bonus of up to 500,000 SUIBETS"
-              className="w-full h-full min-h-screen object-cover"
-            />
+            <div className="text-[#00ffff] font-bold p-2 text-center" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
+              Earn Referral Bonus of up to 500,000 SUIBETS
+            </div>
           </a>
         </div>
       </div>

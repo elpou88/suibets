@@ -67,13 +67,18 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <div className="w-28 min-h-screen overflow-hidden">
+        <div className="w-24 min-h-screen flex flex-col">
           <a 
             href="/promotions/referral" 
-            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-gradient-to-b from-purple-800 to-blue-900"
+            className="h-full w-full flex flex-col hover:opacity-90 transition-opacity"
           >
-            <div className="transform rotate-180 text-[#00ffff] font-bold p-2 text-center" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-              Earn Referral Bonus of up to 500,000 SUIBETS
+            <div className="flex-1 bg-yellow-400">
+              <img 
+                src="/promoImage.png" 
+                alt="Earn Referral Bonus"
+                className="w-full h-full object-cover object-center"
+                style={{ objectPosition: "left" }}
+              />
             </div>
           </a>
         </div>
@@ -254,13 +259,18 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <div className="w-28 min-h-screen overflow-hidden">
+        <div className="w-24 min-h-screen flex flex-col">
           <a 
             href="/promotions/referral" 
-            className="h-full min-h-screen w-full flex items-center justify-center hover:opacity-90 transition-opacity bg-gradient-to-b from-purple-800 to-blue-900"
+            className="h-full w-full flex flex-col hover:opacity-90 transition-opacity"
           >
-            <div className="text-[#00ffff] font-bold p-2 text-center" style={{ writingMode: 'vertical-rl', textOrientation: 'mixed' }}>
-              Earn Referral Bonus of up to 500,000 SUIBETS
+            <div className="flex-1 bg-yellow-400">
+              <img 
+                src="/promoImage.png" 
+                alt="Earn Referral Bonus"
+                className="w-full h-full object-cover object-center"
+                style={{ objectPosition: "right" }}
+              />
             </div>
           </a>
         </div>

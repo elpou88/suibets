@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader } from "@/components/ui/loader";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
+import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
 
 export default function ConnectWallet() {
   const [, setLocation] = useLocation();
@@ -180,6 +181,25 @@ export default function ConnectWallet() {
                 </div>
                 <p className="text-xs text-center mt-2 text-gray-400">
                   Recommended: Connect using Suiet Wallet Kit
+                </p>
+              </div>
+              
+              {/* Sui dApp Kit connection - Coming soon */}
+              <div className="mb-3">
+                <p className="text-xs text-center mb-2 text-gray-400">- NEW COMING SOON -</p>
+                <div className="w-full">
+                  <Button 
+                    className="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-black font-bold opacity-75 cursor-not-allowed"
+                    disabled={true}
+                  >
+                    <span className="flex items-center justify-center">
+                      Connect with Sui dApp Kit
+                      <span className="ml-2 text-xs bg-black text-white px-2 py-0.5 rounded">Coming Soon</span>
+                    </span>
+                  </Button>
+                </div>
+                <p className="text-xs text-center mt-2 text-gray-400">
+                  New: Connect with Sui dApp Kit (recommended by Sui developers)
                 </p>
               </div>
               

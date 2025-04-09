@@ -55,10 +55,10 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-      <SuietWalletProvider>
-        <WalProvider>
-          <AuthProvider>
-            <BettingProvider>
+        <SuietWalletProvider>
+          <WalProvider>
+            <AuthProvider>
+              <BettingProvider>
               <div className="root-container">
                 <Switch>
                   {/* Main Routes - Use real data pages as the default */}

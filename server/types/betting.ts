@@ -15,6 +15,10 @@ export interface SportEvent {
   markets: MarketData[];
   isLive: boolean;
   dataSource?: string; // Added to track data source for data quality purposes
+  
+  // Internal properties used during transformation
+  _sportId?: number; // Used for tracking the source sport ID during transformations
+  _sportName?: string; // Used for tracking the source sport name during transformations
 }
 
 // Types for market data

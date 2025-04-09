@@ -478,71 +478,78 @@ export class ApiSportsService {
         let apiUrl: string;
         let params: any = {};
         const today = new Date();
+
+        // Get events for a wider range - next 30 days
         const futureDate = new Date(today);
-        futureDate.setDate(today.getDate() + 7); // Get events for the next 7 days
+        futureDate.setDate(today.getDate() + 30);
         
         const fromDate = today.toISOString().split('T')[0];
         const toDate = futureDate.toISOString().split('T')[0];
         
-        // Use different API endpoints based on the sport
+        // Try different approaches based on the sport
         switch(sport) {
           case 'football':
           case 'soccer':
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
-              status: 'NS', // Not started
+              // Include multiple potential statuses for upcoming events
+              // NS = Not Started, TBD = To Be Defined, etc.
+              status: 'NS-TBD',
               from: fromDate,
               to: toDate
             };
             break;
           case 'basketball':
             apiUrl = 'https://v1.basketball.api-sports.io/games';
-            params = { 
-              status: 'NS', // Not started
-              date: fromDate
+            // Try date-based search instead of status for basketball
+            params = {
+              date: 'upcoming',
+              league: '', // Empty to get all leagues
+              season: new Date().getFullYear() // Current season
             };
             break;
           case 'tennis':
             apiUrl = 'https://v1.tennis.api-sports.io/matches';
-            params = { 
-              status: 'NS', // Not started
-              date: fromDate
+            // For tennis, try a search for scheduled matches
+            params = {
+              date: 'upcoming'
             };
             break;
           case 'baseball':
             apiUrl = 'https://v1.baseball.api-sports.io/games';
-            params = { 
-              status: 'NS', // Not started
-              date: fromDate
+            // For baseball, search by date range
+            params = {
+              date: 'upcoming',
+              season: new Date().getFullYear()
             };
             break;
           case 'hockey':
             apiUrl = 'https://v1.hockey.api-sports.io/games';
-            params = { 
-              status: 'NS', // Not started
-              date: fromDate
+            params = {
+              date: 'upcoming'
             };
             break;
           case 'mma-ufc':
             apiUrl = 'https://v1.mma.api-sports.io/fights';
-            params = { 
-              status: 'NS', // Not started
-              date: fromDate
+            // For MMA, search for scheduled events
+            params = {
+              status: 'scheduled'
             };
             break;
           default:
             // Default to football API for other sports
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
-              status: 'NS', // Not started
+              status: 'NS',
               from: fromDate,
               to: toDate
             };
         }
         
+        // Try alternate approach if date-based search is used
+        console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming ${sport} events with params:`, params);
+        
         try {
-          console.log(`[ApiSportsService] Making direct API request to ${apiUrl} for upcoming ${sport} events with params:`, params);
-          
           const response = await axios.get(apiUrl, {
             params,
             headers: {
@@ -551,6 +558,7 @@ export class ApiSportsService {
             }
           });
           
+          // Try to find response data
           if (response.data && response.data.response && Array.isArray(response.data.response)) {
             console.log(`[ApiSportsService] Found ${response.data.response.length} upcoming events for ${sport}`);
             
@@ -562,31 +570,117 @@ export class ApiSportsService {
               _sportName: sport
             }));
             
-            return eventsWithSportInfo.slice(0, limit);
+            // Increase the limit for better results
+            return eventsWithSportInfo.slice(0, Math.max(limit, 20));
           } else {
+            // Log more details about the response structure
             console.log(`[ApiSportsService] Response structure unexpected for ${sport}:`, 
-                        response.data ? Object.keys(response.data).join(', ') : 'No data');
+                        response.data ? JSON.stringify(Object.keys(response.data)) : 'No data');
+            console.log(`[ApiSportsService] Raw response data:`, 
+                        response.data ? JSON.stringify(response.data).substring(0, 500) : 'No data');
           }
           
-          console.log(`[ApiSportsService] No upcoming events found for ${sport}`);
+          // If we get this far, try an alternative approach for some sports
+          if (['basketball', 'tennis', 'baseball', 'hockey', 'mma-ufc'].includes(sport)) {
+            console.log(`[ApiSportsService] Trying alternate API request for upcoming ${sport} events`);
+            
+            const altParams = {
+              season: String(new Date().getFullYear()),
+              // For days in the future (between 1-21 days ahead)
+              next: '21'
+            };
+            
+            const altResponse = await axios.get(apiUrl, {
+              params: altParams,
+              headers: {
+                'x-apisports-key': this.apiKey,
+                'Accept': 'application/json'
+              }
+            });
+            
+            if (altResponse.data && altResponse.data.response && Array.isArray(altResponse.data.response)) {
+              console.log(`[ApiSportsService] Alternative approach found ${altResponse.data.response.length} upcoming events for ${sport}`);
+              
+              // Set sport info on events
+              const sportId = this.getSportId(sport);
+              const eventsWithSportInfo = altResponse.data.response.map((event: any) => ({
+                ...event,
+                _sportId: sportId,
+                _sportName: sport
+              }));
+              
+              return eventsWithSportInfo.slice(0, Math.max(limit, 20));
+            }
+          }
+          
+          console.log(`[ApiSportsService] No upcoming events found for ${sport} after multiple attempts`);
           return [];
         } catch (error) {
           console.error(`[ApiSportsService] Error fetching upcoming events for ${sport}:`, error);
           console.log(`[ApiSportsService] Cannot fetch upcoming ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
+          
+          // Try a more generic approach for specific sports
+          if (['mma-ufc', 'boxing'].includes(sport)) {
+            try {
+              console.log(`[ApiSportsService] Trying generic fetch for ${sport} events`);
+              
+              // For MMA and boxing, just grab any events without filtering by status
+              const genericUrl = sport === 'mma-ufc' 
+                ? 'https://v1.mma.api-sports.io/fights'
+                : 'https://v1.boxing.api-sports.io/fights';
+              
+              const genericResponse = await axios.get(genericUrl, {
+                headers: {
+                  'x-apisports-key': this.apiKey,
+                  'Accept': 'application/json'
+                }
+              });
+              
+              if (genericResponse.data && genericResponse.data.response && 
+                  Array.isArray(genericResponse.data.response)) {
+                console.log(`[ApiSportsService] Generic approach found ${genericResponse.data.response.length} events for ${sport}`);
+                
+                // Filter to future events
+                const now = new Date();
+                const sportId = this.getSportId(sport);
+                
+                const futureEvents = genericResponse.data.response
+                  .filter((event: any) => {
+                    const eventDate = event.date ? new Date(event.date) : null;
+                    return eventDate && eventDate > now;
+                  })
+                  .map((event: any) => ({
+                    ...event,
+                    _sportId: sportId,
+                    _sportName: sport
+                  }));
+                
+                console.log(`[ApiSportsService] Found ${futureEvents.length} future events for ${sport}`);
+                return futureEvents.slice(0, Math.max(limit, 20));
+              }
+            } catch (genericError) {
+              console.error(`[ApiSportsService] Generic approach also failed for ${sport}:`, genericError);
+            }
+          }
+          
           return [];
         }
       });
       
-      // Transform to our format
+      // Transform to our format - with detailed logging
+      console.log(`[ApiSportsService] Transforming ${events.length} raw events for ${sport}`);
       const transformedEvents = this.transformEventsData(events, sport, false);
       console.log(`[ApiSportsService] Transformed ${events.length} events into ${transformedEvents.length} SportEvents for ${sport}`);
       
       // Set status to "upcoming" explicitly for these events
-      return transformedEvents.map(event => ({
+      const upcomingEvents = transformedEvents.map(event => ({
         ...event,
-        status: "upcoming",
+        status: "upcoming" as "scheduled" | "live" | "finished" | "upcoming",
         isLive: false
       }));
+      
+      console.log(`[ApiSportsService] Returning ${upcomingEvents.length} upcoming events for ${sport}`);
+      return upcomingEvents;
     } catch (error) {
       console.error(`Error fetching upcoming events for ${sport} from API-Sports:`, error);
       console.log(`[ApiSportsService] Cannot fetch upcoming ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}.`);
@@ -612,29 +706,31 @@ export class ApiSportsService {
       return await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching upcoming events for all sports`);
         
-        const allSports = [
+        // Focus on sports that typically have the most events available
+        const prioritySports = [
           { id: 1, name: 'football' },
           { id: 2, name: 'basketball' },
           { id: 3, name: 'tennis' },
+          { id: 12, name: 'mma-ufc' }
+        ];
+        
+        // Secondary sports to try if we need more events
+        const secondarySports = [
           { id: 4, name: 'baseball' },
           { id: 5, name: 'hockey' },
-          { id: 6, name: 'handball' },
-          { id: 7, name: 'volleyball' },
-          { id: 8, name: 'rugby' },
           { id: 9, name: 'cricket' },
-          { id: 10, name: 'golf' },
           { id: 11, name: 'boxing' },
-          { id: 12, name: 'mma-ufc' },
-          { id: 13, name: 'formula_1' },
-          { id: 14, name: 'cycling' },
           { id: 15, name: 'american_football' }
         ];
         
         let allEvents: SportEvent[] = [];
         
-        // Fetch events for all sports in parallel for better performance
-        const sportEventPromises = allSports.map(sport => 
-          this.getUpcomingEvents(sport.name, limit)
+        // First try to get events from priority sports with a higher limit
+        // to ensure we get a good selection
+        console.log(`[ApiSportsService] Fetching upcoming events for ${prioritySports.length} priority sports`);
+        
+        const priorityPromises = prioritySports.map(sport => 
+          this.getUpcomingEvents(sport.name, limit * 2) // Double limit for priority sports
             .then(events => {
               if (events && events.length > 0) {
                 console.log(`[ApiSportsService] Found ${events.length} upcoming events for ${sport.name}`);
@@ -648,18 +744,63 @@ export class ApiSportsService {
             })
         );
         
-        // Wait for all promises to settle
-        const results = await Promise.all(sportEventPromises);
+        // Wait for all priority sport promises to complete
+        const priorityResults = await Promise.all(priorityPromises);
         
-        // Combine all events
-        results.forEach(events => {
+        // Add priority sports events
+        priorityResults.forEach(events => {
           if (events.length > 0) {
             allEvents = [...allEvents, ...events];
           }
         });
         
-        console.log(`[ApiSportsService] Found a total of ${allEvents.length} upcoming events from all sports combined`);
-        return allEvents;
+        console.log(`[ApiSportsService] Found ${allEvents.length} upcoming events from priority sports`);
+        
+        // If we don't have enough events from priority sports, try secondary sports
+        if (allEvents.length < 10) {
+          console.log(`[ApiSportsService] Not enough events from priority sports, trying secondary sports`);
+          
+          const secondaryPromises = secondarySports.map(sport => 
+            this.getUpcomingEvents(sport.name, limit)
+              .then(events => {
+                if (events && events.length > 0) {
+                  console.log(`[ApiSportsService] Found ${events.length} upcoming events for ${sport.name}`);
+                  return events;
+                }
+                return [];
+              })
+              .catch(error => {
+                console.error(`[ApiSportsService] Error fetching upcoming events for ${sport.name}:`, error);
+                return [];
+              })
+          );
+          
+          // Wait for secondary sport promises
+          const secondaryResults = await Promise.all(secondaryPromises);
+          
+          // Add secondary sports events
+          secondaryResults.forEach(events => {
+            if (events.length > 0) {
+              allEvents = [...allEvents, ...events];
+            }
+          });
+        }
+        
+        // Make sure sport IDs are set correctly
+        const eventsWithValidSportIds = allEvents.map(event => {
+          // If sportId is missing or invalid, try to set it based on _sportName
+          if (!event.sportId && event._sportName) {
+            const sportId = this.getSportId(event._sportName);
+            return {
+              ...event,
+              sportId
+            };
+          }
+          return event;
+        });
+        
+        console.log(`[ApiSportsService] Found a total of ${eventsWithValidSportIds.length} upcoming events from all sports combined`);
+        return eventsWithValidSportIds;
       });
     } catch (error) {
       console.error('Error fetching upcoming events for all sports:', error);

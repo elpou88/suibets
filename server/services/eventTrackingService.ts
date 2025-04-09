@@ -198,23 +198,44 @@ export class EventTrackingService {
       { id: 12, name: 'mma-ufc' },
       { id: 13, name: 'formula_1' },
       { id: 14, name: 'cycling' },
-      { id: 15, name: 'american_football' }
+      { id: 15, name: 'american_football' },
+      { id: 16, name: 'afl' },      // Australian Football League
+      { id: 17, name: 'snooker' },  // Added snooker
+      { id: 18, name: 'darts' },    // Added darts
+      { id: 2, name: 'nba' }        // Using NBA as a separate entry for better data
     ];
     
     let allEvents: any[] = [];
     
-    // Fetch events for the main sports
-    for (const sport of allSports) {
-      try {
-        const sportEvents = await this.apiSportsService.getLiveEvents(sport.name);
-        if (sportEvents && sportEvents.length > 0) {
-          console.log(`[EventTrackingService] Found ${sportEvents.length} live events for ${sport.name}`);
-          allEvents = [...allEvents, ...sportEvents];
-        }
-      } catch (error) {
-        console.error(`[EventTrackingService] Error fetching live events for ${sport.name}:`, error);
+    // Fetch live events for all sports in parallel for better performance
+    const eventPromises = allSports.map(sport => {
+      return this.apiSportsService.getLiveEvents(sport.name)
+        .then(sportEvents => {
+          if (sportEvents && sportEvents.length > 0) {
+            console.log(`[EventTrackingService] Found ${sportEvents.length} live events for ${sport.name}`);
+            return sportEvents;
+          }
+          return [];
+        })
+        .catch(error => {
+          console.error(`[EventTrackingService] Error fetching live events for ${sport.name}:`, error);
+          return [];
+        });
+    });
+    
+    // Wait for all promises to resolve
+    const eventResults = await Promise.all(eventPromises);
+    
+    // Combine all events
+    eventResults.forEach(events => {
+      if (events.length > 0) {
+        allEvents = [...allEvents, ...events];
       }
-    }
+    });
+    
+    // Also pre-fetch upcoming events for all sports to ensure data is cached
+    // This improves the experience when users navigate to specific sport categories
+    this.preloadUpcomingEventsForAllSports();
     
     return allEvents;
   }
@@ -359,6 +380,70 @@ export class EventTrackingService {
    */
   public getTrackedEvents(): any[] {
     return Array.from(this.trackedEvents.values());
+  }
+  
+  /**
+   * Preload upcoming events for all sports to ensure data is cached
+   * This provides a better user experience when navigating between sport categories
+   */
+  private async preloadUpcomingEventsForAllSports(): Promise<void> {
+    try {
+      console.log(`[EventTrackingService] Preloading upcoming events for all sports`);
+      
+      const allSports = [
+        { id: 1, name: 'football' },
+        { id: 2, name: 'basketball' },
+        { id: 3, name: 'tennis' },
+        { id: 4, name: 'baseball' },
+        { id: 5, name: 'hockey' },
+        { id: 6, name: 'handball' },
+        { id: 7, name: 'volleyball' },
+        { id: 8, name: 'rugby' },
+        { id: 9, name: 'cricket' },
+        { id: 10, name: 'golf' },
+        { id: 11, name: 'boxing' },
+        { id: 12, name: 'mma-ufc' },
+        { id: 13, name: 'formula_1' },
+        { id: 14, name: 'cycling' },
+        { id: 15, name: 'american_football' },
+        { id: 16, name: 'afl' },      // Australian Football League
+        { id: 17, name: 'snooker' },  // Added snooker
+        { id: 18, name: 'darts' }     // Added darts
+      ];
+      
+      // Create an array of promises to fetch upcoming events for all sports in parallel
+      const promises = allSports.map(sport => {
+        return this.apiSportsService.getUpcomingEvents(sport.name, 5)
+          .then(events => {
+            if (events && events.length > 0) {
+              console.log(`[EventTrackingService] Preloaded ${events.length} upcoming events for ${sport.name}`);
+            }
+            return events;
+          })
+          .catch(error => {
+            console.error(`[EventTrackingService] Error preloading upcoming events for ${sport.name}:`, error);
+            return [];
+          });
+      });
+      
+      // Execute all promises in parallel but don't wait for the results
+      // This runs in the background and doesn't block other operations
+      Promise.all(promises).then(results => {
+        const totalEvents = results.reduce((total, events) => total + events.length, 0);
+        console.log(`[EventTrackingService] Successfully preloaded ${totalEvents} upcoming events for all sports`);
+      });
+      
+      // Also preload the combined all sports endpoint which is used on the homepage
+      this.apiSportsService.getAllUpcomingEvents()
+        .then(events => {
+          console.log(`[EventTrackingService] Preloaded ${events.length} upcoming events for homepage`);
+        })
+        .catch(error => {
+          console.error(`[EventTrackingService] Error preloading upcoming events for homepage:`, error);
+        });
+    } catch (error) {
+      console.error(`[EventTrackingService] Error in preloadUpcomingEventsForAllSports:`, error);
+    }
   }
 }
 

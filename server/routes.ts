@@ -125,7 +125,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
             12: 'mma-ufc', // Make sure this matches what's in the API service
             13: 'formula_1',
             14: 'cycling',
-            15: 'american_football'
+            15: 'american_football',
+            16: 'afl',        // Australian Football League
+            17: 'snooker',    // Added snooker
+            18: 'darts',      // Added darts
+            19: 'table-tennis', // Table tennis
+            20: 'badminton',  // Badminton
+            21: 'beach-volleyball', // Beach volleyball
+            22: 'winter-sports', // Winter sports (skiing, etc)
+            23: 'motorsport', // Generic motorsport
+            24: 'esports',    // Esports
+            25: 'netball',    // Netball
+            26: 'soccer',     // Alias for football for some regions
+            27: 'nba',        // NBA as separate entry
+            28: 'nhl',        // NHL as separate entry
+            29: 'nfl',        // NFL as separate entry
+            30: 'mlb'         // MLB as separate entry
           };
           
           const sportName = sportMap[reqSportId] || 'football';
@@ -184,7 +199,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           12: 'mma-ufc',
           13: 'formula_1',
           14: 'cycling',
-          15: 'american_football'
+          15: 'american_football',
+          16: 'afl',        // Australian Football League
+          17: 'snooker',    // Added snooker
+          18: 'darts',      // Added darts
+          19: 'table-tennis', // Table tennis
+          20: 'badminton',  // Badminton
+          21: 'beach-volleyball', // Beach volleyball
+          22: 'winter-sports', // Winter sports (skiing, etc)
+          23: 'motorsport', // Generic motorsport
+          24: 'esports',    // Esports
+          25: 'netball',    // Netball
+          26: 'soccer',     // Alias for football for some regions
+          27: 'nba',        // NBA as separate entry
+          28: 'nhl',        // NHL as separate entry
+          29: 'nfl',        // NFL as separate entry
+          30: 'mlb'         // MLB as separate entry
         };
         
         const sportName = sportMap[reqSportId] || 'football';
@@ -235,7 +265,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         { id: 12, name: 'mma-ufc' },
         { id: 13, name: 'formula_1' },
         { id: 14, name: 'cycling' },
-        { id: 15, name: 'american_football' }
+        { id: 15, name: 'american_football' },
+        { id: 16, name: 'afl' },        // Australian Football League
+        { id: 17, name: 'snooker' },    // Added snooker
+        { id: 18, name: 'darts' },      // Added darts
+        { id: 19, name: 'table-tennis' }, // Table tennis
+        { id: 20, name: 'badminton' },  // Badminton
+        { id: 21, name: 'beach-volleyball' }, // Beach volleyball
+        { id: 22, name: 'winter-sports' }, // Winter sports (skiing, etc)
+        { id: 23, name: 'motorsport' }, // Generic motorsport
+        { id: 24, name: 'esports' },    // Esports
+        { id: 25, name: 'netball' },    // Netball
+        { id: 26, name: 'soccer' },     // Alias for football for some regions
+        { id: 27, name: 'nba' },        // NBA as separate entry
+        { id: 28, name: 'nhl' },        // NHL as separate entry
+        { id: 29, name: 'nfl' },        // NFL as separate entry
+        { id: 30, name: 'mlb' }         // MLB as separate entry
       ];
       
       let allEvents: any[] = [];

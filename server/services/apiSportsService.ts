@@ -907,35 +907,33 @@ export class ApiSportsService {
         
         console.log(`[ApiSportsService] Found ${allEvents.length} upcoming events from priority sports`);
         
-        // If we don't have enough events from priority sports, try secondary sports
-        if (allEvents.length < 10) {
-          console.log(`[ApiSportsService] Not enough events from priority sports, trying secondary sports`);
+        // Always try to fetch data for all secondary sports to ensure we have data for each sport category
+        console.log(`[ApiSportsService] Fetching data for all secondary sports to ensure full coverage`);
+        
+        const secondaryPromises = secondarySports.map(sport => 
+          this.getUpcomingEvents(sport.name, limit)
+            .then(events => {
+              if (events && events.length > 0) {
+                console.log(`[ApiSportsService] Found ${events.length} upcoming events for ${sport.name}`);
+                return events;
+              }
+              return [];
+            })
+            .catch(error => {
+              console.error(`[ApiSportsService] Error fetching upcoming events for ${sport.name}:`, error);
+              return [];
+            })
+        );
           
-          const secondaryPromises = secondarySports.map(sport => 
-            this.getUpcomingEvents(sport.name, limit)
-              .then(events => {
-                if (events && events.length > 0) {
-                  console.log(`[ApiSportsService] Found ${events.length} upcoming events for ${sport.name}`);
-                  return events;
-                }
-                return [];
-              })
-              .catch(error => {
-                console.error(`[ApiSportsService] Error fetching upcoming events for ${sport.name}:`, error);
-                return [];
-              })
-          );
-          
-          // Wait for secondary sport promises
-          const secondaryResults = await Promise.all(secondaryPromises);
-          
-          // Add secondary sports events
-          secondaryResults.forEach(events => {
-            if (events.length > 0) {
-              allEvents = [...allEvents, ...events];
-            }
-          });
-        }
+        // Wait for secondary sport promises
+        const secondaryResults = await Promise.all(secondaryPromises);
+        
+        // Add secondary sports events
+        secondaryResults.forEach(events => {
+          if (events.length > 0) {
+            allEvents = [...allEvents, ...events];
+          }
+        });
         
         // Make sure sport IDs are set correctly
         const eventsWithValidSportIds = allEvents.map(event => {

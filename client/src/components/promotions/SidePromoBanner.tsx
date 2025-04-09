@@ -17,13 +17,20 @@ const SidePromoBanner: React.FC<SidePromoBannerProps> = ({
   targetUrl,
   position
 }) => {
+  // Log to confirm component is being used
+  console.log(`Rendering ${position} promo banner with image: ${imageUrl}`);
+  
   return (
-    <div className="min-h-screen w-24 flex">
-      <Link href={targetUrl} className="h-full w-full hover:opacity-90 transition-opacity">
-        <img 
-          src={imageUrl} 
-          alt={altText} 
-          className="h-full object-cover" 
+    <div className="min-h-screen w-24 bg-blue-900">
+      <Link href={targetUrl} className="h-full w-full block hover:opacity-90 transition-opacity">
+        <div
+          className="h-full w-full bg-center bg-no-repeat bg-cover" 
+          style={{ 
+            backgroundImage: `url(${imageUrl})`,
+            // Show different parts of the image based on position
+            backgroundPosition: position === 'left' ? 'left center' : 'right center'
+          }}
+          aria-label={altText}
         />
       </Link>
     </div>

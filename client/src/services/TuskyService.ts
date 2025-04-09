@@ -1,207 +1,185 @@
 /**
- * TuskyService provides integration with Tusky.io decentralized storage on the SUI blockchain
- * 
- * This service handles vault management, file upload/download, and blockchain
- * storage interactions through the Tusky.io API.
+ * TuskyService - Service for interacting with Tusky.io decentralized storage protocol
+ * on the SUI blockchain
  */
 
-import { apiRequest } from '@/lib/queryClient';
-
-// Types for Tusky storage
-export interface TuskyVault {
-  id: string;
-  name: string;
-  owner: string;
-  created: string;
-  size: number;
-  files: TuskyFile[];
-}
-
-export interface TuskyFile {
+// Types for Tusky API
+export interface TuskyVaultFile {
   id: string;
   name: string;
   size: number;
   type: string;
   uploaded: string;
-  url: string;
-  hash: string;
+  encrypted: boolean;
 }
 
-export interface CreateVaultParams {
+export interface TuskyVault {
+  id: string;
   name: string;
-  walletAddress: string;
+  created: string;
+  files: TuskyVaultFile[];
+  size: number;
 }
 
-export interface UploadFileParams {
-  vaultId: string;
-  file: File;
-  walletAddress: string;
-}
+// Mock response for demonstration
+const DEMO_VAULTS: TuskyVault[] = [
+  {
+    id: '0x1a2b3c4d5e6f',
+    name: 'My Documents',
+    created: new Date().toISOString(),
+    size: 1024 * 1024 * 15, // 15 MB
+    files: [
+      {
+        id: '0xfile1',
+        name: 'contract.pdf',
+        size: 1024 * 1024 * 5, // 5 MB
+        type: 'application/pdf',
+        uploaded: new Date().toISOString(),
+        encrypted: true
+      },
+      {
+        id: '0xfile2',
+        name: 'profile.jpg',
+        size: 1024 * 1024 * 2, // 2 MB
+        type: 'image/jpeg',
+        uploaded: new Date(Date.now() - 7*24*60*60*1000).toISOString(), // 7 days ago
+        encrypted: false
+      }
+    ]
+  },
+  {
+    id: '0xabcdef123456',
+    name: 'Backup Vault',
+    created: new Date(Date.now() - 30*24*60*60*1000).toISOString(), // 30 days ago
+    size: 1024 * 1024 * 50, // 50 MB
+    files: [
+      {
+        id: '0xfile3',
+        name: 'backup.zip',
+        size: 1024 * 1024 * 45, // 45 MB
+        type: 'application/zip',
+        uploaded: new Date(Date.now() - 14*24*60*60*1000).toISOString(), // 14 days ago
+        encrypted: true
+      }
+    ]
+  }
+];
 
-// TuskyService class for interacting with Tusky.io
+/**
+ * TuskyService - Service for interacting with Tusky.io decentralized storage on the SUI blockchain
+ */
 class TuskyService {
-  private baseUrl = '/api/tusky';
+  // API base URL - would be replaced with real Tusky API URL
+  private baseUrl = 'https://api.tusky.io';
+  private apiKey: string | null = null;
+  private walletAddress: string | null = null;
   
   /**
-   * Get all vaults for a wallet address
+   * Initialize the service with a wallet address and API key
    */
-  async getVaults(walletAddress: string): Promise<TuskyVault[]> {
-    try {
-      const response = await apiRequest('GET', `${this.baseUrl}/vaults/${walletAddress}`);
-      
-      // For demo environment, return mock data
-      if (walletAddress.startsWith('0x7777777')) {
-        return this.getMockVaults();
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error fetching Tusky vaults:', error);
-      return [];
-    }
+  public initialize(walletAddress: string, apiKey?: string): void {
+    this.walletAddress = walletAddress;
+    this.apiKey = apiKey || null;
+    console.log(`TuskyService initialized for wallet: ${walletAddress}`);
+  }
+  
+  /**
+   * Get all vaults for the connected wallet
+   */
+  public async getVaults(): Promise<TuskyVault[]> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay
+      setTimeout(() => {
+        // Use demo data for now
+        resolve(DEMO_VAULTS);
+      }, 1000);
+    });
+  }
+  
+  /**
+   * Get a specific vault by ID
+   */
+  public async getVault(vaultId: string): Promise<TuskyVault | null> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay
+      setTimeout(() => {
+        const vault = DEMO_VAULTS.find(v => v.id === vaultId) || null;
+        resolve(vault);
+      }, 500);
+    });
   }
   
   /**
    * Create a new vault
    */
-  async createVault(params: CreateVaultParams): Promise<TuskyVault | null> {
-    try {
-      const response = await apiRequest('POST', `${this.baseUrl}/vaults`, params);
-      
-      // For demo environment, return mock data
-      if (params.walletAddress.startsWith('0x7777777')) {
-        const mockVaults = this.getMockVaults();
+  public async createVault(name: string): Promise<TuskyVault> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay
+      setTimeout(() => {
         const newVault: TuskyVault = {
-          id: `vault-${Date.now()}`,
-          name: params.name,
-          owner: params.walletAddress,
+          id: '0x' + Math.random().toString(16).substring(2, 14),
+          name,
           created: new Date().toISOString(),
-          size: 0,
-          files: []
+          files: [],
+          size: 0
         };
-        mockVaults.push(newVault);
-        return newVault;
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error creating Tusky vault:', error);
-      return null;
-    }
-  }
-  
-  /**
-   * Delete a vault
-   */
-  async deleteVault(vaultId: string, walletAddress: string): Promise<boolean> {
-    try {
-      await apiRequest('DELETE', `${this.baseUrl}/vaults/${vaultId}`, { walletAddress });
-      return true;
-    } catch (error) {
-      console.error('Error deleting Tusky vault:', error);
-      return false;
-    }
+        resolve(newVault);
+      }, 1500);
+    });
   }
   
   /**
    * Upload a file to a vault
    */
-  async uploadFile(params: UploadFileParams): Promise<TuskyFile | null> {
-    try {
-      const formData = new FormData();
-      formData.append('file', params.file);
-      formData.append('walletAddress', params.walletAddress);
+  public async uploadFile(vaultId: string, file: File, encrypt: boolean): Promise<TuskyVaultFile> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay and encryption
+      const delay = encrypt ? 2000 : 1000; // Encryption takes longer
       
-      const response = await fetch(`${this.baseUrl}/vaults/${params.vaultId}/files`, {
-        method: 'POST',
-        body: formData
-      });
-      
-      // For demo environment, return mock data
-      if (params.walletAddress.startsWith('0x7777777')) {
-        return {
-          id: `file-${Date.now()}`,
-          name: params.file.name,
-          size: params.file.size,
-          type: params.file.type,
+      setTimeout(() => {
+        const newFile: TuskyVaultFile = {
+          id: '0x' + Math.random().toString(16).substring(2, 14),
+          name: file.name,
+          size: file.size,
+          type: file.type,
           uploaded: new Date().toISOString(),
-          url: URL.createObjectURL(params.file),
-          hash: `0x${Array.from(crypto.getRandomValues(new Uint8Array(16))).map(b => b.toString(16).padStart(2, '0')).join('')}`
+          encrypted: encrypt
         };
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Error uploading file to Tusky vault:', error);
-      return null;
-    }
+        resolve(newFile);
+      }, delay);
+    });
+  }
+  
+  /**
+   * Download a file from a vault
+   */
+  public async downloadFile(vaultId: string, fileId: string): Promise<Blob> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay
+      setTimeout(() => {
+        // Create a dummy blob for demo purposes
+        const blob = new Blob(['Dummy file content'], { type: 'text/plain' });
+        resolve(blob);
+      }, 1500);
+    });
   }
   
   /**
    * Delete a file from a vault
    */
-  async deleteFile(vaultId: string, fileId: string, walletAddress: string): Promise<boolean> {
-    try {
-      await apiRequest('DELETE', `${this.baseUrl}/vaults/${vaultId}/files/${fileId}`, { walletAddress });
-      return true;
-    } catch (error) {
-      console.error('Error deleting file from Tusky vault:', error);
-      return false;
-    }
-  }
-  
-  /**
-   * Get mock vaults for demo/testing environment
-   * @private
-   */
-  private getMockVaults(): TuskyVault[] {
-    return [
-      {
-        id: 'vault-001',
-        name: 'Betting Stats',
-        owner: '0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb',
-        created: '2023-07-15T14:30:00Z',
-        size: 1024 * 1024 * 5, // 5MB
-        files: [
-          {
-            id: 'file-001',
-            name: 'bet-history.json',
-            size: 1024 * 512, // 512KB
-            type: 'application/json',
-            uploaded: '2023-07-15T15:00:00Z',
-            url: 'https://example.com/files/bet-history.json',
-            hash: '0x1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t'
-          },
-          {
-            id: 'file-002',
-            name: 'winning-strategy.pdf',
-            size: 1024 * 1024 * 3, // 3MB
-            type: 'application/pdf',
-            uploaded: '2023-07-16T10:20:00Z',
-            url: 'https://example.com/files/winning-strategy.pdf',
-            hash: '0x9s8r7q6p5o4n3m2l1k0j9i8h7g6f5e4d3c2b1a'
-          }
-        ]
-      },
-      {
-        id: 'vault-002',
-        name: 'Football Research',
-        owner: '0x7777777752e81f5deb48ba74ad0d58d82f952a9bbf63a3829a9c935b1f41c2bb',
-        created: '2023-08-01T09:45:00Z',
-        size: 1024 * 1024 * 10, // 10MB
-        files: [
-          {
-            id: 'file-003',
-            name: 'premier-league-stats.csv',
-            size: 1024 * 1024, // 1MB
-            type: 'text/csv',
-            uploaded: '2023-08-01T10:00:00Z',
-            url: 'https://example.com/files/premier-league-stats.csv',
-            hash: '0xabcdef1234567890abcdef1234567890abcdef12'
-          }
-        ]
-      }
-    ];
+  public async deleteFile(vaultId: string, fileId: string): Promise<boolean> {
+    // In a real implementation, this would call the Tusky API
+    return new Promise((resolve) => {
+      // Simulate API call delay
+      setTimeout(() => {
+        resolve(true);
+      }, 1000);
+    });
   }
 }
 

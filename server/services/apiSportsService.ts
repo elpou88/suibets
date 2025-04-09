@@ -557,26 +557,24 @@ export class ApiSportsService {
   private transformEventsData(events: any[], sport: string, isLive: boolean): SportEvent[] {
     if (!events || !Array.isArray(events)) return [];
     
-    // For tennis, we need to set the correct sportId even if using football data
-    if (sport === 'tennis') {
-      console.log(`[ApiSportsService] Processing ${events.length} events for tennis`);
-      // Add tennis-specific sportId to each event before transforming
-      return events.map((event, index) => {
-        // Set the correct sport ID
-        event._sportId = 3; // Tennis
-        event._sportName = 'tennis';
-        
-        // Use the football transformer with tennis sportId
-        return this.transformFootballEvent(event, isLive, index);
-      });
-    }
-    
-    // For all other sports, use the appropriate transformer
+    // For all sports, use the appropriate transformer
     return events.map((event, index) => {
+      // Ensure the correct sportId is set
+      if (event._sportId === undefined) {
+        event._sportId = this.getSportId(sport);
+      }
+      if (event._sportName === undefined) {
+        event._sportName = sport;
+      }
+      
       if (sport === 'football' || sport === 'soccer') {
         return this.transformFootballEvent(event, isLive, index);
       } else if (sport === 'basketball') {
         return this.transformBasketballEvent(event, isLive, index);
+      } else if (sport === 'tennis') {
+        // Use the tennis-specific transformer
+        console.log(`[ApiSportsService] Using tennis transformer for event ${index}`);
+        return this.transformTennisEvent(event, isLive, index);
       } else {
         return this.transformGenericEvent(event, sport, isLive, index);
       }
@@ -587,8 +585,7 @@ export class ApiSportsService {
    * Transform tennis event data
    */
   private transformTennisEvent(event: any, isLive: boolean, index: number): SportEvent {
-    // Since the tennis API might not be available, we'll handle that in transformEventsData
-    // This is just a fallback for real tennis API data
+    // Process tennis API data with appropriate structure
     try {
       const id = event.id || event.fixture?.id || `tennis-${index}`;
       const homePlayer = event.home?.name || event.teams?.home?.name || 'Player 1';
@@ -597,8 +594,64 @@ export class ApiSportsService {
       const status = event.status?.short || event.fixture?.status?.short || 'NS';
       const mappedStatus = this.mapEventStatus(status);
       
-      // Tennis scores can be complex - try to extract them or provide a placeholder
+      // Tennis scores can be complex - try to extract them or provide placeholder
       const score = event.score?.full || event.score?.sets || '0 - 0';
+      
+      // Look for real odds data from the API response
+      let homeOdds = 1.7;
+      let awayOdds = 1.9;
+      
+      // Try to extract odds if available in various formats
+      if (event.odds && Array.isArray(event.odds) && event.odds.length > 0) {
+        // Direct tennis API format
+        if (event.odds[0]?.values) {
+          const homeOddsData = event.odds[0].values.find((v: any) => v.value === homePlayer);
+          const awayOddsData = event.odds[0].values.find((v: any) => v.value === awayPlayer);
+          
+          if (homeOddsData && homeOddsData.odd) {
+            homeOdds = parseFloat(homeOddsData.odd);
+          }
+          
+          if (awayOddsData && awayOddsData.odd) {
+            awayOdds = parseFloat(awayOddsData.odd);
+          }
+        }
+        // Alternative API format
+        else if (event.odds[0]?.bookmakers && event.odds[0].bookmakers.length > 0) {
+          const matchWinnerBet = event.odds[0].bookmakers[0]?.bets?.find((b: any) => 
+            b.name === 'Match Winner' || b.name === 'Winner');
+            
+          if (matchWinnerBet && Array.isArray(matchWinnerBet.values)) {
+            const homeOddsValue = matchWinnerBet.values.find((v: any) => 
+              v.value === homePlayer || v.value === '1');
+            const awayOddsValue = matchWinnerBet.values.find((v: any) => 
+              v.value === awayPlayer || v.value === '2');
+              
+            if (homeOddsValue && homeOddsValue.odd) {
+              homeOdds = parseFloat(homeOddsValue.odd);
+            }
+            
+            if (awayOddsValue && awayOddsValue.odd) {
+              awayOdds = parseFloat(awayOddsValue.odd);
+            }
+          }
+        }
+      }
+      
+      // Create more realistic probabilities from odds
+      const homeProbability = parseFloat((1 / homeOdds).toFixed(2));
+      const awayProbability = parseFloat((1 / awayOdds).toFixed(2));
+      
+      // Determine the most likely total games line based on tournament type
+      let totalGamesLine = 22.5;
+      // Adjust line for grand slams (best of 5 sets) vs regular tournaments (best of 3)
+      if (tournament.includes('Grand Slam') || 
+          tournament.includes('Australian Open') || 
+          tournament.includes('French Open') || 
+          tournament.includes('Wimbledon') || 
+          tournament.includes('US Open')) {
+        totalGamesLine = 36.5;
+      }
       
       return {
         id: `${id}`,
@@ -607,8 +660,8 @@ export class ApiSportsService {
         leagueSlug: tournament.toLowerCase().replace(/\s+/g, '-'),
         homeTeam: homePlayer,
         awayTeam: awayPlayer,
-        homeOdds: 1.7 + Math.random() * 0.5,
-        awayOdds: 1.9 + Math.random() * 0.5,
+        homeOdds: homeOdds,
+        awayOdds: awayOdds,
         drawOdds: null, // Tennis has no draws
         startTime: event.fixture?.date || new Date().toISOString(),
         status: mappedStatus,
@@ -621,8 +674,20 @@ export class ApiSportsService {
             status: 'open',
             marketType: '12', // No draw in tennis
             outcomes: [
-              { id: `outcome-tennis-${id}-home`, name: homePlayer, odds: 1.7 + Math.random() * 0.4, status: 'active', probability: 0.55 },
-              { id: `outcome-tennis-${id}-away`, name: awayPlayer, odds: 1.9 + Math.random() * 0.5, status: 'active', probability: 0.45 }
+              { 
+                id: `outcome-tennis-${id}-home`, 
+                name: homePlayer, 
+                odds: homeOdds, 
+                status: 'active', 
+                probability: homeProbability 
+              },
+              { 
+                id: `outcome-tennis-${id}-away`, 
+                name: awayPlayer, 
+                odds: awayOdds, 
+                status: 'active', 
+                probability: awayProbability 
+              }
             ]
           },
           {
@@ -631,8 +696,20 @@ export class ApiSportsService {
             status: 'open',
             marketType: 'total',
             outcomes: [
-              { id: `outcome-tennis-${id}-over`, name: 'Over 22.5', odds: 1.95, status: 'active', probability: 0.49 },
-              { id: `outcome-tennis-${id}-under`, name: 'Under 22.5', odds: 1.85, status: 'active', probability: 0.51 }
+              { 
+                id: `outcome-tennis-${id}-over`, 
+                name: `Over ${totalGamesLine}`, 
+                odds: 1.95, 
+                status: 'active', 
+                probability: 0.49 
+              },
+              { 
+                id: `outcome-tennis-${id}-under`, 
+                name: `Under ${totalGamesLine}`, 
+                odds: 1.85, 
+                status: 'active', 
+                probability: 0.51 
+              }
             ]
           }
         ]

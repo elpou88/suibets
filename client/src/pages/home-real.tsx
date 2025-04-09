@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
-import ReferralSideBanner from '@/components/promotions/ReferralSideBanner';
+import ImageBanner from '@/components/promotions/ImageBanner';
 
 /**
  * Home page that displays featured events across various sports using HTML/CSS components
@@ -68,7 +68,11 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <ReferralSideBanner position="left" />
+        <ImageBanner
+          href="/promotions/referral"
+          imageSrc="/promo-vertical.png"
+          altText="Earn Referral Bonus"
+        />
         
         {/* Main Content Area */}
         <div className="flex flex-1">
@@ -246,7 +250,11 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <ReferralSideBanner position="right" />
+        <ImageBanner
+          href="/promotions/referral"
+          imageSrc="/promo-vertical.png"
+          altText="Earn Referral Bonus"
+        />
       </div>
     </Layout>
   );

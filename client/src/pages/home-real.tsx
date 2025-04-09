@@ -10,6 +10,7 @@ import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import { Clock, Calendar } from 'lucide-react';
+import PromoSection from '@/components/promotions/PromoSection';
 
 /**
  * Home page that displays featured events across various sports using HTML/CSS components
@@ -87,6 +88,9 @@ export default function HomeReal() {
                 View All Live Events
               </Button>
             </div>
+            
+            {/* Promotional Banner - Added as requested */}
+            <PromoSection />
             
             {/* Featured Live Events */}
             {liveEvents.length > 0 && (

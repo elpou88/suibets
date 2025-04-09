@@ -161,58 +161,95 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             </Button>
           </p>
           
-          {window.location.hostname.includes("replit") && (
-            <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
-              <p className="mb-2 text-gray-600 dark:text-gray-400">Wallet Connection Options:</p>
+          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+            <p className="mb-2 text-gray-600 dark:text-gray-400">Wallet Connection Options:</p>
+            
+            <div className="flex flex-col justify-center items-center mb-4">
+              <p className="text-center text-gray-600 dark:text-gray-400 mb-2">
+                <span className="font-semibold">Note:</span> To use a real Sui wallet, you need to have a wallet extension like Sui Wallet, Ethos Wallet, or Suiet installed in your browser.
+              </p>
               
-              <div className="flex flex-col justify-center items-center mb-4">
-                <p className="text-center text-gray-600 dark:text-gray-400 mb-2">
-                  <span className="font-semibold">Note:</span> To use a real Sui wallet, you need to have a wallet extension like Sui Wallet or Ethos Wallet installed in your browser.
-                </p>
-                
-                <div className="flex items-center my-2">
-                  <span className="text-green-500 mr-2">✅</span>
-                  <span className="text-gray-700 dark:text-gray-300">Real wallets are prioritized by default</span>
-                </div>
-                
-                <div className="flex justify-between items-center w-full mt-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    {localStorage.getItem('use_demo_wallet') === 'true' 
-                      ? '🔄 Using demo wallet for testing' 
-                      : '✅ Using real Sui wallets (preferred)'}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    className="h-6 text-xs"
-                    onClick={() => {
-                      // Toggle "use demo wallet" flag
-                      const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
-                      localStorage.setItem('use_demo_wallet', (!currentValue).toString());
-                      toast({
-                        title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
-                        description: currentValue 
-                          ? 'Will attempt to connect to real Sui wallets' 
-                          : 'Switched to demo wallet mode for testing',
-                        variant: 'default',
-                      });
-                      // Reload the page to apply changes immediately
-                      window.location.reload();
-                    }}
-                  >
-                    {localStorage.getItem('use_demo_wallet') === 'true' 
-                      ? 'Use Real Sui Wallets' 
-                      : 'Switch to Demo Wallet'}
-                  </Button>
-                </div>
+              <div className="flex items-center my-2">
+                <span className="text-green-500 mr-2">✅</span>
+                <span className="text-gray-700 dark:text-gray-300">Real wallets are always prioritized by default</span>
               </div>
               
-              <p className="text-gray-600 dark:text-gray-400 text-[10px]">
-                Note: To use real wallets, you'll need a Sui wallet browser extension like SUI Wallet or Ethos Wallet.
-                After changing this setting, refresh the page for changes to take effect.
-              </p>
+              <div className="flex justify-between items-center w-full mt-2">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {localStorage.getItem('use_demo_wallet') === 'true' 
+                    ? '🔄 Using demo wallet for testing' 
+                    : '✅ Using real Sui wallets (preferred)'}
+                </span>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className="h-6 text-xs"
+                  onClick={() => {
+                    // Toggle "use demo wallet" flag
+                    const currentValue = localStorage.getItem('use_demo_wallet') === 'true';
+                    localStorage.setItem('use_demo_wallet', (!currentValue).toString());
+                    toast({
+                      title: currentValue ? 'Using Real Sui Wallets' : 'Using Demo Wallet',
+                      description: currentValue 
+                        ? 'Will attempt to connect to real Sui wallets' 
+                        : 'Switched to demo wallet mode for testing',
+                      variant: 'default',
+                    });
+                    // Force reload the page to apply changes immediately
+                    window.location.reload();
+                  }}
+                >
+                  {localStorage.getItem('use_demo_wallet') === 'true' 
+                    ? 'Use Real Sui Wallets' 
+                    : 'Switch to Demo Wallet'}
+                </Button>
+              </div>
             </div>
-          )}
+            
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
+              <div className="flex items-center text-blue-700 dark:text-blue-300 font-medium mb-1">
+                <WalletIcon className="h-4 w-4 mr-1" />
+                <span>Real Wallet Extensions</span>
+              </div>
+              <p className="text-[11px] text-blue-700 dark:text-blue-400">
+                For real wallet support, install one of these browser extensions:
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-1">
+                <a 
+                  href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
+                >
+                  • Sui Wallet
+                </a>
+                <a 
+                  href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
+                >
+                  • Ethos Wallet
+                </a>
+                <a 
+                  href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
+                >
+                  • Suiet Wallet
+                </a>
+                <a 
+                  href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
+                >
+                  • Martian Wallet
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

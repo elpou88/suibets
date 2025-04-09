@@ -129,21 +129,21 @@ export default function SportPage() {
     switch (params.sport) {
       case 'football':
       case 'soccer':
-        return 'bg-gradient-to-b from-[#112225] to-[#0e1d20]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'basketball':
-        return 'bg-gradient-to-b from-[#112225] to-[#111f24]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'tennis':
-        return 'bg-gradient-to-b from-[#112225] to-[#12222c]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'baseball':
-        return 'bg-gradient-to-b from-[#112225] to-[#142226]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'hockey':
-        return 'bg-gradient-to-b from-[#112225] to-[#102028]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'formula-1':
-        return 'bg-gradient-to-b from-[#112225] to-[#171f23]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       case 'esports':
-        return 'bg-gradient-to-b from-[#112225] to-[#12202a]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
       default:
-        return 'bg-gradient-to-b from-[#112225] to-[#0f1e21]';
+        return 'bg-gradient-to-b from-[#09181B] to-[#112225]';
     }
   };
 
@@ -344,7 +344,7 @@ export default function SportPage() {
                         </div>
                         
                         {/* Import SportSpecificBets component to display all available markets */}
-                        <div className="betting-markets bg-[#0b1618]/50 p-4 rounded-lg border border-[#1e3a3f] shadow-lg shadow-cyan-900/10">
+                        <div className="betting-markets bg-gradient-to-b from-[#14292e] to-[#112225] p-4 rounded-lg border border-[#1e3a3f] shadow-lg shadow-cyan-900/10">
                           <SportSpecificBets
                             sportType={params.sport}
                             eventId={event.id}

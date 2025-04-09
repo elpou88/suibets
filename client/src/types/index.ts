@@ -29,7 +29,7 @@ export interface BettingContextType {
 
 export interface SelectedBet {
   id: string;
-  eventId: number;
+  eventId: string | number;
   eventName: string;
   selectionName: string;
   odds: number;

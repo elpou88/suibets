@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Event, Sport } from '@/types';
-import { SportSpecificBets } from './SportSpecificBets';
+import SimpleMarkets from './SimpleMarkets';
 
 // This component is a wrapper that loads all sport-specific betting interfaces
 // while maintaining the original UI design (without changing it)
@@ -62,7 +62,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
     // If we have event details, render that specific sport
     if (eventDetails) {
       return (
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType={sportType || getSportTypeById(eventDetails.sportId)}
           eventId={eventDetails.id}
           eventName={`${eventDetails.homeTeam} vs ${eventDetails.awayTeam}`}
@@ -80,7 +80,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
     return (
       <>
         {/* Football/Soccer */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="football"
           eventId={1}
           eventName="Sample Football Match"
@@ -92,7 +92,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Basketball */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="basketball"
           eventId={2}
           eventName="Sample Basketball Game"
@@ -103,7 +103,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Tennis */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="tennis"
           eventId={3}
           eventName="Sample Tennis Match"
@@ -114,7 +114,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Boxing/MMA */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="boxing"
           eventId={4}
           eventName="Sample Boxing Match"
@@ -125,7 +125,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Cricket */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="cricket"
           eventId={5}
           eventName="Sample Cricket Match"
@@ -137,7 +137,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Hockey */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="hockey"
           eventId={6}
           eventName="Sample Hockey Game"
@@ -149,7 +149,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Rugby */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="rugby-league"
           eventId={7}
           eventName="Sample Rugby Match"
@@ -161,7 +161,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* MMA/UFC */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="mma-ufc"
           eventId={8}
           eventName="Sample UFC Fight"
@@ -172,7 +172,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Esports */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="esports"
           eventId={9}
           eventName="Sample Esports Match"
@@ -183,7 +183,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* Baseball */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="baseball"
           eventId={10}
           eventName="Sample Baseball Game"
@@ -194,7 +194,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
         />
         
         {/* American Football */}
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType="american-football"
           eventId={11}
           eventName="Sample Football Game"
@@ -218,7 +218,7 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
   if (eventDetails) {
     return (
       <div style={{ display: 'none' }}>
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType={sportType || getSportTypeById(eventDetails.sportId)}
           eventId={eventDetails.id}
           eventName={`${eventDetails.homeTeam} vs ${eventDetails.awayTeam}`}

@@ -8,7 +8,7 @@ import { ChevronDown, ChevronRight } from 'lucide-react';
 // Props interface for sport-specific betting components
 interface SportSpecificBetsProps {
   sportType: string;
-  eventId: number;
+  eventId: string | number;
   eventName: string;
   homeTeam: string;
   awayTeam: string;
@@ -19,7 +19,7 @@ interface SportSpecificBetsProps {
 }
 
 // This component handles sport-specific betting features
-export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
+const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   sportType,
   eventId,
   eventName,
@@ -1443,7 +1443,16 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
 
   // We're returning the component but not displaying it visibly
   // This ensures all betting functionality works behind the scenes
-  return <>{getMarketsForSport()}</>;
+  const marketComponents = getMarketsForSport();
+  return (
+    <div className="sport-specific-bets">
+      {marketComponents.map((market, index) => (
+        <div key={`market-${index}`}>
+          {market}
+        </div>
+      ))}
+    </div>
+  );
 };
 
 export default SportSpecificBets;

@@ -5,7 +5,7 @@ import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
-import { SportSpecificBets } from "@/components/betting/SportSpecificBets";
+import SimpleMarkets from "@/components/betting/SimpleMarkets";
 
 export default function Match() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -134,7 +134,7 @@ export default function Match() {
     // We don't directly render this but its hooks will be registered
     return (
       <div style={{ display: 'none' }}>
-        <SportSpecificBets 
+        <SimpleMarkets 
           sportType={sportParam}
           eventId={eventDetails.id}
           eventName={`${eventDetails.homeTeam} vs ${eventDetails.awayTeam}`}

@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, CalendarIcon, RefreshCw, Loader2 } from 'lucide-react';
-import SportSpecificBets from '@/components/betting/SportSpecificBets';
+import SimpleMarkets from '@/components/betting/SimpleMarkets';
 
 const SPORTS_MAPPING: Record<string, number> = {
   'football': 1,
@@ -339,10 +339,12 @@ export default function SportPage() {
                             </span>
                           </CardDescription>
                         </div>
-                        {event.score && (
+                        {(event.homeScore !== undefined && event.awayScore !== undefined) && (
                           <div className="text-right">
                             <div className="text-sm font-medium text-cyan-400">Score</div>
-                            <div className="text-xl font-bold bg-[#0b1618] py-1 px-3 rounded-lg border border-[#1e3a3f]">{event.score}</div>
+                            <div className="text-xl font-bold bg-[#0b1618] py-1 px-3 rounded-lg border border-[#1e3a3f]">
+                              {event.homeScore} - {event.awayScore}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -431,9 +433,9 @@ export default function SportPage() {
                           </div>
                         </div>
                         
-                        {/* Import SportSpecificBets component to display all available markets */}
+                        {/* Use SimpleMarkets component to display all available markets */}
                         <div className="betting-markets bg-gradient-to-b from-[#14292e] to-[#112225] p-4 rounded-lg border border-[#1e3a3f] shadow-lg shadow-cyan-900/10">
-                          <SportSpecificBets
+                          <SimpleMarkets
                             sportType={params.sport}
                             eventId={event.id}
                             eventName={`${event.homeTeam} vs ${event.awayTeam}`}

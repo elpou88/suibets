@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { Sport } from "@/types";
-import { Grid2X2, ChevronLeft, LineChart } from "lucide-react";
+import { 
+  Grid2X2, 
+  ChevronRight, 
+  ChevronDown, 
+  LineChart,
+  Flame
+} from "lucide-react";
 import { 
   MdSportsBaseball, 
   MdSportsBasketball, 
@@ -22,53 +28,96 @@ import {
 } from "react-icons/fa";
 import { useQuery } from "@tanstack/react-query";
 
-// Static list of sports to match the sportIdMap in sport.tsx
-const sportsList = [
-  { id: 1, name: 'Upcoming', slug: 'upcoming', icon: 'grid' },
-  { id: 2, name: 'Football', slug: 'football', icon: 'soccer' },
-  { id: 3, name: 'Basketball', slug: 'basketball', icon: 'basketball' },
-  { id: 4, name: 'Tennis', slug: 'tennis', icon: 'tennis' },
-  { id: 5, name: 'Baseball', slug: 'baseball', icon: 'baseball' },
-  { id: 6, name: 'Boxing', slug: 'boxing', icon: 'boxing' },
-  { id: 7, name: 'Hockey', slug: 'hockey', icon: 'hockey' },
-  { id: 8, name: 'Esports', slug: 'esports', icon: 'esports' },
-  { id: 9, name: 'MMA / UFC', slug: 'mma-ufc', icon: 'mma' },
-  { id: 10, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball' },
-  { id: 11, name: 'Table Tennis', slug: 'table-tennis', icon: 'tabletennis' },
-  { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
-  { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
-  { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-  { id: 15, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
-  { id: 16, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' },
-  { id: 17, name: 'AFL', slug: 'afl', icon: 'football' }
+// Sports organized by categories
+const sportsCategories = [
+  {
+    name: "Main",
+    sports: [
+      { id: 1, name: 'Homepage', slug: 'upcoming', icon: 'grid' },
+      { id: 2, name: 'Live Now', slug: 'live', icon: 'live', highlight: true }
+    ]
+  },
+  {
+    name: "Popular Sports",
+    sports: [
+      { id: 3, name: 'Football', slug: 'football', icon: 'soccer' },
+      { id: 4, name: 'Basketball', slug: 'basketball', icon: 'basketball' },
+      { id: 5, name: 'Tennis', slug: 'tennis', icon: 'tennis' },
+      { id: 6, name: 'Baseball', slug: 'baseball', icon: 'baseball' },
+      { id: 7, name: 'Esports', slug: 'esports', icon: 'esports', highlight: true }
+    ]
+  },
+  {
+    name: "Combat Sports",
+    sports: [
+      { id: 8, name: 'Boxing', slug: 'boxing', icon: 'boxing' },
+      { id: 9, name: 'MMA / UFC', slug: 'mma-ufc', icon: 'mma' }
+    ]
+  },
+  {
+    name: "Team Sports",
+    sports: [
+      { id: 10, name: 'Hockey', slug: 'hockey', icon: 'hockey' },
+      { id: 11, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball' },
+      { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
+      { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
+      { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
+      { id: 15, name: 'AFL', slug: 'afl', icon: 'football' }
+    ]
+  },
+  {
+    name: "Other Sports",
+    sports: [
+      { id: 16, name: 'Table Tennis', slug: 'table-tennis', icon: 'tabletennis' },
+      { id: 17, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
+      { id: 18, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' }
+    ]
+  }
 ];
 
 export default function Sidebar() {
   const [activeSport, setActiveSport] = useState("upcoming");
+  const [expandedCategories, setExpandedCategories] = useState<string[]>(["Main", "Popular Sports"]);
   
   const { data: apiSports = [] } = useQuery<Sport[]>({
     queryKey: ['/api/sports']
   });
-  
-  // Use our static list for consistent display
-  const sports = sportsList;
 
   // Set active sport based on path
   useEffect(() => {
     const path = window.location.pathname;
     if (path === '/' || path === '/sports') {
       setActiveSport('upcoming');
-    } else if (path.startsWith('/sport/')) {
-      const sportSlug = path.replace('/sport/', '');
+    } else if (path.includes('/sports-live/')) {
+      const sportSlug = path.split('/sports-live/')[1];
       setActiveSport(sportSlug);
-      console.log('Sport slug detected in URL:', sportSlug);
+      
+      // Find which category contains this sport
+      for (const category of sportsCategories) {
+        if (category.sports.some(sport => sport.slug === sportSlug)) {
+          if (!expandedCategories.includes(category.name)) {
+            setExpandedCategories([...expandedCategories, category.name]);
+          }
+          break;
+        }
+      }
     }
   }, [window.location.pathname]); // Update when the pathname changes
+
+  const toggleCategory = (categoryName: string) => {
+    setExpandedCategories(prev => 
+      prev.includes(categoryName) 
+        ? prev.filter(name => name !== categoryName)
+        : [...prev, categoryName]
+    );
+  };
 
   const getSportIcon = (iconType: string) => {
     switch (iconType) {
       case 'grid':
         return <Grid2X2 size={24} />;
+      case 'live':
+        return <Flame size={24} className="text-red-500" />;
       case 'soccer':
         return <MdSportsSoccer size={24} />;
       case 'basketball':
@@ -117,50 +166,54 @@ export default function Sidebar() {
         </a>
       </div>
       
-      {/* Sports navigation - simplified with direct anchor links */}
+      {/* Sports navigation - categorized */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
-        {/* Home/Upcoming */}
-        <a href="/" className="block">
-          <div className={`flex items-center px-4 py-3 cursor-pointer ${
-            activeSport === 'upcoming' ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
-          }`}>
-            <div className="w-8 h-8 mr-3 flex items-center justify-center">
-              {getSportIcon('grid')}
+        {sportsCategories.map((category) => (
+          <div key={category.name} className="mb-2">
+            {/* Category Header */}
+            <div 
+              className="flex items-center justify-between px-4 py-2 text-gray-400 hover:text-white cursor-pointer"
+              onClick={() => toggleCategory(category.name)}
+            >
+              <span className="text-sm font-medium uppercase tracking-wider">{category.name}</span>
+              {expandedCategories.includes(category.name) 
+                ? <ChevronDown size={16} /> 
+                : <ChevronRight size={16} />
+              }
             </div>
-            <span className={activeSport === 'upcoming' ? 'font-medium' : ''}>
-              Upcoming
-            </span>
-          </div>
-        </a>
-        
-        {/* Esports */}
-        <a href="/sports-live/esports" className="block">
-          <div className="flex items-center px-4 py-3 cursor-pointer bg-cyan-400 text-black my-2">
-            <div className="w-8 h-8 mr-3 flex items-center justify-center">
-              {getSportIcon('esports')}
-            </div>
-            <span>Esports</span>
-          </div>
-        </a>
-        
-        {/* Other sports */}
-        {sports.filter(sport => sport.slug !== 'upcoming' && sport.slug !== 'esports').map((sport) => (
-          <a 
-            key={sport.id} 
-            href={`/sports-live/${sport.slug}`} 
-            className="block"
-          >
-            <div className={`flex items-center px-4 py-3 cursor-pointer ${
-              activeSport === sport.slug ? 'text-cyan-400' : 'text-white hover:text-cyan-400'
-            }`}>
-              <div className="w-8 h-8 mr-3 flex items-center justify-center">
-                {getSportIcon(sport.icon)}
+            
+            {/* Category Content */}
+            {expandedCategories.includes(category.name) && (
+              <div className="pl-2">
+                {category.sports.map((sport) => {
+                  const href = sport.slug === 'upcoming' 
+                    ? "/" 
+                    : sport.slug === 'live' 
+                      ? "/live" 
+                      : `/sports-live/${sport.slug}`;
+                  
+                  return (
+                    <a key={sport.id} href={href} className="block">
+                      <div className={`flex items-center px-4 py-3 cursor-pointer rounded-md mx-1 
+                        ${sport.highlight ? 'bg-[#1e3a3f] hover:bg-[#254247]' : ''}
+                        ${activeSport === sport.slug 
+                          ? 'text-cyan-400' 
+                          : 'text-white hover:text-cyan-400 hover:bg-[#0f1d23]'
+                        }`}
+                      >
+                        <div className="w-8 h-8 mr-3 flex items-center justify-center">
+                          {getSportIcon(sport.icon)}
+                        </div>
+                        <span className={activeSport === sport.slug ? 'font-medium' : ''}>
+                          {sport.name}
+                        </span>
+                      </div>
+                    </a>
+                  );
+                })}
               </div>
-              <span className={activeSport === sport.slug ? 'font-medium' : ''}>
-                {sport.name}
-              </span>
-            </div>
-          </a>
+            )}
+          </div>
         ))}
       </div>
     </div>

@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes-simple";
+import { registerRoutes } from "./routes"; // Using main routes.ts instead of routes-simple.ts
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 

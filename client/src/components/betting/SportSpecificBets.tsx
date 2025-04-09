@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useBetting } from '@/context/BettingContext';
 import { formatOdds, getSportMarkets } from '@/lib/utils';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 
 // Props interface for sport-specific betting components
 interface SportSpecificBetsProps {
@@ -30,6 +31,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   isLive = false,
 }) => {
   const { addBet } = useBetting();
+  
+  // State to keep track of which markets are expanded
+  const [expandedMarkets, setExpandedMarkets] = useState<string[]>(['match-result']);
+  
+  // Toggle market expansion
+  const toggleMarket = (marketId: string) => {
+    if (expandedMarkets.includes(marketId)) {
+      setExpandedMarkets(expandedMarkets.filter(id => id !== marketId));
+    } else {
+      setExpandedMarkets([...expandedMarkets, marketId]);
+    }
+  };
   
   // Function to handle adding a bet to the slip
   const handleAddBet = (
@@ -74,16 +87,38 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     return Number((base + (Math.random() * variance)).toFixed(2));
   };
 
+  // Common function to render a collapsible market card
+  const renderMarketCard = (id: string, title: string, content: React.ReactNode) => {
+    const isExpanded = expandedMarkets.includes(id);
+    
+    return (
+      <Card key={id} className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader 
+          className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative cursor-pointer"
+          onClick={() => toggleMarket(id)}
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center justify-between">
+            <span>{title}</span>
+            {isExpanded ? 
+              <ChevronDown className="h-5 w-5 text-cyan-300" /> : 
+              <ChevronRight className="h-5 w-5 text-cyan-300" />
+            }
+          </CardTitle>
+        </CardHeader>
+        {isExpanded && (
+          <CardContent className="flex flex-wrap gap-3 p-4">
+            {content}
+          </CardContent>
+        )}
+      </Card>
+    );
+  };
+
   // Render generic betting options available for all sports
-  const renderGenericBets = () => (
-    <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
-      <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-        <CardTitle className="text-cyan-300 font-bold flex items-center">
-          Match Result
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="flex flex-wrap gap-3 p-4">
+  const renderGenericBets = () => {
+    const content = (
+      <>
         <Button
           variant="outline"
           onClick={() => handleAddBet('Match Result', `${homeTeam} (Win)`, homeOdds)}
@@ -113,9 +148,11 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <span className="text-cyan-200">{awayTeam}</span>
           <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(awayOdds)}</span>
         </Button>
-      </CardContent>
-    </Card>
-  );
+      </>
+    );
+    
+    return renderMarketCard('match-result', 'Match Result', content);
+  };
 
   // Render football/soccer specific markets
   const renderFootballMarkets = () => (

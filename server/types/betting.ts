@@ -10,6 +10,7 @@ export interface SportEvent {
   score?: string;
   markets: MarketData[];
   isLive: boolean;
+  dataSource?: string; // Added to track data source for data quality purposes
 }
 
 // Types for market data

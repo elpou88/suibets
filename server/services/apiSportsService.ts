@@ -20,19 +20,21 @@ export class ApiSportsService {
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   private cacheExpiry: number = 5 * 60 * 1000; // 5 minutes cache expiry
 
-  constructor() {
+  constructor(apiKey?: string) {
     this.baseUrl = `https://${API_HOSTS.RAPID_API}/v3`;
     this.directBaseUrl = `https://${API_HOSTS.DIRECT_API}`;
-    // Use the SPORTSDATA_API_KEY as the primary key, fall back to SPORTSDATA_API_KEY if not available
-    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.SPORTSDATA_API_KEY || '';
+    
+    // Accept apiKey parameter, then fall back to environment variables
+    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
     
     if (!this.apiKey) {
-      console.warn('No SPORTSDATA_API_KEY environment variable found. API-Sports functionality will be limited.');
+      console.warn('No API key provided for API-Sports. API-Sports functionality will be limited.');
     } else {
-      console.log('[ApiSportsService] API key found, length:', this.apiKey.length);
+      console.log(`[ApiSportsService] API key found, length: ${this.apiKey.length}`);
       
       // Verify API key works correctly for direct API
       this.verifyApiConnection();
+      this.checkForLiveFixtures();
     }
   }
   
@@ -338,62 +340,18 @@ export class ApiSportsService {
                         Object.keys(response.data).join(', '));
           }
           
-          // Try football API as fallback
-          console.log(`[ApiSportsService] Falling back to football API for ${sport}`);
-          
-          const fallbackResponse = await axios.get('https://v3.football.api-sports.io/fixtures', {
-            params: { live: 'all' },
-            headers: {
-              'x-apisports-key': this.apiKey,
-              'Accept': 'application/json'
-            }
-          });
-          
-          if (fallbackResponse.data && fallbackResponse.data.response) {
-            const fbEvents = fallbackResponse.data.response;
-            console.log(`[ApiSportsService] Found ${fbEvents.length} live events from football API fallback`);
-            
-            // Add sportId to all events from football API
-            return fbEvents.map((event: any) => ({
-              ...event,
-              _sportId: sportId,
-              _sportName: sport
-            }));
-          }
+          // Don't use fallback, just return empty list
+          console.log(`[ApiSportsService] No live events found for ${sport}`);
+          return [];
           
           console.log(`[ApiSportsService] No live events found for ${sport}`);
           return [];
         } catch (error) {
           console.error(`[ApiSportsService] Error fetching live events for ${sport} from ${apiUrl}:`, error);
           
-          // If the specific API fails, try the football API as fallback
-          if (apiUrl !== 'https://v3.football.api-sports.io/fixtures') {
-            console.log(`[ApiSportsService] Falling back to football API for ${sport} after error`);
-            
-            try {
-              const fallbackResponse = await axios.get('https://v3.football.api-sports.io/fixtures', {
-                params: { live: 'all' },
-                headers: {
-                  'x-apisports-key': this.apiKey,
-                  'Accept': 'application/json'
-                }
-              });
-              
-              if (fallbackResponse.data && fallbackResponse.data.response) {
-                const fbEvents = fallbackResponse.data.response;
-                console.log(`[ApiSportsService] Found ${fbEvents.length} live events from football API fallback`);
-                
-                // Add sportId to all events from football API
-                return fbEvents.map((event: any) => ({
-                  ...event,
-                  _sportId: sportId,
-                  _sportName: sport
-                }));
-              }
-            } catch (fallbackError) {
-              console.error(`[ApiSportsService] Even football API fallback failed:`, fallbackError);
-            }
-          }
+          // Don't use fallback for API failures, just return empty array
+          console.log(`[ApiSportsService] API unavailable for ${sport} - returning empty array`);
+          return [];
           
           console.log(`[ApiSportsService] Cannot fetch live ${sport} events - API error. Please check SPORTSDATA_API_KEY. Using key of length: ${this.apiKey.length}`);
           return [];
@@ -1218,6 +1176,7 @@ export class ApiSportsService {
       });
     }
     
+    // Create the event with proper sportId
     return {
       id: eventId,
       sportId,
@@ -1228,7 +1187,9 @@ export class ApiSportsService {
       status: isLive ? 'live' : 'scheduled',
       score: isLive ? '0 - 0' : undefined, // Default score if not available
       markets: marketsData,
-      isLive
+      isLive,
+      // Add a dataSource property to indicate this is not adapted from another sport
+      dataSource: `api-sports-${sport}`
     };
   }
 

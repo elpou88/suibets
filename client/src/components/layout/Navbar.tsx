@@ -150,31 +150,16 @@ export default function Navbar() {
       </div>
       
       <div className="flex items-center justify-end flex-1 pr-4">
+        {/* Place wallet connection button before bell/settings icons */}
         {user?.walletAddress ? (
-          <>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
-              onClick={() => setIsNotificationsModalOpen(true)}
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-            
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
-              onClick={() => setIsSettingsModalOpen(true)}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
-            
+          <div className="flex items-center">
+            {/* Connect Wallet Button/Dropdown when connected */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="ml-3 border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20">
+                <Button variant="outline" className="border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20">
                   <Wallet className="h-4 w-4 mr-2" />
-                  {shortenAddress(user.walletAddress)}
+                  <span className="hidden sm:inline">{shortenAddress(user.walletAddress)}</span>
+                  <span className="sm:hidden">Connected</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
@@ -199,23 +184,46 @@ export default function Navbar() {
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-          </>
-        ) : (
-          <>
-            <Link href="/join" className="mx-1">
-              <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
-                Join Now
-              </Button>
-            </Link>
+            
+            {/* Notification Button */}
             <Button 
-              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium ml-3" 
+              variant="ghost" 
+              size="icon"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
+              onClick={() => setIsNotificationsModalOpen(true)}
+            >
+              <Bell className="h-5 w-5" />
+            </Button>
+            
+            {/* Settings Button */}
+            <Button 
+              variant="ghost" 
+              size="icon"
+              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
+              onClick={() => setIsSettingsModalOpen(true)}
+            >
+              <Settings className="h-5 w-5" />
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center">
+            {/* Connect Wallet Button when not connected */}
+            <Button 
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
               onClick={attemptQuickWalletConnection}
               disabled={isAttemptingConnection}
             >
               <Wallet className="h-4 w-4 mr-2" />
               {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
             </Button>
-          </>
+            
+            {/* Join Now Button */}
+            <Link href="/join" className="ml-3">
+              <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
+                Join Now
+              </Button>
+            </Link>
+          </div>
         )}
       </div>
 

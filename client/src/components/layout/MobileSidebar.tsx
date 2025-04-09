@@ -127,14 +127,14 @@ export default function MobileSidebar() {
 
             {/* Sports categories */}
             {sports.map((sport) => (
-              <Link key={sport.id} href={`/sport/${sport.slug}`}>
+              <Link key={sport.id} href={`/sports-live/${sport.slug}`}>
                 <div
                   className={`flex items-center px-4 py-3 mx-2 rounded ${
                     activeSport === sport.slug 
                       ? 'bg-primary text-black' 
                       : 'text-white hover:bg-[#042A30]'
                   }`}
-                  onClick={() => handleNavigation(`/sport/${sport.slug}`)}
+                  onClick={() => handleNavigation(`/sports-live/${sport.slug}`)}
                 >
                   <div className="w-8 h-8 mr-3 flex items-center justify-center">
                     {getSportIcon(sport.slug)}

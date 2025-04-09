@@ -134,7 +134,7 @@ export default function Sidebar() {
         </a>
         
         {/* Esports */}
-        <a href="/sport/esports" className="block">
+        <a href="/sports-live/esports" className="block">
           <div className="flex items-center px-4 py-3 cursor-pointer bg-cyan-400 text-black my-2">
             <div className="w-8 h-8 mr-3 flex items-center justify-center">
               {getSportIcon('esports')}
@@ -147,7 +147,7 @@ export default function Sidebar() {
         {sports.filter(sport => sport.slug !== 'upcoming' && sport.slug !== 'esports').map((sport) => (
           <a 
             key={sport.id} 
-            href={`/sport/${sport.slug}`} 
+            href={`/sports-live/${sport.slug}`} 
             className="block"
           >
             <div className={`flex items-center px-4 py-3 cursor-pointer ${

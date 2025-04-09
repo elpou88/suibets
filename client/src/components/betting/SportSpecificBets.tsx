@@ -39,9 +39,10 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
     marketId?: number,
     outcomeId?: string | null
   ) => {
-    // Create unique ID for this bet selection - make it truly unique
-    // Avoid duplicates by using a more specific ID format
-    const betId = `${eventId}-${marketName.replace(/\s+/g, '-')}-${selectionName.replace(/\s+/g, '-')}`;
+    // Create truly unique ID for this bet selection using more specific info
+    // This helps prevent duplicate bets
+    const uniqueIdentifier = Math.random().toString(36).substring(2, 8);
+    const betId = `${eventId}-${marketName.replace(/\s+/g, '-')}-${selectionName.replace(/\s+/g, '-')}-${Date.now()}`;
     
     // Create bet object
     const bet = {
@@ -55,13 +56,13 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       marketId: marketId ? String(marketId) : undefined,
       outcomeId: outcomeId || undefined,
       isLive, // Pass the isLive flag
+      uniqueId: uniqueIdentifier, // Add a random component to prevent duplicates
     };
     
-    // Log the bet details to debug
+    // Log the bet details for debugging
     console.log("ADDING BET:", bet);
     
-    // Only use the context to add the bet - this prevents double-saving
-    // The context will handle saving to localStorage
+    // Use the context to add the bet - context will now check for duplicates
     addBet(bet);
     
     // Log after adding to confirm it was processed

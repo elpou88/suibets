@@ -213,23 +213,27 @@ export const SportBettingWrapper: React.FC<SportBettingWrapperProps> = ({ sportT
     return sport?.slug || 'football'; // Default to football if not found
   };
   
-  // Return a div with all the betting interfaces in a fixed position at bottom
-  // This makes them visible but doesn't disrupt main page layout
-  return (
-    <div style={{ 
-      position: 'fixed',
-      bottom: '10px', 
-      right: '10px',
-      maxWidth: '400px',
-      maxHeight: '200px',
-      overflow: 'auto',
-      zIndex: 10,
-      opacity: 0.01, // Almost invisible but still clickable
-      pointerEvents: 'auto' // Allow interaction
-    }}>
-      {renderSportBettingInterfaces()}
-    </div>
-  );
+  // Return a div with only the specific event betting interface
+  // This fixes the duplication issue by not rendering all sports at once
+  if (eventDetails) {
+    return (
+      <div style={{ display: 'none' }}>
+        <SportSpecificBets 
+          sportType={sportType || getSportTypeById(eventDetails.sportId)}
+          eventId={eventDetails.id}
+          eventName={`${eventDetails.homeTeam} vs ${eventDetails.awayTeam}`}
+          homeTeam={eventDetails.homeTeam}
+          awayTeam={eventDetails.awayTeam}
+          homeOdds={eventDetails.homeOdds}
+          awayOdds={eventDetails.awayOdds}
+          drawOdds={eventDetails.drawOdds}
+        />
+      </div>
+    );
+  }
+  
+  // If no specific event requested, don't render any betting interfaces
+  return null;
 };
 
 export default SportBettingWrapper;

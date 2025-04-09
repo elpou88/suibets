@@ -14,7 +14,10 @@ export class ApiSportsService {
   private shortCacheExpiry: number = 1 * 60 * 1000; // 1 minute for live events
   private mediumCacheExpiry: number = 5 * 60 * 1000; // 5 minutes for medium-priority data
   private longCacheExpiry: number = 30 * 60 * 1000; // 30 minutes for stable data
-  private cacheExpiry: number = 5 * 60 * 1000; // Default cache expiry
+  private cacheExpiry: number = 1 * 60 * 1000; // Default cache expiry - reduced to 1 minute for more frequent updates
+  
+  // Cache version to force refresh when code changes
+  private cacheVersionKey: string = "v2"; // Increment this when making changes to force cache refresh
   
   // API endpoints for each sport
   private sportEndpoints: Record<string, string> = {
@@ -232,7 +235,9 @@ export class ApiSportsService {
     fetchFn: () => Promise<any>,
     cacheExpiryOverride?: number
   ): Promise<any> {
-    const cached = this.cache.get(cacheKey);
+    // Add version key to force refresh when code changes
+    const versionedKey = `${cacheKey}_${this.cacheVersionKey}`;
+    const cached = this.cache.get(versionedKey);
     const expiryToUse = cacheExpiryOverride || this.cacheExpiry;
     
     if (cached && Date.now() - cached.timestamp < expiryToUse) {
@@ -243,7 +248,7 @@ export class ApiSportsService {
     try {
       console.log(`[ApiSportsService] Fetching fresh data for ${cacheKey}`);
       const data = await fetchFn();
-      this.cache.set(cacheKey, { data, timestamp: Date.now() });
+      this.cache.set(versionedKey, { data, timestamp: Date.now() });
       return data;
     } catch (error) {
       // If we have stale cache, return it rather than failing

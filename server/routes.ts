@@ -76,6 +76,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!isLive) {
         console.log(`Fetching upcoming events from API for ${reqSportId ? `sportId: ${reqSportId}` : 'all sports'}`);
         
+        // Special handling for basketball with its unique API format
+        if (reqSportId === 2) {
+          console.log('Directly querying basketball API with today\'s date for upcoming games');
+          
+          try {
+            const axios = await import('axios');
+            const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            
+            // Make direct API request for basketball
+            const response = await axios.default.get('https://v1.basketball.api-sports.io/games', {
+              params: {
+                date: today,
+                timezone: 'UTC',
+                // For upcoming games, we want games that haven't started yet (NS = Not Started)
+                status: 'NS'
+              },
+              headers: {
+                'x-apisports-key': process.env.SPORTSDATA_API_KEY,
+                'Accept': 'application/json'
+              }
+            });
+            
+            if (response.data && response.data.response && Array.isArray(response.data.response)) {
+              console.log(`Direct API call found ${response.data.response.length} upcoming basketball events for today`);
+              
+              // Format the data to match our SportEvent format
+              const formattedEvents = response.data.response.map((event: any) => ({
+                id: String(event.id),
+                sportId: 2,
+                status: 'scheduled',
+                startTime: event.date,
+                homeTeam: event.teams?.home?.name || 'Unknown Team',
+                awayTeam: event.teams?.away?.name || 'Unknown Team',
+                homeScore: 0,
+                awayScore: 0,
+                leagueName: event.league?.name || 'Basketball League',
+                isLive: false,
+                league: {
+                  id: event.league?.id || 0,
+                  name: event.league?.name || 'Basketball League',
+                  logo: event.league?.logo || ''
+                },
+                teams: {
+                  home: {
+                    id: event.teams?.home?.id || 0,
+                    name: event.teams?.home?.name || 'Home Team',
+                    logo: event.teams?.home?.logo || ''
+                  },
+                  away: {
+                    id: event.teams?.away?.id || 0,
+                    name: event.teams?.away?.name || 'Away Team',
+                    logo: event.teams?.away?.logo || ''
+                  }
+                },
+                venue: event.venue || 'Unknown Venue',
+                odds: {
+                  homeWin: 1.9,
+                  awayWin: 1.9,
+                  draw: 20.0
+                },
+                markets: [] // Add odds data if available
+              }));
+              
+              console.log(`Returning ${formattedEvents.length} formatted upcoming basketball events`);
+              return res.json(formattedEvents);
+            }
+          } catch (basketballError) {
+            console.error('Error querying basketball API directly for upcoming games:', basketballError);
+          }
+        }
+        
         // If a specific sport is requested, get upcoming events for that sport
         if (reqSportId) {
           // Map sport ID to sport name with correct format for API
@@ -135,6 +206,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For live events, always try to get them from the API
       console.log("Fetching real-time data from API");
       
+      // Special handling for basketball due to API format differences
+      if (reqSportId === 2) {
+        console.log('Directly querying basketball API with today\'s date');
+        
+        try {
+          const axios = await import('axios');
+          const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+          
+          // Make direct API request for basketball
+          const response = await axios.default.get('https://v1.basketball.api-sports.io/games', {
+            params: {
+              date: today,
+              timezone: 'UTC',
+              // If we want live games, include a status filter
+              ...(isLive ? { status: '1Q-2Q-3Q-4Q-HT-BT' } : {})
+            },
+            headers: {
+              'x-apisports-key': process.env.SPORTSDATA_API_KEY,
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (response.data && response.data.response && Array.isArray(response.data.response)) {
+            console.log(`Direct API call found ${response.data.response.length} basketball events for today`);
+            
+            // Filter for live games if requested
+            const filteredEvents = isLive 
+              ? response.data.response.filter((e: any) => ['1Q', '2Q', '3Q', '4Q', 'HT', 'BT'].includes(e.status?.short))
+              : response.data.response;
+              
+            console.log(`Filtered to ${filteredEvents.length} ${isLive ? 'live' : ''} basketball events`);
+            
+            // Format the data to match our SportEvent format
+            const formattedEvents = filteredEvents.map((event: any) => ({
+              id: String(event.id),
+              sportId: 2,
+              status: event.status?.short === 'FT' ? 'finished' : 
+                    (['1Q', '2Q', '3Q', '4Q', 'HT', 'BT'].includes(event.status?.short) ? 'live' : 'scheduled'),
+              startTime: event.date,
+              homeTeam: event.teams?.home?.name || 'Unknown Team',
+              awayTeam: event.teams?.away?.name || 'Unknown Team',
+              homeScore: event.scores?.home?.total || 0,
+              awayScore: event.scores?.away?.total || 0,
+              leagueName: event.league?.name || 'Basketball League',
+              isLive: ['1Q', '2Q', '3Q', '4Q', 'HT', 'BT'].includes(event.status?.short),
+              league: {
+                id: event.league?.id || 0,
+                name: event.league?.name || 'Basketball League',
+                logo: event.league?.logo || ''
+              },
+              teams: {
+                home: {
+                  id: event.teams?.home?.id || 0,
+                  name: event.teams?.home?.name || 'Home Team',
+                  logo: event.teams?.home?.logo || ''
+                },
+                away: {
+                  id: event.teams?.away?.id || 0,
+                  name: event.teams?.away?.name || 'Away Team',
+                  logo: event.teams?.away?.logo || ''
+                }
+              },
+              scores: event.scores || { home: { total: 0 }, away: { total: 0 } },
+              venue: event.venue || 'Unknown Venue',
+              odds: {
+                homeWin: 1.9,
+                awayWin: 1.9,
+                draw: 20.0
+              },
+              markets: [] // Add odds data if available
+            }));
+            
+            console.log(`Returning ${formattedEvents.length} formatted basketball events`);
+            return res.json(formattedEvents);
+          }
+        } catch (basketballError) {
+          console.error('Error querying basketball API directly:', basketballError);
+        }
+      }
+      
       // If specific sport is requested, try to get that sport's data first
       if (reqSportId) {
         // Map sport ID to sport name
@@ -170,7 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Check if event has a dataSource property indicating adaptation
           // @ts-ignore - event.dataSource may not be in the type definition but might be present in runtime
           const isAdapted = event.dataSource && typeof event.dataSource === 'string' && 
-                           event.dataSource.includes("adapted");
+                          event.dataSource.includes("adapted");
           
           // Only keep events that match the sport ID and are not adapted
           return matchesSportId && !isAdapted;

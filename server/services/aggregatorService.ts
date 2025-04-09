@@ -215,19 +215,25 @@ class WurlusProtocolProvider implements IOddsProvider {
     if (wurlusApiKey) {
       try {
         // Implement real API call to Wurlus Protocol using Wal.app Web API
-        const response = await axios.get(`https://api.wal.app/v1/markets/odds`, {
+        // As per https://docs.wal.app/usage/web-api.html
+        const response = await axios.get(`https://api.wal.app/api/v1/odds`, {
           headers: { 
             'Authorization': `Bearer ${wurlusApiKey}`,
-            'X-API-Key': wurlusApiKey
+            'X-API-Key': wurlusApiKey,
+            'Accept': 'application/json'
           },
           params: {
             provider: 'wurlus',
             limit: 100,
-            status: 'open'
+            status: 'active',
+            include_markets: 'true'
           }
         });
         
-        if (response.data && Array.isArray(response.data.odds)) {
+        if (response.data && response.data.data && Array.isArray(response.data.data.odds)) {
+          console.log(`[AggregatorService] Successfully fetched ${response.data.data.odds.length} odds from Wurlus Protocol API`);
+          return response.data.data.odds;
+        } else if (response.data && Array.isArray(response.data.odds)) {
           console.log(`[AggregatorService] Successfully fetched ${response.data.odds.length} odds from Wurlus Protocol API`);
           return response.data.odds;
         }
@@ -368,21 +374,52 @@ class WalAppProvider implements IOddsProvider {
     
     if (walAppApiKey) {
       try {
-        // Implement real API call to Wal.app
-        const response = await axios.get(`https://api.wal.app/v1/events/odds`, {
+        // Implement real API call to Wal.app as per the documentation
+        // https://docs.wal.app/usage/web-api.html
+        const response = await axios.get(`https://api.wal.app/api/v1/events`, {
           headers: { 
-            'X-API-Key': walAppApiKey 
+            'X-API-Key': walAppApiKey,
+            'Accept': 'application/json'
           },
           params: {
             status: 'live', // Get odds for live events
-            limit: 100
+            limit: 100,
+            include_markets: 'true',
+            include_odds: 'true'
           }
         });
         
-        if (response.data && Array.isArray(response.data.events)) {
-          console.log(`[AggregatorService] Successfully fetched ${response.data.events.length} events from Wal.app API`);
+        if (response.data && response.data.data && Array.isArray(response.data.data.events)) {
+          console.log(`[AggregatorService] Successfully fetched ${response.data.data.events.length} events from Wal.app API`);
           
           // Extract odds from events
+          const odds: any[] = [];
+          
+          response.data.data.events.forEach((event: any) => {
+            if (event.markets && Array.isArray(event.markets)) {
+              event.markets.forEach((market: any) => {
+                if (market.outcomes && Array.isArray(market.outcomes)) {
+                  market.outcomes.forEach((outcome: any) => {
+                    odds.push({
+                      outcomeId: outcome.id,
+                      marketId: market.id,
+                      eventId: event.id,
+                      odds: outcome.odds || outcome.price,
+                      sport: event.sport_id || event.sport || 'unknown',
+                      timestamp: new Date()
+                    });
+                  });
+                }
+              });
+            }
+          });
+          
+          console.log(`[AggregatorService] Successfully extracted ${odds.length} odds from Wal.app`);
+          return odds;
+        } else if (response.data && Array.isArray(response.data.events)) {
+          console.log(`[AggregatorService] Successfully fetched ${response.data.events.length} events from Wal.app API using legacy format`);
+          
+          // Extract odds from events (legacy format)
           const odds: any[] = [];
           
           response.data.events.forEach((event: any) => {
@@ -394,8 +431,8 @@ class WalAppProvider implements IOddsProvider {
                       outcomeId: outcome.id,
                       marketId: market.id,
                       eventId: event.id,
-                      odds: outcome.odds,
-                      sport: event.sport_id ? event.sport_id : 'unknown',
+                      odds: outcome.odds || outcome.price,
+                      sport: event.sport_id || event.sport || 'unknown',
                       timestamp: new Date()
                     });
                   });
@@ -404,7 +441,7 @@ class WalAppProvider implements IOddsProvider {
             }
           });
           
-          console.log(`[AggregatorService] Successfully fetched ${odds.length} odds from Wal.app`);
+          console.log(`[AggregatorService] Successfully extracted ${odds.length} odds from Wal.app`);
           return odds;
         }
         

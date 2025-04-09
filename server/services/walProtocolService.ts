@@ -205,8 +205,15 @@ export class WalProtocolService {
    */
   public async getLiveEvents(sportId?: string, limit: number = 10): Promise<WalEventData[]> {
     try {
-      let url = '/events/live';
-      const params: Record<string, string | number> = { limit };
+      // Updated to use the correct endpoint from Wal.app documentation
+      // https://docs.wal.app/usage/web-api.html
+      let url = '/api/v1/events';
+      const params: Record<string, string | number> = { 
+        limit,
+        status: 'live',
+        include_markets: 'true',
+        include_odds: 'true'
+      };
       
       if (sportId) {
         params.sport_id = sportId;
@@ -214,7 +221,12 @@ export class WalProtocolService {
       
       const response = await this.apiClient.get(url, { params });
       
-      if (response.status === 200 && response.data && Array.isArray(response.data.events)) {
+      // Handle the response according to the API documentation
+      if (response.status === 200 && response.data && response.data.data && Array.isArray(response.data.data.events)) {
+        // New API format
+        return response.data.data.events;
+      } else if (response.status === 200 && response.data && Array.isArray(response.data.events)) {
+        // Legacy API format
         return response.data.events;
       }
       
@@ -234,8 +246,15 @@ export class WalProtocolService {
    */
   public async getUpcomingEvents(sportId?: string, limit: number = 10): Promise<WalEventData[]> {
     try {
-      let url = '/events/upcoming';
-      const params: Record<string, string | number> = { limit };
+      // Updated to use the correct endpoint from Wal.app documentation
+      // https://docs.wal.app/usage/web-api.html
+      let url = '/api/v1/events';
+      const params: Record<string, string | number> = { 
+        limit,
+        status: 'upcoming',
+        include_markets: 'true',
+        include_odds: 'true'
+      };
       
       if (sportId) {
         params.sport_id = sportId;
@@ -243,7 +262,12 @@ export class WalProtocolService {
       
       const response = await this.apiClient.get(url, { params });
       
-      if (response.status === 200 && response.data && Array.isArray(response.data.events)) {
+      // Handle the response according to the API documentation
+      if (response.status === 200 && response.data && response.data.data && Array.isArray(response.data.data.events)) {
+        // New API format
+        return response.data.data.events;
+      } else if (response.status === 200 && response.data && Array.isArray(response.data.events)) {
+        // Legacy API format
         return response.data.events;
       }
       
@@ -262,9 +286,20 @@ export class WalProtocolService {
    */
   public async getEventDetails(eventId: string): Promise<WalEventData | null> {
     try {
-      const response = await this.apiClient.get(`/events/${eventId}`);
+      // Updated to use the correct endpoint from Wal.app documentation
+      const response = await this.apiClient.get(`/api/v1/events/${eventId}`, {
+        params: {
+          include_markets: 'true',
+          include_odds: 'true'
+        }
+      });
       
-      if (response.status === 200 && response.data && response.data.event) {
+      // Handle the response according to the API documentation
+      if (response.status === 200 && response.data && response.data.data && response.data.data.event) {
+        // New API format
+        return response.data.data.event;
+      } else if (response.status === 200 && response.data && response.data.event) {
+        // Legacy API format
         return response.data.event;
       }
       
@@ -284,14 +319,20 @@ export class WalProtocolService {
    */
   public async getUserBets(walletAddress: string, status?: string): Promise<WalBet[]> {
     try {
+      // Updated to use the correct endpoint from Wal.app documentation
       const params: Record<string, string> = {};
       if (status) {
         params.status = status;
       }
       
-      const response = await this.apiClient.get(`/users/${walletAddress}/bets`, { params });
+      const response = await this.apiClient.get(`/api/v1/users/${walletAddress}/bets`, { params });
       
-      if (response.status === 200 && response.data && Array.isArray(response.data.bets)) {
+      // Handle the response according to the API documentation
+      if (response.status === 200 && response.data && response.data.data && Array.isArray(response.data.data.bets)) {
+        // New API format
+        return response.data.data.bets;
+      } else if (response.status === 200 && response.data && Array.isArray(response.data.bets)) {
+        // Legacy API format
         return response.data.bets;
       }
       

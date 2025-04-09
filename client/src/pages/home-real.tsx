@@ -67,19 +67,16 @@ export default function HomeReal() {
     <Layout>
       <div className="flex min-h-screen bg-[#112225] relative">
         {/* Left Promotional Banner - Static (not fixed) */}
-        <div className="w-24 min-h-screen flex flex-col">
+        <div className="w-24 min-h-screen flex">
           <a 
             href="/promotions/referral" 
-            className="h-full w-full flex flex-col hover:opacity-90 transition-opacity"
+            className="h-full w-full hover:opacity-90 transition-opacity"
           >
-            <div className="flex-1 bg-yellow-400">
-              <img 
-                src="/promoImage.png" 
-                alt="Earn Referral Bonus"
-                className="w-full h-full object-cover object-center"
-                style={{ objectPosition: "left" }}
-              />
-            </div>
+            <img 
+              src="/promoStrip.png" 
+              alt="Earn Referral Bonus"
+              className="h-full object-cover"
+            />
           </a>
         </div>
         
@@ -259,19 +256,16 @@ export default function HomeReal() {
         </div>
         
         {/* Right Promotional Banner - Static (not fixed) */}
-        <div className="w-24 min-h-screen flex flex-col">
+        <div className="w-24 min-h-screen flex">
           <a 
             href="/promotions/referral" 
-            className="h-full w-full flex flex-col hover:opacity-90 transition-opacity"
+            className="h-full w-full hover:opacity-90 transition-opacity"
           >
-            <div className="flex-1 bg-yellow-400">
-              <img 
-                src="/promoImage.png" 
-                alt="Earn Referral Bonus"
-                className="w-full h-full object-cover object-center"
-                style={{ objectPosition: "right" }}
-              />
-            </div>
+            <img 
+              src="/promoStrip.png" 
+              alt="Earn Referral Bonus"
+              className="h-full object-cover"
+            />
           </a>
         </div>
       </div>

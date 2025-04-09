@@ -36,9 +36,10 @@ export interface SelectedBet {
   stake: number;
   market: string;
   marketId?: number; // Added for proper parlay creation
-  outcomeId?: number; // Added for proper outcome reference
+  outcomeId?: string | number; // Allow string or number for outcome IDs
   currency?: 'SUI' | 'SBETS'; // Added to support multiple currencies
   isLive?: boolean; // Indicates if this is a live event
+  uniqueId?: string; // Optional unique identifier to prevent duplicates
 }
 
 export interface ConnectWalletModalProps {

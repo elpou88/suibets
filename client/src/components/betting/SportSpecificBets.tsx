@@ -53,7 +53,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
       odds,
       stake: 10, // Default stake amount
       market: marketName,
-      marketId: marketId ? String(marketId) : undefined,
+      marketId, // Keep as number or undefined, don't convert to string
       outcomeId: outcomeId || undefined,
       isLive, // Pass the isLive flag
       uniqueId: uniqueIdentifier, // Add a random component to prevent duplicates
@@ -1072,15 +1072,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   // Render animal racing markets (horse racing, greyhounds)
   const renderAnimalRacingMarkets = () => (
     <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Race Winner</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Race Winner
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2">
+        <CardContent className="grid grid-cols-2 gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Race Winner', homeTeam, 4.5)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{homeTeam}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.50</span>
@@ -1088,7 +1091,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Race Winner', awayTeam, 6.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{awayTeam}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">6.00</span>
@@ -1096,7 +1099,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Race Winner', 'Black Beauty', 8.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">Black Beauty</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">8.00</span>
@@ -1104,7 +1107,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Race Winner', 'Silver Star', 10.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">Silver Star</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">10.00</span>
@@ -1112,15 +1115,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Each Way</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Each Way
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2">
+        <CardContent className="grid grid-cols-2 gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Each Way', `${homeTeam} (E/W)`, 2.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${homeTeam} (E/W)`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.00</span>
@@ -1128,7 +1134,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Each Way', `${awayTeam} (E/W)`, 2.5)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${awayTeam} (E/W)`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.50</span>
@@ -1136,7 +1142,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Each Way', 'Black Beauty (E/W)', 3.2)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">Black Beauty (E/W)</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">3.20</span>
@@ -1144,7 +1150,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Each Way', 'Silver Star (E/W)', 4.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">Silver Star (E/W)</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">4.00</span>
@@ -1152,15 +1158,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         </CardContent>
       </Card>
 
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Forecast</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Forecast
+          </CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-2">
+        <CardContent className="grid grid-cols-2 gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Forecast', `${homeTeam} / ${awayTeam}`, 14.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${homeTeam} / ${awayTeam}`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">14.00</span>
@@ -1168,7 +1177,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Forecast', `${awayTeam} / ${homeTeam}`, 16.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${awayTeam} / ${homeTeam}`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">16.00</span>
@@ -1176,7 +1185,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Forecast', `${homeTeam} / Black Beauty`, 18.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${homeTeam} / Black Beauty`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">18.00</span>
@@ -1184,7 +1193,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Forecast', `${awayTeam} / Silver Star`, 22.0)}
-            className="flex flex-col"
+            className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{`${awayTeam} / Silver Star`}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">22.00</span>
@@ -1197,15 +1206,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
   // Render generic sport markets for any other sports
   const renderGenericSportMarkets = () => (
     <>
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>Handicap</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            Handicap
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('Handicap', `${homeTeam} -1.5`, 2.0)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{homeTeam} -1.5</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">2.00</span>
@@ -1213,7 +1225,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('Handicap', `${awayTeam} +1.5`, 1.80)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{awayTeam} +1.5</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.80</span>
@@ -1221,15 +1233,18 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
         </CardContent>
       </Card>
       
-      <Card className="mb-4">
-        <CardHeader>
-          <CardTitle>First to Score</CardTitle>
+      <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
+        <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
+            First to Score
+          </CardTitle>
         </CardHeader>
-        <CardContent className="flex gap-2">
+        <CardContent className="flex gap-3 p-4">
           <Button
             variant="outline"
             onClick={() => handleAddBet('First to Score', homeTeam, 1.85)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{homeTeam}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.85</span>
@@ -1237,7 +1252,7 @@ export const SportSpecificBets: React.FC<SportSpecificBetsProps> = ({
           <Button
             variant="outline"
             onClick={() => handleAddBet('First to Score', awayTeam, 1.95)}
-            className="flex-1 flex flex-col"
+            className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
             <span className="text-cyan-200">{awayTeam}</span>
             <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.95</span>

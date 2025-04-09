@@ -103,9 +103,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`No upcoming ${sportName} events found from API, returning empty array`);
             return res.json([]);
           }
+        } else {
+          // No specific sport ID requested, get upcoming events for all sports
+          console.log("Fetching upcoming events for all sports from API");
+          
+          // Get upcoming events for all sports
+          const allUpcomingEvents = await apiSportsService.getAllUpcomingEvents(5);
+          
+          if (allUpcomingEvents && allUpcomingEvents.length > 0) {
+            console.log(`Found ${allUpcomingEvents.length} upcoming events for all sports combined from API`);
+            return res.json(allUpcomingEvents);
+          } else {
+            console.log("No upcoming events found from API for any sport, returning empty array");
+            return res.json([]);
+          }
         }
-        
-        return res.json(events);
       }
       
       // For live events, always try to get them from the API

@@ -525,6 +525,79 @@ export class ApiSportsService {
       return [];
     }
   }
+  
+  /**
+   * Get upcoming events for all sports
+   * @param limit Number of events per sport to return
+   */
+  async getAllUpcomingEvents(limit: number = 5): Promise<SportEvent[]> {
+    if (!this.apiKey) {
+      console.warn('No SPORTSDATA_API_KEY available, returning empty upcoming events');
+      return [];
+    }
+
+    console.log(`[ApiSportsService] Attempting to fetch upcoming events for all sports with API key`);
+    
+    try {
+      const cacheKey = `upcoming_events_all_sports_${limit}`;
+      
+      return await this.getCachedOrFetch(cacheKey, async () => {
+        console.log(`[ApiSportsService] Fetching upcoming events for all sports`);
+        
+        const allSports = [
+          { id: 1, name: 'football' },
+          { id: 2, name: 'basketball' },
+          { id: 3, name: 'tennis' },
+          { id: 4, name: 'baseball' },
+          { id: 5, name: 'hockey' },
+          { id: 6, name: 'handball' },
+          { id: 7, name: 'volleyball' },
+          { id: 8, name: 'rugby' },
+          { id: 9, name: 'cricket' },
+          { id: 10, name: 'golf' },
+          { id: 11, name: 'boxing' },
+          { id: 12, name: 'mma-ufc' },
+          { id: 13, name: 'formula_1' },
+          { id: 14, name: 'cycling' },
+          { id: 15, name: 'american_football' }
+        ];
+        
+        let allEvents: SportEvent[] = [];
+        
+        // Fetch events for all sports in parallel for better performance
+        const sportEventPromises = allSports.map(sport => 
+          this.getUpcomingEvents(sport.name, limit)
+            .then(events => {
+              if (events && events.length > 0) {
+                console.log(`[ApiSportsService] Found ${events.length} upcoming events for ${sport.name}`);
+                return events;
+              }
+              return [];
+            })
+            .catch(error => {
+              console.error(`[ApiSportsService] Error fetching upcoming events for ${sport.name}:`, error);
+              return [];
+            })
+        );
+        
+        // Wait for all promises to settle
+        const results = await Promise.all(sportEventPromises);
+        
+        // Combine all events
+        results.forEach(events => {
+          if (events.length > 0) {
+            allEvents = [...allEvents, ...events];
+          }
+        });
+        
+        console.log(`[ApiSportsService] Found a total of ${allEvents.length} upcoming events from all sports combined`);
+        return allEvents;
+      });
+    } catch (error) {
+      console.error('Error fetching upcoming events for all sports:', error);
+      return [];
+    }
+  }
 
   /**
    * Transform events data from API-Sports format to our format

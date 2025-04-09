@@ -147,8 +147,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ...event, 
             id: event.id + 1000 + sportId, // Ensure unique ID
             sportId: sportId,  // Set the correct sport ID
-            isLive: true,      // Force all events to be live
-            status: 'live',    // Set status to live
+            isLive: isLive !== undefined ? isLive : (event.isLive || false), // Respect isLive parameter
+            status: isLive ? 'live' : (event.status || 'scheduled') // Status based on isLive parameter
           }));
         
         console.log(`Generated ${modifiedEvents.length} modified events for sportId ${sportId}`);

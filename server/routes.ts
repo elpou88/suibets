@@ -30,7 +30,7 @@ import { formula1Service } from './services/formula1Service';
 import { baseballService } from './services/baseballService';
 
 // Initialize Boxing service
-import { boxingService } from './services/boxingService';
+import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 
 // Initialize event tracking service to monitor upcoming events for live status

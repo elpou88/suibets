@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { SportEvent, MarketData } from '@shared/schema';
+import { SportEvent, MarketData, OutcomeData } from '../types/betting';
 
 /**
  * Formula 1 Service

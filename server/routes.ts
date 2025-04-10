@@ -155,20 +155,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (upcomingEvents && upcomingEvents.length > 0) {
             console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
             
-            // Special handling for Formula 1 - make sure all events have the correct sportId
+            // Special handling for Formula 1 - use dedicated Formula 1 service
             if (sportName === 'formula_1' || sportName === 'formula-1') {
-              console.log(`Special handling for Formula 1 events - correcting sportId for all events`);
-              // Update all events to have Formula 1 sportId (13)
-              const formula1Events = upcomingEvents.map(event => ({
-                ...event,
-                sportId: 13, // Set to Formula 1 ID
-                // Enhance event details for better display
-                homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
-                awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
-                leagueName: event.leagueName || 'Formula 1 Championship'
-              }));
-              console.log(`Returning ${formula1Events.length} Formula 1 events with corrected sportId`);
-              return res.json(formula1Events);
+              console.log(`Using Formula 1 dedicated service for Formula 1 events`);
+              
+              try {
+                // Use our dedicated Formula 1 service
+                const formula1Events = await formula1Service.getFormula1Races(false); // false means not live
+                
+                if (formula1Events && formula1Events.length > 0) {
+                  console.log(`Formula1Service returned ${formula1Events.length} upcoming races`);
+                  return res.json(formula1Events);
+                } else {
+                  console.log(`Formula1Service returned 0 upcoming races, falling back to API Sports service`);
+                  
+                  // Fallback to API Sports service if Formula 1 service returns no events
+                  const formula1Events = upcomingEvents.map(event => ({
+                    ...event,
+                    sportId: 13, // Set to Formula 1 ID
+                    // Enhance event details for better display
+                    homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                    awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                    leagueName: event.leagueName || 'Formula 1 Championship'
+                  }));
+                  console.log(`Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
+                  return res.json(formula1Events);
+                }
+              } catch (error) {
+                console.error('Error using Formula 1 service:', error);
+                
+                // Fallback to API Sports service if there's an error
+                const formula1Events = upcomingEvents.map(event => ({
+                  ...event,
+                  sportId: 13, // Set to Formula 1 ID
+                  homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                  awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                  leagueName: event.leagueName || 'Formula 1 Championship'
+                }));
+                console.log(`Error in Formula1Service. Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
+                return res.json(formula1Events);
+              }
             }
             
             // For other sports, filter by sportId as usual
@@ -242,22 +268,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get ONLY real events for this specific sport, never adapt from others
         const sportEvents = await apiSportsService.getLiveEvents(sportName);
         
-        // Special handling for Formula 1
+        // Special handling for Formula 1 - use dedicated Formula 1 service
         if (sportName === 'formula_1' || sportName === 'formula-1') {
-          console.log(`Special handling for live Formula 1 events - correcting sportId for all events`);
-          // Update all events to have Formula 1 sportId (13)
-          const formula1Events = sportEvents.map(event => ({
-            ...event,
-            sportId: 13, // Set to Formula 1 ID
-            // Enhance event details for better display
-            homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
-            awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
-            leagueName: event.leagueName || 'Formula 1 Championship',
-            // Ensure we have a properly formatted score
-            score: event.score || '0 - 0'
-          }));
-          console.log(`Returning ${formula1Events.length} live Formula 1 events with corrected sportId`);
-          return res.json(formula1Events);
+          console.log(`Using Formula 1 dedicated service for live Formula 1 events`);
+          
+          try {
+            // Use our dedicated Formula 1 service for live races
+            const liveFormula1Events = await formula1Service.getFormula1Races(true); // true means live races
+            
+            if (liveFormula1Events && liveFormula1Events.length > 0) {
+              console.log(`Formula1Service returned ${liveFormula1Events.length} live races`);
+              return res.json(liveFormula1Events);
+            } else {
+              console.log(`Formula1Service returned 0 live races, falling back to API Sports service`);
+              
+              // Fallback to API Sports service if Formula 1 service returns no events
+              const formula1Events = sportEvents.map(event => ({
+                ...event,
+                sportId: 13, // Set to Formula 1 ID
+                // Enhance event details for better display
+                homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                leagueName: event.leagueName || 'Formula 1 Championship',
+                // Ensure we have a properly formatted score
+                score: event.score || 'In Progress'
+              }));
+              console.log(`Returning ${formula1Events.length} live Formula 1 events with corrected sportId from API Sports`);
+              return res.json(formula1Events);
+            }
+          } catch (error) {
+            console.error('Error using Formula 1 service for live events:', error);
+            
+            // Fallback to API Sports service if there's an error
+            const formula1Events = sportEvents.map(event => ({
+              ...event,
+              sportId: 13, // Set to Formula 1 ID
+              homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+              awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+              leagueName: event.leagueName || 'Formula 1 Championship',
+              score: event.score || 'In Progress'
+            }));
+            console.log(`Error in Formula1Service. Returning ${formula1Events.length} live Formula 1 events with corrected sportId from API Sports`);
+            return res.json(formula1Events);
+          }
         }
         
         // For other sports, check if events are not the correct sportId or have a dataSource property indicating they're adapted
@@ -328,20 +381,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (sportEvents && sportEvents.length > 0) {
           console.log(`Found ${sportEvents.length} live events for ${sport.name}`);
           
-          // Special handling for Formula 1 events
+          // Special handling for Formula 1 events - use dedicated Formula 1 service
           if (sport.name === 'formula_1' || sport.name === 'formula-1') {
-            console.log(`Special handling for Formula 1 events in all sports fetch`);
-            // Process each Formula 1 event to ensure correct sportId
-            const processedEvents = sportEvents.map(event => ({
-              ...event,
-              sportId: 13, // Force the correct sportId
-              // Ensure we have good display values
-              homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
-              awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
-              leagueName: event.leagueName || 'Formula 1 Championship',
-              score: event.score || '0 - 0'
-            }));
-            allEvents = [...allEvents, ...processedEvents];
+            console.log(`Using Formula 1 dedicated service in all sports fetch`);
+            
+            try {
+              // Try to get Formula 1 events from dedicated service
+              const formula1Events = await formula1Service.getFormula1Races(true); // true means live races
+              
+              if (formula1Events && formula1Events.length > 0) {
+                console.log(`Formula1Service returned ${formula1Events.length} live races for all sports fetch`);
+                // Add Formula 1 events from dedicated service
+                allEvents = [...allEvents, ...formula1Events];
+              } else {
+                console.log(`Formula1Service returned 0 live races, using API Sports in all sports fetch`);
+                // Process API Sports Formula 1 events as fallback
+                const processedEvents = sportEvents.map(event => ({
+                  ...event,
+                  sportId: 13, // Force the correct sportId
+                  // Ensure we have good display values
+                  homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                  awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                  leagueName: event.leagueName || 'Formula 1 Championship',
+                  score: event.score || 'In Progress'
+                }));
+                allEvents = [...allEvents, ...processedEvents];
+              }
+            } catch (error) {
+              console.error('Error using Formula 1 service in all sports fetch:', error);
+              // Fall back to processed API Sports events on error
+              const processedEvents = sportEvents.map(event => ({
+                ...event,
+                sportId: 13, // Force the correct sportId
+                homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                leagueName: event.leagueName || 'Formula 1 Championship',
+                score: event.score || 'In Progress'
+              }));
+              allEvents = [...allEvents, ...processedEvents];
+            }
           } else {
             // For other sports, add events as-is
             allEvents = [...allEvents, ...sportEvents];

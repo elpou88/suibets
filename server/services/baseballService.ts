@@ -161,7 +161,8 @@ export class BaseballService {
       
       // Parameters for the API call
       const params: Record<string, any> = {
-        season: 2024 // Use 2024 season for MLB games
+        season: 2024, // Use 2024 season for MLB games
+        league: 1     // MLB league ID
       };
       
       if (isLive) {
@@ -204,19 +205,23 @@ export class BaseballService {
       if (!isLive) {
         console.log(`[BaseballService] No upcoming games found with direct date params, trying date range`);
         
+        // Use a much wider date range - current month to next 3 months
         const today = new Date();
-        const nextWeek = new Date(today);
-        nextWeek.setDate(today.getDate() + 7);
+        // End date is 3 months from now
+        const threeMonthsLater = new Date(today);
+        threeMonthsLater.setMonth(today.getMonth() + 3);
         
+        // Format dates for API
         const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-        const formattedNextWeek = `${nextWeek.getFullYear()}-${String(nextWeek.getMonth() + 1).padStart(2, '0')}-${String(nextWeek.getDate()).padStart(2, '0')}`;
+        const formattedThreeMonths = `${threeMonthsLater.getFullYear()}-${String(threeMonthsLater.getMonth() + 1).padStart(2, '0')}-${String(threeMonthsLater.getDate()).padStart(2, '0')}`;
         
         const rangeResponse = await axios.get(`${this.baseUrl}/games`, {
           params: {
             season: 2024,
             from: formattedToday,
-            to: formattedNextWeek,
-            status: 'NS'
+            to: formattedThreeMonths,
+            status: 'NS',
+            league: 1 // MLB league ID
           },
           headers: {
             'x-apisports-key': this.apiKey,

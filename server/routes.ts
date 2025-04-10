@@ -163,12 +163,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`Using Baseball dedicated service for upcoming Baseball events`);
               
               try {
-                // Force creation of sample upcoming baseball games
-                console.log('Forcing sample baseball games for upcoming view');
-                // Make sure we always get some sample baseball games for upcoming view
+                // Use dedicated service to get real baseball data
+                console.log('Getting real baseball data for upcoming view');
+                // Get real upcoming baseball games
                 const baseballEvents = await baseballService.getBaseballGames(false); // false means upcoming
                 
-                // Always return the baseball events, should have fallback games at minimum
+                // Return the baseball events from the dedicated service
                 console.log(`BaseballService returned ${baseballEvents.length} upcoming games`);
                 return res.json(baseballEvents);
               } catch (error) {

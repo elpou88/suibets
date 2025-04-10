@@ -28,16 +28,24 @@ export class Formula1Service {
     try {
       console.log(`[Formula1Service] Fetching ${isLive ? 'live' : 'upcoming'} Formula 1 races`);
       
+      // For Formula 1, the current season is 2024
+      const currentYear = new Date().getFullYear();
+      const formula1Season = 2024; // Formula 1 2024 season is the current one
+      
       // Determine parameters based on whether we want live or scheduled races
       const params: Record<string, any> = {
-        season: new Date().getFullYear()
+        season: formula1Season
       };
       
+      // For live races, we'll look for today's races or races with 'live' status
       if (isLive) {
         params.status = 'live';
       } else {
+        // For upcoming races, we'll look for 'scheduled' races or use date filters
         params.status = 'scheduled';
       }
+      
+      console.log(`[Formula1Service] Using season: ${formula1Season}, status: ${params.status}`)
       
       console.log(`[Formula1Service] Using params: ${JSON.stringify(params)}`);
       
@@ -72,8 +80,11 @@ export class Formula1Service {
       try {
         console.log('[Formula1Service] Trying fallback approach to get races');
         
+        console.log('[Formula1Service] Trying fallback with 2024 season without status filter');
+        const formula1Season = 2024; // Use 2024 season for fallback
+        
         const fallbackResponse = await axios.get(`${this.baseUrl}/races`, {
-          params: { season: new Date().getFullYear() },
+          params: { season: formula1Season },
           headers: {
             'x-apisports-key': this.apiKey,
             'Accept': 'application/json'
@@ -267,30 +278,59 @@ export class Formula1Service {
    * This is used as a last resort fallback
    */
   private createSampleRaces(): SportEvent[] {
-    const currentYear = new Date().getFullYear();
+    // Using real 2024 F1 season calendar
+    const season = 2024;
     
-    // Create upcoming races
+    // Create upcoming races based on real 2024 F1 calendar
+    // These are real races from the 2024 Formula 1 season
     const races = [
       {
-        id: 'f1-upcoming-1',
+        id: 'f1-race-19-2024',
         circuit: 'Circuit of the Americas',
         location: 'Austin, USA',
-        date: new Date(currentYear, 10, 19).toISOString(), // October
-        status: 'upcoming'
+        date: new Date(season, 9, 20).toISOString(), // October 20
+        status: 'upcoming',
+        competition: 'United States Grand Prix'
       },
       {
-        id: 'f1-upcoming-2',
+        id: 'f1-race-20-2024',
+        circuit: 'Autódromo Hermanos Rodríguez',
+        location: 'Mexico City, Mexico',
+        date: new Date(season, 9, 27).toISOString(), // October 27
+        status: 'upcoming',
+        competition: 'Mexico City Grand Prix'
+      },
+      {
+        id: 'f1-race-21-2024',
         circuit: 'Autódromo José Carlos Pace',
         location: 'São Paulo, Brazil',
-        date: new Date(currentYear, 11, 3).toISOString(), // November
-        status: 'upcoming'
+        date: new Date(season, 10, 3).toISOString(), // November 3
+        status: 'upcoming',
+        competition: 'São Paulo Grand Prix'
       },
       {
-        id: 'f1-upcoming-3',
+        id: 'f1-race-22-2024',
+        circuit: 'Las Vegas Street Circuit',
+        location: 'Las Vegas, USA',
+        date: new Date(season, 10, 23).toISOString(), // November 23
+        status: 'upcoming',
+        competition: 'Las Vegas Grand Prix'
+      },
+      {
+        id: 'f1-race-23-2024',
+        circuit: 'Lusail International Circuit',
+        location: 'Lusail, Qatar',
+        date: new Date(season, 11, 1).toISOString(), // December 1
+        status: 'upcoming',
+        competition: 'Qatar Grand Prix'
+      },
+      {
+        id: 'f1-race-24-2024',
         circuit: 'Yas Marina Circuit',
         location: 'Abu Dhabi, UAE',
-        date: new Date(currentYear, 11, 24).toISOString(), // November
-        status: 'upcoming'
+        date: new Date(season, 11, 8).toISOString(), // December 8
+        status: 'upcoming',
+        competition: 'Abu Dhabi Grand Prix'
       }
     ];
     
@@ -299,7 +339,7 @@ export class Formula1Service {
       id: race.id,
       sportId: 13, // Formula 1 ID
       leagueName: 'Formula 1 World Championship',
-      homeTeam: `Formula 1 - ${race.circuit}`,
+      homeTeam: race.competition ? `${race.competition} - ${race.circuit}` : `Formula 1 - ${race.circuit}`,
       awayTeam: race.location,
       startTime: race.date,
       status: 'upcoming' as 'scheduled' | 'live' | 'finished' | 'upcoming',

@@ -32,7 +32,6 @@ export class BaseballService {
     let collectedBaseballGames: SportEvent[] = [];
     
     try {
-      
       // First approach: Get MLB games from API-Sports
       let sportName = isLive ? 'mlb' : 'baseball';
       let games: SportEvent[] = [];
@@ -100,14 +99,15 @@ export class BaseballService {
             isLive: isLive
           }));
           
-          return formattedGames;
+          // Add to our collection
+          collectedBaseballGames = [...collectedBaseballGames, ...formattedGames];
         } else {
           console.log(`[BaseballService] Warning: None of the ${games.length} games appear to be genuine baseball data, trying direct API`);
         }
       }
       
       // If we don't have MLB games, try general baseball endpoint
-      if (sportName === 'mlb') {
+      if (sportName === 'mlb' && collectedBaseballGames.length === 0) {
         sportName = 'baseball';
         console.log(`[BaseballService] No MLB games found, trying ${sportName} endpoint`);
         
@@ -175,21 +175,22 @@ export class BaseballService {
             
             // Add to our collection
             collectedBaseballGames = [...collectedBaseballGames, ...formattedGames];
-            
-            // Return now if we have games
-            if (collectedBaseballGames.length > 0) {
-              console.log(`[BaseballService] Returning ${collectedBaseballGames.length} collected baseball games`);
-              return collectedBaseballGames;
-            }
           } else {
             console.log(`[BaseballService] Warning: None of the ${games.length} games appear to be genuine baseball data, trying direct API`);
           }
         }
       }
       
+      // If we have collected baseball games at this point, return them
+      if (collectedBaseballGames.length > 0) {
+        console.log(`[BaseballService] Returning ${collectedBaseballGames.length} collected baseball games`);
+        return collectedBaseballGames;
+      }
+      
       // If we still have no games, try direct API
       console.log(`[BaseballService] No games found from API-Sports ${sportName} endpoint, trying direct baseball API`);
-      return await this.getDirectBaseballApi(isLive);
+      const directApiGames = await this.getDirectBaseballApi(isLive);
+      return directApiGames;
       
     } catch (error) {
       console.error(`[BaseballService] Error fetching games from API-Sports:`, error);

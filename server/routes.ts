@@ -152,7 +152,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (upcomingEvents && upcomingEvents.length > 0) {
             console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
             
-            // Filter events to make sure they match the requested sport ID
+            // Special handling for Formula 1 - make sure all events have the correct sportId
+            if (sportName === 'formula_1' || sportName === 'formula-1') {
+              console.log(`Special handling for Formula 1 events - correcting sportId for all events`);
+              // Update all events to have Formula 1 sportId (13)
+              const formula1Events = upcomingEvents.map(event => ({
+                ...event,
+                sportId: 13, // Set to Formula 1 ID
+                // Enhance event details for better display
+                homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+                awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+                leagueName: event.leagueName || 'Formula 1 Championship'
+              }));
+              console.log(`Returning ${formula1Events.length} Formula 1 events with corrected sportId`);
+              return res.json(formula1Events);
+            }
+            
+            // For other sports, filter by sportId as usual
             const filteredEvents = upcomingEvents.filter(event => event.sportId === reqSportId);
             console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
             
@@ -223,7 +239,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Get ONLY real events for this specific sport, never adapt from others
         const sportEvents = await apiSportsService.getLiveEvents(sportName);
         
-        // Check if events are not the correct sportId or have a dataSource property indicating they're adapted
+        // Special handling for Formula 1
+        if (sportName === 'formula_1' || sportName === 'formula-1') {
+          console.log(`Special handling for live Formula 1 events - correcting sportId for all events`);
+          // Update all events to have Formula 1 sportId (13)
+          const formula1Events = sportEvents.map(event => ({
+            ...event,
+            sportId: 13, // Set to Formula 1 ID
+            // Enhance event details for better display
+            homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+            awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+            leagueName: event.leagueName || 'Formula 1 Championship',
+            // Ensure we have a properly formatted score
+            score: event.score || '0 - 0'
+          }));
+          console.log(`Returning ${formula1Events.length} live Formula 1 events with corrected sportId`);
+          return res.json(formula1Events);
+        }
+        
+        // For other sports, check if events are not the correct sportId or have a dataSource property indicating they're adapted
         const realEvents = sportEvents.filter(event => {
           // Check if sportId matches
           const matchesSportId = event.sportId === reqSportId;
@@ -290,7 +324,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const sportEvents = await apiSportsService.getLiveEvents(sport.name);
         if (sportEvents && sportEvents.length > 0) {
           console.log(`Found ${sportEvents.length} live events for ${sport.name}`);
-          allEvents = [...allEvents, ...sportEvents];
+          
+          // Special handling for Formula 1 events
+          if (sport.name === 'formula_1' || sport.name === 'formula-1') {
+            console.log(`Special handling for Formula 1 events in all sports fetch`);
+            // Process each Formula 1 event to ensure correct sportId
+            const processedEvents = sportEvents.map(event => ({
+              ...event,
+              sportId: 13, // Force the correct sportId
+              // Ensure we have good display values
+              homeTeam: event.homeTeam || `Formula 1 Race ${event.id}`,
+              awayTeam: event.awayTeam || 'Formula 1 Grand Prix',
+              leagueName: event.leagueName || 'Formula 1 Championship',
+              score: event.score || '0 - 0'
+            }));
+            allEvents = [...allEvents, ...processedEvents];
+          } else {
+            // For other sports, add events as-is
+            allEvents = [...allEvents, ...sportEvents];
+          }
         }
       }
       

@@ -258,6 +258,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Get upcoming events for all sports - with increased per-sport limit
           const allUpcomingEvents = await apiSportsService.getAllUpcomingEvents(10);
           
+          // Additional baseball events from Baseball service
+          try {
+            console.log("Fetching additional baseball events from BaseballService");
+            const baseballEvents = await baseballService.getBaseballGames(false); // false means upcoming
+            
+            if (baseballEvents && baseballEvents.length > 0) {
+              console.log(`BaseballService returned ${baseballEvents.length} upcoming games for all sports view`);
+              // Make sure all baseball events have sportId=4
+              const processedBaseballEvents = baseballEvents.map(event => ({
+                ...event,
+                sportId: 4,
+                isLive: false
+              }));
+              
+              // Combine with API Sports events
+              const combinedEvents = [...allUpcomingEvents, ...processedBaseballEvents];
+              console.log(`Combined ${allUpcomingEvents.length} API Sports events with ${processedBaseballEvents.length} baseball events`);
+              
+              console.log(`Found ${combinedEvents.length} upcoming events for all sports combined`);
+              return res.json(combinedEvents);
+            }
+          } catch (error) {
+            console.error("Error fetching baseball events:", error);
+            // Continue with just the API Sports events on error
+          }
+          
           if (allUpcomingEvents && allUpcomingEvents.length > 0) {
             console.log(`Found ${allUpcomingEvents.length} upcoming events for all sports combined from API`);
             return res.json(allUpcomingEvents);

@@ -470,8 +470,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (sportEvents && sportEvents.length > 0) {
           console.log(`Found ${sportEvents.length} live events for ${sport.name}`);
           
+          // Special handling for Baseball events - use dedicated Baseball service
+          if (sport.name === 'baseball' || sport.name === 'mlb') {
+            console.log(`Using Baseball dedicated service in all sports fetch`);
+            
+            try {
+              // Try to get Baseball events from dedicated service
+              const baseballEvents = await baseballService.getBaseballGames(true); // true means live games
+              
+              if (baseballEvents && baseballEvents.length > 0) {
+                console.log(`BaseballService returned ${baseballEvents.length} live games for all sports fetch`);
+                // Add Baseball events from dedicated service
+                allEvents = [...allEvents, ...baseballEvents];
+              } else {
+                console.log(`BaseballService returned 0 live games, using API Sports in all sports fetch`);
+                // Process API Sports Baseball events as fallback
+                const processedEvents = sportEvents.map(event => ({
+                  ...event,
+                  sportId: 4, // Force the correct sportId
+                  // Ensure we have good display values
+                  homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+                  awayTeam: event.awayTeam || 'Away Team',
+                  leagueName: event.leagueName || 'Baseball League',
+                  score: event.score || 'In Progress'
+                }));
+                allEvents = [...allEvents, ...processedEvents];
+              }
+            } catch (error) {
+              console.error('Error using Baseball service in all sports fetch:', error);
+              // Fall back to processed API Sports events on error
+              const processedEvents = sportEvents.map(event => ({
+                ...event,
+                sportId: 4, // Force the correct sportId
+                homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+                awayTeam: event.awayTeam || 'Away Team',
+                leagueName: event.leagueName || 'Baseball League',
+                score: event.score || 'In Progress'
+              }));
+              allEvents = [...allEvents, ...processedEvents];
+            }
+          }
           // Special handling for Formula 1 events - use dedicated Formula 1 service
-          if (sport.name === 'formula_1' || sport.name === 'formula-1') {
+          else if (sport.name === 'formula_1' || sport.name === 'formula-1') {
             console.log(`Using Formula 1 dedicated service in all sports fetch`);
             
             try {

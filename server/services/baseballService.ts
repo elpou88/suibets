@@ -57,16 +57,14 @@ export class BaseballService {
         ];
         
         // For testing/development when no true baseball data is available
-        // To make the app show events in the baseball section, include some of the mlb labeled events
-        // IMPORTANT: This is for demonstration only and should be replaced when real baseball data is available
-        let includeAllMlbLabeled = true; // Set to true to show some demonstration data
+        // We need to be much stricter about what we accept as baseball data
+        // IMPORTANT: Only accept events that have clear baseball indicators
+        let includeAllMlbLabeled = false; // Set to false to require strict validation
 
         // Filter to verify this is baseball data - look for meaningful identifiers
         const baseballGames = games.filter((game: SportEvent, index: number) => {
-          // For testing/development, include all MLB labeled events
-          if (includeAllMlbLabeled && sportName === 'mlb') {
-            return true;
-          }
+          // DO NOT ACCEPT ALL MLB LABELED EVENTS - football data can have this label too
+          // Instead, look for specific baseball indicators
 
           // Check if this is genuine baseball data by looking at properties that would indicate baseball
           let isBaseball = 
@@ -102,9 +100,7 @@ export class BaseballService {
                 homeTeam.includes('dodgers') || awayTeam.includes('dodgers') ||
                 homeTeam.includes('astros') || awayTeam.includes('astros') ||
                 homeTeam.includes('phillies') || awayTeam.includes('phillies') ||
-                homeTeam.includes('braves') || awayTeam.includes('braves') ||
-                // Temporary for development - include MLB labeled events to show the section working
-                (isLive && sportName === 'mlb' && games.length > 0);
+                homeTeam.includes('braves') || awayTeam.includes('braves');
             }
           }
                
@@ -151,17 +147,14 @@ export class BaseballService {
             'Dodgers', 'Padres', 'Giants', 'Diamondbacks', 'Rockies' // NL West
           ];
           
-          // For testing/development when no true baseball data is available
-          // To make the app show events in the baseball section, include some of the mlb labeled events
-          // IMPORTANT: This is for demonstration only and should be replaced when real baseball data is available
-          let includeAllMlbLabeled = true; // Set to true to show some demonstration data
+          // We need to be much stricter about what we accept as baseball data
+          // IMPORTANT: Only accept events that have clear baseball indicators
+          let includeAllMlbLabeled = false; // Set to false to require strict validation
 
           // Filter to verify this is baseball data - look for meaningful identifiers
           const baseballGames = games.filter((game: SportEvent, index: number) => {
-            // For testing/development, include all MLB labeled events
-            if (includeAllMlbLabeled && sportName === 'mlb') {
-              return true;
-            }
+            // DO NOT ACCEPT ALL MLB LABELED EVENTS - football data can have this label too
+            // Instead, look for specific baseball indicators
 
             // Check if this is genuine baseball data by looking at properties that would indicate baseball
             let isBaseball = 
@@ -197,9 +190,7 @@ export class BaseballService {
                   homeTeam.includes('dodgers') || awayTeam.includes('dodgers') ||
                   homeTeam.includes('astros') || awayTeam.includes('astros') ||
                   homeTeam.includes('phillies') || awayTeam.includes('phillies') ||
-                  homeTeam.includes('braves') || awayTeam.includes('braves') ||
-                  // Temporary for development - include MLB labeled events to show the section working
-                  (isLive && sportName === 'mlb' && games.length > 0);
+                  homeTeam.includes('braves') || awayTeam.includes('braves');
               }
             }
                  

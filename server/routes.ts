@@ -29,6 +29,9 @@ import { formula1Service } from './services/formula1Service';
 // Initialize Baseball service
 import { baseballService } from './services/baseballService';
 
+// Initialize Boxing service
+import { boxingService } from './services/boxingService';
+
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
@@ -210,6 +213,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 console.log(`Error in BaseballService. Returning ${fallbackBaseballEvents.length} minimal fallback Baseball events`);
                 return res.json(fallbackBaseballEvents);
+              }
+            }
+            
+            // Special handling for Boxing - use dedicated Boxing service
+            if (sportName === 'boxing') {
+              console.log(`Using Boxing dedicated service for upcoming Boxing events`);
+              
+              try {
+                // Use dedicated service to get real boxing data
+                console.log('Getting real boxing data for upcoming view');
+                // Get real upcoming boxing matches
+                const boxingEvents = await boxingService.getBoxingEvents(false); // false means upcoming
+                
+                // Return the boxing events from the dedicated service
+                console.log(`BoxingService returned ${boxingEvents.length} upcoming matches`);
+                return res.json(boxingEvents);
+              } catch (error) {
+                console.error('Error using Boxing service:', error);
+                
+                // Continue to use normal API data if Boxing service fails
+                console.log(`Error in BoxingService. Returning API Sports data instead`);
+                const filteredEvents = upcomingEvents.filter(event => event.sportId === reqSportId);
+                return res.json(filteredEvents);
               }
             }
             
@@ -427,6 +453,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
             console.log(`Error in BaseballService. Returning ${baseballEvents.length} live Baseball events with corrected sportId from API Sports`);
             return res.json(baseballEvents);
+          }
+        }
+        
+        // Special handling for Boxing - use dedicated Boxing service
+        if (sportName === 'boxing') {
+          console.log(`Using Boxing dedicated service for live Boxing events`);
+          
+          try {
+            // Use our dedicated Boxing service for live matches
+            const liveBoxingEvents = await boxingService.getBoxingEvents(true); // true means live matches
+            
+            if (liveBoxingEvents && liveBoxingEvents.length > 0) {
+              console.log(`BoxingService returned ${liveBoxingEvents.length} live matches`);
+              // Ensure all events are properly marked as boxing
+              const validBoxingEvents = liveBoxingEvents.map(event => ({
+                ...event,
+                sportId: 11, // Make sure sportId is always Boxing (11)
+                isLive: true // These are live events
+              }));
+              return res.json(validBoxingEvents);
+            } else {
+              console.log(`BoxingService returned 0 live matches, trying to identify boxing data from API Sports`);
+              
+              // Only use events that are actually boxing events - filter for boxing-related identifiers
+              const genuineBoxingEvents = sportEvents.filter(event => {
+                // STRICT VERIFICATION: Reject football/soccer matches
+                if (event.leagueName?.includes('League') || 
+                    event.leagueName?.includes('Premier') ||
+                    event.leagueName?.includes('La Liga') ||
+                    event.leagueName?.includes('Serie') ||
+                    event.leagueName?.includes('Bundesliga') ||
+                    event.leagueName?.includes('Cup') ||
+                    event.leagueName?.includes('Copa') ||
+                    event.homeTeam?.includes('FC') ||
+                    event.awayTeam?.includes('FC') ||
+                    event.homeTeam?.includes('United') ||
+                    event.awayTeam?.includes('United')) {
+                  console.log(`[BoxingService] REJECTING football match: ${event.homeTeam} vs ${event.awayTeam} (${event.leagueName})`);
+                  return false;
+                }
+                
+                // Verify this is actually boxing data
+                let isBoxing = 
+                  (event.leagueName && 
+                    (event.leagueName.toLowerCase().includes('boxing') || 
+                     event.leagueName.toLowerCase().includes('championship') ||
+                     event.leagueName.toLowerCase().includes('title') ||
+                     event.leagueName.toLowerCase().includes('belt')));
+                
+                // Check for boxing-related terms in team names
+                if (!isBoxing && event.homeTeam && event.awayTeam) {
+                  const homeTeam = event.homeTeam.toLowerCase();
+                  const awayTeam = event.awayTeam.toLowerCase();
+                  
+                  isBoxing = 
+                    homeTeam.includes('vs') ||  // Boxing matches are often "Fighter1 vs Fighter2"
+                    awayTeam.includes('vs') ||
+                    (homeTeam.split(' ').length <= 2 && awayTeam.split(' ').length <= 2); // Boxers usually have simple names
+                }
+                
+                return isBoxing;
+              });
+              
+              if (genuineBoxingEvents.length > 0) {
+                console.log(`Found ${genuineBoxingEvents.length} genuine boxing events from API Sports`);
+                
+                const boxingEvents = genuineBoxingEvents.map(event => ({
+                  ...event,
+                  sportId: 11, // Set to Boxing ID
+                  isLive: true
+                }));
+                
+                console.log(`Returning ${boxingEvents.length} properly identified live Boxing events`);
+                return res.json(boxingEvents);
+              } else {
+                console.log(`No genuine boxing events found, returning empty array`);
+                return res.json([]);
+              }
+            }
+          } catch (error) {
+            console.error('Error using Boxing service for live events:', error);
+            
+            // Fallback to API Sports service if there's an error
+            // But still filter to ensure we're only showing boxing events
+            const filteredBoxingEvents = sportEvents.filter(event => {
+              // Apply minimal filtering to avoid showing football matches
+              return !(event.leagueName?.includes('League') || 
+                     event.homeTeam?.includes('FC') || 
+                     event.awayTeam?.includes('FC'));
+            });
+            
+            const boxingEvents = filteredBoxingEvents.map(event => ({
+              ...event,
+              sportId: 11, // Set to Boxing ID
+              homeTeam: event.homeTeam || `Boxer ${event.id}`,
+              awayTeam: event.awayTeam || 'Opponent',
+              leagueName: event.leagueName || 'Boxing Match',
+              score: event.score || 'In Progress'
+            }));
+            console.log(`Error in BoxingService. Returning ${boxingEvents.length} filtered live Boxing events with corrected sportId from API Sports`);
+            return res.json(boxingEvents);
           }
         }
         

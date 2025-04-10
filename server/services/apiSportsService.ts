@@ -984,57 +984,92 @@ export class ApiSportsService {
       } else if (sport === 'formula_1' || sport === 'formula-1') {
         // Use special handling for Formula 1 events
         console.log(`[ApiSportsService] Special handling for Formula 1 event ${index}`);
-        // Create a formula 1 specific event
-        const eventId = event.fixture?.id?.toString() || `api-sports-f1-${index}`;
-        const leagueName = event.league?.name || 'Formula 1';
+        
+        // Log the actual event structure to better understand the data
+        console.log(`[ApiSportsService] Formula 1 event raw data: ${JSON.stringify(event).substring(0, 500)}...`);
+        
+        // Extract race information - handle both API formats (races API vs fixtures API)
+        const eventId = event.id?.toString() || event.fixture?.id?.toString() || `formula1-${index}`;
+        const competition = event.competition?.name || event.league?.name || 'Formula 1';
+        const circuit = event.circuit?.name || event.venue?.name || 'Circuit';
+        const location = event.circuit?.location || event.venue?.city || 'Location';
+        const raceDate = event.date || event.fixture?.date || new Date().toISOString();
         
         // Create a better display name for the race
-        const homeTeam = `${event.league?.name || 'Formula 1'} - ${event.teams?.home?.name || event.venue?.name || 'Race'}`;
-        const awayTeam = event.teams?.away?.name || event.venue?.city || 'Grand Prix';
+        const homeTeam = `${competition} - ${circuit}`;
+        const awayTeam = location || 'Grand Prix';
         
-        // Get appropriate status mapping
-        const status = isLive ? 'live' : 'scheduled';
+        // Get appropriate status mapping based on event status or the isLive parameter
+        let status = 'upcoming';
+        if (isLive) {
+          status = 'live';
+        } else if (event.status === 'completed' || event.status === 'finished') {
+          status = 'finished';
+        } else if (event.status === 'live' || event.status === 'in_progress') {
+          status = 'live';
+        } else if (event.status === 'not_started' || event.status === 'scheduled') {
+          status = 'upcoming';
+        }
         
-        // Create F1-specific markets
+        // Create F1-specific markets with real drivers where possible
+        // Extract drivers from the response if available
+        const drivers = event.drivers || [];
+        
+        // Create outcome data based on real drivers or use default drivers
+        let outcomes = [];
+        if (drivers && drivers.length > 0) {
+          // Use real drivers from the API
+          outcomes = drivers.slice(0, 5).map((driver: any, driverIndex: number) => ({
+            id: `${eventId}-outcome-${driverIndex+1}`,
+            name: driver.name || `Driver ${driverIndex+1}`,
+            // Calculate odds based on driver position or use default formula
+            odds: 1.5 + (driverIndex * 0.5),
+            probability: Math.max(0.1, 0.7 - (driverIndex * 0.1))
+          }));
+        } else {
+          // Use top Formula 1 drivers as default
+          outcomes = [
+            {
+              id: `${eventId}-outcome-1`,
+              name: 'Max Verstappen',
+              odds: 1.5,
+              probability: 0.67
+            },
+            {
+              id: `${eventId}-outcome-2`,
+              name: 'Lewis Hamilton',
+              odds: 3.2,
+              probability: 0.31
+            },
+            {
+              id: `${eventId}-outcome-3`,
+              name: 'Charles Leclerc',
+              odds: 4.5,
+              probability: 0.22
+            }
+          ];
+        }
+        
         const marketsData: MarketData[] = [
           {
             id: `${eventId}-market-race-winner`,
             name: 'Race Winner',
-            outcomes: [
-              {
-                id: `${eventId}-outcome-1`,
-                name: 'Max Verstappen',
-                odds: 1.5,
-                probability: 0.67
-              },
-              {
-                id: `${eventId}-outcome-2`,
-                name: 'Lewis Hamilton',
-                odds: 3.2,
-                probability: 0.31
-              },
-              {
-                id: `${eventId}-outcome-3`,
-                name: 'Charles Leclerc',
-                odds: 4.5,
-                probability: 0.22
-              }
-            ]
+            outcomes
           }
         ];
         
         // Return a complete, well-formed event with proper sportId
         return {
           id: eventId,
-          sportId: 13, // Formula 1 sportId
-          leagueName,
+          sportId: 13, // IMPORTANT: Always use Formula 1 sportId (13)
+          leagueName: competition,
           homeTeam,
           awayTeam,
-          startTime: new Date(event.fixture?.date || Date.now()).toISOString(),
-          status,
-          score: isLive ? "0 - 0" : undefined, // Using a standard score format
+          startTime: new Date(raceDate).toISOString(),
+          status: status as "scheduled" | "live" | "finished" | "upcoming",
+          score: isLive ? "Lap: 0/0" : undefined, // Using a Formula 1 specific format
           markets: marketsData,
-          isLive
+          isLive: status === 'live'
         };
       } else {
         return this.transformGenericEvent(event, sport, isLive, index);

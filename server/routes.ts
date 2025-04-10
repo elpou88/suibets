@@ -26,6 +26,9 @@ const basketballService = initBasketballService(sportsApiKey);
 // Initialize Formula 1 service
 import { formula1Service } from './services/formula1Service';
 
+// Initialize Baseball service
+import { baseballService } from './services/baseballService';
+
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
@@ -155,6 +158,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (upcomingEvents && upcomingEvents.length > 0) {
             console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
             
+            // Special handling for Baseball - use dedicated Baseball service
+            if (sportName === 'baseball' || sportName === 'mlb') {
+              console.log(`Using Baseball dedicated service for Baseball events`);
+              
+              try {
+                // Use our dedicated Baseball service
+                const baseballEvents = await baseballService.getBaseballGames(false); // false means not live
+                
+                if (baseballEvents && baseballEvents.length > 0) {
+                  console.log(`BaseballService returned ${baseballEvents.length} upcoming games`);
+                  return res.json(baseballEvents);
+                } else {
+                  console.log(`BaseballService returned 0 upcoming games, falling back to API Sports service`);
+                  
+                  // Fallback to API Sports service if Baseball service returns no events
+                  const baseballEvents = upcomingEvents.map(event => ({
+                    ...event,
+                    sportId: 4, // Set to Baseball ID
+                    // Ensure we have properly formatted team names
+                    homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+                    awayTeam: event.awayTeam || 'Away Team',
+                    leagueName: event.leagueName || 'Baseball League'
+                  }));
+                  console.log(`Returning ${baseballEvents.length} Baseball events with corrected sportId from API Sports`);
+                  return res.json(baseballEvents);
+                }
+              } catch (error) {
+                console.error('Error using Baseball service:', error);
+                
+                // Fallback to API Sports service if there's an error
+                const baseballEvents = upcomingEvents.map(event => ({
+                  ...event,
+                  sportId: 4, // Set to Baseball ID
+                  homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+                  awayTeam: event.awayTeam || 'Away Team',
+                  leagueName: event.leagueName || 'Baseball League'
+                }));
+                console.log(`Error in BaseballService. Returning ${baseballEvents.length} Baseball events with corrected sportId from API Sports`);
+                return res.json(baseballEvents);
+              }
+            }
+            
             // Special handling for Formula 1 - use dedicated Formula 1 service
             if (sportName === 'formula_1' || sportName === 'formula-1') {
               console.log(`Using Formula 1 dedicated service for Formula 1 events`);
@@ -267,6 +312,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get ONLY real events for this specific sport, never adapt from others
         const sportEvents = await apiSportsService.getLiveEvents(sportName);
+        
+        // Special handling for Baseball - use dedicated Baseball service
+        if (sportName === 'baseball' || sportName === 'mlb') {
+          console.log(`Using Baseball dedicated service for live Baseball events`);
+          
+          try {
+            // Use our dedicated Baseball service for live games
+            const liveBaseballEvents = await baseballService.getBaseballGames(true); // true means live games
+            
+            if (liveBaseballEvents && liveBaseballEvents.length > 0) {
+              console.log(`BaseballService returned ${liveBaseballEvents.length} live games`);
+              return res.json(liveBaseballEvents);
+            } else {
+              console.log(`BaseballService returned 0 live games, falling back to API Sports service`);
+              
+              // Fallback to API Sports service if Baseball service returns no events
+              const baseballEvents = sportEvents.map(event => ({
+                ...event,
+                sportId: 4, // Set to Baseball ID
+                // Ensure we have properly formatted team names and score
+                homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+                awayTeam: event.awayTeam || 'Away Team',
+                leagueName: event.leagueName || 'Baseball League',
+                score: event.score || 'In Progress'
+              }));
+              console.log(`Returning ${baseballEvents.length} live Baseball events with corrected sportId from API Sports`);
+              return res.json(baseballEvents);
+            }
+          } catch (error) {
+            console.error('Error using Baseball service for live events:', error);
+            
+            // Fallback to API Sports service if there's an error
+            const baseballEvents = sportEvents.map(event => ({
+              ...event,
+              sportId: 4, // Set to Baseball ID
+              homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
+              awayTeam: event.awayTeam || 'Away Team',
+              leagueName: event.leagueName || 'Baseball League',
+              score: event.score || 'In Progress'
+            }));
+            console.log(`Error in BaseballService. Returning ${baseballEvents.length} live Baseball events with corrected sportId from API Sports`);
+            return res.json(baseballEvents);
+          }
+        }
         
         // Special handling for Formula 1 - use dedicated Formula 1 service
         if (sportName === 'formula_1' || sportName === 'formula-1') {

@@ -159,11 +159,13 @@ export class BaseballService {
     try {
       console.log(`[BaseballService] Using direct baseball API for ${isLive ? 'live' : 'upcoming'} games`);
       
-      // Parameters for the API call
+      // Parameters for the API call - start with MLB
       const params: Record<string, any> = {
         season: 2024, // Use 2024 season for MLB games
-        league: 1     // MLB league ID
+        league: 1     // MLB league ID = 1 for Major League Baseball
       };
+      
+      // We'll try multiple leagues if this doesn't work
       
       if (isLive) {
         params.live = 'true';
@@ -200,6 +202,40 @@ export class BaseballService {
         }
       }
       
+      // If MLB league didn't return results, try without specifying a league
+      if (params.league) {
+        console.log(`[BaseballService] No games found for MLB (league=1), trying without league filter`);
+        
+        // Clone the params without the league property
+        const noLeagueParams = { ...params };
+        delete noLeagueParams.league;
+        
+        console.log(`[BaseballService] Making direct API call without league filter:`, noLeagueParams);
+        
+        const fallbackResponse = await axios.get(`${this.baseUrl}/games`, {
+          params: noLeagueParams,
+          headers: {
+            'x-apisports-key': this.apiKey,
+            'Accept': 'application/json'
+          }
+        });
+        
+        if (fallbackResponse.status === 200 && fallbackResponse.data && fallbackResponse.data.response) {
+          const fallbackGames = fallbackResponse.data.response;
+          console.log(`[BaseballService] Fallback without league filter returned ${fallbackGames.length} games`);
+          
+          if (fallbackGames.length > 0) {
+            // Transform to our format
+            const transformedGames = this.transformBaseballApiGames(fallbackGames, isLive);
+            
+            if (transformedGames.length > 0) {
+              console.log(`[BaseballService] Transformed ${transformedGames.length} baseball games from fallback approach`);
+              return transformedGames;
+            }
+          }
+        }
+      }
+      
       // If we get here, no games were found from the direct API
       // Try a date range approach for upcoming games
       if (!isLive) {
@@ -211,37 +247,101 @@ export class BaseballService {
         const threeMonthsLater = new Date(today);
         threeMonthsLater.setMonth(today.getMonth() + 3);
         
+        // Try multiple seasons to find upcoming games
+        const currentYear = today.getFullYear();
+        const seasons = [currentYear, currentYear + 1];
+        
         // Format dates for API
         const formattedToday = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         const formattedThreeMonths = `${threeMonthsLater.getFullYear()}-${String(threeMonthsLater.getMonth() + 1).padStart(2, '0')}-${String(threeMonthsLater.getDate()).padStart(2, '0')}`;
         
-        const rangeResponse = await axios.get(`${this.baseUrl}/games`, {
-          params: {
-            season: 2024,
-            from: formattedToday,
-            to: formattedThreeMonths,
-            status: 'NS',
-            league: 1 // MLB league ID
-          },
-          headers: {
-            'x-apisports-key': this.apiKey,
-            'Accept': 'application/json'
-          }
-        });
+        // Try with multiple seasons to find any upcoming baseball games
+        let allGames: any[] = [];
         
-        if (rangeResponse.status === 200 && rangeResponse.data && rangeResponse.data.response) {
-          const rangeGames = rangeResponse.data.response;
-          console.log(`[BaseballService] Date range approach returned ${rangeGames.length} games`);
+        // Try each season and combine results
+        for (const season of seasons) {
+          console.log(`[BaseballService] Trying MLB season ${season} with date range from ${formattedToday} to ${formattedThreeMonths}`);
           
-          if (rangeGames.length > 0) {
-            // Transform to our format
-            const transformedGames = this.transformBaseballApiGames(rangeGames, isLive);
+          try {
+            const rangeResponse = await axios.get(`${this.baseUrl}/games`, {
+              params: {
+                season: season,
+                from: formattedToday,
+                to: formattedThreeMonths,
+                status: 'NS',
+                league: 1 // MLB league ID - Major League Baseball
+              },
+              headers: {
+                'x-apisports-key': this.apiKey,
+                'Accept': 'application/json'
+              }
+            });
             
-            if (transformedGames.length > 0) {
-              console.log(`[BaseballService] Transformed ${transformedGames.length} baseball games from date range`);
-              return transformedGames;
+            if (rangeResponse.status === 200 && rangeResponse.data && rangeResponse.data.response) {
+              const seasonGames = rangeResponse.data.response;
+              console.log(`[BaseballService] Season ${season} returned ${seasonGames.length} games`);
+              
+              if (seasonGames.length > 0) {
+                allGames = [...allGames, ...seasonGames];
+              }
+            }
+          } catch (seasonError) {
+            console.error(`[BaseballService] Error fetching season ${season}:`, seasonError);
+          }
+        }
+        
+        console.log(`[BaseballService] Date range approach returned ${allGames.length} games from all seasons`);
+        
+        if (allGames.length > 0) {
+          // Transform to our format
+          const transformedGames = this.transformBaseballApiGames(allGames, isLive);
+          
+          if (transformedGames.length > 0) {
+            console.log(`[BaseballService] Transformed ${transformedGames.length} baseball games from all seasons`);
+            return transformedGames;
+          }
+        }
+        
+        // Final fallback - try without league filter and with extended date range
+        console.log(`[BaseballService] Trying final fallback approach - no league filter with extended date range`);
+        
+        // Try a 6-month range instead
+        const sixMonthsLater = new Date(today);
+        sixMonthsLater.setMonth(today.getMonth() + 6);
+        const formattedSixMonths = `${sixMonthsLater.getFullYear()}-${String(sixMonthsLater.getMonth() + 1).padStart(2, '0')}-${String(sixMonthsLater.getDate()).padStart(2, '0')}`;
+        
+        // Try without league filter
+        try {
+          const finalResponse = await axios.get(`${this.baseUrl}/games`, {
+            params: {
+              season: new Date().getFullYear(),
+              from: formattedToday,
+              to: formattedSixMonths,
+              status: 'NS'
+              // No league filter
+            },
+            headers: {
+              'x-apisports-key': this.apiKey,
+              'Accept': 'application/json'
+            }
+          });
+          
+          if (finalResponse.status === 200 && finalResponse.data && finalResponse.data.response) {
+            const finalGames = finalResponse.data.response;
+            console.log(`[BaseballService] Final fallback approach returned ${finalGames.length} games`);
+            
+            if (finalGames.length > 0) {
+              // Transform to our format
+              const transformedGames = this.transformBaseballApiGames(finalGames, isLive);
+              
+              if (transformedGames.length > 0) {
+                console.log(`[BaseballService] Transformed ${transformedGames.length} baseball games from final fallback`);
+                return transformedGames;
+              }
             }
           }
+        } catch (finalError) {
+          console.error(`[BaseballService] Error in final fallback:`, finalError);
         }
       }
       

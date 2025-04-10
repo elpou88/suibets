@@ -23,6 +23,9 @@ const apiSportsService = new ApiSportsService(sportsApiKey);
 // Initialize basketball service
 const basketballService = initBasketballService(sportsApiKey);
 
+// Initialize Formula 1 service
+import { formula1Service } from './services/formula1Service';
+
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 

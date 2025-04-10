@@ -39,17 +39,48 @@ export class BaseballService {
         games = await apiSportsService.getUpcomingEvents(sportName, 10);
       }
       
-      // Ensure we have the correct sportId
+      // Make sure the data is actually baseball data, not football data with an incorrect sportId
       if (games && games.length > 0) {
         console.log(`[BaseballService] Found ${games.length} ${isLive ? 'live' : 'upcoming'} ${sportName} games from API-Sports`);
         
-        const formattedGames = games.map((game: SportEvent) => ({
-          ...game,
-          sportId: 4, // Set to Baseball ID
-          isLive: isLive
-        }));
+        // Filter to verify this is baseball data - look for meaningful identifiers
+        const baseballGames = games.filter((game: SportEvent) => {
+          // Check if this is genuine baseball data by looking at properties that would indicate baseball
+          const isBaseball = 
+            // Check if the league name contains baseball-related terms
+            (game.leagueName && 
+              (game.leagueName.toLowerCase().includes('baseball') || 
+               game.leagueName.toLowerCase().includes('mlb') ||
+               game.leagueName.toLowerCase().includes('major league'))) ||
+            // Check if team names might be baseball teams - this is a weak check but helps
+            (game.homeTeam && game.awayTeam && 
+              (game.homeTeam.includes('Sox') || 
+               game.homeTeam.includes('Yankees') ||
+               game.homeTeam.includes('Cubs') ||
+               game.homeTeam.includes('Braves') ||
+               game.homeTeam.includes('Mets') ||
+               game.awayTeam.includes('Sox') ||
+               game.awayTeam.includes('Yankees') ||
+               game.awayTeam.includes('Cubs') ||
+               game.awayTeam.includes('Braves') ||
+               game.awayTeam.includes('Mets')));
+               
+          return isBaseball;
+        });
         
-        return formattedGames;
+        if (baseballGames.length > 0) {
+          console.log(`[BaseballService] Identified ${baseballGames.length} genuine baseball games out of ${games.length} total games`);
+          
+          const formattedGames = baseballGames.map((game: SportEvent) => ({
+            ...game,
+            sportId: 4, // Set to Baseball ID
+            isLive: isLive
+          }));
+          
+          return formattedGames;
+        } else {
+          console.log(`[BaseballService] Warning: None of the ${games.length} games appear to be genuine baseball data, trying direct API`);
+        }
       }
       
       // If we don't have MLB games, try general baseball endpoint
@@ -66,13 +97,44 @@ export class BaseballService {
         if (games && games.length > 0) {
           console.log(`[BaseballService] Found ${games.length} ${isLive ? 'live' : 'upcoming'} ${sportName} games from API-Sports`);
           
-          const formattedGames = games.map((game: SportEvent) => ({
-            ...game,
-            sportId: 4, // Set to Baseball ID
-            isLive: isLive
-          }));
+          // Filter to verify this is baseball data - look for meaningful identifiers
+          const baseballGames = games.filter((game: SportEvent) => {
+            // Check if this is genuine baseball data by looking at properties that would indicate baseball
+            const isBaseball = 
+              // Check if the league name contains baseball-related terms
+              (game.leagueName && 
+                (game.leagueName.toLowerCase().includes('baseball') || 
+                 game.leagueName.toLowerCase().includes('mlb') ||
+                 game.leagueName.toLowerCase().includes('major league'))) ||
+              // Check if team names might be baseball teams - this is a weak check but helps
+              (game.homeTeam && game.awayTeam && 
+                (game.homeTeam.includes('Sox') || 
+                 game.homeTeam.includes('Yankees') ||
+                 game.homeTeam.includes('Cubs') ||
+                 game.homeTeam.includes('Braves') ||
+                 game.homeTeam.includes('Mets') ||
+                 game.awayTeam.includes('Sox') ||
+                 game.awayTeam.includes('Yankees') ||
+                 game.awayTeam.includes('Cubs') ||
+                 game.awayTeam.includes('Braves') ||
+                 game.awayTeam.includes('Mets')));
+                 
+            return isBaseball;
+          });
           
-          return formattedGames;
+          if (baseballGames.length > 0) {
+            console.log(`[BaseballService] Identified ${baseballGames.length} genuine baseball games out of ${games.length} total games`);
+            
+            const formattedGames = baseballGames.map((game: SportEvent) => ({
+              ...game,
+              sportId: 4, // Set to Baseball ID
+              isLive: isLive
+            }));
+            
+            return formattedGames;
+          } else {
+            console.log(`[BaseballService] Warning: None of the ${games.length} games appear to be genuine baseball data, trying direct API`);
+          }
         }
       }
       

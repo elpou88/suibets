@@ -362,22 +362,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (liveBaseballEvents && liveBaseballEvents.length > 0) {
               console.log(`BaseballService returned ${liveBaseballEvents.length} live games`);
-              return res.json(liveBaseballEvents);
-            } else {
-              console.log(`BaseballService returned 0 live games, falling back to API Sports service`);
-              
-              // Fallback to API Sports service if Baseball service returns no events
-              const baseballEvents = sportEvents.map(event => ({
+              // Ensure all events are properly marked as baseball
+              const validBaseballEvents = liveBaseballEvents.map(event => ({
                 ...event,
-                sportId: 4, // Set to Baseball ID
-                // Ensure we have properly formatted team names and score
-                homeTeam: event.homeTeam || `Baseball Team ${event.id}`,
-                awayTeam: event.awayTeam || 'Away Team',
-                leagueName: event.leagueName || 'Baseball League',
-                score: event.score || 'In Progress'
+                sportId: 4, // Make sure sportId is always Baseball (4)
+                isLive: true // These are live events
               }));
-              console.log(`Returning ${baseballEvents.length} live Baseball events with corrected sportId from API Sports`);
-              return res.json(baseballEvents);
+              return res.json(validBaseballEvents);
+            } else {
+              console.log(`BaseballService returned 0 live games, trying to identify baseball data from API Sports`);
+              
+              // Only use events that are actually baseball events - filter for baseball-related identifiers
+              const genuineBaseballEvents = sportEvents.filter(event => {
+                // Check if this is genuine baseball data by looking at properties that would indicate baseball
+                const isBaseball = 
+                  // Check if the league name contains baseball-related terms
+                  (event.leagueName && 
+                    (event.leagueName.toLowerCase().includes('baseball') || 
+                     event.leagueName.toLowerCase().includes('mlb') ||
+                     event.leagueName.toLowerCase().includes('major league'))) ||
+                  // Check if team names might be baseball teams - this is a weak check but helps
+                  (event.homeTeam && event.awayTeam && 
+                    (event.homeTeam.includes('Sox') || 
+                     event.homeTeam.includes('Yankees') ||
+                     event.homeTeam.includes('Cubs') ||
+                     event.homeTeam.includes('Braves') ||
+                     event.homeTeam.includes('Mets') ||
+                     event.awayTeam.includes('Sox') ||
+                     event.awayTeam.includes('Yankees') ||
+                     event.awayTeam.includes('Cubs') ||
+                     event.awayTeam.includes('Braves') ||
+                     event.awayTeam.includes('Mets')));
+                     
+                return isBaseball;
+              });
+              
+              if (genuineBaseballEvents.length > 0) {
+                console.log(`Found ${genuineBaseballEvents.length} genuine baseball events from API Sports`);
+                
+                const baseballEvents = genuineBaseballEvents.map(event => ({
+                  ...event,
+                  sportId: 4, // Set to Baseball ID
+                  isLive: true
+                }));
+                
+                console.log(`Returning ${baseballEvents.length} properly identified live Baseball events`);
+                return res.json(baseballEvents);
+              } else {
+                console.log(`No genuine baseball events found, returning empty array`);
+                return res.json([]);
+              }
             }
           } catch (error) {
             console.error('Error using Baseball service for live events:', error);

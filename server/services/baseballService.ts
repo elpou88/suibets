@@ -66,14 +66,38 @@ export class BaseballService {
           console.log(`[BaseballService] Sample MLB event data:`, JSON.stringify(games[0]));
         }
 
-        // Filter to verify this is baseball data - but accept mlb labeled events during testing
+        // Filter to strictly verify this is baseball data
         const baseballGames = games.filter((game: SportEvent, index: number) => {
-          // During development, accept MLB labeled events to show content
-          if (includeAllMlbLabeled && sportName === 'mlb') {
-            console.log(`[BaseballService] Including MLB labeled event: ${game.homeTeam} vs ${game.awayTeam}`);
-            // Mark as baseball for display
-            game.sportId = 4;
-            return true;
+          // STRICT VERIFICATION: These clearly are football/soccer matches, not baseball
+          // Log to help debugging but DO NOT include them
+          if (game.leagueName?.includes('Copa') || 
+              game.leagueName?.includes('FC') ||
+              game.homeTeam?.includes('FC') ||
+              game.awayTeam?.includes('FC') ||
+              game.homeTeam?.includes('United') ||
+              game.awayTeam?.includes('United') ||
+              game.homeTeam?.includes('Inter') ||
+              game.awayTeam?.includes('Inter') ||
+              game.leagueName?.includes('GFC') ||
+              game.leagueName?.includes('Argentina') ||
+              game.homeTeam?.includes('vs') ||
+              game.awayTeam?.includes('vs') ||
+              game.homeTeam?.includes('SC') ||
+              game.awayTeam?.includes('SC') ||
+              game.homeTeam?.includes('GFC') ||
+              game.awayTeam?.includes('GFC') ||
+              game.homeTeam?.includes('City') ||
+              game.awayTeam?.includes('City') ||
+              game.homeTeam?.includes('Sporting') ||
+              game.awayTeam?.includes('Sporting') ||
+              game.homeTeam?.includes('Flamengo') ||
+              game.awayTeam?.includes('Flamengo') ||
+              game.homeTeam?.includes('Palmeiras') ||
+              game.awayTeam?.includes('Palmeiras') ||
+              game.homeTeam?.includes('Cordoba') ||
+              game.awayTeam?.includes('Cordoba')) {
+            console.log(`[BaseballService] REJECTING football match: ${game.homeTeam} vs ${game.awayTeam} (${game.leagueName})`);
+            return false;
           }
 
           // Check if this is genuine baseball data by looking at properties that would indicate baseball
@@ -166,14 +190,38 @@ export class BaseballService {
             console.log(`[BaseballService] Sample 'baseball' API event data:`, JSON.stringify(games[0]));
           }
 
-          // Filter to verify this is baseball data - but accept mlb labeled events during testing
+          // Filter to strictly verify this is baseball data
           const baseballGames = games.filter((game: SportEvent, index: number) => {
-            // During development, accept MLB labeled events to show content
-            if (includeAllMlbLabeled && sportName === 'baseball') {
-              console.log(`[BaseballService] Including baseball labeled event: ${game.homeTeam} vs ${game.awayTeam}`);
-              // Mark as baseball for display 
-              game.sportId = 4;
-              return true;
+            // STRICT VERIFICATION: These clearly are football/soccer matches, not baseball
+            // Log to help debugging but DO NOT include them
+            if (game.leagueName?.includes('Copa') || 
+                game.leagueName?.includes('FC') ||
+                game.homeTeam?.includes('FC') ||
+                game.awayTeam?.includes('FC') ||
+                game.homeTeam?.includes('United') ||
+                game.awayTeam?.includes('United') ||
+                game.homeTeam?.includes('Inter') ||
+                game.awayTeam?.includes('Inter') ||
+                game.leagueName?.includes('GFC') ||
+                game.leagueName?.includes('Argentina') ||
+                game.homeTeam?.includes('vs') ||
+                game.awayTeam?.includes('vs') ||
+                game.homeTeam?.includes('SC') ||
+                game.awayTeam?.includes('SC') ||
+                game.homeTeam?.includes('GFC') ||
+                game.awayTeam?.includes('GFC') ||
+                game.homeTeam?.includes('City') ||
+                game.awayTeam?.includes('City') ||
+                game.homeTeam?.includes('Sporting') ||
+                game.awayTeam?.includes('Sporting') ||
+                game.homeTeam?.includes('Flamengo') ||
+                game.awayTeam?.includes('Flamengo') ||
+                game.homeTeam?.includes('Palmeiras') ||
+                game.awayTeam?.includes('Palmeiras') ||
+                game.homeTeam?.includes('Cordoba') ||
+                game.awayTeam?.includes('Cordoba')) {
+              console.log(`[BaseballService] REJECTING football match: ${game.homeTeam} vs ${game.awayTeam} (${game.leagueName})`);
+              return false;
             }
 
             // Check if this is genuine baseball data by looking at properties that would indicate baseball

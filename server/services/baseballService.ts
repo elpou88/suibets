@@ -327,12 +327,16 @@ export class BaseballService {
       { name: 'Houston Astros', city: 'Houston' },
       { name: 'Atlanta Braves', city: 'Atlanta' },
       { name: 'San Francisco Giants', city: 'San Francisco' },
-      { name: 'St. Louis Cardinals', city: 'St. Louis' }
+      { name: 'St. Louis Cardinals', city: 'St. Louis' },
+      { name: 'Philadelphia Phillies', city: 'Philadelphia' },
+      { name: 'Toronto Blue Jays', city: 'Toronto' },
+      { name: 'Cleveland Guardians', city: 'Cleveland' },
+      { name: 'Seattle Mariners', city: 'Seattle' }
     ];
     
     // Create either live or upcoming games
     if (isLive) {
-      // Create live games
+      // Create live games with appropriate format for API integration
       return [
         {
           id: 'baseball-live-1',
@@ -341,7 +345,7 @@ export class BaseballService {
           homeTeam: 'New York Yankees',
           awayTeam: 'Boston Red Sox',
           startTime: new Date().toISOString(),
-          status: 'live' as 'scheduled' | 'live' | 'finished' | 'upcoming',
+          status: 'live',
           score: '3 - 2 (4th Inning)',
           markets: [
             {
@@ -390,7 +394,7 @@ export class BaseballService {
           homeTeam: 'Los Angeles Dodgers',
           awayTeam: 'San Francisco Giants',
           startTime: new Date().toISOString(),
-          status: 'live' as 'scheduled' | 'live' | 'finished' | 'upcoming',
+          status: 'live',
           score: '5 - 4 (7th Inning)',
           markets: [
             {
@@ -439,7 +443,7 @@ export class BaseballService {
           homeTeam: 'Houston Astros',
           awayTeam: 'Atlanta Braves',
           startTime: new Date().toISOString(),
-          status: 'live' as 'scheduled' | 'live' | 'finished' | 'upcoming',
+          status: 'live',
           score: '2 - 2 (2nd Inning)',
           markets: [
             {

@@ -92,13 +92,44 @@ export class BaseballService {
    */
   private async getBaseballGamesFallback(isLive: boolean): Promise<SportEvent[]> {
     try {
-      console.log('[BaseballService] Using fallback approach to get baseball games');
+      console.log('[BaseballService] Using fallback approach to get real baseball games from API Sports');
       
-      // For fallback, try different parameters
-      const currentYear = new Date().getFullYear();
+      // Import directly here to avoid circular dependency
+      const { apiSportsService } = require('./apiSportsService');
       
       if (isLive) {
-        // For live games, try with date=today and filter for games in progress
+        // For live games, use the mlb endpoint from ApiSportsService
+        console.log('[BaseballService] Getting live baseball games from API Sports mlb endpoint');
+        const mlbGames = await apiSportsService.getLiveEvents('mlb');
+        
+        if (mlbGames && mlbGames.length > 0) {
+          console.log(`[BaseballService] Found ${mlbGames.length} live MLB games from API Sports`);
+          
+          // Make sure all have the correct sportId
+          return mlbGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: true
+          }));
+        }
+        
+        // Try baseball endpoint as fallback
+        console.log('[BaseballService] No MLB games, trying generic baseball endpoint');
+        const baseballGames = await apiSportsService.getLiveEvents('baseball');
+        
+        if (baseballGames && baseballGames.length > 0) {
+          console.log(`[BaseballService] Found ${baseballGames.length} live baseball games from API Sports`);
+          
+          // Make sure all have the correct sportId
+          return baseballGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: true
+          }));
+        }
+        
+        // If we still have no games, try the original approach with the baseball API
+        console.log('[BaseballService] No games from API Sports, trying direct baseball API with date fallback');
         const today = new Date();
         const formattedDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
         
@@ -127,12 +158,42 @@ export class BaseballService {
           console.log(`[BaseballService] Filtered to ${liveGames.length} live games`);
           
           if (liveGames.length > 0) {
-            const transformedEvents = this.transformGames(liveGames, true);
-            return transformedEvents;
+            return this.transformGames(liveGames, true);
           }
         }
       } else {
-        // For upcoming games, try with season only
+        // For upcoming games, use the mlb endpoint from ApiSportsService with a higher limit
+        console.log('[BaseballService] Getting upcoming baseball games from API Sports mlb endpoint');
+        const mlbGames = await apiSportsService.getUpcomingEvents('mlb', 10);
+        
+        if (mlbGames && mlbGames.length > 0) {
+          console.log(`[BaseballService] Found ${mlbGames.length} upcoming MLB games from API Sports`);
+          
+          // Make sure all have the correct sportId
+          return mlbGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: false
+          }));
+        }
+        
+        // Try baseball endpoint as fallback
+        console.log('[BaseballService] No MLB games, trying generic baseball endpoint');
+        const baseballGames = await apiSportsService.getUpcomingEvents('baseball', 10);
+        
+        if (baseballGames && baseballGames.length > 0) {
+          console.log(`[BaseballService] Found ${baseballGames.length} upcoming baseball games from API Sports`);
+          
+          // Make sure all have the correct sportId
+          return baseballGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: false
+          }));
+        }
+        
+        // If we still have no games, try the original approach with the baseball API
+        console.log('[BaseballService] No games from API Sports, trying direct baseball API with season fallback');
         const fallbackResponse = await axios.get(`${this.baseUrl}/games`, {
           params: { 
             season: 2024,
@@ -164,20 +225,18 @@ export class BaseballService {
           console.log(`[BaseballService] Filtered to ${upcomingGames.length} upcoming games`);
           
           if (upcomingGames.length > 0) {
-            const transformedEvents = this.transformGames(upcomingGames, false);
-            return transformedEvents;
+            return this.transformGames(upcomingGames, false);
           }
         }
       }
       
-      // If we still don't have events, create sample games
-      return this.createSampleGames(isLive);
+      // If we get here, we couldn't get any real data from any source
+      console.log('[BaseballService] All API attempts failed, returning empty array');
+      return [];
       
     } catch (fallbackError) {
       console.error('[BaseballService] Fallback approach also failed:', fallbackError);
-      
-      // Last resort - create sample games
-      return this.createSampleGames(isLive);
+      return [];
     }
   }
   
@@ -312,233 +371,46 @@ export class BaseballService {
   }
   
   /**
-   * Create sample games when no real data is available
-   * Used as a last resort fallback
+   * Get real baseball games from the API-Sports service
+   * This method redirects to the ApiSportsService to fetch real data
    */
-  private createSampleGames(isLive: boolean): SportEvent[] {
-    console.log(`[BaseballService] Creating sample ${isLive ? 'live' : 'upcoming'} baseball games as fallback`);
+  private async getApiSportsBaseballGames(isLive: boolean): Promise<SportEvent[]> {
+    // Import directly here to avoid circular dependency
+    const { apiSportsService } = require('./apiSportsService');
     
-    // MLB teams
-    const mlbTeams = [
-      { name: 'New York Yankees', city: 'New York' },
-      { name: 'Los Angeles Dodgers', city: 'Los Angeles' },
-      { name: 'Boston Red Sox', city: 'Boston' },
-      { name: 'Chicago Cubs', city: 'Chicago' },
-      { name: 'Houston Astros', city: 'Houston' },
-      { name: 'Atlanta Braves', city: 'Atlanta' },
-      { name: 'San Francisco Giants', city: 'San Francisco' },
-      { name: 'St. Louis Cardinals', city: 'St. Louis' },
-      { name: 'Philadelphia Phillies', city: 'Philadelphia' },
-      { name: 'Toronto Blue Jays', city: 'Toronto' },
-      { name: 'Cleveland Guardians', city: 'Cleveland' },
-      { name: 'Seattle Mariners', city: 'Seattle' }
-    ];
-    
-    // Create either live or upcoming games
-    if (isLive) {
-      // Create live games with appropriate format for API integration
-      return [
-        {
-          id: 'baseball-live-1',
-          sportId: 4,
-          leagueName: 'Major League Baseball',
-          homeTeam: 'New York Yankees',
-          awayTeam: 'Boston Red Sox',
-          startTime: new Date().toISOString(),
-          status: 'live',
-          score: '3 - 2 (4th Inning)',
-          markets: [
-            {
-              id: 'baseball-live-1-market-moneyline',
-              name: 'Moneyline',
-              outcomes: [
-                {
-                  id: 'baseball-live-1-outcome-home',
-                  name: 'New York Yankees (Win)',
-                  odds: 1.85,
-                  probability: 0.53
-                },
-                {
-                  id: 'baseball-live-1-outcome-away',
-                  name: 'Boston Red Sox (Win)',
-                  odds: 2.05,
-                  probability: 0.47
-                }
-              ]
-            },
-            {
-              id: 'baseball-live-1-market-runline',
-              name: 'Run Line',
-              outcomes: [
-                {
-                  id: 'baseball-live-1-outcome-home-runline',
-                  name: 'New York Yankees (-1.5)',
-                  odds: 2.35,
-                  probability: 0.42
-                },
-                {
-                  id: 'baseball-live-1-outcome-away-runline',
-                  name: 'Boston Red Sox (+1.5)',
-                  odds: 1.65,
-                  probability: 0.58
-                }
-              ]
-            }
-          ],
-          isLive: true
-        },
-        {
-          id: 'baseball-live-2',
-          sportId: 4,
-          leagueName: 'Major League Baseball',
-          homeTeam: 'Los Angeles Dodgers',
-          awayTeam: 'San Francisco Giants',
-          startTime: new Date().toISOString(),
-          status: 'live',
-          score: '5 - 4 (7th Inning)',
-          markets: [
-            {
-              id: 'baseball-live-2-market-moneyline',
-              name: 'Moneyline',
-              outcomes: [
-                {
-                  id: 'baseball-live-2-outcome-home',
-                  name: 'Los Angeles Dodgers (Win)',
-                  odds: 1.75,
-                  probability: 0.56
-                },
-                {
-                  id: 'baseball-live-2-outcome-away',
-                  name: 'San Francisco Giants (Win)',
-                  odds: 2.15,
-                  probability: 0.44
-                }
-              ]
-            },
-            {
-              id: 'baseball-live-2-market-total',
-              name: 'Total Runs',
-              outcomes: [
-                {
-                  id: 'baseball-live-2-outcome-over',
-                  name: 'Over 9.5',
-                  odds: 1.95,
-                  probability: 0.51
-                },
-                {
-                  id: 'baseball-live-2-outcome-under',
-                  name: 'Under 9.5',
-                  odds: 1.85,
-                  probability: 0.53
-                }
-              ]
-            }
-          ],
-          isLive: true
-        },
-        {
-          id: 'baseball-live-3',
-          sportId: 4,
-          leagueName: 'Major League Baseball',
-          homeTeam: 'Houston Astros',
-          awayTeam: 'Atlanta Braves',
-          startTime: new Date().toISOString(),
-          status: 'live',
-          score: '2 - 2 (2nd Inning)',
-          markets: [
-            {
-              id: 'baseball-live-3-market-moneyline',
-              name: 'Moneyline',
-              outcomes: [
-                {
-                  id: 'baseball-live-3-outcome-home',
-                  name: 'Houston Astros (Win)',
-                  odds: 1.9,
-                  probability: 0.51
-                },
-                {
-                  id: 'baseball-live-3-outcome-away',
-                  name: 'Atlanta Braves (Win)',
-                  odds: 1.95,
-                  probability: 0.51
-                }
-              ]
-            }
-          ],
-          isLive: true
-        }
-      ];
-    } else {
-      // Create upcoming games
-      const currentDate = new Date();
-      const games = [];
+    try {
+      console.log(`[BaseballService] Fetching ${isLive ? 'live' : 'upcoming'} baseball games from API Sports`);
       
-      // Create 6 upcoming games at different times
-      for (let i = 0; i < 6; i++) {
-        const gameDate = new Date();
-        gameDate.setHours(currentDate.getHours() + i + 1); // Stagger game times
-        
-        // Get two random teams (ensure they're different)
-        let homeIdx = Math.floor(Math.random() * mlbTeams.length);
-        let awayIdx = Math.floor(Math.random() * mlbTeams.length);
-        while (awayIdx === homeIdx) {
-          awayIdx = Math.floor(Math.random() * mlbTeams.length);
+      if (isLive) {
+        // Get live baseball games from API Sports
+        const liveGames = await apiSportsService.getLiveEvents('mlb');
+        if (liveGames && liveGames.length > 0) {
+          // Make sure all games have the correct sportId
+          return liveGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: true
+          }));
         }
-        
-        const homeTeam = mlbTeams[homeIdx];
-        const awayTeam = mlbTeams[awayIdx];
-        
-        games.push({
-          id: `baseball-upcoming-${i+1}`,
-          sportId: 4,
-          leagueName: 'Major League Baseball',
-          homeTeam: homeTeam.name,
-          awayTeam: awayTeam.name,
-          startTime: gameDate.toISOString(),
-          status: 'upcoming' as 'scheduled' | 'live' | 'finished' | 'upcoming',
-          markets: [
-            {
-              id: `baseball-upcoming-${i+1}-market-moneyline`,
-              name: 'Moneyline',
-              outcomes: [
-                {
-                  id: `baseball-upcoming-${i+1}-outcome-home`,
-                  name: `${homeTeam.name} (Win)`,
-                  odds: 1.8 + (Math.random() * 0.5),
-                  probability: 0.53
-                },
-                {
-                  id: `baseball-upcoming-${i+1}-outcome-away`,
-                  name: `${awayTeam.name} (Win)`,
-                  odds: 1.9 + (Math.random() * 0.5),
-                  probability: 0.47
-                }
-              ]
-            },
-            {
-              id: `baseball-upcoming-${i+1}-market-runline`,
-              name: 'Run Line',
-              outcomes: [
-                {
-                  id: `baseball-upcoming-${i+1}-outcome-home-runline`,
-                  name: `${homeTeam.name} (-1.5)`,
-                  odds: 2.2 + (Math.random() * 0.3),
-                  probability: 0.43
-                },
-                {
-                  id: `baseball-upcoming-${i+1}-outcome-away-runline`,
-                  name: `${awayTeam.name} (+1.5)`,
-                  odds: 1.6 + (Math.random() * 0.3),
-                  probability: 0.57
-                }
-              ]
-            }
-          ],
-          isLive: false
-        });
+      } else {
+        // Get upcoming baseball games from API Sports
+        const upcomingGames = await apiSportsService.getUpcomingEvents('baseball', 10);
+        if (upcomingGames && upcomingGames.length > 0) {
+          // Make sure all games have the correct sportId
+          return upcomingGames.map(game => ({
+            ...game,
+            sportId: 4,
+            isLive: false
+          }));
+        }
       }
       
-      return games;
+      // If we get here, no games were found
+      console.log(`[BaseballService] No ${isLive ? 'live' : 'upcoming'} baseball games found from API Sports`);
+      return [];
+    } catch (error) {
+      console.error(`[BaseballService] Error fetching games from API Sports: ${error}`);
+      return [];
     }
   }
 }

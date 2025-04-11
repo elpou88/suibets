@@ -671,6 +671,14 @@ export class ApiSportsService {
               status: 'scheduled'
             };
             break;
+          case 'boxing':
+            apiUrl = 'https://v1.boxing.api-sports.io/fights';
+            // For boxing, search for scheduled events
+            params = {
+              status: 'scheduled'
+            };
+            console.log('[ApiSportsService] Using boxing-specific endpoint for retrieving upcoming boxing events');
+            break;
           default:
             // Default to football API for other sports
             apiUrl = 'https://v3.football.api-sports.io/fixtures';

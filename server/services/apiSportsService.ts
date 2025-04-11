@@ -19,7 +19,7 @@ export class ApiSportsService {
   // Cache version to force refresh when code changes
   private cacheVersionKey: string = "v3"; // Increment this when making changes to force cache refresh
   
-  // API endpoints for each sport
+  // API endpoints for each sport - expanded to include all sports from the API
   private sportEndpoints: Record<string, string> = {
     football: 'https://v3.football.api-sports.io/fixtures',
     soccer: 'https://v3.football.api-sports.io/fixtures',
@@ -30,6 +30,8 @@ export class ApiSportsService {
     american_football: 'https://v1.american-football.api-sports.io/games',
     nfl: 'https://v1.american-football.api-sports.io/games', // NFL uses american football endpoint
     nba: 'https://v1.basketball.api-sports.io/games', // NBA uses basketball endpoint
+    nhl: 'https://v1.hockey.api-sports.io/games', // NHL uses hockey endpoint
+    mlb: 'https://v1.baseball.api-sports.io/games', // MLB uses baseball endpoint
     tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - matches is correct
     cricket: 'https://v1.cricket.api-sports.io/fixtures',
     handball: 'https://v1.handball.api-sports.io/games',
@@ -41,7 +43,19 @@ export class ApiSportsService {
     formula_1: 'https://v1.formula-1.api-sports.io/races',
     'formula-1': 'https://v1.formula-1.api-sports.io/races', // Support either format
     cycling: 'https://v1.cycling.api-sports.io/races',
-    afl: 'https://v1.aussie-rules.api-sports.io/games' // AFL uses aussie rules API
+    afl: 'https://v1.aussie-rules.api-sports.io/games', // AFL uses aussie rules API
+    snooker: 'https://v1.snooker.api-sports.io/fixtures',
+    darts: 'https://v1.darts.api-sports.io/fixtures',
+    badminton: 'https://v1.badminton.api-sports.io/fixtures',
+    tabletennis: 'https://v1.table-tennis.api-sports.io/fixtures',
+    'table-tennis': 'https://v1.table-tennis.api-sports.io/fixtures',
+    netball: 'https://v1.netball.api-sports.io/games',
+    beach_volleyball: 'https://v1.beach-volleyball.api-sports.io/games',
+    'beach-volleyball': 'https://v1.beach-volleyball.api-sports.io/games',
+    esports: 'https://v1.esports.api-sports.io/matches',
+    motorsport: 'https://v1.motorsport.api-sports.io/events',
+    motogp: 'https://v1.motogp.api-sports.io/races',
+    'winter-sports': 'https://v1.winter-sports.api-sports.io/events'
   };
   
   // Status check endpoint for each API
@@ -368,10 +382,24 @@ export class ApiSportsService {
             return { status: 'live' };
           } else if (endpoint.includes('golf')) {
             return { status: 'inplay' };
-          } else if (endpoint.includes('formula-1')) {
+          } else if (endpoint.includes('formula-1') || endpoint.includes('motorsport') || endpoint.includes('motogp')) {
             return { status: 'live' };
           } else if (endpoint.includes('cycling')) {
             return { status: 'inprogress' };
+          } else if (endpoint.includes('snooker') || endpoint.includes('darts')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('handball') || endpoint.includes('volleyball') || endpoint.includes('beach-volleyball')) {
+            return { live: 'true' };
+          } else if (endpoint.includes('rugby')) {
+            return { status: 'LIVE' }; // Rugby may use uppercase status codes
+          } else if (endpoint.includes('winter-sports') || endpoint.includes('skiing')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('cricket')) {
+            return { live: 'true', status: 'live' }; // Try both formats for cricket
+          } else if (endpoint.includes('table-tennis') || endpoint.includes('badminton')) {
+            return { status: 'live' };
+          } else if (endpoint.includes('esports')) {
+            return { status: 'live' };
           } else {
             // Most other sport APIs use this format
             return { live: 'true' };

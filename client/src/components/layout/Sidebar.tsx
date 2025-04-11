@@ -24,8 +24,23 @@ import {
   FaHorse,
   FaTableTennis,
   FaDog,
-  FaFootballBall
+  FaFootballBall,
+  FaHandPaper,
+  FaBullseye,
+  FaBasketballBall,
+  FaSnowboarding,
+  FaBiking,
+  FaMotorcycle
 } from "react-icons/fa";
+import {
+  TbSteeringWheel,
+  TbBike
+} from "react-icons/tb";
+import {
+  GiTennisRacket,
+  GiVolleyballBall,
+  GiBilliardBall
+} from "react-icons/gi";
 import { useQuery } from "@tanstack/react-query";
 
 // Sports organized by categories
@@ -148,6 +163,28 @@ export default function Sidebar() {
         return <FaDog size={24} />;
       case 'football':
         return <MdSportsFootball size={24} />;
+      case 'american-football':
+        return <FaFootballBall size={24} />;
+      case 'formula1':
+        return <TbSteeringWheel size={24} />;
+      case 'cycling':
+        return <TbBike size={24} />;
+      case 'handball':
+        return <FaHandPaper size={24} />;
+      case 'snooker':
+        return <FaBilliard size={24} />;
+      case 'darts':
+        return <FaBullseye size={24} />;
+      case 'badminton':
+        return <GiTennisRacket size={24} />;
+      case 'netball':
+        return <FaBasketballBall size={24} />;
+      case 'beach-volleyball':
+        return <GiVolleyballBall size={24} />;
+      case 'motogp':
+        return <GiMotorcycle size={24} />;
+      case 'winter-sports':
+        return <FaSnowboarding size={24} />;
       default:
         return <Grid2X2 size={24} />;
     }

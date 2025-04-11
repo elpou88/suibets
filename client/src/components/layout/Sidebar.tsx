@@ -30,7 +30,8 @@ import {
   FaBasketballBall,
   FaSnowboarding,
   FaBiking,
-  FaMotorcycle
+  FaMotorcycle,
+  FaGolfBall
 } from "react-icons/fa";
 import {
   TbSteeringWheel,
@@ -39,7 +40,7 @@ import {
 import {
   GiTennisRacket,
   GiVolleyballBall,
-  GiBilliardBall
+  GiEightBall
 } from "react-icons/gi";
 import { useQuery } from "@tanstack/react-query";
 
@@ -59,33 +60,55 @@ const sportsCategories = [
       { id: 4, name: 'Basketball', slug: 'basketball', icon: 'basketball' },
       { id: 5, name: 'Tennis', slug: 'tennis', icon: 'tennis' },
       { id: 6, name: 'Baseball', slug: 'baseball', icon: 'baseball' },
-      { id: 7, name: 'Esports', slug: 'esports', icon: 'esports', highlight: true }
+      { id: 7, name: 'Esports', slug: 'esports', icon: 'esports', highlight: true },
+      { id: 8, name: 'Hockey', slug: 'hockey', icon: 'hockey' },
+      { id: 9, name: 'American Football', slug: 'american-football', icon: 'american-football' }
     ]
   },
   {
     name: "Combat Sports",
     sports: [
-      { id: 8, name: 'Boxing', slug: 'boxing', icon: 'boxing' },
-      { id: 9, name: 'MMA / UFC', slug: 'mma-ufc', icon: 'mma' }
+      { id: 10, name: 'Boxing', slug: 'boxing', icon: 'boxing' },
+      { id: 11, name: 'MMA / UFC', slug: 'mma-ufc', icon: 'mma' }
     ]
   },
   {
     name: "Team Sports",
     sports: [
-      { id: 10, name: 'Hockey', slug: 'hockey', icon: 'hockey' },
-      { id: 11, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball' },
-      { id: 12, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
-      { id: 13, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
-      { id: 14, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-      { id: 15, name: 'AFL', slug: 'afl', icon: 'football' }
+      { id: 12, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball' },
+      { id: 13, name: 'Beach Volleyball', slug: 'beach-volleyball', icon: 'beach-volleyball' },
+      { id: 14, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
+      { id: 15, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
+      { id: 16, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
+      { id: 17, name: 'AFL', slug: 'afl', icon: 'football' },
+      { id: 18, name: 'Handball', slug: 'handball', icon: 'handball' },
+      { id: 19, name: 'Netball', slug: 'netball', icon: 'netball' }
+    ]
+  },
+  {
+    name: "Racquet Sports",
+    sports: [
+      { id: 20, name: 'Table Tennis', slug: 'table-tennis', icon: 'tabletennis' },
+      { id: 21, name: 'Badminton', slug: 'badminton', icon: 'badminton' }
+    ]
+  },
+  {
+    name: "Racing",
+    sports: [
+      { id: 22, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
+      { id: 23, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' },
+      { id: 24, name: 'Formula 1', slug: 'formula-1', icon: 'formula1' },
+      { id: 25, name: 'MotoGP', slug: 'motogp', icon: 'motogp' },
+      { id: 26, name: 'Cycling', slug: 'cycling', icon: 'cycling' }
     ]
   },
   {
     name: "Other Sports",
     sports: [
-      { id: 16, name: 'Table Tennis', slug: 'table-tennis', icon: 'tabletennis' },
-      { id: 17, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
-      { id: 18, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' }
+      { id: 27, name: 'Snooker', slug: 'snooker', icon: 'snooker' },
+      { id: 28, name: 'Darts', slug: 'darts', icon: 'darts' },
+      { id: 29, name: 'Golf', slug: 'golf', icon: 'golf' },
+      { id: 30, name: 'Winter Sports', slug: 'winter-sports', icon: 'winter-sports' }
     ]
   }
 ];
@@ -168,11 +191,11 @@ export default function Sidebar() {
       case 'formula1':
         return <TbSteeringWheel size={24} />;
       case 'cycling':
-        return <TbBike size={24} />;
+        return <FaBiking size={24} />;
       case 'handball':
         return <FaHandPaper size={24} />;
       case 'snooker':
-        return <FaBilliard size={24} />;
+        return <GiEightBall size={24} />;
       case 'darts':
         return <FaBullseye size={24} />;
       case 'badminton':
@@ -182,7 +205,9 @@ export default function Sidebar() {
       case 'beach-volleyball':
         return <GiVolleyballBall size={24} />;
       case 'motogp':
-        return <GiMotorcycle size={24} />;
+        return <FaMotorcycle size={24} />;
+      case 'golf':
+        return <FaGolfBall size={24} />;
       case 'winter-sports':
         return <FaSnowboarding size={24} />;
       default:

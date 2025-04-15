@@ -165,6 +165,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (upcomingEvents && upcomingEvents.length > 0) {
             console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
             
+            // Special handling for Rugby - use dedicated Rugby service
+            if (sportName === 'rugby') {
+              console.log(`Using Rugby dedicated service for ${isLive ? 'live' : 'upcoming'} Rugby events`);
+              
+              try {
+                let rugbyEvents = [];
+                
+                // Get rugby league events
+                const rugbyLeagueEvents = isLive 
+                  ? await rugbyService.fetchLiveGamesWithCache('league')
+                  : await rugbyService.getUpcomingGames('league', 10);
+                
+                console.log(`RugbyService returned ${rugbyLeagueEvents.length} ${isLive ? 'live' : 'upcoming'} rugby league games`);
+                
+                // Get rugby union events and combine with league events
+                const rugbyUnionEvents = isLive
+                  ? await rugbyService.fetchLiveGamesWithCache('union')
+                  : await rugbyService.getUpcomingGames('union', 10);
+                
+                console.log(`RugbyService returned ${rugbyUnionEvents.length} ${isLive ? 'live' : 'upcoming'} rugby union games`);
+                
+                // Combine both types of rugby events
+                rugbyEvents = [...rugbyLeagueEvents, ...rugbyUnionEvents];
+                
+                if (rugbyEvents.length > 0) {
+                  console.log(`Returning ${rugbyEvents.length} Rugby events from dedicated Rugby service`);
+                  return res.json(rugbyEvents);
+                }
+              } catch (error) {
+                console.error('Error using Rugby service:', error);
+              }
+            }
+                
             // Special handling for Baseball - use dedicated Baseball service
             if (sportName === 'baseball' || sportName === 'mlb') {
               console.log(`Using Baseball dedicated service for upcoming Baseball events`);
@@ -181,42 +214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               } catch (error) {
                 console.error('Error using Baseball service:', error);
                 
-                // Create minimal fallback data if all else fails
-                const fallbackBaseballEvents = [
-                  {
-                    id: 'baseball-upcoming-fallback-1',
-                    sportId: 4,
-                    leagueName: 'Major League Baseball',
-                    homeTeam: 'New York Yankees',
-                    awayTeam: 'Boston Red Sox',
-                    startTime: new Date(Date.now() + 3600000).toISOString(), // 1 hour from now
-                    status: 'upcoming',
-                    markets: [
-                      {
-                        id: 'baseball-upcoming-fallback-1-market-moneyline',
-                        name: 'Moneyline',
-                        outcomes: [
-                          {
-                            id: 'baseball-upcoming-fallback-1-outcome-home',
-                            name: 'New York Yankees (Win)',
-                            odds: 1.85,
-                            probability: 0.53
-                          },
-                          {
-                            id: 'baseball-upcoming-fallback-1-outcome-away',
-                            name: 'Boston Red Sox (Win)',
-                            odds: 2.05,
-                            probability: 0.47
-                          }
-                        ]
-                      }
-                    ],
-                    isLive: false
-                  }
-                ];
-                
-                console.log(`Error in BaseballService. Returning ${fallbackBaseballEvents.length} minimal fallback Baseball events`);
-                return res.json(fallbackBaseballEvents);
+                // Fall back to the generic API response if there was an error
+                console.log('Falling back to API data due to Baseball service error');
               }
             }
             
@@ -342,133 +341,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // Special handling for Rugby - use dedicated Rugby service
-            if (sportName === 'rugby') {
-              console.log(`Using Rugby dedicated service for upcoming Rugby events`);
-              
-              try {
-                // Use dedicated service to get real rugby data
-                console.log('Getting real rugby data for upcoming view');
-                // Get real upcoming rugby matches
-                const rugbyEvents = await rugbyService.getRugbyEvents(false); // false means upcoming
-                
-                if (rugbyEvents && rugbyEvents.length > 0) {
-                  // Return the rugby events from the dedicated service
-                  console.log(`RugbyService returned ${rugbyEvents.length} upcoming matches`);
-                  return res.json(rugbyEvents);
-                } else {
-                  console.log(`RugbyService returned 0 upcoming matches, filtering API Sports data`);
-                  
-                  // Filter to ensure we're only showing rugby events and not football matches
-                  const genuineRugbyEvents = upcomingEvents.filter(event => {
-                    // STRICT VERIFICATION: Reject football/soccer matches
-                    if (event.leagueName?.includes('League One') || 
-                        event.leagueName?.includes('League Two') ||
-                        event.leagueName?.includes('Premier League') ||
-                        event.leagueName?.includes('La Liga') ||
-                        event.leagueName?.includes('Serie A') ||
-                        event.leagueName?.includes('Bundesliga') ||
-                        event.leagueName?.includes('Copa') ||
-                        event.homeTeam?.includes('FC') ||
-                        event.awayTeam?.includes('FC') ||
-                        (event.homeTeam?.includes('United') && !event.homeTeam?.includes('Rugby')) ||
-                        (event.awayTeam?.includes('United') && !event.awayTeam?.includes('Rugby'))) {
-                      console.log(`[Rugby] REJECTING football match: ${event.homeTeam} vs ${event.awayTeam} (${event.leagueName})`);
-                      return false;
-                    }
-                    
-                    // Create rugby-specific events with proper markets
-                    return true;
-                  });
-                  
-                  // Create rugby-specific markets for these events
-                  const enhancedRugbyEvents = genuineRugbyEvents.map(event => {
-                    // Create markets specific to rugby matches
-                    const rugbyMarkets = [
-                      {
-                        id: `${event.id}-market-match-winner`,
-                        name: 'Match Winner',
-                        outcomes: [
-                          {
-                            id: `${event.id}-outcome-home`,
-                            name: event.homeTeam,
-                            odds: 1.85 + (Math.random() * 0.3),
-                            probability: 0.52
-                          },
-                          {
-                            id: `${event.id}-outcome-away`,
-                            name: event.awayTeam,
-                            odds: 1.95 + (Math.random() * 0.3),
-                            probability: 0.48
-                          }
-                        ]
-                      },
-                      {
-                        id: `${event.id}-market-handicap`,
-                        name: 'Handicap',
-                        outcomes: [
-                          {
-                            id: `${event.id}-outcome-home-handicap`,
-                            name: `${event.homeTeam} (-7.5)`,
-                            odds: 1.9 + (Math.random() * 0.2),
-                            probability: 0.49
-                          },
-                          {
-                            id: `${event.id}-outcome-away-handicap`,
-                            name: `${event.awayTeam} (+7.5)`,
-                            odds: 1.9 + (Math.random() * 0.2),
-                            probability: 0.51
-                          }
-                        ]
-                      },
-                      {
-                        id: `${event.id}-market-total-points`,
-                        name: 'Total Points',
-                        outcomes: [
-                          {
-                            id: `${event.id}-outcome-over`,
-                            name: 'Over 44.5',
-                            odds: 1.9 + (Math.random() * 0.2),
-                            probability: 0.5
-                          },
-                          {
-                            id: `${event.id}-outcome-under`,
-                            name: 'Under 44.5',
-                            odds: 1.9 + (Math.random() * 0.2),
-                            probability: 0.5
-                          }
-                        ]
-                      }
-                    ];
-                    
-                    return {
-                      ...event,
-                      sportId: 8, // Rugby ID
-                      isLive: false,
-                      markets: rugbyMarkets,
-                      // Add a data source to track this is a filtered event
-                      dataSource: 'api-sports-rugby-filtered'
-                    };
-                  });
-                  
-                  console.log(`Returning ${enhancedRugbyEvents.length} filtered rugby events`);
-                  return res.json(enhancedRugbyEvents);
-                }
-              } catch (error) {
-                console.error('Error using Rugby service:', error);
-                
-                // Apply filtering to ensure we're not showing football matches
-                const filteredEvents = upcomingEvents.filter(event => {
-                  // Apply simple football filter
-                  return !(event.leagueName?.includes('League') || 
-                          event.homeTeam?.includes('FC') || 
-                          event.awayTeam?.includes('FC'));
-                });
-                
-                console.log(`Error in RugbyService. Returning ${filteredEvents.length} filtered API Sports events`);
-                return res.json(filteredEvents);
-              }
-            }
+            // Rugby handling is now at the top of this section
             
             // Special handling for Formula 1 - use dedicated Formula 1 service
             if (sportName === 'formula_1' || sportName === 'formula-1') {
@@ -608,6 +481,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Get ONLY real events for this specific sport, never adapt from others
         const sportEvents = await apiSportsService.getLiveEvents(sportName);
+        
+        // Special handling for Rugby - use dedicated Rugby service for both types
+        if (sportName === 'rugby') {
+          console.log(`Using Rugby dedicated service for live Rugby events`);
+          
+          try {
+            // Get rugby league events
+            const rugbyLeagueEvents = await rugbyService.fetchLiveGamesWithCache('league');
+            console.log(`RugbyService returned ${rugbyLeagueEvents.length} live rugby league games`);
+            
+            // Get rugby union events
+            const rugbyUnionEvents = await rugbyService.fetchLiveGamesWithCache('union');
+            console.log(`RugbyService returned ${rugbyUnionEvents.length} live rugby union games`);
+            
+            // Combine both types of rugby events
+            const rugbyEvents = [...rugbyLeagueEvents, ...rugbyUnionEvents];
+            
+            if (rugbyEvents.length > 0) {
+              console.log(`Returning ${rugbyEvents.length} combined Rugby events from dedicated Rugby service`);
+              return res.json(rugbyEvents);
+            } else {
+              console.log(`Rugby service returned 0 live games, trying to identify rugby data from API Sports`);
+              
+              // Only use events that are actually rugby events - filter for rugby-related identifiers
+              const genuineRugbyEvents = sportEvents.filter(event => {
+                // Check league name for rugby-related terms
+                const leagueName = event.leagueName?.toLowerCase() || '';
+                const rugbyKeywords = [
+                  'rugby', 'nrl', 'super league', 'premiership rugby', 'top 14', 
+                  'pro14', 'super rugby', 'six nations', 'world cup rugby',
+                  'challenge cup', 'champions cup'
+                ];
+                
+                const isRugby = rugbyKeywords.some(keyword => leagueName.includes(keyword));
+                
+                if (!isRugby) {
+                  console.log(`[RugbyService] REJECTING non-rugby match: ${event.homeTeam} vs ${event.awayTeam} (${event.leagueName})`);
+                }
+                
+                return isRugby;
+              });
+              
+              if (genuineRugbyEvents.length > 0) {
+                console.log(`Found ${genuineRugbyEvents.length} genuine rugby events from API Sports`);
+                
+                const enhancedRugbyEvents = genuineRugbyEvents.map(event => ({
+                  ...event,
+                  sportId: 8, // Set to Rugby ID
+                  isLive: true
+                }));
+                
+                console.log(`Returning ${enhancedRugbyEvents.length} properly identified live Rugby events`);
+                return res.json(enhancedRugbyEvents);
+              } else {
+                console.log(`No genuine rugby events found, returning empty array`);
+                return res.json([]);
+              }
+            }
+          } catch (error) {
+            console.error('Error using Rugby service for live events:', error);
+            
+            // Fallback to minimal filtering of API data
+            const filteredEvents = sportEvents.filter(event => {
+              const leagueName = event.leagueName?.toLowerCase() || '';
+              return leagueName.includes('rugby');
+            });
+            
+            console.log(`Error in RugbyService. Returning ${filteredEvents.length} rugby events with basic filtering`);
+            return res.json(filteredEvents);
+          }
+        }
         
         // Special handling for Baseball - use dedicated Baseball service
         if (sportName === 'baseball' || sportName === 'mlb') {

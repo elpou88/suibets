@@ -50,7 +50,8 @@ const sportsCategories = [
     name: "Main",
     sports: [
       { id: 1, name: 'Homepage', slug: 'upcoming', icon: 'grid' },
-      { id: 2, name: 'Live Now', slug: 'live', icon: 'live', highlight: true }
+      { id: 2, name: 'Live Now', slug: 'live', icon: 'live', highlight: true },
+      { id: 3, name: 'Live Scores', slug: 'live-scores', icon: 'chart' }
     ]
   },
   {
@@ -252,7 +253,9 @@ export default function Sidebar() {
                     ? "/" 
                     : sport.slug === 'live' 
                       ? "/live" 
-                      : `/sports-live/${sport.slug}`;
+                      : sport.slug === 'live-scores'
+                        ? "/live-scores"
+                        : `/sports-live/${sport.slug}`;
                   
                   return (
                     <a key={sport.id} href={href} className="block">

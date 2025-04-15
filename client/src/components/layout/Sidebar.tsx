@@ -5,7 +5,8 @@ import {
   ChevronRight, 
   ChevronDown, 
   LineChart,
-  Flame
+  Flame,
+  BarChart3
 } from "lucide-react";
 import { 
   MdSportsBaseball, 
@@ -157,6 +158,8 @@ export default function Sidebar() {
         return <Grid2X2 size={24} />;
       case 'live':
         return <Flame size={24} className="text-red-500" />;
+      case 'chart':
+        return <BarChart3 size={24} className="text-blue-400" />;
       case 'soccer':
         return <MdSportsSoccer size={24} />;
       case 'basketball':

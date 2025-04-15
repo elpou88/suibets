@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { SportEvent, OddsData } from '@shared/schema';
+import { SportEvent, OddsData, MarketData, OutcomeData } from '../types/betting';
 import { ApiSportsService } from './apiSportsService';
 
 /**
@@ -18,7 +18,7 @@ export class RugbyService {
     this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || '';
     this.apiSportsService = new ApiSportsService(this.apiKey);
     
-    // Setup periodic refresh of live games for both rugby types
+    // Setup the autorefresh after all methods are defined
     this.refreshLiveGames();
     setInterval(() => this.refreshLiveGames(), 60 * 1000); // Every minute
   }
@@ -39,6 +39,50 @@ export class RugbyService {
       console.log(`[RugbyService] Background refresh complete`);
     } catch (error) {
       console.error(`[RugbyService] Error in background refresh:`, error);
+    }
+  }
+  
+  /**
+   * Fetch live games with caching for performance
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @param forceRefresh Whether to force refresh even if cache is still valid
+   * @returns Array of live rugby events
+   */
+  async fetchLiveGamesWithCache(rugbyType: 'league' | 'union', forceRefresh: boolean = false): Promise<SportEvent[]> {
+    const cacheKey = `rugby-${rugbyType}-live`;
+    const now = Date.now();
+    
+    // Check if we have cached data that's still valid
+    if (!forceRefresh && 
+        this.liveGamesCache[cacheKey] && 
+        this.lastFetchTime[cacheKey] && 
+        now - this.lastFetchTime[cacheKey] < this.CACHE_TTL) {
+      console.log(`[RugbyService] Using cached ${rugbyType} rugby live games data, age: ${(now - this.lastFetchTime[cacheKey]) / 1000}s`);
+      return this.liveGamesCache[cacheKey];
+    }
+    
+    // Otherwise fetch fresh data
+    console.log(`[RugbyService] Fetching fresh ${rugbyType} rugby live games data`);
+    try {
+      // Try API Sports first and fall back to direct API if needed
+      const events = await this.getLiveGames(rugbyType);
+      
+      // Update the cache
+      this.liveGamesCache[cacheKey] = events;
+      this.lastFetchTime[cacheKey] = now;
+      
+      console.log(`[RugbyService] Cached ${events.length} fresh ${rugbyType} rugby live games`);
+      return events;
+    } catch (error) {
+      console.error(`[RugbyService] Error fetching fresh ${rugbyType} rugby live games:`, error);
+      
+      // If we have cached data, return it even if it's stale
+      if (this.liveGamesCache[cacheKey]) {
+        console.log(`[RugbyService] Returning stale cached data due to fetch error`);
+        return this.liveGamesCache[cacheKey];
+      }
+      
+      return [];
     }
   }
 

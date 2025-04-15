@@ -33,6 +33,9 @@ import { baseballService } from './services/baseballService';
 import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 
+// Import WebSocket service
+import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
+
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
@@ -1082,5 +1085,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket service for live score updates
+  console.log("[Routes] Initializing WebSocket server for live score updates");
+  const liveScoreUpdateService = new LiveScoreUpdateService(httpServer, apiSportsService, eventTrackingService);
+  
   return httpServer;
 }

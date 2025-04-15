@@ -383,6 +383,55 @@ export class EventTrackingService {
   }
   
   /**
+   * Get all live events currently available
+   */
+  public async getLiveEvents(): Promise<any[]> {
+    try {
+      return await this.getAllLiveEvents();
+    } catch (error) {
+      console.error('[EventTrackingService] Error getting live events:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get a specific event by ID
+   * @param eventId Event ID to retrieve
+   */
+  public async getEventById(eventId: string): Promise<any | null> {
+    try {
+      // First check if the event is in storage
+      const storedEvent = await storage.getEvent(Number(eventId));
+      
+      if (storedEvent) {
+        console.log(`[EventTrackingService] Found event ${eventId} in storage`);
+        return storedEvent;
+      }
+      
+      // If not in storage, check if it's available from the API
+      console.log(`[EventTrackingService] Event ${eventId} not found in storage, checking with API`);
+      
+      // We need to determine which sport this event belongs to
+      // Try to find it in live events first
+      const allLiveEvents = await this.getAllLiveEvents();
+      const liveEvent = allLiveEvents.find(event => String(event.id) === eventId);
+      
+      if (liveEvent) {
+        console.log(`[EventTrackingService] Found event ${eventId} as a live event`);
+        return liveEvent;
+      }
+      
+      // Not found in live events, we could try to query all sports
+      // But this would be inefficient, so for now return null
+      console.log(`[EventTrackingService] Event ${eventId} not found in any available source`);
+      return null;
+    } catch (error) {
+      console.error(`[EventTrackingService] Error getting event ${eventId}:`, error);
+      return null;
+    }
+  }
+  
+  /**
    * Preload upcoming events for all sports to ensure data is cached
    * This provides a better user experience when navigating between sport categories
    */

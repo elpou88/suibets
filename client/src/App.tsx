@@ -50,6 +50,7 @@ import Parlay from "@/pages/parlay";
 import SportPage from "@/pages/sports-live/[sport]";
 import DefiStaking from "@/pages/defi-staking";
 import StoragePage from "@/pages/storage";
+import LiveScoresPage from "@/pages/live-scores";
 
 function App() {
   console.log("Starting React application");
@@ -82,6 +83,7 @@ function App() {
                   <Route path="/storage" component={StoragePage} />
                   <Route path="/connect-wallet" component={ConnectWallet} />
                   <Route path="/join" component={HomeReal} />
+                  <Route path="/live-scores" component={LiveScoresPage} />
                   
                   {/* Info Pages */}
                   <Route path="/info" component={Info} />

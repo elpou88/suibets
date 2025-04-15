@@ -1,150 +1,126 @@
 import axios from 'axios';
-import { SportEvent, MarketData } from '../types/betting';
+import { SportEvent, OddsData } from '@shared/schema';
 import { ApiSportsService } from './apiSportsService';
 
 /**
- * Service for retrieving and processing rugby event data
+ * Service for handling Rugby-specific data
+ * Supports both Rugby League and Rugby Union
  */
 export class RugbyService {
-  private baseUrl: string = 'https://v1.rugby.api-sports.io';
   private apiKey: string;
   private apiSportsService: ApiSportsService;
 
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    this.apiSportsService = new ApiSportsService(apiKey);
-    console.log(`[RugbyService] Initialized with API key length: ${apiKey ? apiKey.length : 0}`);
+  constructor(apiKey?: string) {
+    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || '';
+    this.apiSportsService = new ApiSportsService(this.apiKey);
   }
 
   /**
-   * Get rugby events (upcoming or live)
+   * Get all live rugby games
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @returns Array of live rugby events
    */
-  public async getRugbyEvents(isLive: boolean): Promise<SportEvent[]> {
+  async getLiveGames(rugbyType: 'league' | 'union' = 'union'): Promise<SportEvent[]> {
+    console.log(`[RugbyService] Fetching live ${rugbyType} rugby games`);
+    
+    // Use the Rugby-specific API endpoint
+    const slug = rugbyType === 'league' ? 'rugby-league' : 'rugby-union';
+    
     try {
-      console.log(`[RugbyService] Fetching ${isLive ? 'live' : 'upcoming'} rugby events from API-Sports`);
+      // Get basic events from API Sports service
+      const events = await this.apiSportsService.getLiveEvents(slug);
+      console.log(`[RugbyService] Found ${events.length} live ${rugbyType} rugby games from API-Sports`);
       
-      // Try to get rugby events via the API Sports service first
-      const sportName = 'rugby';
-      let games: SportEvent[] = [];
-      
-      if (isLive) {
-        games = await this.apiSportsService.getLiveEvents(sportName);
-      } else {
-        games = await this.apiSportsService.getUpcomingEvents(sportName, 10);
-      }
-      
-      if (games && games.length > 0) {
-        console.log(`[RugbyService] Found ${games.length} ${isLive ? 'live' : 'upcoming'} ${sportName} games from API-Sports`);
+      if (events.length > 0) {
+        // Show sample of the data for debugging
+        console.log(`[RugbyService] Sample ${rugbyType.toUpperCase()} event data:`, JSON.stringify(events[0]));
         
-        // Sample for debugging
-        if (games.length > 0) {
-          console.log(`[RugbyService] Sample event data:`, JSON.stringify(games[0]));
-        }
-        
-        // Filter to strictly verify this is rugby data
-        const rugbyEvents = games.filter((game: SportEvent, index: number) => {
-          // STRICT VERIFICATION: Reject football/soccer matches
-          if (game.leagueName?.includes('League One') || 
-              game.leagueName?.includes('League Two') ||
-              game.leagueName?.includes('Premier League') ||
-              game.leagueName?.includes('La Liga') ||
-              game.leagueName?.includes('Serie A') ||
-              game.leagueName?.includes('Bundesliga') ||
-              game.leagueName?.includes('Copa') ||
-              game.homeTeam?.includes('FC') ||
-              game.awayTeam?.includes('FC') ||
-              (game.homeTeam?.includes('United') && !game.homeTeam?.includes('Rugby')) ||
-              (game.awayTeam?.includes('United') && !game.awayTeam?.includes('Rugby'))) {
-            console.log(`[RugbyService] REJECTING football match: ${game.homeTeam} vs ${game.awayTeam} (${game.leagueName})`);
-            return false;
+        // Filter out games that aren't actually rugby
+        // Check for rugby-specific leagues or other identifiers
+        const rugbyEvents = events.filter(event => {
+          const isRugbyGame = this.isGenuineRugbyGame(event, rugbyType);
+          
+          if (!isRugbyGame) {
+            console.log(`[RugbyService] REJECTING non-rugby match: ${event.homeTeam} vs ${event.awayTeam} (${event.leagueName})`);
           }
           
-          // Verify this is actually rugby data
-          let isRugby = 
-            (game.leagueName && 
-              (game.leagueName.toLowerCase().includes('rugby') || 
-               game.leagueName.toLowerCase().includes('premiership') || // Rugby Premiership
-               game.leagueName.toLowerCase().includes('championship') ||
-               game.leagueName.toLowerCase().includes('super league') ||
-               game.leagueName.toLowerCase().includes('six nations') ||
-               game.leagueName.toLowerCase().includes('pro14') ||
-               game.leagueName.toLowerCase().includes('nrl') || // National Rugby League
-               game.leagueName.toLowerCase().includes('super rugby')));
-          
-          // Check for rugby-related terms in team names
-          if (!isRugby && game.homeTeam && game.awayTeam) {
-            const homeTeam = game.homeTeam.toLowerCase();
-            const awayTeam = game.awayTeam.toLowerCase();
-            
-            isRugby = 
-              homeTeam.includes('rugby') ||
-              awayTeam.includes('rugby') ||
-              homeTeam.includes('sharks') ||
-              awayTeam.includes('sharks') ||
-              homeTeam.includes('warriors') ||
-              awayTeam.includes('warriors') ||
-              homeTeam.includes('tigers') ||
-              awayTeam.includes('tigers') ||
-              homeTeam.includes('broncos') ||
-              awayTeam.includes('broncos');
-          }
-          
-          return isRugby;
+          return isRugbyGame;
         });
         
-        if (rugbyEvents.length > 0) {
-          console.log(`[RugbyService] Identified ${rugbyEvents.length} genuine rugby events out of ${games.length} total events`);
-          
-          const formattedEvents = rugbyEvents.map((game: SportEvent) => ({
-            ...game,
-            sportId: 8, // Set to Rugby ID
-            isLive: isLive,
-            // Create rugby-specific markets if needed
-            markets: game.markets || this.createRugbyMarkets(game)
-          }));
-          
-          return formattedEvents;
+        if (rugbyEvents.length === 0) {
+          console.log(`[RugbyService] Warning: None of the ${events.length} games appear to be genuine ${rugbyType} rugby data, trying direct API`);
         } else {
-          console.log(`[RugbyService] Warning: None of the ${games.length} events appear to be genuine rugby data, trying direct API`);
+          return rugbyEvents;
         }
       }
       
-      // If we get here, try direct rugby API
-      console.log(`[RugbyService] Trying direct rugby API for ${isLive ? 'live' : 'upcoming'} events`);
-      return await this.getDirectRugbyApi(isLive);
+      // If no events found via API Sports, try direct Rugby API call
+      return await this.getDirectLiveRugbyGames(rugbyType);
       
     } catch (error) {
-      console.error(`[RugbyService] Error fetching games from API-Sports:`, error);
-      return await this.getDirectRugbyApi(isLive);
+      console.error(`[RugbyService] Error fetching live ${rugbyType} rugby games:`, error);
+      return [];
     }
   }
-
+  
   /**
-   * Get rugby events directly from the Rugby API
+   * Get upcoming rugby games
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @param limit Number of events to return
+   * @returns Array of upcoming rugby events
    */
-  private async getDirectRugbyApi(isLive: boolean): Promise<SportEvent[]> {
+  async getUpcomingGames(rugbyType: 'league' | 'union' = 'union', limit: number = 10): Promise<SportEvent[]> {
+    console.log(`[RugbyService] Fetching upcoming ${rugbyType} rugby games`);
+    
+    const slug = rugbyType === 'league' ? 'rugby-league' : 'rugby-union';
+    
     try {
-      console.log(`[RugbyService] Using direct rugby API for ${isLive ? 'live' : 'upcoming'} events`);
+      // Get basic events from API Sports service
+      const events = await this.apiSportsService.getUpcomingEvents(slug, limit);
+      console.log(`[RugbyService] Found ${events.length} upcoming ${rugbyType} rugby games from API-Sports`);
       
-      // Parameters for the API call
-      const params: Record<string, any> = {};
-      
-      if (isLive) {
-        params.live = 'true';
-      } else {
-        // For upcoming events, use a date filter
-        const today = new Date();
-        // Get the rest of this month and next month
-        const nextMonth = new Date(today);
-        nextMonth.setMonth(today.getMonth() + 1);
+      if (events.length > 0) {
+        // Filter out games that aren't actually rugby
+        const rugbyEvents = events.filter(event => this.isGenuineRugbyGame(event, rugbyType));
         
-        // Format: 2025-04 for April 2025
-        params.date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        if (rugbyEvents.length === 0) {
+          console.log(`[RugbyService] Warning: None of the ${events.length} games appear to be genuine ${rugbyType} rugby data, trying direct API`);
+        } else {
+          return rugbyEvents;
+        }
       }
+      
+      // If no events found via API Sports, try direct Rugby API call
+      return await this.getDirectUpcomingRugbyGames(rugbyType, limit);
+      
+    } catch (error) {
+      console.error(`[RugbyService] Error fetching upcoming ${rugbyType} rugby games:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Make a direct call to the Rugby API for live games
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @returns Array of live rugby events
+   */
+  private async getDirectLiveRugbyGames(rugbyType: 'league' | 'union'): Promise<SportEvent[]> {
+    console.log(`[RugbyService] Using direct ${rugbyType} rugby API for live games`);
+    
+    const endpoint = rugbyType === 'league' 
+      ? 'https://v1.rugby-league.api-sports.io/games'
+      : 'https://v1.rugby.api-sports.io/games';
+    
+    try {
+      // First try with the current season and specific league
+      const params = {
+        season: new Date().getFullYear(),
+        status: 'LIVE', // Rugby API uses uppercase status
+      };
       
       console.log(`[RugbyService] Making direct API call with params:`, params);
       
-      const response = await axios.get(`${this.baseUrl}/games`, {
+      const response = await axios.get(endpoint, {
         params,
         headers: {
           'x-apisports-key': this.apiKey,
@@ -152,234 +128,219 @@ export class RugbyService {
         }
       });
       
-      if (response.status === 200 && response.data && response.data.response) {
-        const apiEvents = response.data.response;
-        console.log(`[RugbyService] Direct API returned ${apiEvents.length} events`);
+      if (response.data && response.data.response && Array.isArray(response.data.response)) {
+        const games = response.data.response;
+        console.log(`[RugbyService] Direct API returned ${games.length} games`);
         
-        if (apiEvents.length > 0) {
-          // Transform to our format
-          const transformedEvents = this.transformRugbyApiEvents(apiEvents, isLive);
-          
-          console.log(`[RugbyService] Transformed ${transformedEvents.length} rugby events from direct API`);
-          return transformedEvents;
+        if (games.length > 0) {
+          // Transform to our standard format
+          return this.transformRugbyGames(games, rugbyType, true);
         }
       }
       
-      console.log(`[RugbyService] No ${isLive ? 'live' : 'upcoming'} events found from any API source, returning empty array`);
+      console.log(`[RugbyService] No live games found from direct API call`);
       return [];
-      
-    } catch (directApiError) {
-      console.error(`[RugbyService] Error fetching events from direct rugby API:`, directApiError);
+    } catch (error) {
+      console.error(`[RugbyService] Error calling direct ${rugbyType} rugby API:`, error);
       return [];
     }
   }
-
+  
   /**
-   * Create rugby-specific markets for an event
+   * Make a direct call to the Rugby API for upcoming games
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @param limit Number of events to return
+   * @returns Array of upcoming rugby events
    */
-  private createRugbyMarkets(event: SportEvent): MarketData[] {
-    const id = event.id;
-    const homeTeam = event.homeTeam || 'Home Team';
-    const awayTeam = event.awayTeam || 'Away Team';
+  private async getDirectUpcomingRugbyGames(rugbyType: 'league' | 'union', limit: number): Promise<SportEvent[]> {
+    console.log(`[RugbyService] Using direct ${rugbyType} rugby API for upcoming games`);
     
-    return [
-      {
+    const endpoint = rugbyType === 'league' 
+      ? 'https://v1.rugby-league.api-sports.io/games'
+      : 'https://v1.rugby.api-sports.io/games';
+    
+    try {
+      // Get the current date and format it
+      const today = new Date().toISOString().split('T')[0];
+      
+      // First try with the current season and specific parameters
+      const params = {
+        season: new Date().getFullYear(),
+        date: today,
+        status: 'NS', // Not Started
+      };
+      
+      console.log(`[RugbyService] Making direct API call with params:`, params);
+      
+      const response = await axios.get(endpoint, {
+        params,
+        headers: {
+          'x-apisports-key': this.apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (response.data && response.data.response && Array.isArray(response.data.response)) {
+        const games = response.data.response;
+        console.log(`[RugbyService] Direct API returned ${games.length} games`);
+        
+        if (games.length > 0) {
+          // Transform to our standard format and limit the number
+          return this.transformRugbyGames(games, rugbyType, false).slice(0, limit);
+        }
+      }
+      
+      // If no games found, try with a date range
+      console.log(`[RugbyService] No upcoming games found with direct date params, trying date range`);
+      
+      // Try with extended date range
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + 30); // Look 30 days ahead
+      const futureDateStr = futureDate.toISOString().split('T')[0];
+      
+      console.log(`[RugbyService] Using date range from ${today} to ${futureDateStr}`);
+      
+      // Use season parameter without date to get more results
+      const rangeResponse = await axios.get(endpoint, {
+        params: {
+          season: new Date().getFullYear(),
+          status: 'NS',
+        },
+        headers: {
+          'x-apisports-key': this.apiKey,
+          'Accept': 'application/json'
+        }
+      });
+      
+      if (rangeResponse.data && rangeResponse.data.response && Array.isArray(rangeResponse.data.response)) {
+        const rangeGames = rangeResponse.data.response;
+        console.log(`[RugbyService] Date range approach returned ${rangeGames.length} games`);
+        
+        if (rangeGames.length > 0) {
+          // Transform to our standard format and limit the number
+          return this.transformRugbyGames(rangeGames, rugbyType, false).slice(0, limit);
+        }
+      }
+      
+      console.log(`[RugbyService] No upcoming games found from any API source, returning empty array`);
+      return [];
+    } catch (error) {
+      console.error(`[RugbyService] Error calling direct ${rugbyType} rugby API:`, error);
+      return [];
+    }
+  }
+  
+  /**
+   * Transform rugby API data to our standard format
+   * @param games Raw rugby game data from the API
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @param isLive Whether these are live games
+   * @returns Transformed SportEvent array
+   */
+  private transformRugbyGames(games: any[], rugbyType: 'league' | 'union', isLive: boolean): SportEvent[] {
+    return games.map((game, index) => {
+      // Create a unique ID for the event
+      const id = game.id || `rugby-${rugbyType}-${index}-${Date.now()}`;
+      
+      // Map league info
+      const league = game.league || {};
+      const leagueName = league.name || `${rugbyType.charAt(0).toUpperCase() + rugbyType.slice(1)} Rugby`;
+      
+      // Map team info
+      const homeTeam = game.teams?.home?.name || 'Home Team';
+      const awayTeam = game.teams?.away?.name || 'Away Team';
+      
+      // Map score info
+      let score = '0 - 0';
+      if (game.scores) {
+        const homeScore = game.scores.home || 0;
+        const awayScore = game.scores.away || 0;
+        score = `${homeScore} - ${awayScore}`;
+      }
+      
+      // Map start time
+      let startTime = new Date().toISOString();
+      if (game.date) {
+        startTime = new Date(game.date).toISOString();
+      }
+      
+      // Map status
+      const status = isLive ? 'live' : 'scheduled';
+      
+      // Create default market
+      const market = {
         id: `${id}-market-match-winner`,
-        name: 'Match Winner',
+        name: 'Match Result',
         outcomes: [
           {
             id: `${id}-outcome-home`,
-            name: homeTeam,
-            odds: 1.85 + (Math.random() * 0.3),
-            probability: 0.52
+            name: `${homeTeam}`,
+            odds: 1.95,
+            probability: 0.51
           },
           {
             id: `${id}-outcome-away`,
-            name: awayTeam,
-            odds: 1.95 + (Math.random() * 0.3),
-            probability: 0.48
+            name: `${awayTeam}`,
+            odds: 1.85,
+            probability: 0.54
           }
         ]
-      },
-      {
-        id: `${id}-market-handicap`,
-        name: 'Handicap',
-        outcomes: [
-          {
-            id: `${id}-outcome-home-handicap`,
-            name: `${homeTeam} (-7.5)`,
-            odds: 1.9 + (Math.random() * 0.2),
-            probability: 0.49
-          },
-          {
-            id: `${id}-outcome-away-handicap`,
-            name: `${awayTeam} (+7.5)`,
-            odds: 1.9 + (Math.random() * 0.2),
-            probability: 0.51
-          }
-        ]
-      },
-      {
-        id: `${id}-market-total-points`,
-        name: 'Total Points',
-        outcomes: [
-          {
-            id: `${id}-outcome-over`,
-            name: 'Over 44.5',
-            odds: 1.9 + (Math.random() * 0.2),
-            probability: 0.5
-          },
-          {
-            id: `${id}-outcome-under`,
-            name: 'Under 44.5',
-            odds: 1.9 + (Math.random() * 0.2),
-            probability: 0.5
-          }
-        ]
-      },
-      {
-        id: `${id}-market-winning-margin`,
-        name: 'Winning Margin',
-        outcomes: [
-          {
-            id: `${id}-outcome-home-1-12`,
-            name: `${homeTeam} by 1-12`,
-            odds: 3.8 + (Math.random() * 0.5),
-            probability: 0.25
-          },
-          {
-            id: `${id}-outcome-home-13+`,
-            name: `${homeTeam} by 13+`,
-            odds: 4.2 + (Math.random() * 0.5),
-            probability: 0.22
-          },
-          {
-            id: `${id}-outcome-away-1-12`,
-            name: `${awayTeam} by 1-12`,
-            odds: 3.9 + (Math.random() * 0.5),
-            probability: 0.24
-          },
-          {
-            id: `${id}-outcome-away-13+`,
-            name: `${awayTeam} by 13+`,
-            odds: 4.5 + (Math.random() * 0.5),
-            probability: 0.21
-          }
-        ]
-      }
-    ];
+      };
+      
+      // Create the standard sport event
+      return {
+        id,
+        sportId: rugbyType === 'league' ? 12 : 13, // Use different IDs for league vs union
+        leagueName,
+        homeTeam,
+        awayTeam,
+        startTime,
+        status,
+        score,
+        markets: [market],
+        isLive,
+        dataSource: `api-sports-rugby-${rugbyType}`
+      };
+    });
   }
-
+  
   /**
-   * Transform rugby API data to our SportEvent format
+   * Check if an event is genuinely a rugby game
+   * @param event The event to check
+   * @param rugbyType 'league' or 'union' to specify rugby type
+   * @returns Boolean indicating if this is a genuine rugby game
    */
-  private transformRugbyApiEvents(events: any[], isLive: boolean): SportEvent[] {
-    return events.map((event: any, index: number) => {
-      try {
-        // Extract basic match data
-        const id = event.id?.toString() || `rugby-api-${index}`;
-        const homeTeam = event.teams?.home?.name || 'Home Team';
-        const awayTeam = event.teams?.away?.name || 'Away Team';
-        const leagueName = event.league?.name || 'Rugby Match';
-        const date = event.date || new Date().toISOString();
-        
-        // Determine match status
-        let status: 'scheduled' | 'live' | 'finished' | 'upcoming' = 'upcoming';
-        if (isLive) {
-          status = 'live';
-        } else if (event.status?.short === 'FT') {
-          status = 'finished';
-        }
-        
-        // Create score string if available
-        let score: string | undefined;
-        if ((status === 'live' || status === 'finished') && event.scores) {
-          score = `${event.scores.home?.total || 0} - ${event.scores.away?.total || 0}`;
-        }
-        
-        // Create rugby-specific markets
-        const marketsData: MarketData[] = [];
-        
-        // Match Winner market
-        marketsData.push({
-          id: `${id}-market-match-winner`,
-          name: 'Match Winner',
-          outcomes: [
-            {
-              id: `${id}-outcome-home`,
-              name: homeTeam,
-              odds: 1.85 + (Math.random() * 0.3),
-              probability: 0.52
-            },
-            {
-              id: `${id}-outcome-away`,
-              name: awayTeam,
-              odds: 1.95 + (Math.random() * 0.3),
-              probability: 0.48
-            }
-          ]
-        });
-        
-        // Handicap market
-        marketsData.push({
-          id: `${id}-market-handicap`,
-          name: 'Handicap',
-          outcomes: [
-            {
-              id: `${id}-outcome-home-handicap`,
-              name: `${homeTeam} (-7.5)`,
-              odds: 1.9 + (Math.random() * 0.2),
-              probability: 0.49
-            },
-            {
-              id: `${id}-outcome-away-handicap`,
-              name: `${awayTeam} (+7.5)`,
-              odds: 1.9 + (Math.random() * 0.2),
-              probability: 0.51
-            }
-          ]
-        });
-        
-        // Total Points market
-        marketsData.push({
-          id: `${id}-market-total-points`,
-          name: 'Total Points',
-          outcomes: [
-            {
-              id: `${id}-outcome-over`,
-              name: 'Over 44.5',
-              odds: 1.9 + (Math.random() * 0.2),
-              probability: 0.5
-            },
-            {
-              id: `${id}-outcome-under`,
-              name: 'Under 44.5',
-              odds: 1.9 + (Math.random() * 0.2),
-              probability: 0.5
-            }
-          ]
-        });
-        
-        return {
-          id,
-          sportId: 8, // Rugby ID
-          leagueName,
-          homeTeam,
-          awayTeam,
-          startTime: date,
-          status,
-          score,
-          markets: marketsData,
-          isLive
-        };
-        
-      } catch (error) {
-        console.error(`[RugbyService] Error transforming rugby event:`, error);
-        return null;
-      }
-    }).filter(event => event !== null) as SportEvent[];
+  private isGenuineRugbyGame(event: SportEvent, rugbyType: 'league' | 'union'): boolean {
+    // If we have explicit sport ID matching, trust that
+    if (rugbyType === 'league' && event.sportId === 12) return true;
+    if (rugbyType === 'union' && event.sportId === 13) return true;
+    
+    // Check for league name containing rugby keywords
+    const leagueName = event.leagueName?.toLowerCase() || '';
+    const rugbyKeywords = [
+      'rugby', 'nrl', 'super league', 'premiership rugby', 'top 14', 
+      'pro14', 'super rugby', 'six nations', 'world cup rugby',
+      'challenge cup', 'champions cup'
+    ];
+    
+    // Type-specific keywords
+    const leagueKeywords = ['nrl', 'super league', 'challenge cup'];
+    const unionKeywords = ['premiership rugby', 'top 14', 'pro14', 'super rugby', 'six nations'];
+    
+    // Check for any rugby keyword
+    const isRugby = rugbyKeywords.some(keyword => leagueName.includes(keyword));
+    
+    // Check for type-specific keywords
+    const isCorrectType = rugbyType === 'league' 
+      ? leagueKeywords.some(keyword => leagueName.includes(keyword))
+      : unionKeywords.some(keyword => leagueName.includes(keyword));
+    
+    // If we find a type-specific keyword, return true
+    if (isCorrectType) return true;
+    
+    // If we find any rugby keyword, it's better than nothing
+    return isRugby;
   }
 }
 
-// Export a singleton instance
-export const rugbyService = new RugbyService(process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "");
+export const rugbyService = new RugbyService(process.env.SPORTSDATA_API_KEY);

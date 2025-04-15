@@ -9,10 +9,37 @@ import { ApiSportsService } from './apiSportsService';
 export class RugbyService {
   private apiKey: string;
   private apiSportsService: ApiSportsService;
+  private liveGamesCache: { [key: string]: SportEvent[] } = {};
+  private lastFetchTime: { [key: string]: number } = {};
+  // Cache TTL in milliseconds (30 seconds)
+  private CACHE_TTL = 30 * 1000;
 
   constructor(apiKey?: string) {
     this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || '';
     this.apiSportsService = new ApiSportsService(this.apiKey);
+    
+    // Setup periodic refresh of live games for both rugby types
+    this.refreshLiveGames();
+    setInterval(() => this.refreshLiveGames(), 60 * 1000); // Every minute
+  }
+  
+  /**
+   * Refresh live games cache in the background
+   */
+  private async refreshLiveGames() {
+    try {
+      console.log(`[RugbyService] Running background refresh of live Rugby games`);
+      
+      // Refresh both types of rugby
+      await Promise.all([
+        this.fetchLiveGamesWithCache('league', true),
+        this.fetchLiveGamesWithCache('union', true)
+      ]);
+      
+      console.log(`[RugbyService] Background refresh complete`);
+    } catch (error) {
+      console.error(`[RugbyService] Error in background refresh:`, error);
+    }
   }
 
   /**
@@ -252,10 +279,36 @@ export class RugbyService {
       
       // Map score info
       let score = '0 - 0';
+      
+      // Handle different score formats from the Rugby API
       if (game.scores) {
-        const homeScore = game.scores.home || 0;
-        const awayScore = game.scores.away || 0;
+        // Primary format: scores object with home/away properties
+        const homeScore = game.scores.home || game.scores.home_score || 0;
+        const awayScore = game.scores.away || game.scores.away_score || 0;
         score = `${homeScore} - ${awayScore}`;
+      } else if (game.score) {
+        // Alternative format: score object or direct score string
+        if (typeof game.score === 'string') {
+          score = game.score;
+        } else if (typeof game.score === 'object') {
+          const homeScore = game.score.home || game.score.home_score || 0;
+          const awayScore = game.score.away || game.score.away_score || 0;
+          score = `${homeScore} - ${awayScore}`;
+        }
+      } else if (game.home_score !== undefined && game.away_score !== undefined) {
+        // Direct properties on the game object
+        score = `${game.home_score} - ${game.away_score}`;
+      }
+      
+      // Add detailed logging for troubleshooting
+      console.log(`[RugbyService] Parsed score for ${homeTeam} vs ${awayTeam}: ${score}`);
+      if (isLive) {
+        console.log(`[RugbyService] Live game score structure:`, JSON.stringify({
+          hasScores: !!game.scores,
+          hasScore: !!game.score,
+          hasHomeAwayScore: game.home_score !== undefined && game.away_score !== undefined,
+          finalScore: score
+        }));
       }
       
       // Map start time

@@ -1017,6 +1017,10 @@ export class ApiSportsService {
         // Use the tennis-specific transformer
         console.log(`[ApiSportsService] Using tennis transformer for event ${index}`);
         return this.transformTennisEvent(event, isLive, index);
+      } else if (sport === 'cricket') {
+        // Use cricket-specific transformer to ensure correct sport ID
+        console.log(`[ApiSportsService] Using cricket transformer for event ${index}`);
+        return this.transformCricketEvent(event, isLive, index);
       } else if (sport === 'formula_1' || sport === 'formula-1') {
         // Use special handling for Formula 1 events
         console.log(`[ApiSportsService] Special handling for Formula 1 event ${index}`);
@@ -1252,6 +1256,117 @@ export class ApiSportsService {
     }
   }
 
+  /**
+   * Transform cricket event data
+   */
+  private transformCricketEvent(event: any, isLive: boolean, index: number): SportEvent {
+    try {
+      console.log(`[ApiSportsService] Processing cricket event: ${JSON.stringify(event?.fixture?.id || 'unknown')}`);
+      
+      // Extract key cricket data with fallbacks
+      const id = event.fixture?.id?.toString() || event.id?.toString() || `cricket-${index}`;
+      const homeTeam = event.teams?.home?.name || 'Home Team';
+      const awayTeam = event.teams?.away?.name || 'Away Team';
+      const tournament = event.league?.name || 'Cricket Tournament';
+      const venueCity = event.fixture?.venue?.city || '';
+      const venueCountry = event.league?.country || '';
+      const venue = venueCity ? (venueCountry ? `${venueCity}, ${venueCountry}` : venueCity) : 'TBC';
+      
+      // Format - Test, T20, ODI, etc.
+      const format = tournament.includes('Test') ? 'Test' : 
+                    tournament.includes('T20') ? 'T20' : 
+                    tournament.includes('ODI') ? 'ODI' : 'Cricket';
+
+      // Parse status
+      const status = event.fixture?.status?.short || '';
+      const mappedStatus = this.mapEventStatus(status);
+      
+      // Score processing is specific to cricket's format
+      let score = 'Match scheduled';
+      if (event.score && (mappedStatus === 'live' || mappedStatus === 'finished')) {
+        // Format: "Home Team 245/7 (50), Away Team 240/8 (50)"
+        const homeScore = event.score?.home?.innings?.inning_1?.score || '0/0';
+        const homeOvers = event.score?.home?.innings?.inning_1?.overs || '0';
+        const awayScore = event.score?.away?.innings?.inning_1?.score || '0/0';
+        const awayOvers = event.score?.away?.innings?.inning_1?.overs || '0';
+        
+        score = `${homeTeam} ${homeScore} (${homeOvers}), ${awayTeam} ${awayScore} (${awayOvers})`;
+      }
+      
+      // Generate cricket-specific markets
+      const marketsData: MarketData[] = [];
+      
+      // Match Winner market
+      marketsData.push({
+        id: `${id}-market-match-winner`,
+        name: 'Match Winner',
+        outcomes: [
+          {
+            id: `${id}-outcome-home`,
+            name: homeTeam,
+            odds: 1.92,
+            probability: 0.52
+          },
+          {
+            id: `${id}-outcome-away`,
+            name: awayTeam,
+            odds: 1.88,
+            probability: 0.53
+          }
+        ]
+      });
+      
+      // Total Runs market - varies based on format
+      let totalRunsLine = 300;
+      if (format === 'T20') {
+        totalRunsLine = 160;
+      } else if (format === 'Test') {
+        totalRunsLine = 350;
+      }
+      
+      marketsData.push({
+        id: `${id}-market-total-runs`,
+        name: 'Total Runs',
+        outcomes: [
+          {
+            id: `${id}-outcome-over`,
+            name: `Over ${totalRunsLine}.5`,
+            odds: 1.85,
+            probability: 0.54
+          },
+          {
+            id: `${id}-outcome-under`,
+            name: `Under ${totalRunsLine}.5`,
+            odds: 1.95,
+            probability: 0.51
+          }
+        ]
+      });
+      
+      return {
+        id: id.toString(),
+        sportId: 9,  // CRITICAL: Always use Cricket sportId (9)
+        leagueName: tournament,
+        leagueSlug: tournament.toLowerCase().replace(/\s+/g, '-'),
+        homeTeam,
+        awayTeam,
+        homeOdds: 1.92,
+        awayOdds: 1.88,
+        drawOdds: null,  // Cricket matches don't typically have draws (except Test matches)
+        startTime: event.fixture?.date || new Date().toISOString(),
+        status: mappedStatus,
+        score,
+        isLive: mappedStatus === 'live',
+        markets: marketsData,
+        venue,
+        format
+      };
+    } catch (error) {
+      console.error(`[ApiSportsService] Error transforming cricket event:`, error);
+      return this.transformGenericEvent(event, 'cricket', isLive, index);
+    }
+  }
+  
   /**
    * Transform football/soccer event data
    */

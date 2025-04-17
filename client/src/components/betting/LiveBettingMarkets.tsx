@@ -363,10 +363,10 @@ export function LiveBettingMarkets() {
               <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
                 {/* Sport-specific icons */}
                 {parseInt(sportId) === 1 && <Activity className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 2 && <CircleDashed className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 3 && <Circle className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 4 && <Disc className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 5 && <Snowflake2 className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 2 && <BookType className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 3 && <BadgeInfo className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 4 && <Cpu className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 5 && <Snowflake className="h-5 w-5 mr-2" />}
                 {parseInt(sportId) === 9 && <CircleDot className="h-5 w-5 mr-2" />}
                 {![1, 2, 3, 4, 5, 9].includes(parseInt(sportId)) && <Activity className="h-5 w-5 mr-2" />}
                 {sportName}

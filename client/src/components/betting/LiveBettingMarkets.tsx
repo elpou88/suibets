@@ -51,67 +51,73 @@ export function LiveBettingMarkets() {
   
   // Helper function to classify events into proper sports based on their characteristics
   const classifySport = (event: Event): number => {
-    // Original sport ID (may be incorrect due to API limitations)
+    // If we have a valid sportId that's not one of the ambiguous ones, use it directly
     const originalSportId = event.sportId;
     
-    // Keep football events with sport ID 1 as is
-    if (originalSportId === 1) {
-      // Look for basketball indicators
-      if (
-        event.leagueName?.toLowerCase().includes('nba') || 
-        event.leagueName?.toLowerCase().includes('basketball') ||
-        event.leagueName?.toLowerCase().includes('ncaa')
-      ) {
-        return 2; // Basketball
-      }
-      
-      // Look for baseball indicators
-      if (
-        event.leagueName?.toLowerCase().includes('mlb') || 
-        event.leagueName?.toLowerCase().includes('baseball') ||
-        event.homeTeam?.includes('Sox') ||
-        event.homeTeam?.includes('Yankees') ||
-        event.homeTeam?.includes('Cubs') ||
-        event.homeTeam?.includes('Braves')
-      ) {
-        return 4; // Baseball
-      }
-      
-      // Look for tennis indicators
-      if (
-        event.leagueName?.toLowerCase().includes('atp') || 
-        event.leagueName?.toLowerCase().includes('wta') ||
-        event.leagueName?.toLowerCase().includes('tennis') ||
-        event.leagueName?.toLowerCase().includes('open')
-      ) {
-        return 3; // Tennis
-      }
-      
-      // Look for hockey indicators
-      if (
-        event.leagueName?.toLowerCase().includes('nhl') || 
-        event.leagueName?.toLowerCase().includes('hockey') ||
-        event.leagueName?.toLowerCase().includes('khl')
-      ) {
-        return 5; // Hockey
-      }
-      
-      // Look for cricket indicators
-      if (
-        event.leagueName?.toLowerCase().includes('cricket') || 
-        event.leagueName?.toLowerCase().includes('ipl') ||
-        event.leagueName?.toLowerCase().includes('test match') ||
-        event.leagueName?.toLowerCase().includes('t20')
-      ) {
-        return 9; // Cricket
-      }
-      
-      // Default to football/soccer if no other indicators found
-      return 1;
+    // Look for basketball indicators
+    if (
+      event.leagueName?.toLowerCase().includes('nba') || 
+      event.leagueName?.toLowerCase().includes('basketball') ||
+      event.leagueName?.toLowerCase().includes('ncaa') ||
+      originalSportId === 2
+    ) {
+      return 2; // Basketball
     }
     
-    // For non-football sport IDs, keep their original values
-    return originalSportId;
+    // Look for baseball indicators
+    if (
+      event.leagueName?.toLowerCase().includes('mlb') || 
+      event.leagueName?.toLowerCase().includes('baseball') ||
+      event.homeTeam?.includes('Sox') ||
+      event.homeTeam?.includes('Yankees') ||
+      event.homeTeam?.includes('Cubs') ||
+      event.homeTeam?.includes('Braves') ||
+      originalSportId === 4
+    ) {
+      return 4; // Baseball
+    }
+    
+    // Look for tennis indicators
+    if (
+      event.leagueName?.toLowerCase().includes('atp') || 
+      event.leagueName?.toLowerCase().includes('wta') ||
+      event.leagueName?.toLowerCase().includes('tennis') ||
+      (event.leagueName?.toLowerCase().includes('open') && !event.leagueName?.toLowerCase().includes('football')) ||
+      originalSportId === 3
+    ) {
+      return 3; // Tennis
+    }
+    
+    // Look for hockey indicators
+    if (
+      event.leagueName?.toLowerCase().includes('nhl') || 
+      event.leagueName?.toLowerCase().includes('hockey') ||
+      event.leagueName?.toLowerCase().includes('khl') ||
+      originalSportId === 5
+    ) {
+      return 5; // Hockey
+    }
+    
+    // Look for cricket indicators
+    if (
+      event.leagueName?.toLowerCase().includes('cricket') || 
+      event.leagueName?.toLowerCase().includes('ipl') ||
+      event.leagueName?.toLowerCase().includes('test match') ||
+      event.leagueName?.toLowerCase().includes('t20') ||
+      originalSportId === 9
+    ) {
+      return 9; // Cricket
+    }
+    
+    // Map additional popular sports that we saw in the data
+    if (originalSportId === 13) return 13; // Golf
+    if (originalSportId === 16) return 16; // American Football
+    if (originalSportId === 17) return 17; // Rugby
+    if (originalSportId === 19) return 19; // Volleyball 
+    if (originalSportId === 20) return 20; // Snooker
+    
+    // Default to football/soccer if no other indicators found
+    return 1; // Football/Soccer
   };
   
   // Fetch all live events from all sports
@@ -353,9 +359,11 @@ export function LiveBettingMarkets() {
       
       {/* Main content div with max height and scrolling */}
       <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-2 custom-scrollbar">
-        {Object.entries(filteredEvents).map(([sportId, sportEvents]) => {
+        {Object.entries(filteredEvents || {}).map(([sportId, sportEvents]) => {
+          if (!sportEvents || sportEvents.length === 0) return null;
+          
           const sportIdNum = parseInt(sportId);
-          const sport = sportsById[sportIdNum];
+          const sport = sportsById ? sportsById[sportIdNum] : null;
           const sportName = sport ? sport.name : `Sport ${sportId}`;
           
           return (
@@ -363,16 +371,21 @@ export function LiveBettingMarkets() {
               <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
                 {/* Sport-specific icons */}
                 {parseInt(sportId) === 1 && <Activity className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 2 && <BookType className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 2 && <BookType className="h-5 w-5 mr-2" />} 
                 {parseInt(sportId) === 3 && <BadgeInfo className="h-5 w-5 mr-2" />}
                 {parseInt(sportId) === 4 && <Cpu className="h-5 w-5 mr-2" />}
                 {parseInt(sportId) === 5 && <Snowflake className="h-5 w-5 mr-2" />}
                 {parseInt(sportId) === 9 && <CircleDot className="h-5 w-5 mr-2" />}
-                {![1, 2, 3, 4, 5, 9].includes(parseInt(sportId)) && <Activity className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 13 && <BadgeInfo className="h-5 w-5 mr-2" />} {/* Golf */}
+                {parseInt(sportId) === 16 && <Activity className="h-5 w-5 mr-2" />} {/* American Football */}
+                {parseInt(sportId) === 17 && <BookType className="h-5 w-5 mr-2" />} {/* Rugby */}
+                {parseInt(sportId) === 19 && <BadgeInfo className="h-5 w-5 mr-2" />} {/* Volleyball */}
+                {parseInt(sportId) === 20 && <Cpu className="h-5 w-5 mr-2" />} {/* Snooker */}
+                {![1, 2, 3, 4, 5, 9, 13, 16, 17, 19, 20].includes(parseInt(sportId)) && <Activity className="h-5 w-5 mr-2" />}
                 {sportName}
               </div>
               
-              {sportEvents.map((event) => (
+              {sportEvents && sportEvents.map((event) => (
                 <Card 
                   key={`${event.id}-${Math.random().toString(36).substring(2, 8)}`}
                   className="mb-4 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10 overflow-hidden"

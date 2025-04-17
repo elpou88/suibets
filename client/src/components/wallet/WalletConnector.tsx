@@ -195,8 +195,11 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
             {/* Suiet Wallet Connect Button */}
             <div className="w-full rounded overflow-hidden mb-4">
               <ConnectButton 
-                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold py-3 px-4 rounded"
-              />
+                className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold py-3 px-4 rounded flex items-center justify-center"
+              >
+                <Wallet className="h-5 w-5 mr-2" />
+                <span>Connect with Suiet Wallet Kit</span>
+              </ConnectButton>
             </div>
           </div>
         ) : (

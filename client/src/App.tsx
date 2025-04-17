@@ -15,6 +15,7 @@ import Settings from "@/pages/settings";
 import BetSlip from "@/pages/bet-slip";
 import BetSlip2 from "@/pages/bet-slip-2";
 import ConnectWallet from "@/pages/connect-wallet";
+import WalletDashboard from "@/pages/wallet-dashboard";
 import NotFound from "@/pages/not-found";
 import RedirectToPromotions from "@/pages/redirect-to-promotions";
 import RedirectToLive from "@/pages/redirect-to-live";

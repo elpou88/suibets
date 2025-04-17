@@ -89,9 +89,12 @@ function App() {
                       {() => {
                         // Dispatch an event to trigger the wallet modal
                         window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
-                        // Return to homepage
-                        window.location.href = '/';
-                        return null;
+                        // Use wouter navigation instead of window.location to prevent full page refresh
+                        setTimeout(() => {
+                          // Use history API to replace current URL without refreshing
+                          window.history.replaceState(null, '', '/');
+                        }, 0);
+                        return <HomeReal />;
                       }}
                     </Route>
                     <Route path="/wallet-dashboard" component={WalletDashboard} />

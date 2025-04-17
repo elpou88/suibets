@@ -151,12 +151,14 @@ export default function Navbar() {
         {user?.walletAddress ? (
           <div className="flex items-center">
             {/* Dashboard link button */}
-            <Link href="/wallet-dashboard" className="mr-2">
-              <Button variant="ghost" className="text-[#00FFFF] hover:bg-[#112225]">
-                <Wallet className="h-4 w-4 mr-2" />
-                Dashboard
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="text-[#00FFFF] hover:bg-[#112225] mr-2"
+              onClick={() => setLocation('/wallet-dashboard')}
+            >
+              <Wallet className="h-4 w-4 mr-2" />
+              Dashboard
+            </Button>
             
             {/* Connect Wallet Button/Dropdown when connected */}
             <DropdownMenu>
@@ -170,21 +172,36 @@ export default function Navbar() {
               <DropdownMenuContent>
                 <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild className="font-medium text-[#00FFFF]">
-                  <Link href="/wallet-dashboard">Wallet Dashboard</Link>
+                <DropdownMenuItem 
+                  className="font-medium text-[#00FFFF] cursor-pointer"
+                  onClick={() => setLocation('/wallet-dashboard')}
+                >
+                  Wallet Dashboard
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link href="/bet-history">My Bets</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setLocation('/bet-history')}
+                >
+                  My Bets
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/dividends">Dividends</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setLocation('/dividends')}
+                >
+                  Dividends
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/defi-staking">DeFi Staking</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setLocation('/defi-staking')}
+                >
+                  DeFi Staking
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link href="/storage">Storage Vaults</Link>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setLocation('/storage')}
+                >
+                  Storage Vaults
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={disconnectWallet}>

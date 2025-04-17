@@ -28,16 +28,21 @@ const SPORTS_MAPPING: Record<string, number> = {
   'formula-1': 13,
   'cycling': 14,
   'american-football': 15,
-  'snooker': 16,
-  'darts': 17,
-  'table-tennis': 18,
-  'badminton': 19,
-  'esports': 20,
-  'athletics': 21,
-  'swimming': 22,
-  'beach-volleyball': 23,
-  'horse-racing': 24,
-  'greyhounds': 25,
+  'afl': 16,
+  'snooker': 17,
+  'darts': 18,
+  'table-tennis': 19,
+  'badminton': 20,
+  'beach-volleyball': 21,
+  'winter-sports': 22,
+  'motorsport': 23,
+  'esports': 24,
+  'netball': 25,
+  'soccer': 26, // Alias for football
+  'nba': 27,
+  'nhl': 28,
+  'nfl': 29,
+  'mlb': 30,
 };
 
 export default function SportPage() {
@@ -76,22 +81,58 @@ export default function SportPage() {
         const data = await response.json();
         console.log(`Received ${data.length} events for ${sportName}`);
         
-        // Filter data again on the client side to ensure only events for this sport are shown
-        const filteredData = data.filter((event: any) => 
-          event.sportId === sportId || 
-          event.sportId === Number(sportId)
-        );
+        // For NBA/MLB/NHL/NFL sports, try matching with their corresponding mainstream sport IDs as well
+        let targetSportIds = [sportId];
+        
+        // Add mappings for the league-specific sports to their general sport counterparts
+        if (sportId === 27) targetSportIds.push(2); // NBA → Basketball 
+        if (sportId === 28) targetSportIds.push(5); // NHL → Hockey
+        if (sportId === 29) targetSportIds.push(15); // NFL → American Football
+        if (sportId === 30) targetSportIds.push(4); // MLB → Baseball
+        if (sportId === 26) targetSportIds.push(1); // Soccer → Football
+        
+        // Filter data to ensure only events for this sport are shown
+        const filteredData = data.filter((event: any) => {
+          const eventSportId = typeof event.sportId === 'string' 
+            ? parseInt(event.sportId, 10) 
+            : event.sportId;
+          
+          return targetSportIds.includes(eventSportId);
+        });
         
         console.log(`Filtered to ${filteredData.length} events for sportId: ${sportId}`);
         
         if (filteredData.length === 0 && data.length > 0) {
           // If we got data but none matches our sport ID after filtering,
-          // it might be that the data has inconsistent sportId values
+          // it might be that some specific sports like cricket or golf have inconsistent IDs
           console.log(`Warning: Received ${data.length} events but none match sportId ${sportId}`);
           console.log('Sample event sportId from API:', data[0]?.sportId);
           
-          // Use the data without filtering if no matches after filter
-          return data;
+          // For certain sports that might have special handling or different IDs
+          if ([9, 10, 14, 17, 18].includes(sportId)) { // Cricket, Golf, Cycling, Snooker, Darts
+            // Use sport name in the title as a fallback filter method
+            const sportNames = {
+              9: 'cricket',
+              10: 'golf',
+              14: 'cycling',
+              17: 'snooker',
+              18: 'darts'
+            };
+            
+            const nameFilteredData = data.filter((event: any) => {
+              const eventTitle = `${event.homeTeam} vs ${event.awayTeam} ${event.leagueName || ''}`.toLowerCase();
+              return eventTitle.includes(sportNames[sportId as keyof typeof sportNames]);
+            });
+            
+            if (nameFilteredData.length > 0) {
+              console.log(`Found ${nameFilteredData.length} events by name filtering for ${sportName}`);
+              return nameFilteredData;
+            }
+          }
+          
+          // If all else fails, return unfiltered data
+          console.log(`Using unfiltered data for ${sportName} as fallback`);
+          return data.slice(0, 20); // Limit to 20 events to avoid overwhelming display
         }
         
         // For Tennis and other non-football sports, adapt the data structure but don't replace real API data

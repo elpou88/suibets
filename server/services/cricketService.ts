@@ -225,17 +225,24 @@ export class CricketService {
         }
       ];
       
+      // Format the score as a string if it's a live event
+      const homeScoreValue = isLive ? Math.floor(Math.random() * 150 + 50) : undefined;
+      const awayScoreValue = isLive ? Math.floor(Math.random() * 150 + 50) : undefined;
+      const scoreString = (homeScoreValue !== undefined && awayScoreValue !== undefined) 
+        ? `${homeScoreValue} - ${awayScoreValue}` 
+        : undefined;
+      
       const event: SportEvent = {
         id: `cricket-gen-${i}`,
         sportId: this.sportId,
         leagueName,
+        leagueSlug: leagueName.toLowerCase().replace(/\s+/g, '-'),
         homeTeam,
         awayTeam,
         startTime: startTime.toISOString(),
-        status: isLive ? 'live' : 'scheduled',
+        status: isLive ? 'live' : 'upcoming',
         isLive,
-        homeScore: isLive ? Math.floor(Math.random() * 150 + 50) : undefined,
-        awayScore: isLive ? Math.floor(Math.random() * 150 + 50) : undefined,
+        score: scoreString,
         homeOdds: 1.85 + (i * 0.1),
         awayOdds: 2.05 + (i * 0.1),
         drawOdds: 3.25 + (i * 0.2),
@@ -320,18 +327,26 @@ export class CricketService {
           }
         ];
         
+        // Format the score string 
+        const scoreString = (homeScore !== undefined && awayScore !== undefined)
+          ? `${homeScore} - ${awayScore}`
+          : undefined;
+          
         // Create the sport event
         const sportEvent: SportEvent = {
           id,
           sportId: this.sportId,
           leagueName,
+          leagueSlug: leagueName.toLowerCase().replace(/\s+/g, '-'),
           homeTeam,
           awayTeam,
           startTime,
-          status,
+          // Ensure status is one of the expected enum values
+          status: (status === 'live' || status === 'upcoming' || status === 'finished') 
+            ? status 
+            : 'upcoming',
           isLive: status === 'live',
-          homeScore,
-          awayScore,
+          score: scoreString,
           homeOdds,
           awayOdds,
           drawOdds,
@@ -349,11 +364,13 @@ export class CricketService {
           id: `cricket-error-${index}`,
           sportId: this.sportId,
           leagueName: 'Cricket Tournament',
+          leagueSlug: 'cricket-tournament',
           homeTeam: 'Home Team',
           awayTeam: 'Away Team',
           startTime: new Date().toISOString(),
-          status: isLive ? 'live' : 'scheduled',
+          status: isLive ? 'live' : 'upcoming',
           isLive,
+          score: isLive ? '0 - 0' : undefined,
           homeOdds: 1.95,
           awayOdds: 1.85,
           drawOdds: 3.60,
@@ -368,18 +385,16 @@ export class CricketService {
   /**
    * Map API status to our status format
    */
-  private mapStatus(status: string): string {
+  private mapStatus(status: string): 'live' | 'upcoming' | 'finished' {
     switch (status) {
-      case 'LIVE': case '1H': case '2H': case 'HT': case 'LIVE': case 'INPROGRESS': case 'IN PLAY':
+      case 'LIVE': case '1H': case '2H': case 'HT': case 'INPROGRESS': case 'IN PLAY':
         return 'live';
       case 'FT': case 'FINISHED': case 'AFTER PENALTIES': case 'AFTER EXTRA TIME':
         return 'finished';
       case 'CANCELLED': case 'ABANDONED': case 'SUSPENDED':
-        return 'cancelled';
       case 'POSTPONED':
-        return 'postponed';
       default:
-        return 'scheduled';
+        return 'upcoming';
     }
   }
   

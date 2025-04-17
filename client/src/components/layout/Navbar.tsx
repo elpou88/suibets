@@ -56,25 +56,21 @@ export default function Navbar() {
     };
   }, [user?.walletAddress]);
   
-  // Open connect wallet modal or attempt quick connection if wallet detected
-  const attemptQuickWalletConnection = async (e: React.MouseEvent) => {
+  // Open connect wallet modal directly (no connection attempt first)
+  const attemptQuickWalletConnection = (e?: React.MouseEvent) => {
     // Prevent default behavior to avoid page navigation
-    e.preventDefault();
+    if (e) e.preventDefault();
     
     if (isAttemptingConnection) return; // Prevent multiple attempts
     
     try {
-      setIsAttemptingConnection(true);
-      console.log('Connect wallet button clicked');
+      console.log('Connect wallet button clicked, opening modal directly');
       
-      // Open the wallet modal immediately instead of attempting connection
+      // Set the wallet modal to open
       setIsWalletModalOpen(true);
-      
-      setIsAttemptingConnection(false);
     } catch (error) {
-      console.error('Wallet connection error:', error);
-      setIsAttemptingConnection(false);
-      // Open modal on error as well
+      console.error('Error opening wallet modal:', error);
+      // Still try to open the modal even if there was an error
       setIsWalletModalOpen(true);
     }
   };

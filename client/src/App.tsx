@@ -2,6 +2,7 @@ import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
+import React, { useEffect } from "react";
 
 // Legacy image-based pages
 import Home from "@/pages/home";
@@ -87,20 +88,24 @@ function App() {
                     {/* Redirect connect-wallet route to HomePage with modal approach */}
                     <Route path="/connect-wallet">
                       {() => {
-                        // Use a useEffect to handle this properly after the component is mounted
-                        useEffect(() => {
-                          console.log('Connect-wallet route detected, triggering modal...');
+                        // Create a component that handles the redirect and modal opening
+                        const ConnectWalletRedirect = () => {
+                          useEffect(() => {
+                            console.log('Connect-wallet route detected, triggering modal...');
+                            
+                            // Dispatch an event to trigger the wallet modal
+                            const event = new CustomEvent('suibets:connect-wallet-required');
+                            window.dispatchEvent(event);
+                            
+                            // Use history API to replace current URL without refreshing
+                            window.history.replaceState(null, '', '/');
+                          }, []);
                           
-                          // Dispatch an event to trigger the wallet modal
-                          const event = new CustomEvent('suibets:connect-wallet-required');
-                          window.dispatchEvent(event);
-                          
-                          // Use history API to replace current URL without refreshing
-                          window.history.replaceState(null, '', '/');
-                        }, []);
+                          // Return the home page
+                          return <HomeReal />;
+                        };
                         
-                        // Return the HomeReal component
-                        return <HomeReal />;
+                        return <ConnectWalletRedirect />;
                       }}
                     </Route>
                     <Route path="/wallet-dashboard" component={WalletDashboard} />

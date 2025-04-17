@@ -1,10 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBetting } from '@/context/BettingContext';
 import { apiRequest } from '@/lib/queryClient';
-import { RefreshCw, Clock, Activity } from 'lucide-react';
+import { 
+  RefreshCw, 
+  Clock, 
+  Activity,
+  BookType,
+  BadgeInfo,
+  CircleDot, 
+  Cpu,
+  Snowflake
+} from 'lucide-react';
 import { formatOdds } from '@/lib/utils';
 import { Sport } from '@/types';
 
@@ -40,8 +49,73 @@ export function LiveBettingMarkets() {
   const [expandedMarkets, setExpandedMarkets] = useState<Record<string, boolean>>({});
   const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
   
+  // Helper function to classify events into proper sports based on their characteristics
+  const classifySport = (event: Event): number => {
+    // Original sport ID (may be incorrect due to API limitations)
+    const originalSportId = event.sportId;
+    
+    // Keep football events with sport ID 1 as is
+    if (originalSportId === 1) {
+      // Look for basketball indicators
+      if (
+        event.leagueName?.toLowerCase().includes('nba') || 
+        event.leagueName?.toLowerCase().includes('basketball') ||
+        event.leagueName?.toLowerCase().includes('ncaa')
+      ) {
+        return 2; // Basketball
+      }
+      
+      // Look for baseball indicators
+      if (
+        event.leagueName?.toLowerCase().includes('mlb') || 
+        event.leagueName?.toLowerCase().includes('baseball') ||
+        event.homeTeam?.includes('Sox') ||
+        event.homeTeam?.includes('Yankees') ||
+        event.homeTeam?.includes('Cubs') ||
+        event.homeTeam?.includes('Braves')
+      ) {
+        return 4; // Baseball
+      }
+      
+      // Look for tennis indicators
+      if (
+        event.leagueName?.toLowerCase().includes('atp') || 
+        event.leagueName?.toLowerCase().includes('wta') ||
+        event.leagueName?.toLowerCase().includes('tennis') ||
+        event.leagueName?.toLowerCase().includes('open')
+      ) {
+        return 3; // Tennis
+      }
+      
+      // Look for hockey indicators
+      if (
+        event.leagueName?.toLowerCase().includes('nhl') || 
+        event.leagueName?.toLowerCase().includes('hockey') ||
+        event.leagueName?.toLowerCase().includes('khl')
+      ) {
+        return 5; // Hockey
+      }
+      
+      // Look for cricket indicators
+      if (
+        event.leagueName?.toLowerCase().includes('cricket') || 
+        event.leagueName?.toLowerCase().includes('ipl') ||
+        event.leagueName?.toLowerCase().includes('test match') ||
+        event.leagueName?.toLowerCase().includes('t20')
+      ) {
+        return 9; // Cricket
+      }
+      
+      // Default to football/soccer if no other indicators found
+      return 1;
+    }
+    
+    // For non-football sport IDs, keep their original values
+    return originalSportId;
+  };
+  
   // Fetch all live events from all sports
-  const { data: events = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
+  const { data: rawEvents = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
     queryKey: ['/api/events'],
     queryFn: async () => {
       // Use direct events endpoint with isLive parameter instead of the redirect
@@ -49,7 +123,7 @@ export function LiveBettingMarkets() {
       const data = await response.json();
       console.log("API response for live events:", data);
       
-      // Debug the sports IDs we're getting
+      // Debug the sports IDs we're getting before classification
       const sportIdsSet = new Set<number>();
       data.forEach((event: Event) => {
         sportIdsSet.add(event.sportId);
@@ -57,7 +131,7 @@ export function LiveBettingMarkets() {
       const sportIds = Array.from(sportIdsSet);
       console.log("Available sport IDs in live events:", sportIds);
       
-      // Debug the events by sport ID
+      // Debug the events by sport ID before classification
       const eventsBySportId: Record<number, number> = {};
       data.forEach((event: Event) => {
         eventsBySportId[event.sportId] = (eventsBySportId[event.sportId] || 0) + 1;
@@ -68,6 +142,29 @@ export function LiveBettingMarkets() {
     },
     refetchInterval: 20000, // Refetch every 20 seconds
   });
+  
+  // Process and classify events into correct sports
+  const events = useMemo(() => {
+    // Map over the raw events and classify them into the correct sports
+    const classified = rawEvents.map(event => ({
+      ...event,
+      sportId: classifySport(event) // Assign the corrected sport ID
+    }));
+    
+    // Debug after classification
+    const classifiedSportIds = new Set<number>();
+    const classifiedEventsBySportId: Record<number, number> = {};
+    
+    classified.forEach(event => {
+      classifiedSportIds.add(event.sportId);
+      classifiedEventsBySportId[event.sportId] = (classifiedEventsBySportId[event.sportId] || 0) + 1;
+    });
+    
+    console.log("Sport IDs after classification:", Array.from(classifiedSportIds));
+    console.log("Event count by sport ID after classification:", classifiedEventsBySportId);
+    
+    return classified;
+  }, [rawEvents]);
   
   // Fetch all sports for accurate sport names
   const { data: sports = [] } = useQuery<Sport[]>({
@@ -264,7 +361,14 @@ export function LiveBettingMarkets() {
           return (
             <div key={sportId} className="mb-6">
               <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
-                <Activity className="h-5 w-5 mr-2" />
+                {/* Sport-specific icons */}
+                {parseInt(sportId) === 1 && <Activity className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 2 && <CircleDashed className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 3 && <Circle className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 4 && <Disc className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 5 && <Snowflake2 className="h-5 w-5 mr-2" />}
+                {parseInt(sportId) === 9 && <CircleDot className="h-5 w-5 mr-2" />}
+                {![1, 2, 3, 4, 5, 9].includes(parseInt(sportId)) && <Activity className="h-5 w-5 mr-2" />}
                 {sportName}
               </div>
               

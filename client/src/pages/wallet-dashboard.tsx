@@ -37,7 +37,7 @@ export default function WalletDashboardPage() {
       marketName: 'Match Winner',
       outcomeName: 'Barcelona',
       odds: 1.85,
-      status: 'pending'
+      status: 'pending' as const
     }
   ];
   
@@ -229,7 +229,7 @@ export default function WalletDashboardPage() {
                 <div>
                   <h2 className="text-xl font-semibold text-white mb-4">New Bet</h2>
                   <WalrusBetSlip 
-                    bets={mockBets}
+                    bets={mockBets as any[]}
                     onRemoveBet={() => {}}
                     onClearAll={() => {}}
                   />

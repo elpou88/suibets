@@ -65,11 +65,11 @@ export function DividendsPanel({ className }: DividendsPanelProps) {
   
   // Calculate total claimable dividends
   const totalClaimableDividends = dividends
-    .filter(div => div.status === 'claimable')
-    .reduce((sum, div) => sum + div.amount, 0);
+    .filter((div: Dividend) => div.status === 'claimable')
+    .reduce((sum: number, div: Dividend) => sum + div.amount, 0);
   
   // Calculate lifetime total dividends
-  const lifetimeDividends = dividends.reduce((sum, div) => sum + div.amount, 0);
+  const lifetimeDividends = dividends.reduce((sum: number, div: Dividend) => sum + div.amount, 0);
   
   const handleClaimAll = async () => {
     if (!currentWallet?.address) {
@@ -220,7 +220,7 @@ export function DividendsPanel({ className }: DividendsPanelProps) {
             </div>
           ) : (
             <div className="space-y-3">
-              {dividends.map((dividend) => (
+              {dividends.map((dividend: Dividend) => (
                 <div 
                   key={dividend.id}
                   className="bg-[#0b1618] rounded-lg p-3 flex justify-between items-center"

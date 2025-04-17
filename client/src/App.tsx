@@ -85,6 +85,7 @@ function App() {
                     <Route path="/defi-staking" component={DefiStaking} />
                     <Route path="/storage" component={StoragePage} />
                     <Route path="/connect-wallet" component={ConnectWallet} />
+                    <Route path="/wallet-dashboard" component={WalletDashboard} />
                     <Route path="/join" component={HomeReal} />
                     <Route path="/live-scores" component={LiveScoresPage} />
                     

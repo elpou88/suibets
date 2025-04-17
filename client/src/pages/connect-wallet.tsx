@@ -130,18 +130,18 @@ export default function ConnectWalletPage() {
   const { currentWallet } = useWalrusProtocol();
   const [activeTab, setActiveTab] = useState('connect');
   
-  // Redirect to homepage if wallet is already connected
+  // Redirect to wallet dashboard if wallet is already connected
   useEffect(() => {
     if (currentWallet?.address && currentWallet?.isRegistered) {
-      navigate('/');
+      navigate('/wallet-dashboard');
     }
   }, [currentWallet, navigate]);
   
   const handleConnect = (address: string) => {
     console.log('Wallet connected:', address);
-    // After successful connection, redirect to homepage or dashboard
+    // After successful connection, redirect to wallet dashboard
     setTimeout(() => {
-      navigate('/');
+      navigate('/wallet-dashboard');
     }, 1500);
   };
   

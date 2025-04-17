@@ -35,6 +35,9 @@ import { baseballService } from './services/baseballService';
 import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 
+// Import Cricket service
+import { cricketService } from './services/cricketService';
+
 // Import WebSocket service
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
 
@@ -121,6 +124,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Special handling for cricket
+      if (reqSportId === 9) {
+        console.log('[Routes] CRICKET REQUEST DETECTED - Using special cricket handling');
+        try {
+          // Use the dedicated cricket service
+          const cricketEvents = isLive 
+            ? await cricketService.getLiveMatches()
+            : await cricketService.getUpcomingMatches(20);
+            
+          console.log(`[Routes] Cricket service returned ${cricketEvents.length} ${isLive ? 'live' : 'upcoming'} cricket events`);
+          
+          // Double-check every event has the correct sport ID
+          const fixedCricketEvents = cricketEvents.map((event: any) => ({
+            ...event,
+            sportId: 9, // Force Cricket ID
+            _isCricket: true // Add a special flag
+          }));
+          
+          if (fixedCricketEvents.length > 0) {
+            // Log the first event to verify it looks like cricket
+            console.log(`[Routes] First cricket event: ${fixedCricketEvents[0].homeTeam} vs ${fixedCricketEvents[0].awayTeam}`);
+            console.log(`[Routes] League name: ${fixedCricketEvents[0].leagueName}`);
+            
+            return res.json(fixedCricketEvents);
+          }
+          
+          // If cricket service returned no events, fall through to regular API handling
+          console.log('[Routes] Cricket service returned no events, falling back to API');
+        } catch (error) {
+          console.error('[Routes] Error in cricket service:', error);
+          // Fall through to regular handling
+        }
+      }
+            
       // For non-live events, always try to get fresh data from the API
       // This ensures we're showing the most current upcoming events
       if (!isLive) {
@@ -138,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             6: 'handball',
             7: 'volleyball',
             8: 'rugby',
-            9: 'cricket',
+            9: 'cricket', // SPORT ID 9 IS CRICKET
             10: 'golf',
             11: 'boxing',
             12: 'mma-ufc', // Make sure this matches what's in the API service

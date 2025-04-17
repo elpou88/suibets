@@ -6,13 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-
-// Mock Sui wallet integration - in production, this would use actual Sui wallet SDK
-const mockWallets = [
-  { name: 'Sui Wallet', address: '0x123...789', icon: '💼' },
-  { name: 'Ethos Wallet', address: '0xabc...def', icon: '🔐' },
-  { name: 'Suiet Wallet', address: '0x456...abc', icon: '📱' },
-];
+import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 
 interface WalletConnectorProps {
   onConnect?: (address: string) => void;
@@ -24,6 +18,9 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showWallets, setShowWallets] = useState(false);
+  
+  // Get Suiet wallet state
+  const suietWallet = useWallet();
 
   // Check registration status if wallet is selected
   const { data: registrationData, isLoading: isCheckingRegistration } = 
@@ -42,6 +39,32 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
       }
     }
   }, [selectedWallet, registrationData, setCurrentWallet, onConnect]);
+  
+  // Effect to handle Suiet wallet connection
+  useEffect(() => {
+    if (suietWallet.connected && suietWallet.address) {
+      console.log('Suiet wallet connected:', suietWallet.address);
+      
+      // Set the selected wallet to the connected Suiet wallet
+      setSelectedWallet(suietWallet.address);
+      
+      // Update the current wallet in the Walrus protocol
+      setCurrentWallet({
+        address: suietWallet.address,
+        isRegistered: true // Assuming registration, we'll check later
+      });
+      
+      // Notify parent component
+      if (onConnect) {
+        onConnect(suietWallet.address);
+      }
+      
+      toast({
+        title: 'Wallet Connected via Suiet',
+        description: `Connected to ${suietWallet.address.substring(0, 8)}...${suietWallet.address.substring(suietWallet.address.length - 6)}`,
+      });
+    }
+  }, [suietWallet.connected, suietWallet.address, setCurrentWallet, onConnect, toast]);
 
   const handleConnectWallet = async (walletAddress: string) => {
     setSelectedWallet(walletAddress);
@@ -84,9 +107,20 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
     setShowWallets(!showWallets);
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     setSelectedWallet(null);
     setCurrentWallet(null);
+    
+    // Disconnect Suiet wallet if connected
+    if (suietWallet.connected) {
+      try {
+        await suietWallet.disconnect();
+        console.log('Suiet wallet disconnected');
+      } catch (error) {
+        console.error('Error disconnecting Suiet wallet:', error);
+      }
+    }
+    
     toast({
       title: 'Wallet Disconnected',
       description: 'Your wallet has been disconnected.',
@@ -158,17 +192,12 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
           </div>
         ) : showWallets ? (
           <div className="space-y-3">
-            {mockWallets.map((wallet) => (
-              <Button
-                key={wallet.address}
-                variant="outline"
-                className="w-full flex justify-between items-center border-[#1e3a3f] text-white hover:bg-[#1e3a3f]"
-                onClick={() => handleConnectWallet(wallet.address)}
-              >
-                <span>{wallet.icon} {wallet.name}</span>
-                <span className="text-xs font-mono text-gray-400">{wallet.address}</span>
-              </Button>
-            ))}
+            {/* Suiet Wallet Connect Button */}
+            <div className="w-full rounded overflow-hidden mb-4">
+              <ConnectButton 
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold py-3 px-4 rounded"
+              />
+            </div>
           </div>
         ) : (
           <div className="flex flex-col space-y-4">

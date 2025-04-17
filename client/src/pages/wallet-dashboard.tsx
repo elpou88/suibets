@@ -133,13 +133,53 @@ export default function WalletDashboardPage() {
           </div>
           
           <div className="mt-3">
-            <Button
-              className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50]"
-              size="sm"
-            >
-              <ArrowRightLeft className="h-4 w-4 mr-2" />
-              Swap Tokens
-            </Button>
+            <details className="group">
+              <summary className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] flex justify-center items-center py-1.5 px-3 rounded-md text-sm font-medium cursor-pointer">
+                <ArrowRightLeft className="h-4 w-4 mr-2" />
+                Swap Tokens
+              </summary>
+              <div className="mt-3 p-3 bg-[#0b1618] border border-[#1e3a3f] rounded-lg">
+                <div className="mb-3">
+                  <label className="text-xs text-gray-400 mb-1 block">From</label>
+                  <div className="flex">
+                    <input 
+                      type="number" 
+                      defaultValue="100" 
+                      className="flex-1 bg-[#112225] border-[#1e3a3f] text-white rounded-l-md px-3 py-1 text-sm"
+                    />
+                    <select className="bg-[#1e3a3f] text-white rounded-r-md px-2 py-1 text-sm">
+                      <option value="SUI">SUI</option>
+                      <option value="SBETS">SBETS</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="mb-3">
+                  <label className="text-xs text-gray-400 mb-1 block">To (Estimated)</label>
+                  <div className="flex">
+                    <input 
+                      type="number" 
+                      readOnly 
+                      value="1230" 
+                      className="flex-1 bg-[#112225] border-[#1e3a3f] text-white rounded-l-md px-3 py-1 text-sm"
+                    />
+                    <select className="bg-[#1e3a3f] text-white rounded-r-md px-2 py-1 text-sm">
+                      <option value="SBETS">SBETS</option>
+                      <option value="SUI">SUI</option>
+                    </select>
+                  </div>
+                  <div className="flex justify-between items-center mt-1">
+                    <span className="text-xs text-gray-400">Rate: 1 SUI = 12.3 SBETS</span>
+                    <span className="text-xs text-gray-400">Fee: 0.3%</span>
+                  </div>
+                </div>
+                <Button
+                  className="w-full bg-[#00ffff] text-[#112225] hover:bg-cyan-300"
+                  size="sm"
+                >
+                  Swap Now
+                </Button>
+              </div>
+            </details>
           </div>
         </div>
       </div>
@@ -204,6 +244,18 @@ export default function WalletDashboardPage() {
                           <span className="text-gray-400">Potential Win:</span> 92.5 SUI
                         </div>
                       </div>
+                      <div className="mt-2 pt-2 border-t border-[#1e3a3f] flex justify-between items-center">
+                        <div className="text-xs text-gray-400">
+                          Transaction: 0x4df5...e72a
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 bg-transparent border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f] text-xs"
+                        >
+                          Cash Out (75.5 SUI)
+                        </Button>
+                      </div>
                     </div>
                     
                     <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-3">
@@ -221,6 +273,18 @@ export default function WalletDashboardPage() {
                         <div className="text-sm text-white">
                           <span className="text-gray-400">Potential Win:</span> 47.5 SBETS
                         </div>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-[#1e3a3f] flex justify-between items-center">
+                        <div className="text-xs text-gray-400">
+                          Transaction: 0x7abc...f91b
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 bg-transparent border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f] text-xs"
+                        >
+                          Cash Out (33.2 SBETS)
+                        </Button>
                       </div>
                     </div>
                   </div>

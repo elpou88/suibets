@@ -147,6 +147,14 @@ export default function Navbar() {
         {/* Place wallet connection button before bell/settings icons */}
         {user?.walletAddress ? (
           <div className="flex items-center">
+            {/* Dashboard link button */}
+            <Link href="/wallet-dashboard" className="mr-2">
+              <Button variant="ghost" className="text-[#00FFFF] hover:bg-[#112225]">
+                <Wallet className="h-4 w-4 mr-2" />
+                Dashboard
+              </Button>
+            </Link>
+            
             {/* Connect Wallet Button/Dropdown when connected */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -158,6 +166,10 @@ export default function Navbar() {
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem asChild className="font-medium text-[#00FFFF]">
+                  <Link href="/wallet-dashboard">Wallet Dashboard</Link>
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href="/bet-history">My Bets</Link>

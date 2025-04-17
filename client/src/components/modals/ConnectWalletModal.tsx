@@ -78,10 +78,10 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       // Log before wallet connection
       console.log('About to call connectAdapter() in modal');
       
-      // Connect using the wallet adapter
-      await connectAdapter();
+      // Connect using the wallet adapter and handle the returned boolean
+      const connectionSuccessful = await connectAdapter();
       
-      console.log('connectAdapter() completed in modal, address:', address);
+      console.log('connectAdapter() completed in modal, success:', connectionSuccessful, 'address:', address);
       
       // If still no address, continue waiting - don't show error yet
       // User may still be interacting with their wallet extension

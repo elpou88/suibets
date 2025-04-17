@@ -218,7 +218,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 console.log('Connected to wallet address:', walletAddress);
                 
                 // Update connection state
-                updateConnectionState(walletAddress, 'sui');
+                await updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
@@ -226,7 +226,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 });
                 
                 setConnecting(false);
-                return;
+                return true;
               }
             } catch (e) {
               console.error('Standard connect error:', e);
@@ -248,7 +248,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 console.log('Connected to wallet address:', walletAddress);
                 
                 // Update connection state
-                updateConnectionState(walletAddress, 'sui');
+                await updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
@@ -256,7 +256,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 });
                 
                 setConnecting(false);
-                return;
+                return true;
               }
             } catch (e) {
               console.error('Sui connect error:', e);
@@ -282,7 +282,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 console.log('Connected to legacy wallet:', walletAddress);
                 
                 // Update connection state
-                updateConnectionState(walletAddress, 'sui');
+                await updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
@@ -290,7 +290,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 });
                 
                 setConnecting(false);
-                return;
+                return true;
               }
             }
           }
@@ -311,7 +311,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               console.log('Connected to Ethos wallet:', walletAddress);
               
               // Update connection state
-              updateConnectionState(walletAddress, 'sui');
+              await updateConnectionState(walletAddress, 'sui');
               
               toast({
                 title: 'Wallet Connected',
@@ -319,7 +319,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               });
               
               setConnecting(false);
-              return;
+              return true;
             }
           }
         } catch (e) {
@@ -339,7 +339,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               console.log('Connected to Suiet wallet:', walletAddress);
               
               // Update connection state
-              updateConnectionState(walletAddress, 'sui');
+              await updateConnectionState(walletAddress, 'sui');
               
               toast({
                 title: 'Wallet Connected',
@@ -347,7 +347,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               });
               
               setConnecting(false);
-              return;
+              return true;
             }
           }
         } catch (e) {
@@ -367,7 +367,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               console.log('Connected to Glass wallet:', walletAddress);
               
               // Update connection state
-              updateConnectionState(walletAddress, 'sui');
+              await updateConnectionState(walletAddress, 'sui');
               
               toast({
                 title: 'Wallet Connected',
@@ -375,7 +375,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               });
               
               setConnecting(false);
-              return;
+              return true;
             }
           }
         } catch (e) {
@@ -395,7 +395,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               console.log('Connected to Martian wallet:', walletAddress);
               
               // Update connection state
-              updateConnectionState(walletAddress, 'sui');
+              await updateConnectionState(walletAddress, 'sui');
               
               toast({
                 title: 'Wallet Connected',
@@ -403,7 +403,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               });
               
               setConnecting(false);
-              return;
+              return true;
             }
           }
         } catch (e) {
@@ -466,6 +466,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
       
       setConnecting(false);
+      return false;
     } catch (error: any) {
       console.error('Connection error:', error);
       setConnecting(false);
@@ -475,6 +476,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         description: error.message || 'Failed to connect wallet',
         variant: 'destructive',
       });
+      return false;
     }
   };
 

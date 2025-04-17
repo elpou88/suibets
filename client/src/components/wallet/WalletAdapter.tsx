@@ -13,7 +13,7 @@ export type TokenBalances = {
 };
 
 export type WalletContextType = {
-  connect: () => Promise<void>;
+  connect: () => Promise<boolean>;
   disconnect: () => void;
   sendSui: (recipient: string, amount: number) => Promise<string>;
   sendSbets: (recipient: string, amount: number) => Promise<string>;
@@ -29,7 +29,7 @@ export type WalletContextType = {
 
 // Create the context with default values
 const WalletContext = createContext<WalletContextType>({
-  connect: async () => {},
+  connect: async () => false,
   disconnect: () => {},
   sendSui: async () => '',
   sendSbets: async () => '',
@@ -169,7 +169,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   });
 
   // Connect to wallet
-  const connect = async () => {
+  const connect = async (): Promise<boolean> => {
     try {
       setError(null);
       setConnecting(true);

@@ -109,16 +109,28 @@ export function LiveBettingMarkets() {
     // Create a unique ID for this bet
     const betId = `${event.id}-${market.id}-${outcome.id}-${Date.now()}`;
     
+    // Handle both string and number event IDs
+    const eventIdValue = typeof event.id === 'string' ? 
+      (isNaN(parseInt(event.id)) ? event.id : parseInt(event.id)) : 
+      event.id;
+    
+    // Extract market ID safely
+    const marketIdValue = typeof market.id === 'string' ?
+      (market.id.includes('-') ? parseInt(market.id.split('-')[0]) : parseInt(market.id)) :
+      market.id;
+    
     // Add bet to the slip
     addBet({
       id: betId,
-      eventId: parseInt(event.id),
+      eventId: typeof eventIdValue === 'number' 
+        ? eventIdValue.toString() 
+        : eventIdValue as string,
       eventName: `${event.homeTeam} vs ${event.awayTeam}`,
       selectionName: outcome.name,
       odds: outcome.odds,
       stake: 10, // Default stake amount
       market: market.name,
-      marketId: parseInt(market.id.split('-')[0]),
+      marketId: marketIdValue,
       outcomeId: outcome.id,
       isLive: true,
       uniqueId: Math.random().toString(36).substring(2, 8) // Add unique identifier
@@ -163,6 +175,21 @@ export function LiveBettingMarkets() {
     );
   }
   
+  // Get all available sports for the sports filter
+  const availableSports = Object.keys(eventsBySport).map(sportId => ({
+    id: parseInt(sportId),
+    name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
+    count: eventsBySport[sportId].length
+  }));
+  
+  // State for active sport filter
+  const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
+  
+  // Filter events by selected sport or show all if none selected
+  const filteredEvents = activeSportFilter 
+    ? { [activeSportFilter]: eventsBySport[activeSportFilter.toString()] }
+    : eventsBySport;
+  
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
@@ -177,94 +204,132 @@ export function LiveBettingMarkets() {
         </Button>
       </div>
       
-      {Object.entries(eventsBySport).map(([sportId, sportEvents]) => {
-        const sportIdNum = parseInt(sportId);
-        const sport = sportsById[sportIdNum];
-        const sportName = sport ? sport.name : `Sport ${sportId}`;
-        
-        return (
-          <div key={sportId} className="mb-6">
-            <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center">
-              <Activity className="h-5 w-5 mr-2" />
-              {sportName}
-            </div>
-            
-            {sportEvents.map((event) => (
-              <Card 
-                key={event.id}
-                className="mb-4 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10 overflow-hidden"
-              >
-                {/* Event header with toggle */}
-                <CardHeader 
-                  className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative cursor-pointer"
-                  onClick={() => toggleEvent(event.id)}
+      {/* Sports filter tabs */}
+      <div className="overflow-x-auto pb-2 mb-4 custom-scrollbar">
+        <div className="flex space-x-2 min-w-max">
+          <Button 
+            key="all"
+            variant={activeSportFilter === null ? "default" : "outline"}
+            size="sm"
+            onClick={() => setActiveSportFilter(null)}
+            className={`whitespace-nowrap ${
+              activeSportFilter === null 
+                ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500' 
+                : 'border-[#1e3a3f] text-gray-300 hover:text-cyan-400 hover:border-cyan-400'
+            }`}
+          >
+            All Sports ({Object.values(eventsBySport).flat().length})
+          </Button>
+          
+          {availableSports.map(sport => (
+            <Button 
+              key={sport.id}
+              variant={activeSportFilter === sport.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => setActiveSportFilter(sport.id)}
+              className={`whitespace-nowrap ${
+                activeSportFilter === sport.id 
+                  ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500' 
+                  : 'border-[#1e3a3f] text-gray-300 hover:text-cyan-400 hover:border-cyan-400'
+              }`}
+            >
+              {sport.name} ({sport.count})
+            </Button>
+          ))}
+        </div>
+      </div>
+      
+      {/* Main content div with max height and scrolling */}
+      <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-2 custom-scrollbar">
+        {Object.entries(filteredEvents).map(([sportId, sportEvents]) => {
+          const sportIdNum = parseInt(sportId);
+          const sport = sportsById[sportIdNum];
+          const sportName = sport ? sport.name : `Sport ${sportId}`;
+          
+          return (
+            <div key={sportId} className="mb-6">
+              <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
+                <Activity className="h-5 w-5 mr-2" />
+                {sportName}
+              </div>
+              
+              {sportEvents.map((event) => (
+                <Card 
+                  key={`${event.id}-${Math.random().toString(36).substring(2, 8)}`}
+                  className="mb-4 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10 overflow-hidden"
                 >
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
-                      <span className="text-white font-bold">{event.homeTeam} vs {event.awayTeam}</span>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded">
-                        {event.leagueName}
+                  {/* Event header with toggle */}
+                  <CardHeader 
+                    className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative cursor-pointer"
+                    onClick={() => toggleEvent(event.id)}
+                  >
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center">
+                        <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
+                        <span className="text-white font-bold">{event.homeTeam} vs {event.awayTeam}</span>
                       </div>
-                      <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {event.score || "0-0"}
-                      </div>
-                    </div>
-                  </div>
-                </CardHeader>
-                
-                {/* Markets section (shows when event is expanded) */}
-                {expandedEvents[event.id] && (
-                  <CardContent className="p-3">
-                    {event.markets && event.markets.length > 0 ? (
-                      event.markets.map((market) => (
-                        <div key={market.id} className="mb-3 last:mb-0">
-                          {/* Market header with toggle */}
-                          <div 
-                            className="px-3 py-2 bg-[#0f1c1f] rounded-t border-[#1e3a3f] border flex justify-between items-center cursor-pointer"
-                            onClick={() => toggleMarket(event.id, market.id)}
-                          >
-                            <span className="font-medium text-cyan-200">{market.name}</span>
-                          </div>
-                          
-                          {/* Market outcomes (shows when market is expanded) */}
-                          {expandedMarkets[`${event.id}-${market.id}`] && (
-                            <div className="p-3 bg-[#0b1618] border-[#1e3a3f] border-t-0 border rounded-b">
-                              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                {market.outcomes.map((outcome) => (
-                                  <Button
-                                    key={outcome.id}
-                                    variant="outline"
-                                    onClick={() => handleBetClick(event, market, outcome)}
-                                    className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
-                                  >
-                                    <span className="text-cyan-200">{outcome.name}</span>
-                                    <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                                      {formatOdds(outcome.odds)}
-                                    </span>
-                                  </Button>
-                                ))}
-                              </div>
-                            </div>
-                          )}
+                      <div className="flex items-center space-x-2">
+                        <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded">
+                          {event.leagueName}
                         </div>
-                      ))
-                    ) : (
-                      <div className="text-center text-gray-400 py-3">
-                        No markets available for this event
+                        <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded flex items-center">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {event.score || "0-0"}
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
-        );
-      })}
+                    </div>
+                  </CardHeader>
+                  
+                  {/* Markets section (shows when event is expanded) */}
+                  {expandedEvents[event.id] && (
+                    <CardContent className="p-3">
+                      {event.markets && event.markets.length > 0 ? (
+                        event.markets.map((market) => (
+                          <div key={`${market.id}-${Math.random().toString(36).substring(2, 8)}`} className="mb-3 last:mb-0">
+                            {/* Market header with toggle */}
+                            <div 
+                              className="px-3 py-2 bg-[#0f1c1f] rounded-t border-[#1e3a3f] border flex justify-between items-center cursor-pointer"
+                              onClick={() => toggleMarket(event.id, market.id)}
+                            >
+                              <span className="font-medium text-cyan-200">{market.name}</span>
+                            </div>
+                            
+                            {/* Market outcomes (shows when market is expanded) */}
+                            {expandedMarkets[`${event.id}-${market.id}`] && (
+                              <div className="p-3 bg-[#0b1618] border-[#1e3a3f] border-t-0 border rounded-b">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                  {market.outcomes.map((outcome) => (
+                                    <Button
+                                      key={`${outcome.id}-${Math.random().toString(36).substring(2, 8)}`}
+                                      variant="outline"
+                                      onClick={() => handleBetClick(event, market, outcome)}
+                                      className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
+                                    >
+                                      <span className="text-cyan-200">{outcome.name}</span>
+                                      <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
+                                        {formatOdds(outcome.odds)}
+                                      </span>
+                                    </Button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-400 py-3">
+                          No markets available for this event
+                        </div>
+                      )}
+                    </CardContent>
+                  )}
+                </Card>
+              ))}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

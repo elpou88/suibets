@@ -176,38 +176,44 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       console.log('Starting wallet connection process in WalletAdapter...');
       
-      // Real wallet mode is the only option - demo wallets completely removed
+      // Real wallet mode is the only option - no mock wallets
       
       try {
-        // IMPORTANT: Skip all wallet detection and proceed directly to connection attempts
-        console.log('Starting direct wallet connection attempt without any detection checks');
+        // First, try wallet connection using the wallet-standard
+        console.log('Trying wallet connection with wallet-standard');
         
-        // First, try to connect to a real Sui wallet using the wallet-standard
+        // Get all available wallet adapters
         const walletAdapters = getWallets().get();
         console.log('Available wallet adapters found:', walletAdapters.length);
         walletAdapters.forEach(wallet => {
           console.log(`Wallet: ${wallet.name}, Features:`, Object.keys(wallet.features).join(', '));
         });
         
-        // Find available Sui wallets
+        // Find ALL available Sui wallets - using a more inclusive filter
         const suiWallets = walletAdapters.filter(wallet => 
           wallet.features['sui:chains'] || 
-          (wallet.name && wallet.name.toLowerCase().includes('sui'))
+          // Check for wallet-specific features safely
+          (Object.keys(wallet.features).some(key => key.includes('sui'))) ||
+          (wallet.name && (
+            wallet.name.toLowerCase().includes('sui') ||
+            wallet.name.toLowerCase().includes('ethos') ||
+            wallet.name.toLowerCase().includes('martian')
+          ))
         );
         
         console.log(`Found ${suiWallets.length} Sui-compatible wallets:`, 
           suiWallets.map(w => w.name).join(', '));
         
-        if (suiWallets.length > 0) {
-          // Use the first available Sui wallet
-          const selectedWallet = suiWallets[0];
-          console.log('Found wallet:', selectedWallet.name);
+        // Try ALL available Sui wallets one by one
+        for (const wallet of suiWallets) {
+          console.log(`Attempting to connect to ${wallet.name}...`);
           
-          // Try wallet-standard connect method
-          if (selectedWallet.features['standard:connect']) {
+          // Try standard:connect feature
+          if (wallet.features['standard:connect']) {
             try {
+              console.log(`Using standard:connect feature for ${wallet.name}`);
               // @ts-ignore - TypeScript error with 'connect' property
-              const connectFeature = selectedWallet.features['standard:connect'];
+              const connectFeature = wallet.features['standard:connect'];
               // @ts-ignore - TypeScript error with 'connect' method
               const connectResult = await connectFeature.connect();
               
@@ -215,29 +221,31 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const account = connectResult.accounts[0];
                 const walletAddress = account.address;
                 
-                console.log('Connected to wallet address:', walletAddress);
+                console.log('Successfully connected to wallet address:', walletAddress);
                 
                 // Update connection state
                 await updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
-                  description: `Connected to ${selectedWallet.name}`,
+                  description: `Connected to ${wallet.name}`,
                 });
                 
                 setConnecting(false);
                 return true;
               }
             } catch (e) {
-              console.error('Standard connect error:', e);
+              console.error(`Standard connect error for ${wallet.name}:`, e);
+              // Continue to next method or wallet
             }
           }
           
-          // Try Sui-specific connect method
-          if (selectedWallet.features['sui:connect']) {
+          // Try sui:connect feature
+          if (wallet.features['sui:connect']) {
             try {
+              console.log(`Using sui:connect feature for ${wallet.name}`);
               // @ts-ignore - TypeScript error with property 
-              const suiConnectFeature = selectedWallet.features['sui:connect'];
+              const suiConnectFeature = wallet.features['sui:connect'];
               // @ts-ignore - TypeScript error with method
               const suiConnectResult = await suiConnectFeature.connect();
               
@@ -245,14 +253,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 const account = suiConnectResult.accounts[0];
                 const walletAddress = account.address;
                 
-                console.log('Connected to wallet address:', walletAddress);
+                console.log('Successfully connected to wallet address:', walletAddress);
                 
                 // Update connection state
                 await updateConnectionState(walletAddress, 'sui');
                 
                 toast({
                   title: 'Wallet Connected',
-                  description: `Connected to ${selectedWallet.name}`,
+                  description: `Connected to ${wallet.name}`,
                 });
                 
                 setConnecting(false);

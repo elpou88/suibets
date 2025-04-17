@@ -164,13 +164,18 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* Suiet Wallet Kit Connect Button */}
+            {/* Suiet Wallet Kit Connect Button - This is the main wallet connector that works with all Sui wallets */}
             <div className="w-full rounded overflow-hidden mb-4">
               <ConnectButton 
                 className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold py-3 px-4 rounded flex items-center justify-center"
+                style={{
+                  fontSize: '16px',
+                  height: '56px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 255, 255, 0.2), 0 2px 4px -1px rgba(0, 255, 255, 0.1)'
+                }}
               >
                 <WalletIcon className="h-5 w-5 mr-2" />
-                <span>Connect with Suiet Wallet Kit</span>
+                <span>Connect Any Sui Wallet</span>
               </ConnectButton>
             </div>
             

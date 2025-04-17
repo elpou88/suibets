@@ -4,13 +4,13 @@ import { BcsWriter } from '@mysten/bcs';
 import config from '../config';
 
 /**
- * Service for interacting with the Walrus protocol on Sui blockchain
+ * Service for interacting with the Wurlus protocol on Sui blockchain
  */
-export class WalrusService {
+export class WurlusService {
   private provider: SuiClient;
   private readonly packagesConfig = {
-    // Walrus protocol package ID (this would be provided in production)
-    walrusPackageId: '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285',
+    // Wurlus protocol package ID (this would be provided in production)
+    wurlusPackageId: '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285',
     // SBETS token ID 
     sbetsTokenId: '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS',
     // Network to connect to
@@ -29,23 +29,23 @@ export class WalrusService {
     const nodeUrl = networks[this.packagesConfig.network];
     this.provider = new SuiClient({ url: nodeUrl });
     
-    console.log(`Initialized WalrusService with network: ${this.packagesConfig.network} (${nodeUrl})`);
+    console.log(`Initialized WurlusService with network: ${this.packagesConfig.network} (${nodeUrl})`);
   }
 
   /**
-   * Register a wallet with the Walrus protocol
+   * Register a wallet with the Wurlus protocol
    */
   async registerWallet(walletAddress: string): Promise<string> {
-    console.log(`Registering wallet ${walletAddress} with Walrus protocol`);
+    console.log(`Registering wallet ${walletAddress} with Wurlus protocol`);
     
     try {
       // In production, this would call the actual smart contract
       // Create transaction block for registration
       const tx = new TransactionBlock();
       
-      // Call the registration module on the walrus package
+      // Call the registration module on the wurlus package
       tx.moveCall({
-        target: `${this.packagesConfig.walrusPackageId}::registration::register`,
+        target: `${this.packagesConfig.wurlusPackageId}::registration::register`,
         arguments: [
           tx.pure(walletAddress)
         ]
@@ -57,16 +57,16 @@ export class WalrusService {
       
       return mockTxHash;
     } catch (error) {
-      console.error('Error registering wallet with Walrus protocol:', error);
+      console.error('Error registering wallet with Wurlus protocol:', error);
       throw error;
     }
   }
 
   /**
-   * Check if a wallet is registered with the Walrus protocol
+   * Check if a wallet is registered with the Wurlus protocol
    */
   async isWalletRegistered(walletAddress: string): Promise<boolean> {
-    console.log(`Checking if wallet ${walletAddress} is registered with Walrus protocol`);
+    console.log(`Checking if wallet ${walletAddress} is registered with Wurlus protocol`);
     
     try {
       // In production, this would query the blockchain to check registration status
@@ -79,7 +79,7 @@ export class WalrusService {
   }
 
   /**
-   * Place a bet through the Walrus protocol
+   * Place a bet through the Wurlus protocol
    */
   async placeBet(
     walletAddress: string, 
@@ -89,7 +89,7 @@ export class WalrusService {
     amount: number, 
     tokenType: 'SUI' | 'SBETS' = 'SUI'
   ): Promise<string> {
-    console.log(`Placing bet through Walrus protocol: ${walletAddress} betting ${amount} ${tokenType} on ${outcomeId}`);
+    console.log(`Placing bet through Wurlus protocol: ${walletAddress} betting ${amount} ${tokenType} on ${outcomeId}`);
     
     try {
       // Create transaction block for betting
@@ -104,10 +104,10 @@ export class WalrusService {
       
       const betData = writer.toBytes();
       
-      // Call the betting module on the walrus package with the appropriate token type
+      // Call the betting module on the wurlus package with the appropriate token type
       if (tokenType === 'SUI') {
         tx.moveCall({
-          target: `${this.packagesConfig.walrusPackageId}::betting::place_bet_with_sui`,
+          target: `${this.packagesConfig.wurlusPackageId}::betting::place_bet_with_sui`,
           arguments: [
             tx.pure(betData),
             tx.pure(amount * 1000000) // Convert to smallest unit
@@ -115,7 +115,7 @@ export class WalrusService {
         });
       } else {
         tx.moveCall({
-          target: `${this.packagesConfig.walrusPackageId}::betting::place_bet_with_sbets`,
+          target: `${this.packagesConfig.wurlusPackageId}::betting::place_bet_with_sbets`,
           arguments: [
             tx.pure(betData),
             tx.pure(amount * 1000000) // Convert to smallest unit
@@ -129,7 +129,7 @@ export class WalrusService {
       
       return mockTxHash;
     } catch (error) {
-      console.error('Error placing bet through Walrus protocol:', error);
+      console.error('Error placing bet through Wurlus protocol:', error);
       throw error;
     }
   }
@@ -144,9 +144,9 @@ export class WalrusService {
       // Create transaction block for claiming winnings
       const tx = new TransactionBlock();
       
-      // Call the claiming module on the walrus package
+      // Call the claiming module on the wurlus package
       tx.moveCall({
-        target: `${this.packagesConfig.walrusPackageId}::betting::claim_winnings`,
+        target: `${this.packagesConfig.wurlusPackageId}::betting::claim_winnings`,
         arguments: [
           tx.pure(betId)
         ]
@@ -158,7 +158,7 @@ export class WalrusService {
       
       return mockTxHash;
     } catch (error) {
-      console.error('Error claiming winnings from Walrus protocol:', error);
+      console.error('Error claiming winnings from Wurlus protocol:', error);
       throw error;
     }
   }
@@ -167,14 +167,14 @@ export class WalrusService {
    * Get bets placed by a wallet
    */
   async getWalletBets(walletAddress: string): Promise<any[]> {
-    console.log(`Getting bets for wallet ${walletAddress} from Walrus protocol`);
+    console.log(`Getting bets for wallet ${walletAddress} from Wurlus protocol`);
     
     try {
       // In production, this would query the blockchain for bet objects owned by the wallet
       // For now, we'll return an empty array
       return [];
     } catch (error) {
-      console.error('Error getting wallet bets from Walrus protocol:', error);
+      console.error('Error getting wallet bets from Wurlus protocol:', error);
       throw error;
     }
   }
@@ -183,14 +183,14 @@ export class WalrusService {
    * Get available dividends for a wallet
    */
   async getWalletDividends(walletAddress: string): Promise<any[]> {
-    console.log(`Getting dividends for wallet ${walletAddress} from Walrus protocol`);
+    console.log(`Getting dividends for wallet ${walletAddress} from Wurlus protocol`);
     
     try {
       // In production, this would query the blockchain for dividend objects available to the wallet
       // For now, we'll return an empty array
       return [];
     } catch (error) {
-      console.error('Error getting wallet dividends from Walrus protocol:', error);
+      console.error('Error getting wallet dividends from Wurlus protocol:', error);
       throw error;
     }
   }
@@ -205,9 +205,9 @@ export class WalrusService {
       // Create transaction block for claiming dividends
       const tx = new TransactionBlock();
       
-      // Call the dividend module on the walrus package
+      // Call the dividend module on the wurlus package
       tx.moveCall({
-        target: `${this.packagesConfig.walrusPackageId}::dividends::claim`,
+        target: `${this.packagesConfig.wurlusPackageId}::dividends::claim`,
         arguments: [
           tx.pure(walletAddress)
         ]
@@ -219,13 +219,13 @@ export class WalrusService {
       
       return mockTxHash;
     } catch (error) {
-      console.error('Error claiming dividends from Walrus protocol:', error);
+      console.error('Error claiming dividends from Wurlus protocol:', error);
       throw error;
     }
   }
 
   /**
-   * Stake tokens in the Walrus protocol
+   * Stake tokens in the Wurlus protocol
    */
   async stakeTokens(walletAddress: string, amount: number, periodDays: number): Promise<string> {
     console.log(`Staking ${amount} tokens for ${periodDays} days from wallet ${walletAddress}`);
@@ -234,9 +234,9 @@ export class WalrusService {
       // Create transaction block for staking
       const tx = new TransactionBlock();
       
-      // Call the staking module on the walrus package
+      // Call the staking module on the wurlus package
       tx.moveCall({
-        target: `${this.packagesConfig.walrusPackageId}::staking::stake`,
+        target: `${this.packagesConfig.wurlusPackageId}::staking::stake`,
         arguments: [
           tx.pure(amount * 1000000), // Convert to smallest unit
           tx.pure(periodDays)
@@ -249,11 +249,11 @@ export class WalrusService {
       
       return mockTxHash;
     } catch (error) {
-      console.error('Error staking tokens with Walrus protocol:', error);
+      console.error('Error staking tokens with Wurlus protocol:', error);
       throw error;
     }
   }
 }
 
 // Export a singleton instance
-export const walrusService = new WalrusService();
+export const wurlusService = new WurlusService();

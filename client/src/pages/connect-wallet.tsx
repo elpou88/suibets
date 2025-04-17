@@ -1,400 +1,226 @@
-import { useState, useEffect } from "react";
-import { useLocation } from "wouter";
-import Layout from "@/components/layout/Layout";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Wallet, ArrowRight, Info, Scan, CheckCircle2, AlertCircle } from "lucide-react";
-import { apiRequest } from '@/lib/queryClient';
-import { useAuth } from '@/context/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Loader } from "@/components/ui/loader";
-import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
-import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
-import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
+import { useEffect, useState } from 'react';
+import { useLocation } from 'wouter';
+import { WalletConnector } from '@/components/wallet/WalletConnector';
+import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Wallet, LineChart, Coins, Newspaper } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import ConnectWalletImage from '@assets/Connect Wallet (2).png';
+import { useWalrusProtocol } from '@/hooks/useWalrusProtocol';
 
-export default function ConnectWallet() {
-  const [, setLocation] = useLocation();
-  const { user } = useAuth();
-  const { toast } = useToast();
-  const { connect: connectAdapter, address, isConnected, balances } = useWalletAdapter();
-  const [connecting, setConnecting] = useState<boolean>(false);
-  const [wurlusRegistered, setWurlusRegistered] = useState<boolean | null>(null);
-  const [registering, setRegistering] = useState<boolean>(false);
-  
-  // Check if wallet is registered with Wurlus protocol
-  const checkWurlusRegistration = async (address: string) => {
-    try {
-      const response = await apiRequest(
-        'GET', 
-        `/api/wurlus/registration/${address}`
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to check registration status');
-      }
-      
-      const data = await response.json();
-      setWurlusRegistered(data.registered);
-      
-    } catch (error) {
-      console.error('Error checking registration:', error);
-      setWurlusRegistered(false);
-    }
-  };
-  
-  // Register with Wurlus protocol
-  const registerWithWurlus = async () => {
-    if (!user?.walletAddress) {
-      toast({
-        title: "Wallet Required",
-        description: "Please connect your Sui wallet first",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setRegistering(true);
-    try {
-      const response = await apiRequest(
-        'POST',
-        '/api/wurlus/connect',
-        { walletAddress: user.walletAddress }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Failed to register with Wurlus Protocol');
-      }
-      
-      const data = await response.json();
-      
-      // Transaction object would contain blob data in real implementation
-      console.log('Transaction data:', data.transaction);
-      
-      toast({
-        title: "Registration Complete",
-        description: "Successfully registered with Wurlus Protocol",
-        variant: "default",
-      });
-      
-      setWurlusRegistered(true);
-      
-    } catch (error: any) {
-      toast({
-        title: "Registration Failed",
-        description: error.message || "Could not register. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setRegistering(false);
-    }
-  };
-  
-  // Connect using the wallet adapter
-  const connectWallet = async () => {
-    console.log("Connect wallet button clicked");
-    setConnecting(true);
-    try {
-      console.log("Attempting to connect via adapter...");
-      await connectAdapter();
-      console.log("Connect adapter call completed, current address:", address);
-      
-      if (address) {
-        console.log("Address available, checking Wurlus registration");
-        // Check Wurlus registration status for this wallet
-        checkWurlusRegistration(address);
-      } else {
-        console.log("No address after connection attempt - user may need to install wallet extension");
-        toast({
-          title: "No Wallet Detected",
-          description: "Please install a Sui wallet extension to connect to the platform.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error("Error connecting wallet:", error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Could not connect wallet. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setConnecting(false);
-    }
-  };
-
+function BenefitsTab() {
   return (
-    <Layout title="Connect Wallet" showBackButton={true}>
-      <div className="max-w-md mx-auto mt-6">
-        <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
-          <CardHeader>
-            <CardTitle className="text-2xl">Connect Your Wallet</CardTitle>
-            <CardDescription className="text-gray-400">
-              Connect your Sui wallet to start betting with the Wurlus Protocol
-            </CardDescription>
-          </CardHeader>
-          
-          <CardContent>
-            <div className="space-y-4">
-              <div className="rounded-md bg-[#112225] p-4">
-                <div className="flex items-center">
-                  <div className="bg-cyan-900 p-3 rounded-full mr-3">
-                    <Wallet className="h-6 w-6 text-cyan-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium">Sui Wallet</h3>
-                    <p className="text-sm text-gray-400">Connect using your Sui browser extension</p>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Traditional connection button */}
-              <Button 
-                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold mb-3"
-                disabled={connecting}
-                onClick={connectWallet}
-              >
-                {connecting ? (
-                  <>
-                    <Loader size="sm" className="text-black" />
-                    <span className="ml-2">Connecting...</span>
-                  </>
-                ) : (
-                  <>
-                    Connect Legacy Sui Wallet
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </>
-                )}
-              </Button>
-              
-              {/* Suiet Wallet Kit connection */}
-              <div className="mb-3">
-                <p className="text-xs text-center mb-2 text-gray-400">- OR -</p>
-                <div className="w-full">
-                  <SuietWalletConnect 
-                    onConnect={(address) => {
-                      // When Suiet wallet connects, check registration status
-                      if (address) {
-                        checkWurlusRegistration(address);
-                      }
-                    }}
-                  />
-                </div>
-                <p className="text-xs text-center mt-2 text-gray-400">
-                  Recommended: Connect using Suiet Wallet Kit
-                </p>
-              </div>
-              
-              {/* Sui dApp Kit connection - Coming soon */}
-              <div className="mb-3">
-                <p className="text-xs text-center mb-2 text-gray-400">- NEW COMING SOON -</p>
-                <div className="w-full">
-                  <Button 
-                    className="w-full bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500 text-black font-bold opacity-75 cursor-not-allowed"
-                    disabled={true}
-                  >
-                    <span className="flex items-center justify-center">
-                      Connect with Sui dApp Kit
-                      <span className="ml-2 text-xs bg-black text-white px-2 py-0.5 rounded">Coming Soon</span>
-                    </span>
-                  </Button>
-                </div>
-                <p className="text-xs text-center mt-2 text-gray-400">
-                  New: Connect with Sui dApp Kit (recommended by Sui developers)
-                </p>
-              </div>
-              
-              {/* Show real wallet connection status */}
-              {(address || user?.walletAddress) && (
-                <div className="mt-4 p-3 bg-[#112225] rounded-md">
-                  <div className="flex items-center">
-                    <CheckCircle2 className="h-5 w-5 text-green-400 mr-2" />
-                    <p className="text-sm text-gray-300">
-                      Connected: {(address || user?.walletAddress || '').slice(0, 6)}...
-                      {(address || user?.walletAddress || '').slice(-4)}
-                    </p>
-                  </div>
-                  
-                  {/* Show balances from wallet adapter */}
-                  <div className="mt-2 pt-2 border-t border-[#1e3a3f] text-sm text-gray-300">
-                    <div className="flex justify-between items-center">
-                      <span>SUI Balance:</span>
-                      <span className="font-medium text-cyan-400">
-                        {balances?.SUI ? Number(balances.SUI).toFixed(4) : '0.0000'} SUI
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center mt-1">
-                      <span>SBETS Balance:</span>
-                      <span className="font-medium text-cyan-400">
-                        {balances?.SBETS ? Number(balances.SBETS).toFixed(2) : '0.00'} SBETS
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              
-              {/* Wallet options info */}
-              <div className="mt-4 p-3 bg-blue-900/20 border border-blue-800 rounded-md">
-                <h4 className="text-sm font-medium text-blue-400 mb-2">Connect With Any Sui Wallet</h4>
-                <p className="text-xs text-gray-300 mb-2">
-                  You can connect with any type of Sui wallet - browser extensions, mobile wallets, or hardware wallets:
-                </p>
-                
-                <div className="flex flex-col space-y-3">
-                  {/* Browser Extension Options */}
-                  <div>
-                    <p className="text-xs font-medium text-gray-200">Browser Extensions:</p>
-                    <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
-                      <a 
-                        href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Sui Wallet
-                      </a>
-                      <a 
-                        href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Ethos Wallet
-                      </a>
-                      <a 
-                        href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Suiet Wallet
-                      </a>
-                      <a 
-                        href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Martian Wallet
-                      </a>
-                    </div>
-                  </div>
-                  
-                  {/* Mobile Wallet Options */}
-                  <div>
-                    <p className="text-xs font-medium text-gray-200">Mobile Wallets:</p>
-                    <div className="mt-1 grid grid-cols-2 gap-1 text-xs">
-                      <a 
-                        href="https://suiwallet.io/download" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Sui Mobile Wallet
-                      </a>
-                      <a 
-                        href="https://ethoswallet.xyz/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Ethos Mobile
-                      </a>
-                      <a 
-                        href="https://suiet.app/download" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Suiet Mobile
-                      </a>
-                      <a 
-                        href="https://martianwallet.xyz/" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-400 hover:underline"
-                      >
-                        • Martian Mobile
-                      </a>
-                    </div>
-                  </div>
-                  
-                  {/* QR Code Wallet Connect */}
-                  <div className="bg-[#112225] p-2 rounded border border-[#1e3a3f] mt-2">
-                    <p className="text-xs font-medium text-gray-200 mb-1">Using a Mobile Wallet?</p>
-                    <p className="text-xs text-gray-400">
-                      You can also connect by scanning this QR code with your Sui mobile wallet:
-                    </p>
-                    
-                    {/* QR Code Placeholder - would typically be generated by the wallet provider SDK */}
-                    <div className="mt-2 bg-white p-2 mx-auto w-32 h-32 flex items-center justify-center rounded">
-                      <div className="w-full h-full bg-gradient-to-br from-black to-gray-800 bg-opacity-90 flex items-center justify-center">
-                        <p className="text-center text-white text-[8px]">
-                          QR connection <br/> coming soon
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Wurlus Protocol Registration */}
-            {user?.walletAddress && wurlusRegistered === false && (
-              <div className="mt-6 p-4 border border-yellow-600 bg-yellow-900 bg-opacity-20 rounded-md">
-                <div className="flex items-start">
-                  <AlertCircle className="h-5 w-5 text-yellow-400 mr-2 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-yellow-400">Wurlus Protocol Registration Required</h4>
-                    <p className="text-sm text-gray-300 mt-1">
-                      Your wallet needs to be registered with Wurlus Protocol to enable blockchain betting features.
-                    </p>
-                    <Button 
-                      className="mt-3 bg-yellow-600 hover:bg-yellow-700 text-black"
-                      onClick={registerWithWurlus}
-                      disabled={registering}
-                    >
-                      {registering ? (
-                        <>
-                          <Loader size="sm" className="text-black" />
-                          <span className="ml-2">Registering...</span>
-                        </>
-                      ) : (
-                        <>
-                          Register with Wurlus
-                          <ArrowRight className="ml-2 h-4 w-4" />
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            )}
-            
-            {user?.walletAddress && wurlusRegistered === true && (
-              <div className="mt-6 p-4 border border-green-600 bg-green-900 bg-opacity-20 rounded-md">
-                <div className="flex items-start">
-                  <CheckCircle2 className="h-5 w-5 text-green-400 mr-2 mt-0.5" />
-                  <div>
-                    <h4 className="font-medium text-green-400">Wurlus Protocol Registered</h4>
-                    <p className="text-sm text-gray-300 mt-1">
-                      Your wallet is registered with the Wurlus Protocol. You can now place bets using SUI and SBETS tokens.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-          </CardContent>
-          
-          <CardFooter className="flex flex-col items-start border-t border-[#1e3a3f] pt-4">
-            <div className="flex items-start">
-              <Info className="h-4 w-4 text-cyan-400 mr-2 mt-0.5" />
-              <p className="text-xs text-gray-400">
-                By connecting your wallet, you'll be able to place bets using both Sui tokens and SBETS tokens, participate in staking, and claim dividends from the Wurlus Protocol.
-              </p>
-            </div>
-          </CardFooter>
-        </Card>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+      <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center text-[#00ffff]">
+            <Wallet className="h-5 w-5 mr-2" />
+            Seamless Betting
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Bet directly from your wallet with no deposits
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-300">
+          <p>
+            Connect your Sui wallet to place bets using SUI or SBETS tokens directly.
+            No need to deposit funds into a separate betting account.
+            Your tokens remain in your wallet until you place a bet.
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center text-[#00ffff]">
+            <LineChart className="h-5 w-5 mr-2" />
+            Automatic Payouts
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Receive winnings directly to your wallet
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-300">
+          <p>
+            When you win a bet, your earnings are automatically sent to your wallet.
+            No withdrawal delays or fees. The smart contract executes payouts instantly
+            once the event results are confirmed.
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center text-[#00ffff]">
+            <Coins className="h-5 w-5 mr-2" />
+            Earn Dividends
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Share in protocol profits
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-300">
+          <p>
+            By staking SBETS tokens, you earn a share of protocol fees as dividends.
+            The more you stake and the longer you lock, the higher your dividends.
+            Claim your dividends anytime or reinvest for compound growth.
+          </p>
+        </CardContent>
+      </Card>
+      
+      <Card className="bg-[#0b1618] border-[#1e3a3f] text-white">
+        <CardHeader>
+          <CardTitle className="flex items-center text-[#00ffff]">
+            <Newspaper className="h-5 w-5 mr-2" />
+            Access Premium Features
+          </CardTitle>
+          <CardDescription className="text-gray-400">
+            Unlock advanced betting options
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-gray-300">
+          <p>
+            Connected wallets gain access to premium features like parlays, 
+            cash-out options, boosted odds, and exclusive promotions.
+            Track your betting history across all sports and competitions.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function SecurityTab() {
+  return (
+    <div className="mt-6 space-y-4 text-white">
+      <div className="rounded-lg border border-[#1e3a3f] p-4 bg-[#0b1618]">
+        <h3 className="font-medium text-[#00ffff] mb-2">Smart Contract Security</h3>
+        <p className="text-sm text-gray-300">
+          The Walrus protocol smart contracts have been audited by leading blockchain security firms.
+          All contracts are open-source and verified on the Sui blockchain explorer.
+          Funds are never held in custody by the platform - they remain in your wallet or locked in
+          transparent smart contracts.
+        </p>
       </div>
-    </Layout>
+      
+      <div className="rounded-lg border border-[#1e3a3f] p-4 bg-[#0b1618]">
+        <h3 className="font-medium text-[#00ffff] mb-2">Decentralized Operation</h3>
+        <p className="text-sm text-gray-300">
+          The protocol operates in a decentralized manner with no central point of failure.
+          Event results are verified by multiple oracle networks before settlement.
+          All transactions are recorded on-chain for complete transparency and auditability.
+        </p>
+      </div>
+      
+      <div className="rounded-lg border border-[#1e3a3f] p-4 bg-[#0b1618]">
+        <h3 className="font-medium text-[#00ffff] mb-2">Self-Custody</h3>
+        <p className="text-sm text-gray-300">
+          Your funds always remain in your control. The platform never takes custody of your tokens.
+          You approve each transaction individually through your wallet's confirmation process.
+          There are no deposit or withdrawal delays since you maintain custody of your assets.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+export default function ConnectWalletPage() {
+  const [, navigate] = useLocation();
+  const { currentWallet } = useWalrusProtocol();
+  const [activeTab, setActiveTab] = useState('connect');
+  
+  // Redirect to homepage if wallet is already connected
+  useEffect(() => {
+    if (currentWallet?.address && currentWallet?.isRegistered) {
+      navigate('/');
+    }
+  }, [currentWallet, navigate]);
+  
+  const handleConnect = (address: string) => {
+    console.log('Wallet connected:', address);
+    // After successful connection, redirect to homepage or dashboard
+    setTimeout(() => {
+      navigate('/');
+    }, 1500);
+  };
+  
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+        <div>
+          <h1 className="text-3xl font-bold mb-2 text-white">Connect Your Wallet</h1>
+          <p className="text-gray-400 mb-6">
+            Connect your Sui wallet to start betting with cryptocurrency on our secure platform
+          </p>
+          
+          <WalletConnector onConnect={handleConnect} />
+          
+          <Separator className="my-8 bg-[#1e3a3f]" />
+          
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 bg-[#0b1618]">
+              <TabsTrigger 
+                value="benefits" 
+                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
+              >
+                Benefits
+              </TabsTrigger>
+              <TabsTrigger 
+                value="security" 
+                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
+              >
+                Security
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="benefits">
+              <BenefitsTab />
+            </TabsContent>
+            <TabsContent value="security">
+              <SecurityTab />
+            </TabsContent>
+          </Tabs>
+        </div>
+        
+        <div className="hidden md:block">
+          <img 
+            src={ConnectWalletImage} 
+            alt="Connect Wallet" 
+            className="w-full h-auto rounded-lg border border-[#1e3a3f]"
+          />
+          
+          <div className="mt-6 p-4 rounded-lg bg-[#0b1618] border border-[#1e3a3f]">
+            <h3 className="text-xl font-semibold mb-2 text-white">Ready to Get Started?</h3>
+            <p className="text-gray-300 mb-4">
+              Connect your wallet to gain access to all features of the platform, including:
+            </p>
+            <ul className="space-y-2 text-gray-300 mb-4">
+              <li className="flex items-center">
+                <span className="text-[#00ffff] mr-2">•</span>
+                Betting with SUI and SBETS tokens
+              </li>
+              <li className="flex items-center">
+                <span className="text-[#00ffff] mr-2">•</span>
+                Automatic winnings payouts
+              </li>
+              <li className="flex items-center">
+                <span className="text-[#00ffff] mr-2">•</span>
+                Dividend earning through staking
+              </li>
+              <li className="flex items-center">
+                <span className="text-[#00ffff] mr-2">•</span>
+                Access to exclusive promotions
+              </li>
+            </ul>
+            <Button 
+              className="w-full bg-[#00ffff] text-[#112225] hover:bg-cyan-300"
+              onClick={() => setActiveTab('connect')}
+            >
+              Connect Now
+            </Button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

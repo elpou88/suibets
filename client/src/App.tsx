@@ -31,6 +31,7 @@ import GotoSports from "@/pages/goto-sports";
 import { AuthProvider } from "@/context/AuthContext";
 import { BettingProvider } from "@/context/BettingContext";
 import { WalProvider } from "@/components/ui/wal-components";
+import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
 import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
@@ -57,69 +58,71 @@ function App() {
   
   return (
     <QueryClientProvider client={queryClient}>
-        <SuietWalletProvider>
-          <WalProvider>
+      <SuietWalletProvider>
+        <WalProvider>
+          <WalrusProtocolProvider>
             <AuthProvider>
               <BettingProvider>
-              <div className="root-container">
-                <Switch>
-                  {/* Main Routes - Use real data pages as the default */}
-                  <Route path="/" component={HomeReal} />
-                  <Route path="/sports" component={HomeReal} />
-                  <Route path="/sport/:slug*" component={SportsLive} />
-                  <Route path="/match/:id" component={Match} />
-                  <Route path="/match-detail/:id" component={MatchDetail} />
-                  <Route path="/live" component={LiveReal} />
-                  <Route path="/live/:id" component={LiveEventPage} />
+                <div className="root-container">
+                  <Switch>
+                    {/* Main Routes - Use real data pages as the default */}
+                    <Route path="/" component={HomeReal} />
+                    <Route path="/sports" component={HomeReal} />
+                    <Route path="/sport/:slug*" component={SportsLive} />
+                    <Route path="/match/:id" component={Match} />
+                    <Route path="/match-detail/:id" component={MatchDetail} />
+                    <Route path="/live" component={LiveReal} />
+                    <Route path="/live/:id" component={LiveEventPage} />
+                    
+                    {/* Additional Pages - Using real-time data pages */}
+                    <Route path="/promotions" component={PromotionsReal} />
+                    <Route path="/promotions/referral" component={ReferralPage} />
+                    <Route path="/notifications" component={Notifications} />
+                    <Route path="/settings" component={Settings} />
+                    <Route path="/bet-history" component={BetHistoryPage} />
+                    <Route path="/dividends" component={DividendsReal} />
+                    <Route path="/defi-staking" component={DefiStaking} />
+                    <Route path="/storage" component={StoragePage} />
+                    <Route path="/connect-wallet" component={ConnectWallet} />
+                    <Route path="/join" component={HomeReal} />
+                    <Route path="/live-scores" component={LiveScoresPage} />
+                    
+                    {/* Info Pages */}
+                    <Route path="/info" component={Info} />
+                    <Route path="/community" component={Community} />
+                    <Route path="/contact" component={Contact} />
+                    
+                    {/* Legacy Routes - Redirects */}
+                    <Route path="/goto-sports" component={HomeReal} />
+                    <Route path="/goto-promotions" component={RedirectToPromotions} />
+                    <Route path="/goto-live" component={LiveReal} />
+                    <Route path="/sports-exact" component={HomeReal} />
+                    <Route path="/live-exact" component={LiveReal} />
+                    <Route path="/bet-slip" component={BetSlip} />
+                    <Route path="/bet-slip-2" component={BetSlip2} />
+                    
+                    {/* Legacy Routes with new names for backward compatibility */}
+                    <Route path="/home-real" component={HomeReal} />
+                    <Route path="/live-real" component={LiveReal} />
+                    <Route path="/sports-live" component={SportsLive} />
+                    <Route path="/sports-live/:sport" component={SportPage} />
+                    <Route path="/parlay" component={Parlay} />
+                    
+                    <Route component={NotFound} />
+                  </Switch>
                   
-                  {/* Additional Pages - Using real-time data pages */}
-                  <Route path="/promotions" component={PromotionsReal} />
-                  <Route path="/promotions/referral" component={ReferralPage} />
-                  <Route path="/notifications" component={Notifications} />
-                  <Route path="/settings" component={Settings} />
-                  <Route path="/bet-history" component={BetHistoryPage} />
-                  <Route path="/dividends" component={DividendsReal} />
-                  <Route path="/defi-staking" component={DefiStaking} />
-                  <Route path="/storage" component={StoragePage} />
-                  <Route path="/connect-wallet" component={ConnectWallet} />
-                  <Route path="/join" component={HomeReal} />
-                  <Route path="/live-scores" component={LiveScoresPage} />
+                  {/* Floating deposit/withdraw buttons that appear on all pages */}
+                  <DepositWithdrawFAB />
                   
-                  {/* Info Pages */}
-                  <Route path="/info" component={Info} />
-                  <Route path="/community" component={Community} />
-                  <Route path="/contact" component={Contact} />
-                  
-                  {/* Legacy Routes - Redirects */}
-                  <Route path="/goto-sports" component={HomeReal} />
-                  <Route path="/goto-promotions" component={RedirectToPromotions} />
-                  <Route path="/goto-live" component={LiveReal} />
-                  <Route path="/sports-exact" component={HomeReal} />
-                  <Route path="/live-exact" component={LiveReal} />
-                  <Route path="/bet-slip" component={BetSlip} />
-                  <Route path="/bet-slip-2" component={BetSlip2} />
-                  
-                  {/* Legacy Routes with new names for backward compatibility */}
-                  <Route path="/home-real" component={HomeReal} />
-                  <Route path="/live-real" component={LiveReal} />
-                  <Route path="/sports-live" component={SportsLive} />
-                  <Route path="/sports-live/:sport" component={SportPage} />
-                  <Route path="/parlay" component={Parlay} />
-                  
-                  <Route component={NotFound} />
-                </Switch>
-                
-                {/* Floating deposit/withdraw buttons that appear on all pages */}
-                <DepositWithdrawFAB />
-                
-                {/* Universal betting handlers to enable betting across all pages */}
-                <UniversalClickHandler />
-                <SportBettingWrapper />
-              </div>
-              <SpecialLinks />
-              <Toaster />
-            </BettingProvider>
-          </AuthProvider>
+                  {/* Universal betting handlers to enable betting across all pages */}
+                  <UniversalClickHandler />
+                  <SportBettingWrapper />
+                </div>
+                <SpecialLinks />
+                <Toaster />
+              </BettingProvider>
+            </AuthProvider>
+          </WalrusProtocolProvider>
         </WalProvider>
       </SuietWalletProvider>
     </QueryClientProvider>

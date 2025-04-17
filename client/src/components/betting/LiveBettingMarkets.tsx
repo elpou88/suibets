@@ -38,6 +38,7 @@ export function LiveBettingMarkets() {
   const { addBet } = useBetting();
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
   const [expandedMarkets, setExpandedMarkets] = useState<Record<string, boolean>>({});
+  const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
   
   // Fetch all live events from all sports
   const { data: events = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
@@ -65,6 +66,28 @@ export function LiveBettingMarkets() {
     acc[sport.id] = sport;
     return acc;
   }, {} as Record<number, Sport>);
+  
+  // Group events by sport
+  const eventsBySport = events.reduce((acc, event) => {
+    const sportId = event.sportId.toString();
+    if (!acc[sportId]) {
+      acc[sportId] = [];
+    }
+    acc[sportId].push(event);
+    return acc;
+  }, {} as Record<string, Event[]>);
+  
+  // Get all available sports for the sports filter
+  const availableSports = Object.keys(eventsBySport).map(sportId => ({
+    id: parseInt(sportId),
+    name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
+    count: eventsBySport[sportId].length
+  }));
+  
+  // Filter events by selected sport or show all if none selected
+  const filteredEvents = activeSportFilter 
+    ? { [activeSportFilter]: eventsBySport[activeSportFilter.toString()] }
+    : eventsBySport;
   
   // Initialize expanded states for events when data is loaded
   useEffect(() => {
@@ -139,16 +162,6 @@ export function LiveBettingMarkets() {
     console.log(`Added bet: ${outcome.name} @ ${outcome.odds} for ${event.homeTeam} vs ${event.awayTeam}`);
   };
   
-  // Group events by sport
-  const eventsBySport = events.reduce((acc, event) => {
-    const sportId = event.sportId.toString();
-    if (!acc[sportId]) {
-      acc[sportId] = [];
-    }
-    acc[sportId].push(event);
-    return acc;
-  }, {} as Record<string, Event[]>);
-  
   if (eventsLoading) {
     return (
       <div className="flex items-center justify-center min-h-40">
@@ -174,21 +187,6 @@ export function LiveBettingMarkets() {
       </Card>
     );
   }
-  
-  // State for active sport filter
-  const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
-  
-  // Get all available sports for the sports filter
-  const availableSports = Object.keys(eventsBySport).map(sportId => ({
-    id: parseInt(sportId),
-    name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
-    count: eventsBySport[sportId].length
-  }));
-  
-  // Filter events by selected sport or show all if none selected
-  const filteredEvents = activeSportFilter 
-    ? { [activeSportFilter]: eventsBySport[activeSportFilter.toString()] }
-    : eventsBySport;
   
   return (
     <div className="space-y-4">

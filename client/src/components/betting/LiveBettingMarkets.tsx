@@ -42,11 +42,28 @@ export function LiveBettingMarkets() {
   
   // Fetch all live events from all sports
   const { data: events = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
-    queryKey: ['/api/events/live'],
+    queryKey: ['/api/events'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/events/live');
+      // Use direct events endpoint with isLive parameter instead of the redirect
+      const response = await apiRequest('GET', '/api/events?isLive=true');
       const data = await response.json();
       console.log("API response for live events:", data);
+      
+      // Debug the sports IDs we're getting
+      const sportIdsSet = new Set<number>();
+      data.forEach((event: Event) => {
+        sportIdsSet.add(event.sportId);
+      });
+      const sportIds = Array.from(sportIdsSet);
+      console.log("Available sport IDs in live events:", sportIds);
+      
+      // Debug the events by sport ID
+      const eventsBySportId: Record<number, number> = {};
+      data.forEach((event: Event) => {
+        eventsBySportId[event.sportId] = (eventsBySportId[event.sportId] || 0) + 1;
+      });
+      console.log("Event count by sport ID:", eventsBySportId);
+      
       return data;
     },
     refetchInterval: 20000, // Refetch every 20 seconds

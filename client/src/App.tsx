@@ -84,7 +84,16 @@ function App() {
                     <Route path="/dividends" component={DividendsReal} />
                     <Route path="/defi-staking" component={DefiStaking} />
                     <Route path="/storage" component={StoragePage} />
-                    <Route path="/connect-wallet" component={ConnectWallet} />
+                    {/* Redirect connect-wallet route to HomePage with modal approach */}
+                    <Route path="/connect-wallet">
+                      {() => {
+                        // Dispatch an event to trigger the wallet modal
+                        window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+                        // Return to homepage
+                        window.location.href = '/';
+                        return null;
+                      }}
+                    </Route>
                     <Route path="/wallet-dashboard" component={WalletDashboard} />
                     <Route path="/join" component={HomeReal} />
                     <Route path="/live-scores" component={LiveScoresPage} />

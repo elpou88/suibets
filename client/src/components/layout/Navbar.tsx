@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -69,14 +69,15 @@ export default function Navbar() {
         await connectAdapter();
         console.log('Connect adapter call completed, current address:', address);
         
+        // Check address after connection attempt
         if (!address) {
-          console.log('No address after connection attempt - user may need to install wallet extension');
-          // If direct connection fails, open the wallet modal
+          console.log('No address after connection attempt - opening wallet modal');
+          // If direct connection fails, open the wallet modal immediately
           setIsWalletModalOpen(true);
         }
       } catch (err) {
         console.log('Direct connection failed, opening wallet modal');
-        // If direct connection fails, open the wallet modal
+        // If direct connection fails, open the wallet modal immediately
         setIsWalletModalOpen(true);
       }
       
@@ -84,6 +85,8 @@ export default function Navbar() {
     } catch (error) {
       console.error('Wallet connection error:', error);
       setIsAttemptingConnection(false);
+      // Open modal on error as well
+      setIsWalletModalOpen(true);
     }
   };
 

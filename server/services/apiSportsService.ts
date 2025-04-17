@@ -1019,8 +1019,20 @@ export class ApiSportsService {
         return this.transformTennisEvent(event, isLive, index);
       } else if (sport === 'cricket') {
         // Use cricket-specific transformer to ensure correct sport ID
-        console.log(`[ApiSportsService] Using cricket transformer for event ${index}`);
-        return this.transformCricketEvent(event, isLive, index);
+        console.log(`[ApiSportsService] Processing cricket with sport ID 9 for event ${index}`);
+        
+        try {
+          // Guaranteed to use Sport ID 9 for cricket
+          const cricketEvent = this.transformGenericEvent(event, sport, isLive, index);
+          return {
+            ...cricketEvent,
+            sportId: 9, // ENSURE cricket always has sportId 9
+            score: event.score ? `${event.score.home || 0} - ${event.score.away || 0}` : undefined
+          };
+        } catch (e) {
+          console.error(`Error creating cricket event:`, e);
+          return this.transformGenericEvent(event, 'cricket', isLive, index);
+        }
       } else if (sport === 'formula_1' || sport === 'formula-1') {
         // Use special handling for Formula 1 events
         console.log(`[ApiSportsService] Special handling for Formula 1 event ${index}`);
@@ -1364,6 +1376,211 @@ export class ApiSportsService {
     } catch (error) {
       console.error(`[ApiSportsService] Error transforming cricket event:`, error);
       return this.transformGenericEvent(event, 'cricket', isLive, index);
+    }
+  }
+  
+  /**
+   * Transform golf event data
+   */
+  private transformGolfEvent(event: any, isLive: boolean, index: number): SportEvent {
+    try {
+      // Extract key golf data with fallbacks
+      const id = event.id?.toString() || event.tournament?.id?.toString() || `golf-${index}`;
+      const tournament = event.tournament?.name || event.league?.name || 'Golf Tournament';
+      const course = event.course?.name || event.venue?.name || 'Golf Course';
+      const country = event.country?.name || event.country || 'International';
+      
+      // Format tournament details
+      const leagueName = tournament;
+      const homeTeam = event.player1?.name || event.players?.[0]?.name || tournament;
+      const awayTeam = event.player2?.name || event.players?.[1]?.name || course;
+      
+      // Default status to scheduled/upcoming
+      let status: 'scheduled' | 'live' | 'finished' | 'upcoming' = 'scheduled';
+      if (isLive) {
+        status = 'live';
+      } else if (event.status === 'completed' || event.status === 'finished') {
+        status = 'finished';
+      } else {
+        status = 'upcoming';
+      }
+      
+      // Create golf-specific markets
+      const marketsData: MarketData[] = [];
+      
+      // Get the top players to create our tournament winner market
+      const players = event.players || [];
+      let outcomes: OutcomeData[] = [];
+      
+      if (players.length > 0) {
+        // Use real players from the tournament
+        outcomes = players.slice(0, 5).map((player: any, playerIndex: number) => ({
+          id: `${id}-outcome-${playerIndex}`,
+          name: player.firstname ? `${player.firstname} ${player.lastname}` : player.name || `Player ${playerIndex+1}`,
+          odds: 10 + (playerIndex * 5),  // Golf has longer odds typically
+          probability: Math.max(0.01, 0.1 - (playerIndex * 0.015))
+        }));
+      } else {
+        // Use some default players if none are provided
+        outcomes = [
+          {
+            id: `${id}-outcome-1`,
+            name: 'Rory McIlroy',
+            odds: 9.0,
+            probability: 0.11
+          },
+          {
+            id: `${id}-outcome-2`,
+            name: 'Scottie Scheffler',
+            odds: 11.0,
+            probability: 0.09
+          },
+          {
+            id: `${id}-outcome-3`,
+            name: 'Jon Rahm',
+            odds: 14.0,
+            probability: 0.07
+          }
+        ];
+      }
+      
+      // Tournament Winner market
+      marketsData.push({
+        id: `${id}-market-tournament-winner`,
+        name: 'Tournament Winner',
+        outcomes
+      });
+      
+      // Round leader market
+      marketsData.push({
+        id: `${id}-market-round-leader`,
+        name: 'Round Leader',
+        outcomes: outcomes.map(outcome => ({
+          ...outcome,
+          id: `${outcome.id}-round`,
+          odds: outcome.odds * 0.7  // Slightly better odds for round leader
+        }))
+      });
+      
+      return {
+        id: id,
+        sportId: 10,  // Always use Golf sportId (10)
+        leagueName,
+        leagueSlug: tournament.toLowerCase().replace(/\s+/g, '-'),
+        homeTeam,
+        awayTeam,
+        startTime: event.date || event.tournament?.date || new Date().toISOString(),
+        status,
+        score: isLive ? 'Round in progress' : undefined,
+        isLive: status === 'live',
+        markets: marketsData
+      };
+    } catch (error) {
+      console.error(`[ApiSportsService] Error transforming golf event:`, error);
+      return this.transformGenericEvent(event, 'golf', isLive, index);
+    }
+  }
+  
+  /**
+   * Transform cycling event data
+   */
+  private transformCyclingEvent(event: any, isLive: boolean, index: number): SportEvent {
+    try {
+      // Extract key cycling data with fallbacks
+      const id = event.id?.toString() || event.race?.id?.toString() || `cycling-${index}`;
+      const raceName = event.race?.name || event.league?.name || 'Cycling Race';
+      const stageNumber = event.stage?.number || '';
+      const stageName = event.stage?.name || '';
+      
+      // Format race details
+      const leagueName = raceName;
+      const stageDesc = stageNumber && stageName ? `Stage ${stageNumber}: ${stageName}` : stageName || `Stage ${index+1}`;
+      const homeTeam = raceName;
+      const awayTeam = stageDesc;
+      
+      // Set status
+      let status: 'scheduled' | 'live' | 'finished' | 'upcoming' = 'scheduled';
+      if (isLive) {
+        status = 'live';
+      } else if (event.status === 'completed' || event.status === 'finished') {
+        status = 'finished';
+      } else {
+        status = 'upcoming';
+      }
+      
+      // Create cycling-specific markets
+      const marketsData: MarketData[] = [];
+      
+      // Get the riders to create stage winner market
+      const riders = event.riders || [];
+      let outcomes: OutcomeData[] = [];
+      
+      if (riders.length > 0) {
+        // Use real riders from the race
+        outcomes = riders.slice(0, 5).map((rider: any, riderIndex: number) => ({
+          id: `${id}-outcome-${riderIndex}`,
+          name: rider.name || `Rider ${riderIndex+1}`,
+          odds: 5 + (riderIndex * 2.5),
+          probability: Math.max(0.05, 0.2 - (riderIndex * 0.03))
+        }));
+      } else {
+        // Use some default riders if none are provided
+        outcomes = [
+          {
+            id: `${id}-outcome-1`,
+            name: 'Tadej Pogačar',
+            odds: 4.5,
+            probability: 0.22
+          },
+          {
+            id: `${id}-outcome-2`,
+            name: 'Jonas Vingegaard',
+            odds: 6.0,
+            probability: 0.17
+          },
+          {
+            id: `${id}-outcome-3`,
+            name: 'Remco Evenepoel',
+            odds: 7.5,
+            probability: 0.13
+          }
+        ];
+      }
+      
+      // Stage Winner market
+      marketsData.push({
+        id: `${id}-market-stage-winner`,
+        name: 'Stage Winner',
+        outcomes
+      });
+      
+      // Overall Classification market
+      marketsData.push({
+        id: `${id}-market-overall-winner`,
+        name: 'Overall Winner',
+        outcomes: outcomes.map(outcome => ({
+          ...outcome,
+          id: `${outcome.id}-overall`,
+          odds: outcome.odds * 0.8  // Adjusted odds for overall winner
+        }))
+      });
+      
+      return {
+        id: id,
+        sportId: 14,  // Always use Cycling sportId (14)
+        leagueName,
+        leagueSlug: raceName.toLowerCase().replace(/\s+/g, '-'),
+        homeTeam,
+        awayTeam,
+        startTime: event.date || event.race?.date || new Date().toISOString(),
+        status,
+        score: isLive ? 'Race in progress' : undefined,
+        isLive: status === 'live',
+        markets: marketsData
+      };
+    } catch (error) {
+      console.error(`[ApiSportsService] Error transforming cycling event:`, error);
+      return this.transformGenericEvent(event, 'cycling', isLive, index);
     }
   }
   

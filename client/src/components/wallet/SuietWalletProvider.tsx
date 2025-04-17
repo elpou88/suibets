@@ -6,10 +6,12 @@ interface SuietWalletProviderProps {
   children: ReactNode;
 }
 
-export const SuietWalletProvider: React.FC<SuietWalletProviderProps> = ({ children }) => {
+export const SuietWalletProvider = ({ children }: SuietWalletProviderProps) => {
   return (
     <WalletProvider>
       {children}
     </WalletProvider>
   );
 };
+
+export default SuietWalletProvider;

@@ -7,6 +7,7 @@ import { ChevronRight, AlertCircle, Loader2, WalletIcon } from "lucide-react";
 import { useWurlusProtocol } from "@/hooks/useWurlusProtocol";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+import { ConnectButton, useWallet } from '@suiet/wallet-kit';
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -19,6 +20,9 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const { connect: connectAdapter, address, isConnected, error: walletError } = useWalletAdapter();
   const { connectToWurlusProtocol, checkRegistrationStatus, error: wurlusError } = useWurlusProtocol();
   const { toast } = useToast();
+  // Get Suiet wallet connection state
+  const suietWallet = useWallet();
+
   const modalRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
   const [connectionStep, setConnectionStep] = useState<'selecting' | 'connecting' | 'registering'>('selecting');
@@ -59,6 +63,34 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       setConnectionStep('selecting');
     }
   }, [walletError]);
+  
+  // Handle Suiet Wallet connection
+  useEffect(() => {
+    if (suietWallet.connected && suietWallet.address) {
+      console.log('Suiet wallet connected successfully:', suietWallet.address);
+      
+      toast({
+        title: "Wallet Connected via Suiet",
+        description: `Connected to ${suietWallet.address.substring(0, 8)}...${suietWallet.address.substring(suietWallet.address.length - 6)}`,
+      });
+      
+      if (connectWallet) {
+        // Sync the wallet connection with auth context
+        connectWallet(suietWallet.address, 'sui')
+          .then(() => {
+            console.log('Suiet wallet synced with auth context');
+          })
+          .catch((syncError) => {
+            console.error('Error syncing Suiet wallet with auth:', syncError);
+          });
+      }
+      
+      // Close the modal after a short delay to show the success state
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    }
+  }, [suietWallet.connected, suietWallet.address, connectWallet, onClose, toast]);
 
   const handleConnectWallet = async (walletId: string) => {
     try {
@@ -132,6 +164,15 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
+            {/* Suiet Wallet Kit Connect Button */}
+            <div className="w-full rounded overflow-hidden mb-4">
+              <ConnectButton 
+                className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold py-3 px-4 rounded"
+              />
+            </div>
+            
+            <div className="w-full text-center text-sm text-gray-400 my-2">- or select wallet manually -</div>
+            
             {WALLET_TYPES.map((wallet) => (
               <Button
                 key={wallet.key}

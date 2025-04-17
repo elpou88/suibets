@@ -7,6 +7,8 @@ import { aggregatorService } from "./services/aggregatorService";
 import { initBasketballService } from "./services/basketballService";
 import { initEventTrackingService } from "./services/eventTrackingService";
 import { registerDebugRoutes } from "./debug-routes";
+import { registerWalrusRoutes } from "./routes-walrus";
+import { walrusService } from "./services/walrusService";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
 const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "";
@@ -46,6 +48,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Register debug routes
   registerDebugRoutes(app);
+  
+  // Register Walrus protocol routes
+  registerWalrusRoutes(app);
+  console.log("[Routes] Registered Walrus protocol routes for blockchain betting");
   
   // Home route
   app.get("/api", (_req: Request, res: Response) => {

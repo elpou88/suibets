@@ -95,14 +95,66 @@ export class WalrusService {
       // Create transaction block for betting
       const tx = new TransactionBlock();
       
-      // Prepare bet data using BCS for the Sui Move call
-      const writer = new BcsWriter();
-      writer.writeString(eventId);
-      writer.writeString(marketId);
-      writer.writeString(outcomeId);
-      writer.writeU64(BigInt(amount * 1000000)); // Convert to smallest unit
+      // Prepare bet data manually since BcsWriter has limited methods
+      // This is a simplified implementation - in production, use proper BCS serialization
       
-      const betData = writer.toBytes();
+      // Create a simple buffer to hold our bet data
+      // We'll manually encode the data for simplicity
+      const eventIdBytes = new TextEncoder().encode(eventId);
+      const marketIdBytes = new TextEncoder().encode(marketId);
+      const outcomeIdBytes = new TextEncoder().encode(outcomeId);
+      
+      // Helper functions (defined outside the method to avoid strict mode issues)
+      const writeUint32 = (value: number, buf: Uint8Array, pos: number): number => {
+        buf[pos] = value & 0xff;
+        buf[pos + 1] = (value >> 8) & 0xff;
+        buf[pos + 2] = (value >> 16) & 0xff;
+        buf[pos + 3] = (value >> 24) & 0xff;
+        return pos + 4;
+      };
+      
+      const writeBytes = (bytes: Uint8Array, buf: Uint8Array, pos: number): number => {
+        buf.set(bytes, pos);
+        return pos + bytes.length;
+      };
+      
+      const writeUint64 = (value: bigint, buf: Uint8Array, pos: number): number => {
+        const view = new DataView(buf.buffer);
+        // JavaScript's DataView doesn't support bigint directly in all environments
+        // So we'll use this workaround
+        const lo = Number(value & BigInt(0xffffffff));
+        const hi = Number(value >> BigInt(32));
+        
+        view.setUint32(pos, lo, true);
+        view.setUint32(pos + 4, hi, true);
+        return pos + 8;
+      };
+      
+      // Calculate total buffer size
+      // Format: 4 bytes length + content for each string, 8 bytes for amount
+      const totalLength = 4 + eventIdBytes.length + 4 + marketIdBytes.length + 
+                         4 + outcomeIdBytes.length + 8;
+      
+      const buffer = new Uint8Array(totalLength);
+      let offset = 0;
+      
+      // Write eventId (length + bytes)
+      offset = writeUint32(eventIdBytes.length, buffer, offset);
+      offset = writeBytes(eventIdBytes, buffer, offset);
+      
+      // Write marketId (length + bytes)
+      offset = writeUint32(marketIdBytes.length, buffer, offset);
+      offset = writeBytes(marketIdBytes, buffer, offset);
+      
+      // Write outcomeId (length + bytes)
+      offset = writeUint32(outcomeIdBytes.length, buffer, offset);
+      offset = writeBytes(outcomeIdBytes, buffer, offset);
+      
+      // Write amount (uint64)
+      offset = writeUint64(BigInt(amount * 1000000), buffer, offset);
+      
+      // Use buffer as bet data
+      const betData = buffer;
       
       // Call the betting module on the walrus package with the appropriate token type
       if (tokenType === 'SUI') {

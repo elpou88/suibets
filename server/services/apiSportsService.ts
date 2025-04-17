@@ -1274,6 +1274,7 @@ export class ApiSportsService {
   private transformCricketEvent(event: any, isLive: boolean, index: number): SportEvent {
     try {
       console.log(`[ApiSportsService] Processing cricket event: ${JSON.stringify(event?.fixture?.id || 'unknown')}`);
+      console.log(`[ApiSportsService] CRICKET DEBUG: Raw event structure:`, JSON.stringify(event).substring(0, 500));
       
       // Extract key cricket data with fallbacks
       const id = event.fixture?.id?.toString() || event.id?.toString() || `cricket-${index}`;
@@ -1355,7 +1356,8 @@ export class ApiSportsService {
         ]
       });
       
-      return {
+      // Create the cricket event with proper venue and format fields
+      const sportEvent: SportEvent = {
         id: id.toString(),
         sportId: 9,  // CRITICAL: Always use Cricket sportId (9)
         leagueName: tournament,
@@ -1370,9 +1372,12 @@ export class ApiSportsService {
         score,
         isLive: mappedStatus === 'live',
         markets: marketsData,
-        venue,
-        format
+        venue,       // Now included in the interface
+        format       // Now included in the interface
       };
+      
+      console.log(`[ApiSportsService] Created cricket event with ID ${id} and sportId ${sportEvent.sportId}`);
+      return sportEvent;
     } catch (error) {
       console.error(`[ApiSportsService] Error transforming cricket event:`, error);
       return this.transformGenericEvent(event, 'cricket', isLive, index);

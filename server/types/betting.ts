@@ -15,6 +15,8 @@ export interface SportEvent {
   markets: MarketData[];
   isLive: boolean;
   dataSource?: string; // Added to track data source for data quality purposes
+  venue?: string;     // Venue information for the event
+  format?: string;    // Format information (e.g., T20, Test, ODI for cricket)
   
   // Internal properties used during transformation
   _sportId?: number; // Used for tracking the source sport ID during transformations

@@ -329,7 +329,7 @@ export class CricketService {
       // Create the standard sport event
       return this.addCricketMarkets({
         id,
-        sportId: 16, // Cricket ID
+        sportId: 9, // Cricket ID - IMPORTANT: Changed to match apiSportsService (9)
         leagueName,
         homeTeam,
         awayTeam,
@@ -454,7 +454,7 @@ export class CricketService {
    */
   private isGenuineCricketMatch(event: SportEvent): boolean {
     // If we have explicit sport ID matching, trust that
-    if (event.sportId === 16) return true;
+    if (event.sportId === 9) return true; // Cricket is now consistently using sportId 9
     
     // Check for league name containing cricket keywords
     const leagueName = event.leagueName?.toLowerCase() || '';

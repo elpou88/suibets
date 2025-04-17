@@ -62,88 +62,115 @@ export default function SportPage() {
         return [];
       }
       
-      const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
-      const url = `/api/events?sportId=${sportId}${isLiveParam}`;
-      console.log(`Fetching events for specific sport: ${sportName} (ID: ${sportId}), Live: ${selectedTab === 'live'}`);
-      console.log(`API URL: ${url}`);
-      
-      const response = await apiRequest('GET', url);
-      const data = await response.json();
-      
-      // Filter data again on the client side to ensure only events for this sport are shown
-      const filteredData = data.filter((event: any) => 
-        event.sportId === sportId || 
-        event.sportId === Number(sportId)
-      );
-      
-      // For Tennis and other non-football sports, adapt the data structure but don't replace real API data
-      if (sportId === 3) { // Tennis
-        console.log(`Adapting ${filteredData.length} events for tennis`);
+      try {
+        const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
+        const url = `/api/events?sportId=${sportId}${isLiveParam}`;
+        console.log(`Fetching events for specific sport: ${sportName} (ID: ${sportId}), Live: ${selectedTab === 'live'}`);
+        console.log(`API URL: ${url}`);
         
-        // Just modify market types and remove draw odds for tennis
-        const adaptedEvents = filteredData.map((event: any) => {
-          return {
-            ...event,
-            drawOdds: null, // Tennis has no draws
-            // Convert any "Match Result" markets to "Match Winner" for tennis terminology
-            markets: event.markets?.map((market: any) => {
-              if (market.name === "Match Result") {
-                return {
-                  ...market,
-                  name: "Match Winner",
-                  // Remove "Draw" outcome for tennis
-                  outcomes: market.outcomes.filter((outcome: any) => 
-                    outcome.name !== "Draw"
-                  )
-                };
-              }
-              // Rename "Total Goals" to "Total Games" for tennis 
-              else if (market.name === "Total Goals" || market.name === "Over/Under 2.5 Goals") {
-                return {
-                  ...market,
-                  name: "Total Games",
-                  outcomes: [
-                    { ...market.outcomes[0], name: "Over 22.5" },
-                    { ...market.outcomes[1], name: "Under 22.5" }
-                  ]
-                };
-              }
-              return market;
-            }) || []
-          };
+        const response = await apiRequest('GET', url);
+        if (!response.ok) {
+          throw new Error(`API request failed with status ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log(`Received ${data.length} events for ${sportName}`);
+        
+        // Filter data again on the client side to ensure only events for this sport are shown
+        const filteredData = data.filter((event: any) => 
+          event.sportId === sportId || 
+          event.sportId === Number(sportId)
+        );
+        
+        console.log(`Filtered to ${filteredData.length} events for sportId: ${sportId}`);
+        
+        if (filteredData.length === 0 && data.length > 0) {
+          // If we got data but none matches our sport ID after filtering,
+          // it might be that the data has inconsistent sportId values
+          console.log(`Warning: Received ${data.length} events but none match sportId ${sportId}`);
+          console.log('Sample event sportId from API:', data[0]?.sportId);
+          
+          // Use the data without filtering if no matches after filter
+          return data;
+        }
+        
+        // For Tennis and other non-football sports, adapt the data structure but don't replace real API data
+        if (sportId === 3) { // Tennis
+          console.log(`Adapting ${filteredData.length} events for tennis`);
+          
+          // Just modify market types and remove draw odds for tennis
+          const adaptedEvents = filteredData.map((event: any) => {
+            return {
+              ...event,
+              drawOdds: null, // Tennis has no draws
+              // Convert any "Match Result" markets to "Match Winner" for tennis terminology
+              markets: event.markets?.map((market: any) => {
+                if (market.name === "Match Result") {
+                  return {
+                    ...market,
+                    name: "Match Winner",
+                    // Remove "Draw" outcome for tennis
+                    outcomes: market.outcomes.filter((outcome: any) => 
+                      outcome.name !== "Draw"
+                    )
+                  };
+                }
+                // Rename "Total Goals" to "Total Games" for tennis 
+                else if (market.name === "Total Goals" || market.name === "Over/Under 2.5 Goals") {
+                  return {
+                    ...market,
+                    name: "Total Games",
+                    outcomes: [
+                      { ...market.outcomes[0], name: "Over 22.5" },
+                      { ...market.outcomes[1], name: "Under 22.5" }
+                    ]
+                  };
+                }
+                return market;
+              }) || []
+            };
+          });
+          
+          console.log(`Adapted ${adaptedEvents.length} events for tennis display`);
+          return adaptedEvents;
+        } 
+        else if (sportId === 2) { // Basketball
+          // Basketball has specific market types like total points
+          const sportSpecificData = filteredData.map((event: any) => {
+            return {
+              ...event,
+              isMapped: true,
+              markets: event.markets?.map((market: any) => {
+                if (market.name === "Over/Under 2.5 Goals") {
+                  return {
+                    ...market,
+                    name: "Total Points",
+                    outcomes: [
+                      { ...market.outcomes[0], name: "Over 195.5" },
+                      { ...market.outcomes[1], name: "Under 195.5" }
+                    ]
+                  };
+                }
+                return market;
+              }) || []
+            };
+          });
+          
+          console.log(`Modified ${sportSpecificData.length} basketball events to match sport-specific format`);
+          return sportSpecificData;
+        }
+        
+        console.log(`Returning ${filteredData.length} filtered events for sportId: ${sportId}`);
+        return filteredData;
+      } catch (error) {
+        console.error(`Error fetching events for ${sportName}:`, error);
+        toast({
+          title: 'Error Fetching Events',
+          description: `Failed to load ${selectedTab} events for ${sportName}`,
+          variant: 'destructive',
         });
-        
-        console.log(`Adapted ${adaptedEvents.length} events for tennis display`);
-        return adaptedEvents;
-      } 
-      else if (sportId === 2) { // Basketball
-        // Basketball has specific market types like total points
-        const sportSpecificData = filteredData.map((event: any) => {
-          return {
-            ...event,
-            isMapped: true,
-            markets: event.markets?.map((market: any) => {
-              if (market.name === "Over/Under 2.5 Goals") {
-                return {
-                  ...market,
-                  name: "Total Points",
-                  outcomes: [
-                    { ...market.outcomes[0], name: "Over 195.5" },
-                    { ...market.outcomes[1], name: "Under 195.5" }
-                  ]
-                };
-              }
-              return market;
-            }) || []
-          };
-        });
-        
-        console.log(`Modified ${sportSpecificData.length} basketball events to match sport-specific format`);
-        return sportSpecificData;
+        return [];
       }
-      
-      console.log(`Received ${data.length} events, filtered to ${filteredData.length} for sportId: ${sportId}`);
-      return filteredData;
     },
     enabled: !!sportId,
     refetchInterval: selectedTab === 'live' ? 15000 : 60000 // Refresh more frequently for live events

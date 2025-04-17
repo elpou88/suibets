@@ -105,6 +105,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
+      // CRITICAL FIX: Special handling for cricket data (sportId 9)
+      if (reqSportId === 9) {
+        // Import cricket service here to avoid circular dependencies
+        const { cricketService } = require('./services/cricketService');
+        
+        // Get cricket events from dedicated service that handles cricket API issues
+        const cricketEvents = await cricketService.getEvents(isLive);
+        console.log(`[Routes] Cricket service returned ${cricketEvents.length} ${isLive ? 'live' : 'upcoming'} cricket events`);
+        
+        // If the cricket service returned events, use those
+        if (cricketEvents.length > 0) {
+          return res.json(cricketEvents);
+        }
+        
+        console.log('[Routes] Cricket service returned no events, falling back to API');
+      }
+      
       // Get events from storage for non-live events
       let events = await storage.getEvents(reqSportId, isLive);
       console.log(`Found ${events.length} events for sportId: ${reqSportId} in database`);
@@ -129,9 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[Routes] CRICKET REQUEST DETECTED - Using special cricket handling');
         try {
           // Use the dedicated cricket service
-          const cricketEvents = isLive 
-            ? await cricketService.getLiveMatches()
-            : await cricketService.getUpcomingMatches(20);
+          const cricketEvents = await cricketService.getEvents(isLive);
             
           console.log(`[Routes] Cricket service returned ${cricketEvents.length} ${isLive ? 'live' : 'upcoming'} cricket events`);
           

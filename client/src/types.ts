@@ -2,9 +2,10 @@ import { ReactNode } from 'react';
 
 // Base Event type
 export interface Event {
-  id: number;
+  id: number | string; // Support both numeric and string IDs
   sportId: number;
   leagueName: string;
+  leagueSlug?: string; // Added to support league-based URL routes
   homeTeam: string;
   awayTeam: string;
   startTime: string;
@@ -16,6 +17,9 @@ export interface Event {
   drawOdds?: number;
   awayOdds?: number;
   markets?: Market[];
+  // Cricket-specific fields
+  venue?: string;
+  format?: string;
 }
 
 // Market type for betting options

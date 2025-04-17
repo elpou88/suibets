@@ -96,13 +96,27 @@ export class WurlusService {
       const tx = new TransactionBlock();
       
       // Prepare bet data using BCS for the Sui Move call
-      const writer = new BcsWriter();
-      writer.writeString(eventId);
-      writer.writeString(marketId);
-      writer.writeString(outcomeId);
-      writer.writeU64(BigInt(amount * 1000000)); // Convert to smallest unit
+      // Import and use Bcs from @mysten/bcs
+      const { BcsWriter, bcs } = require('@mysten/bcs');
       
-      const betData = writer.toBytes();
+      // Serialize using proper BCS methods
+      bcs.registerStructType('BetData', {
+        eventId: 'string',
+        marketId: 'string', 
+        outcomeId: 'string',
+        amount: 'u64'
+      });
+      
+      // Create the bet data object
+      const betDataObj = {
+        eventId,
+        marketId,
+        outcomeId,
+        amount: BigInt(amount * 1000000) // Convert to smallest unit
+      };
+      
+      // Serialize the bet data
+      const betData = bcs.ser('BetData', betDataObj).toBytes();
       
       // Call the betting module on the wurlus package with the appropriate token type
       if (tokenType === 'SUI') {

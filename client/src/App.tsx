@@ -87,13 +87,19 @@ function App() {
                     {/* Redirect connect-wallet route to HomePage with modal approach */}
                     <Route path="/connect-wallet">
                       {() => {
-                        // Dispatch an event to trigger the wallet modal
-                        window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
-                        // Use wouter navigation instead of window.location to prevent full page refresh
-                        setTimeout(() => {
+                        // Use a useEffect to handle this properly after the component is mounted
+                        useEffect(() => {
+                          console.log('Connect-wallet route detected, triggering modal...');
+                          
+                          // Dispatch an event to trigger the wallet modal
+                          const event = new CustomEvent('suibets:connect-wallet-required');
+                          window.dispatchEvent(event);
+                          
                           // Use history API to replace current URL without refreshing
                           window.history.replaceState(null, '', '/');
-                        }, 0);
+                        }, []);
+                        
+                        // Return the HomeReal component
                         return <HomeReal />;
                       }}
                     </Route>

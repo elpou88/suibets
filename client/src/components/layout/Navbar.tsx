@@ -45,7 +45,8 @@ export default function Navbar() {
     const handleWalletConnectionRequired = () => {
       console.log('Wallet connection requested from another component');
       if (!user?.walletAddress) {
-        attemptQuickWalletConnection();
+        // Open the wallet modal directly
+        setIsWalletModalOpen(true);
       }
     };
     
@@ -56,30 +57,18 @@ export default function Navbar() {
   }, [user?.walletAddress]);
   
   // Open connect wallet modal or attempt quick connection if wallet detected
-  const attemptQuickWalletConnection = async () => {
+  const attemptQuickWalletConnection = async (e: React.MouseEvent) => {
+    // Prevent default behavior to avoid page navigation
+    e.preventDefault();
+    
     if (isAttemptingConnection) return; // Prevent multiple attempts
     
     try {
       setIsAttemptingConnection(true);
       console.log('Connect wallet button clicked');
       
-      // First try direct connection with adapter
-      try {
-        console.log('Attempting to connect via adapter...');
-        const connectionSuccessful = await connectAdapter();
-        console.log('Connect adapter call completed, success:', connectionSuccessful, 'current address:', address);
-        
-        // Check the connection result
-        if (!connectionSuccessful || !address) {
-          console.log('Connection unsuccessful or no address returned - opening wallet modal');
-          // If direct connection fails, open the wallet modal immediately
-          setIsWalletModalOpen(true);
-        }
-      } catch (err) {
-        console.log('Direct connection failed with error, opening wallet modal', err);
-        // If direct connection fails, open the wallet modal immediately
-        setIsWalletModalOpen(true);
-      }
+      // Open the wallet modal immediately instead of attempting connection
+      setIsWalletModalOpen(true);
       
       setIsAttemptingConnection(false);
     } catch (error) {

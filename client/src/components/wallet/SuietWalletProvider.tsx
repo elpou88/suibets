@@ -62,18 +62,33 @@ export const SuietWalletProvider = ({ children }: SuietWalletProviderProps) => {
     wallets: AllDefaultWallets,
   };
 
+  // Set up error handler separately to avoid typechecking issues
+  useEffect(() => {
+    const handleWalletError = (error: Error) => {
+      console.error('Wallet error:', error);
+      toast({
+        title: 'Wallet Connection Error',
+        description: error.message || 'Failed to connect to wallet',
+        variant: 'destructive',
+      });
+    };
+    
+    // Listen for wallet errors
+    window.addEventListener('wallet-error', (e: any) => {
+      if (e.detail?.error) {
+        handleWalletError(e.detail.error);
+      }
+    });
+    
+    return () => {
+      window.removeEventListener('wallet-error', handleWalletError as any);
+    };
+  }, [toast]);
+
   return (
     <WalletProvider
       defaultWallets={AllDefaultWallets}
       autoConnect={false}
-      onError={(err) => {
-        console.error('Wallet error:', err);
-        toast({
-          title: 'Wallet Connection Error',
-          description: err.message || 'Failed to connect to wallet',
-          variant: 'destructive',
-        });
-      }}
     >
       {children}
     </WalletProvider>

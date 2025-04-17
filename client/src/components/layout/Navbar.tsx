@@ -66,17 +66,17 @@ export default function Navbar() {
       // First try direct connection with adapter
       try {
         console.log('Attempting to connect via adapter...');
-        await connectAdapter();
-        console.log('Connect adapter call completed, current address:', address);
+        const connectionSuccessful = await connectAdapter();
+        console.log('Connect adapter call completed, success:', connectionSuccessful, 'current address:', address);
         
-        // Check address after connection attempt
-        if (!address) {
-          console.log('No address after connection attempt - opening wallet modal');
+        // Check the connection result
+        if (!connectionSuccessful || !address) {
+          console.log('Connection unsuccessful or no address returned - opening wallet modal');
           // If direct connection fails, open the wallet modal immediately
           setIsWalletModalOpen(true);
         }
       } catch (err) {
-        console.log('Direct connection failed, opening wallet modal');
+        console.log('Direct connection failed with error, opening wallet modal', err);
         // If direct connection fails, open the wallet modal immediately
         setIsWalletModalOpen(true);
       }

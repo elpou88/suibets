@@ -105,7 +105,16 @@ const ConnectWalletButton: React.FC = () => {
         )}
         
         <div className="grid gap-4 py-4">
-          <Button onClick={connect} disabled={isLoading} className="w-full">
+          <Button 
+            onClick={async () => {
+              const success = await connect();
+              if (!success) {
+                console.log('Wallet connection was not successful');
+              }
+            }} 
+            disabled={isLoading} 
+            className="w-full"
+          >
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

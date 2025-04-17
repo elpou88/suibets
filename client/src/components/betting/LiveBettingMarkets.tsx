@@ -39,16 +39,16 @@ export function LiveBettingMarkets() {
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
   const [expandedMarkets, setExpandedMarkets] = useState<Record<string, boolean>>({});
   
-  // Fetch all live events
+  // Fetch all live events from all sports
   const { data: events = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
-    queryKey: ['/api/events', { isLive: true }],
+    queryKey: ['/api/events/live'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/events?isLive=true');
+      const response = await apiRequest('GET', '/api/events/live');
       const data = await response.json();
       console.log("API response for live events:", data);
       return data;
     },
-    refetchInterval: 15000, // Refetch every 15 seconds
+    refetchInterval: 20000, // Refetch every 20 seconds
   });
   
   // Fetch all sports for accurate sport names
@@ -175,15 +175,15 @@ export function LiveBettingMarkets() {
     );
   }
   
+  // State for active sport filter
+  const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
+  
   // Get all available sports for the sports filter
   const availableSports = Object.keys(eventsBySport).map(sportId => ({
     id: parseInt(sportId),
     name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
     count: eventsBySport[sportId].length
   }));
-  
-  // State for active sport filter
-  const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
   
   // Filter events by selected sport or show all if none selected
   const filteredEvents = activeSportFilter 

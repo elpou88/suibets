@@ -421,6 +421,20 @@ export class BlockchainStorage {
         // Continue with empty events array
       }
       
+      // If no events were found from API services or event tracking, try the local provider
+      if (events.length === 0) {
+        try {
+          const { localEventsProvider } = await import('./services/localEventsProvider');
+          if (localEventsProvider) {
+            console.log('[BlockchainStorage] API and blockchain unavailable, using LocalEventsProvider as fallback');
+            events = localEventsProvider.getEvents(sportId, isLive);
+            console.log(`[BlockchainStorage] LocalEventsProvider returned ${events.length} events`);
+          }
+        } catch (localProviderError) {
+          console.error('[BlockchainStorage] Error using LocalEventsProvider:', localProviderError);
+        }
+      }
+      
       if (limit && events.length > limit) {
         events = events.slice(0, limit);
       }
@@ -428,6 +442,22 @@ export class BlockchainStorage {
       return events;
     } catch (error) {
       console.error('Error getting events from blockchain:', error);
+      
+      // As a last resort, try the local provider directly
+      try {
+        const { localEventsProvider } = await import('./services/localEventsProvider');
+        if (localEventsProvider) {
+          console.log('[BlockchainStorage] Using LocalEventsProvider as last resort');
+          const localEvents = localEventsProvider.getEvents(sportId, isLive);
+          if (limit && localEvents.length > limit) {
+            return localEvents.slice(0, limit);
+          }
+          return localEvents;
+        }
+      } catch (e) {
+        console.error('[BlockchainStorage] Final fallback failed:', e);
+      }
+      
       // Return empty array instead of throwing to prevent app failure
       return [];
     }

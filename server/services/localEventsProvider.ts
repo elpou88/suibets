@@ -111,7 +111,14 @@ export class LocalEventsProvider {
     }
     
     // Otherwise, extract unique sports from the events
-    const sportIds = new Set(this.eventsData.map(event => event.sportId));
+    const sportIds = new Set<number>();
+    // Ensure we only add numeric sportIds to our set
+    this.eventsData.forEach(event => {
+      if (typeof event.sportId === 'number') {
+        sportIds.add(event.sportId);
+      }
+    });
+    
     const sportNames: Record<number, string> = {
       1: 'Soccer',
       2: 'Basketball',
@@ -149,15 +156,18 @@ export class LocalEventsProvider {
     };
     
     // Create a sports array from the extracted sportIds
-    const sports: Sport[] = Array.from(sportIds).map(id => ({
-      id,
-      name: sportNames[id] || `Sport ${id}`,
-      slug: (sportNames[id] || `sport-${id}`).toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-'),
-      icon: sportIcons[id] || '🏆',
-      wurlusSportId: `sport_${id}_wurlus_id`,
-      isActive: true,
-      providerId: 'local_provider'
-    }));
+    const sports: Sport[] = [];
+    sportIds.forEach(id => {
+      sports.push({
+        id: id,
+        name: sportNames[id] || `Sport ${id}`,
+        slug: (sportNames[id] || `sport-${id}`).toLowerCase().replace(/\s+/g, '-').replace(/\//g, '-'),
+        icon: sportIcons[id] || '🏆',
+        wurlusSportId: `sport_${id}_wurlus_id`,
+        isActive: true,
+        providerId: 'local_provider'
+      });
+    });
     
     return sports;
   }

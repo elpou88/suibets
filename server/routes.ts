@@ -138,13 +138,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[Routes] Cricket service returned no events, falling back to API');
       }
       
+      // Setup a timeout to prevent requests from hanging too long
+      const FETCH_TIMEOUT = 5000; // 5 seconds
+      
       // Try to get events directly from event tracking service which has cached events
       let events = [];
       try {
         console.log("[Routes] Attempting to fetch events from tracking service");
         
+        // Create a timeout promise that rejects after FETCH_TIMEOUT milliseconds
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Tracking service fetch timed out')), FETCH_TIMEOUT);
+        });
+        
         if (isLive) {
-          events = eventTrackingService.getLiveEvents(reqSportId);
+          // Race the actual fetch against the timeout
+          const liveEvents = await Promise.race([
+            eventTrackingService.getLiveEvents(reqSportId),
+            timeoutPromise
+          ]);
+          events = liveEvents;
           console.log(`[Routes] Got ${events.length} live events for sportId: ${reqSportId} from tracking service`);
         } else {
           events = eventTrackingService.getUpcomingEvents(reqSportId);
@@ -152,15 +165,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         if (!events || events.length === 0) {
-          // Fallback to traditional storage if tracking service didn't have events
-          console.log("[Routes] No events from tracking service, falling back to traditional storage");
+          // If no events found in tracking service, try to fetch from blockchain storage
+          console.log("[Routes] No events from tracking service, trying blockchain storage");
+          try {
+            // Create a new timeout promise for blockchain fetch
+            const blockchainTimeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Blockchain storage fetch timed out')), FETCH_TIMEOUT);
+            });
+            
+            // Race the blockchain fetch against the timeout
+            events = await Promise.race([
+              blockchainStorage.getEvents(reqSportId, isLive),
+              blockchainTimeoutPromise
+            ]);
+            console.log(`[Routes] Got ${events.length} events from blockchain storage`);
+          } catch (blockchainError) {
+            console.error("Error fetching events from blockchain storage:", blockchainError);
+            // Final fallback to traditional storage
+            console.log("[Routes] Error from blockchain storage, falling back to traditional storage");
+            
+            // Create a new timeout promise for traditional storage fetch
+            const storageTimeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('Traditional storage fetch timed out')), FETCH_TIMEOUT);
+            });
+            
+            // Race the traditional storage fetch against the timeout
+            events = await Promise.race([
+              storage.getEvents(reqSportId, isLive),
+              storageTimeoutPromise
+            ]);
+          }
+        }
+      } catch (fetchError) {
+        console.error("Error fetching events:", fetchError);
+        
+        // If it's a timeout error, provide a meaningful log
+        if (fetchError.message && fetchError.message.includes('timed out')) {
+          console.warn(`[Routes] Request timed out: ${fetchError.message}`);
+        }
+        
+        // Try blockchain storage after tracking service error
+        try {
+          console.log("[Routes] Trying blockchain storage after tracking service error");
+          events = await blockchainStorage.getEvents(reqSportId, isLive);
+        } catch (blockchainError) {
+          console.error("Error fetching events from blockchain storage:", blockchainError);
+          // Final fallback to traditional storage
+          console.log("[Routes] Error from blockchain storage, falling back to traditional storage");
           events = await storage.getEvents(reqSportId, isLive);
         }
-      } catch (trackingError) {
-        console.error("Error fetching events from tracking service:", trackingError);
-        // Fallback to traditional storage
-        console.log("[Routes] Error from tracking service, falling back to traditional storage");
-        events = await storage.getEvents(reqSportId, isLive);
       }
       
       console.log(`Found ${events ? events.length : 0} events for sportId: ${reqSportId} from data sources`);
@@ -1063,7 +1116,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we get here, just return what's in the database
       console.log("No live events found from API, returning database events");
-      return res.json(events);
+      // Return all events if we have them
+      if (events && events.length > 0) {
+        console.log(`[Routes] Successfully returning ${events.length} events`);
+        return res.json(events);
+      } else {
+        // If we somehow got here with no events from any source, log and return an empty array
+        console.warn(`[Routes] No events found from any source for sportId: ${reqSportId}, isLive: ${isLive}`);
+        return res.json([]);
+      }
     } catch (error) {
       console.error("Error fetching events:", error);
       return res.status(500).json({ message: "Failed to fetch events" });
@@ -1108,12 +1169,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const eventId = req.params.id;
       
+      console.log(`[Routes] Fetching details for event ID: ${eventId}`);
+      
+      // First try to get event from event tracking service which has cached events
       try {
-        // First try to parse as a number
+        console.log("[Routes] Attempting to fetch event from tracking service");
+        const trackingEvent = await eventTrackingService.getEventById(eventId);
+        
+        if (trackingEvent) {
+          console.log(`[Routes] Found event ${eventId} in tracking service`);
+          return res.json(trackingEvent);
+        }
+      } catch (trackingError) {
+        console.error("[Routes] Error fetching event from tracking service:", trackingError);
+      }
+      
+      // Then try to get event from blockchain storage
+      try {
+        console.log("[Routes] Attempting to fetch event from blockchain storage");
+        // Try to get specific event by ID from blockchain
+        const eventIdNum = Number(eventId);
+        const blockchainEvent = await blockchainStorage.getEvents(undefined, undefined, 1);
+        // Filter to find the specific event
+        const filteredEvent = blockchainEvent.filter(event => event.id === eventIdNum);
+        
+        if (filteredEvent && filteredEvent.length > 0) {
+          console.log(`[Routes] Found event ${eventId} in blockchain storage`);
+          return res.json(filteredEvent[0]);
+        } else if (blockchainEvent && blockchainEvent.length > 0) {
+          // If we didn't find the exact event ID but have other events, log and try the first one
+          console.log(`[Routes] No exact match for event ${eventId}, but found other events in blockchain storage`);
+          return res.json(blockchainEvent[0]);
+        }
+      } catch (blockchainError) {
+        console.error("[Routes] Error fetching event from blockchain storage:", blockchainError);
+      }
+      
+      // Finally try traditional storage
+      try {
+        // Try to parse as a number
         const numericId = parseInt(eventId, 10);
         if (!isNaN(numericId)) {
           const event = await storage.getEvent(numericId);
           if (event) {
+            console.log(`[Routes] Found event ${eventId} in traditional storage`);
             // Get markets for the event if available
             const markets = await storage.getMarkets(numericId);
             
@@ -1127,7 +1226,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
       } catch (parseError) {
-        // Silent catch - if it's not a number, we'll try other ways to fetch the event
+        console.error("[Routes] Error fetching event from traditional storage:", parseError);
       }
       
       // For API-Sports events, the IDs might be strings
@@ -1145,6 +1244,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Promotions
   app.get("/api/promotions", async (req: Request, res: Response) => {
     try {
+      console.log("[Routes] Fetching promotions");
+      
+      // First try blockchain storage
+      try {
+        console.log("[Routes] Attempting to fetch promotions from blockchain storage");
+        const blockchainPromotions = await blockchainStorage.getPromotions();
+        
+        if (blockchainPromotions && blockchainPromotions.length > 0) {
+          console.log(`[Routes] Found ${blockchainPromotions.length} promotions in blockchain storage`);
+          return res.json(blockchainPromotions);
+        }
+      } catch (blockchainError) {
+        console.error("[Routes] Error fetching promotions from blockchain storage:", blockchainError);
+      }
+      
+      // Fallback to traditional storage
+      console.log("[Routes] Fetching promotions from traditional storage");
       const promotions = await storage.getPromotions();
       return res.json(promotions);
     } catch (error) {

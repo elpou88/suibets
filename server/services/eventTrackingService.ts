@@ -383,13 +383,44 @@ export class EventTrackingService {
   }
   
   /**
-   * Get all live events currently available
+   * Get all live events currently available, optionally filtered by sport ID
    */
-  public async getLiveEvents(): Promise<any[]> {
+  public async getLiveEvents(sportId?: number): Promise<any[]> {
     try {
-      return await this.getAllLiveEvents();
+      const allLiveEvents = await this.getAllLiveEvents();
+      
+      if (sportId) {
+        console.log(`[EventTrackingService] Filtering ${allLiveEvents.length} live events for sportId ${sportId}`);
+        return allLiveEvents.filter(event => event.sportId === sportId);
+      }
+      
+      return allLiveEvents;
     } catch (error) {
       console.error('[EventTrackingService] Error getting live events:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Get all upcoming (non-live) events, optionally filtered by sport ID
+   */
+  public getUpcomingEvents(sportId?: number): any[] {
+    try {
+      // Get all events from tracked events that are not live
+      const upcomingEvents = Array.from(this.trackedEvents.values())
+        .filter(event => !event.isLive);
+      
+      console.log(`[EventTrackingService] Found ${upcomingEvents.length} upcoming events from tracked events`);
+      
+      // Filter by sport ID if provided
+      if (sportId) {
+        console.log(`[EventTrackingService] Filtering upcoming events for sportId ${sportId}`);
+        return upcomingEvents.filter(event => event.sportId === sportId);
+      }
+      
+      return upcomingEvents;
+    } catch (error) {
+      console.error('[EventTrackingService] Error getting upcoming events:', error);
       return [];
     }
   }

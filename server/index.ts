@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes"; // Using main routes.ts instead of routes-simple.ts
+import { registerRoutes } from "./routes-enhanced"; // Enhanced routes with better support for all sports
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";

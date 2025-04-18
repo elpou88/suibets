@@ -469,7 +469,7 @@ function LiveBettingMarkets() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
-                        <span className="text-white font-bold">{event.homeTeam} vs {event.awayTeam}</span>
+                        <span className="text-cyan-200 font-bold">{event.homeTeam} vs {event.awayTeam}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded">

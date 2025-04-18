@@ -122,7 +122,7 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
       <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
         <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-          <CardTitle className="text-white font-bold flex items-center">
+          <CardTitle className="text-cyan-300 font-bold flex items-center">
             Match Result
           </CardTitle>
         </CardHeader>
@@ -133,8 +133,8 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
             onClick={() => handleAddBet('Match Result', `${resolvedHomeTeam} (Win)`, resolvedHomeOdds)}
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
-            <span className="text-white font-medium">{resolvedHomeTeam}</span>
-            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-white px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedHomeOdds)}</span>
+            <span className="text-cyan-300 font-medium">{resolvedHomeTeam}</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedHomeOdds)}</span>
           </Button>
           
           {/* Draw option for sports that can have draws */}
@@ -144,8 +144,8 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
               onClick={() => handleAddBet('Match Result', 'Draw', resolvedDrawOdds)}
               className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
             >
-              <span className="text-white font-medium">Draw</span>
-              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-white px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedDrawOdds)}</span>
+              <span className="text-cyan-300 font-medium">Draw</span>
+              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedDrawOdds)}</span>
             </Button>
           )}
           
@@ -155,8 +155,8 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
             onClick={() => handleAddBet('Match Result', `${resolvedAwayTeam} (Win)`, resolvedAwayOdds)}
             className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
           >
-            <span className="text-white font-medium">{resolvedAwayTeam}</span>
-            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-white px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedAwayOdds)}</span>
+            <span className="text-cyan-300 font-medium">{resolvedAwayTeam}</span>
+            <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">{formatOdds(resolvedAwayOdds)}</span>
           </Button>
         </CardContent>
       </Card>
@@ -166,7 +166,7 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
         <Card className="mb-6 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10">
           <CardHeader className="pb-3 bg-[#0b1618] border-b border-[#1e3a3f] relative">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-            <CardTitle className="text-white font-bold flex items-center">
+            <CardTitle className="text-cyan-300 font-bold flex items-center">
               Total Points
             </CardTitle>
           </CardHeader>
@@ -176,16 +176,16 @@ const SimpleMarkets: React.FC<SimpleMarketsProps> = ({
               onClick={() => handleAddBet('Total Points', 'Over 199.5', 1.90)}
               className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
             >
-              <span className="text-white font-medium">Over 199.5</span>
-              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-white px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
+              <span className="text-cyan-300 font-medium">Over 199.5</span>
+              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
             </Button>
             <Button
               variant="outline"
               onClick={() => handleAddBet('Total Points', 'Under 199.5', 1.90)}
               className="flex-1 flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
             >
-              <span className="text-white font-medium">Under 199.5</span>
-              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-white px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
+              <span className="text-cyan-300 font-medium">Under 199.5</span>
+              <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">1.90</span>
             </Button>
           </CardContent>
         </Card>

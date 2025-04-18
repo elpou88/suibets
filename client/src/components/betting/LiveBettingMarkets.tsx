@@ -469,13 +469,13 @@ function LiveBettingMarkets() {
                     <div className="flex justify-between items-center">
                       <div className="flex items-center">
                         <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
-                        <span className="text-cyan-200 font-bold">{event.homeTeam} vs {event.awayTeam}</span>
+                        <span className="text-cyan-300 font-bold">{event.homeTeam} vs {event.awayTeam}</span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded">
+                        <div className="text-xs bg-[#1e3a3f] text-cyan-300 px-2 py-1 rounded">
                           {event.leagueName}
                         </div>
-                        <div className="text-xs bg-[#1e3a3f] text-cyan-200 px-2 py-1 rounded flex items-center">
+                        <div className="text-xs bg-[#1e3a3f] text-cyan-300 px-2 py-1 rounded flex items-center">
                           <Clock className="h-3 w-3 mr-1" />
                           {event.score || "0-0"}
                         </div>
@@ -497,7 +497,7 @@ function LiveBettingMarkets() {
                               className="px-3 py-2 bg-[#0f1c1f] rounded-t border-[#1e3a3f] border flex justify-between items-center cursor-pointer"
                               onClick={() => toggleMarket(event.id, market.id)}
                             >
-                              <span className="font-medium text-cyan-200">{market.name}</span>
+                              <span className="font-medium text-cyan-300">{market.name}</span>
                             </div>
                             
                             {/* Market outcomes (shows when market is expanded) */}
@@ -511,8 +511,8 @@ function LiveBettingMarkets() {
                                       onClick={() => handleBetClick(event, market, outcome)}
                                       className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-[#0f3942] hover:border-[#00ffff] hover:text-[#00ffff] transition-all duration-200 py-3"
                                     >
-                                      <span className="text-sm font-medium">{outcome.name}</span>
-                                      <div className="flex items-center justify-center mt-1 px-2 py-1 bg-[#1e3a3f] rounded text-cyan-400 text-xs">
+                                      <span className="text-sm font-medium text-cyan-300">{outcome.name}</span>
+                                      <div className="flex items-center justify-center mt-1 px-2 py-1 bg-[#1e3a3f] rounded text-cyan-300 text-xs">
                                         {formatOdds(outcome.odds)}
                                       </div>
                                     </Button>

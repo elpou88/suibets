@@ -383,8 +383,14 @@ export class EventTrackingService {
               providerId: liveEventData.providerId || 'api-sports',
             };
             
-            // Try to create the event in storage
-            const insertedEvent = await storage.createEvent(newLiveEvent);
+            // Try to create the event in storage if the method exists
+            let insertedEvent;
+            if (typeof storage.createEvent === 'function') {
+              insertedEvent = await storage.createEvent(newLiveEvent);
+            } else {
+              console.log(`[EventTrackingService] storage.createEvent method not available, using event data as-is`);
+              insertedEvent = newLiveEvent;
+            }
             console.log(`[EventTrackingService] Successfully created new live event ${insertedEvent.id}`);
             
             // Add to tracked events
@@ -462,8 +468,17 @@ export class EventTrackingService {
    */
   public async getEventById(eventId: string): Promise<any | null> {
     try {
-      // First check if the event is in storage
-      const storedEvent = await storage.getEvent(Number(eventId));
+      // First check if the event is in storage if the method exists
+      let storedEvent = null;
+      try {
+        if (typeof storage.getEvent === 'function') {
+          storedEvent = await storage.getEvent(Number(eventId));
+        } else {
+          console.log(`[EventTrackingService] storage.getEvent method not available, skipping storage check for event ${eventId}`);
+        }
+      } catch (storageError) {
+        console.error(`[EventTrackingService] Error getting event ${eventId} from storage:`, storageError);
+      }
       
       if (storedEvent) {
         console.log(`[EventTrackingService] Found event ${eventId} in storage`);

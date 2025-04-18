@@ -232,6 +232,36 @@ export class BlockchainStorage {
     console.log(`Getting all sports from blockchain`);
     
     try {
+      // Check cache first
+      if (this.sportCache.size > 0) {
+        console.log('[BlockchainStorage] Returning sports from cache, count:', this.sportCache.size);
+        return Array.from(this.sportCache.values());
+      }
+      
+      // Before using hardcoded values, try to use LocalEventsProvider as a fallback
+      try {
+        const { localEventsProvider } = await import('./services/localEventsProvider');
+        if (localEventsProvider) {
+          console.log('[BlockchainStorage] Trying LocalEventsProvider for sports data');
+          const localSports = localEventsProvider.getSports();
+          
+          // Populate cache if we got data
+          if (localSports && localSports.length > 0) {
+            console.log('[BlockchainStorage] Using sports from LocalEventsProvider, count:', localSports.length);
+            localSports.forEach(sport => {
+              this.sportCache.set(sport.id, sport);
+            });
+            
+            return localSports;
+          }
+        }
+      } catch (localProviderError) {
+        console.error('[BlockchainStorage] Error using LocalEventsProvider for sports:', localProviderError);
+      }
+      
+      // If LocalEventsProvider fails or returns no data, use our pre-defined list
+      console.log('[BlockchainStorage] Using pre-defined list of sports');
+      
       // In a full implementation, we would query the blockchain for sports
       // For now, we'll return a pre-defined list that matches our blockchain IDs
       

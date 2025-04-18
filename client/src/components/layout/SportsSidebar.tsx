@@ -149,7 +149,7 @@ export default function SportsSidebar() {
     console.log("Loaded sports for betting", sports.length);
   }, [upcomingEvents.length, liveEvents.length, sports.length]);
   
-  // Map correct sportId to slug
+  // Map correct sportId to slug - fixed mapping to match sports-live/[sport].tsx
   const getSportIdForSlug = (slug: string): number => {
     const mappings: Record<string, number> = {
       'soccer': 1,
@@ -165,9 +165,12 @@ export default function SportsSidebar() {
       'golf': 10,
       'boxing': 11,
       'mma-ufc': 12,
+      'mma': 12,
       'formula_1': 13,
+      'formula-1': 13,
       'cycling': 14,
       'american_football': 15,
+      'american-football': 15,
       'afl': 16,
       'snooker': 17,
       'darts': 18,
@@ -188,13 +191,22 @@ export default function SportsSidebar() {
 
   // Handle sport click to ensure correct sport ID is used
   const handleSportClick = (sport: any) => {
-    // Store the sport ID for event filtering
-    localStorage.setItem('currentSportId', String(sport.id));
-    localStorage.setItem('currentSportSlug', sport.slug);
-    console.log(`Selected sport: ${sport.name} (ID: ${sport.id}, slug: ${sport.slug})`);
+    // Normalize slug to ensure format compatibility with sports-live/[sport].tsx
+    const normalizedSlug = sport.slug
+      .replace('_', '-') // Convert formula_1 to formula-1
+      .toLowerCase();
     
-    // Navigate to the sport page
-    setLocation(`/sports-live/${sport.slug}`);
+    // Get the correct sportId based on the normalized slug
+    const sportId = getSportIdForSlug(normalizedSlug);
+    
+    // Store the sport ID for event filtering
+    localStorage.setItem('currentSportId', String(sportId));
+    localStorage.setItem('currentSportSlug', normalizedSlug);
+    
+    console.log(`Selected sport: ${sport.name} (ID: ${sportId}, slug: ${normalizedSlug})`);
+    
+    // Navigate to the sport page using the normalized slug
+    setLocation(`/sports-live/${normalizedSlug}`);
   };
 
   return (

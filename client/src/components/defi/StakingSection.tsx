@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { useBlockchainAuth } from '@/hooks/useBlockchainAuth';
-import { Loader2, ArrowLeft, TrendingUp, Award, Timer, ChevronRight, BarChart3, ArrowDown, ArrowUp, PiggyBank, Wallet, HelpCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, TrendingUp, Award, Timer, ChevronRight, BarChart3, ArrowDown, ArrowUp, PiggyBank, Wallet, HelpCircle, Target, Trophy, Landmark } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 // Types for staking pools
@@ -22,6 +22,10 @@ interface StakingPool {
   totalStaked: number;
   token: 'SUI' | 'SBETS';
   minStake: number;
+  outcomeRelated?: boolean;
+  outcomeDescription?: string;
+  eventName?: string;
+  additionalYield?: number;
 }
 
 // Types for user staking positions

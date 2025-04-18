@@ -3,7 +3,7 @@ import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
   Home, TrendingUp, Megaphone, Bell, Settings, 
-  Clock, Wallet, ChevronLeft, CircleDollarSign, 
+  Clock, Wallet, ChevronLeft, Landmark, 
   TrendingDown, Trophy, Search, MenuIcon
 } from 'lucide-react';
 
@@ -29,7 +29,7 @@ const Layout: React.FC<LayoutProps> = ({
   const bottomNavItems = [
     { label: 'Home', icon: <Home />, href: '/home-real' },
     { label: 'Live', icon: <TrendingUp />, href: '/live-real' },
-    { label: 'Dividends', icon: <CircleDollarSign />, href: '/dividends' },
+    { label: 'DeFi', icon: <Landmark />, href: '/defi-staking' },
     { label: 'History', icon: <Clock />, href: '/bet-history' },
     { label: 'Settings', icon: <Settings />, href: '/settings' },
   ];

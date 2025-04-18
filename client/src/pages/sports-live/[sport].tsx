@@ -73,12 +73,54 @@ export default function SportPage() {
         console.log(`Fetching events for specific sport: ${sportName} (ID: ${sportId}), Live: ${selectedTab === 'live'}`);
         console.log(`API URL: ${url}`);
         
-        const response = await apiRequest('GET', url);
-        if (!response.ok) {
-          throw new Error(`API request failed with status ${response.status}`);
+        // Try fetching with modified error handling for network errors
+        let data = [];
+        try {
+          // Try direct fetch first - this avoids throwing on network errors
+          const response = await fetch(url, {
+            method: 'GET',
+            headers: {},
+            credentials: 'include',
+          });
+          
+          // If status code indicates success, parse the JSON
+          if (response.status >= 200 && response.status < 300) {
+            data = await response.json();
+            console.log(`Success! Received ${data.length} events for ${sportName} via direct fetch`);
+          } else {
+            console.warn(`API request returned status ${response.status}, trying fallback`);
+            
+            // For certain sports that have fallback hard-coded events
+            if ([9, 14].includes(sportId)) { // Cricket, Cycling - special handling
+              console.warn(`Using fallback strategy for sport ID ${sportId} (${sportName})`);
+              // Use the /api/events/tracked endpoint as fallback for these sports
+              const fallbackResponse = await fetch('/api/events/tracked');
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                // Filter to just get this sport's events
+                data = fallbackData.filter((event: any) => Number(event.sportId) === sportId);
+                console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+              }
+            }
+          }
+        } catch (fetchError) {
+          console.error(`Network error during fetch: ${fetchError}`);
+          // For cricket and cycling, attempt to use the tracking service via the tracked endpoint
+          if ([9, 14].includes(sportId)) {
+            console.warn(`Attempting tracked events fallback for sport ID ${sportId}`);
+            try {
+              const fallbackResponse = await fetch('/api/events/tracked');
+              if (fallbackResponse.ok) {
+                const fallbackData = await fallbackResponse.json();
+                // Filter to just get this sport's events
+                data = fallbackData.filter((event: any) => Number(event.sportId) === sportId);
+                console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+              }
+            } catch (fallbackError) {
+              console.error(`Fallback also failed: ${fallbackError}`);
+            }
+          }
         }
-        
-        const data = await response.json();
         console.log(`Received ${data.length} events for ${sportName}`);
         
         // For NBA/MLB/NHL/NFL sports, try matching with their corresponding mainstream sport IDs as well
@@ -378,13 +420,37 @@ export default function SportPage() {
     return (
       <div className="container py-8">
         <div className="flex items-center justify-center h-64">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="text-destructive">Error Loading Events</CardTitle>
+          <Card className="w-full max-w-md bg-[#0f1c1f] border-[#1e3a3f]">
+            <CardHeader className="bg-[#112225] border-b border-[#1e3a3f]">
+              <CardTitle className="text-red-400">
+                <div className="flex items-center">
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Connection Issue
+                </div>
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Having trouble connecting to {sportName} data
+              </CardDescription>
             </CardHeader>
-            <CardContent>
-              <p className="mb-4">Failed to load events for {sportName}. Please try again later.</p>
-              <Button onClick={() => refetch()}>Try Again</Button>
+            <CardContent className="pt-6">
+              <div className="mb-4 p-3 bg-[#0b1618] border border-[#1e3a3f] rounded-md text-gray-300">
+                <p className="mb-2">We're currently having trouble loading the latest {sportName} events. Our team is working on it.</p>
+                <p>You can try refreshing or check out other sports while we fix this.</p>
+              </div>
+              <div className="flex justify-between">
+                <Button 
+                  onClick={() => refetch()} 
+                  className="bg-cyan-500 hover:bg-cyan-600 text-black"
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Try Again
+                </Button>
+                <Link href="/">
+                  <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10">
+                    Return to Home
+                  </Button>
+                </Link>
+              </div>
             </CardContent>
           </Card>
         </div>

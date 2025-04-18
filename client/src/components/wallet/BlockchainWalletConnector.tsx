@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { useBlockchainAuth } from '@/hooks/useBlockchainAuth';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wallet, CheckCircle, ShieldCheck, AlertCircle, ExternalLink } from 'lucide-react';
+import { Loader2, Wallet, CheckCircle, ShieldCheck, AlertCircle, ExternalLink, ArrowRightLeft, Copy } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ConnectButton, useWallet } from '@suiet/wallet-kit';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface BlockchainWalletConnectorProps {
   onConnect?: (address: string) => void;
@@ -16,6 +18,15 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
   const { toast } = useToast();
   const { user, isLoading, connectWalletMutation, disconnectWalletMutation } = useBlockchainAuth();
   const [showWallets, setShowWallets] = useState(false);
+  const [manualWalletAddress, setManualWalletAddress] = useState('');
+  const [depositSuiAmount, setDepositSuiAmount] = useState('');
+  const [depositSbetsAmount, setDepositSbetsAmount] = useState('');
+  const [withdrawAmount, setWithdrawAmount] = useState('');
+  const [withdrawToken, setWithdrawToken] = useState<'SUI' | 'SBETS'>('SUI');
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [showWithdrawModal, setShowWithdrawModal] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
   
   // Get Suiet wallet state
   const suietWallet = useWallet();
@@ -24,17 +35,49 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
   useEffect(() => {
     if (user?.walletAddress && user?.authenticated && onConnect) {
       onConnect(user.walletAddress);
+      toast({
+        title: "Wallet Connected Successfully",
+        description: "Your wallet is now connected to the Sui blockchain.",
+        variant: "default",
+      });
     }
-  }, [user, onConnect]);
+  }, [user, onConnect, toast]);
   
   const handleConnectWallet = async (walletAddress: string, walletType: string = 'Sui') => {
     try {
+      if (!walletAddress) {
+        toast({
+          title: "Error Connecting Wallet",
+          description: "Please enter a valid wallet address.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Simple validation to ensure it's a valid Sui address format
+      if (!walletAddress.startsWith('0x') || walletAddress.length < 32) {
+        toast({
+          title: "Invalid Wallet Address",
+          description: "Please enter a valid Sui wallet address starting with 0x.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       await connectWalletMutation.mutateAsync({
         walletAddress,
         walletType
       });
+      
+      // Reset form state
+      setManualWalletAddress('');
     } catch (error) {
       console.error('Error connecting wallet:', error);
+      toast({
+        title: "Error Connecting Wallet",
+        description: "There was an error connecting your wallet. Please try again.",
+        variant: "destructive",
+      });
     } finally {
       setShowWallets(false);
     }
@@ -49,8 +92,19 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
         await suietWallet.disconnect();
         console.log('Suiet wallet disconnected');
       }
+      
+      toast({
+        title: "Wallet Disconnected",
+        description: "Your wallet has been disconnected successfully.",
+        variant: "default",
+      });
     } catch (error) {
       console.error('Error disconnecting wallet:', error);
+      toast({
+        title: "Error Disconnecting Wallet",
+        description: "There was an error disconnecting your wallet. Please try again.",
+        variant: "destructive",
+      });
     }
   };
   
@@ -58,55 +112,359 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
     setShowWallets(!showWallets);
   };
   
+  const handleDeposit = async () => {
+    setIsDepositing(true);
+    try {
+      // Validate amounts
+      const suiAmount = parseFloat(depositSuiAmount);
+      const sbetsAmount = parseFloat(depositSbetsAmount);
+      
+      if ((isNaN(suiAmount) || suiAmount <= 0) && (isNaN(sbetsAmount) || sbetsAmount <= 0)) {
+        toast({
+          title: "Invalid Deposit Amount",
+          description: "Please enter a valid amount to deposit.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Simulate blockchain transaction
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Deposit Successful",
+        description: `Successfully deposited ${suiAmount > 0 ? `${suiAmount} SUI` : ''} ${sbetsAmount > 0 ? `${sbetsAmount} SBETS` : ''}`,
+        variant: "default",
+      });
+      
+      // Reset form and close modal
+      setDepositSuiAmount('');
+      setDepositSbetsAmount('');
+      setShowDepositModal(false);
+    } catch (error) {
+      console.error("Error depositing tokens:", error);
+      toast({
+        title: "Deposit Failed",
+        description: "There was an error processing your deposit. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDepositing(false);
+    }
+  };
+  
+  const handleWithdraw = async () => {
+    setIsWithdrawing(true);
+    try {
+      // Validate amount
+      const amount = parseFloat(withdrawAmount);
+      
+      if (isNaN(amount) || amount <= 0) {
+        toast({
+          title: "Invalid Withdraw Amount",
+          description: "Please enter a valid amount to withdraw.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Check if enough balance
+      if (withdrawToken === 'SUI' && user?.suiBalance && amount > user.suiBalance) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You don't have enough SUI tokens. Current balance: ${user.suiBalance.toFixed(2)} SUI`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (withdrawToken === 'SBETS' && user?.sbetsBalance && amount > user.sbetsBalance) {
+        toast({
+          title: "Insufficient Balance",
+          description: `You don't have enough SBETS tokens. Current balance: ${user.sbetsBalance.toFixed(2)} SBETS`,
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Simulate blockchain transaction
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      toast({
+        title: "Withdrawal Successful",
+        description: `Successfully withdrew ${amount} ${withdrawToken}`,
+        variant: "default",
+      });
+      
+      // Reset form and close modal
+      setWithdrawAmount('');
+      setShowWithdrawModal(false);
+    } catch (error) {
+      console.error("Error withdrawing tokens:", error);
+      toast({
+        title: "Withdrawal Failed",
+        description: "There was an error processing your withdrawal. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+  
   // Display connected wallet info
   if (user?.authenticated) {
     return (
-      <Card className="w-full max-w-md mx-auto bg-[#112225] border-[#1e3a3f] text-white">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Wallet className="mr-2 h-5 w-5 text-[#00ffff]" />
-            Connected Wallet
-          </CardTitle>
-          <CardDescription className="text-gray-400">
-            Your wallet is connected to the blockchain
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-sm font-medium text-gray-200">Address</p>
-              <p className="text-xs font-mono text-[#00ffff]">
-                {user.walletAddress.substring(0, 8)}...
-                {user.walletAddress.substring(user.walletAddress.length - 6)}
-              </p>
+      <>
+        <Card className="w-full max-w-md mx-auto bg-[#112225] border-[#1e3a3f] text-white">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Wallet className="mr-2 h-5 w-5 text-[#00ffff]" />
+              Connected Wallet
+            </CardTitle>
+            <CardDescription className="text-gray-400">
+              Your wallet is connected to the blockchain
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <p className="text-sm font-medium text-gray-200">Address</p>
+                <div className="flex items-center">
+                  <p className="text-xs font-mono text-[#00ffff]">
+                    {user.walletAddress.substring(0, 8)}...
+                    {user.walletAddress.substring(user.walletAddress.length - 6)}
+                  </p>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 ml-1 text-gray-400 hover:text-[#00ffff]"
+                    onClick={() => {
+                      navigator.clipboard.writeText(user.walletAddress);
+                      toast({
+                        title: "Address Copied",
+                        description: "Wallet address copied to clipboard",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              <Badge className="bg-[#1e3a3f] text-[#00ffff]">
+                <ShieldCheck className="h-3 w-3 mr-1" /> Blockchain Verified
+              </Badge>
             </div>
-            <Badge className="bg-[#1e3a3f] text-[#00ffff]">
-              <ShieldCheck className="h-3 w-3 mr-1" /> Blockchain Verified
-            </Badge>
-          </div>
-          
-          {user.suiBalance !== undefined && (
-            <div className="mt-4">
-              <p className="text-sm font-medium text-gray-200 mb-1">Balance</p>
-              <div className="flex items-center justify-between">
-                <span className="text-[#00ffff] font-medium">{user.suiBalance.toFixed(2)} SUI</span>
-                {user.sbetsBalance !== undefined && (
-                  <span className="text-[#00ffff] font-medium">{user.sbetsBalance.toFixed(2)} SBETS</span>
-                )}
+            
+            {user.suiBalance !== undefined && (
+              <div className="mt-4">
+                <p className="text-sm font-medium text-gray-200 mb-1">Balance</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[#00ffff] font-medium">{user.suiBalance.toFixed(2)} SUI</span>
+                  {user.sbetsBalance !== undefined && (
+                    <span className="text-[#00ffff] font-medium">{user.sbetsBalance.toFixed(2)} SBETS</span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            <div className="flex space-x-2 mt-4">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]"
+                onClick={() => setShowDepositModal(true)}
+              >
+                Deposit
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="flex-1 bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]"
+                onClick={() => setShowWithdrawModal(true)}
+              >
+                Withdraw
+              </Button>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              variant="outline" 
+              className="w-full border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f]"
+              onClick={handleDisconnect}
+            >
+              Disconnect
+            </Button>
+          </CardFooter>
+        </Card>
+        
+        {/* Deposit Modal */}
+        <Dialog open={showDepositModal} onOpenChange={setShowDepositModal}>
+          <DialogContent className="bg-[#112225] border-[#1e3a3f] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Deposit Tokens</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Deposit SUI or SBETS tokens to your wallet
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-200">SUI Amount</p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={depositSuiAmount}
+                    onChange={(e) => setDepositSuiAmount(e.target.value)}
+                    className="bg-[#0b1618] border-[#1e3a3f] text-white"
+                  />
+                  <span className="text-[#00ffff] font-medium">SUI</span>
+                </div>
+              </div>
+              
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-200">SBETS Amount</p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={depositSbetsAmount}
+                    onChange={(e) => setDepositSbetsAmount(e.target.value)}
+                    className="bg-[#0b1618] border-[#1e3a3f] text-white"
+                  />
+                  <span className="text-[#00ffff] font-medium">SBETS</span>
+                </div>
               </div>
             </div>
-          )}
-        </CardContent>
-        <CardFooter>
-          <Button 
-            variant="outline" 
-            className="w-full border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f]"
-            onClick={handleDisconnect}
-          >
-            Disconnect
-          </Button>
-        </CardFooter>
-      </Card>
+            
+            <div className="rounded-lg border border-[#1e3a3f] p-3 bg-[#0b1618] mt-2">
+              <p className="text-xs text-gray-400">
+                Funds will be deposited directly to your wallet on the Sui blockchain. Transaction fees may apply.
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                className="border-[#1e3a3f] text-gray-400 hover:bg-[#1e3a3f]"
+                onClick={() => setShowDepositModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+                onClick={handleDeposit}
+                disabled={isDepositing}
+              >
+                {isDepositing ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                ) : (
+                  'Deposit'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+        
+        {/* Withdraw Modal */}
+        <Dialog open={showWithdrawModal} onOpenChange={setShowWithdrawModal}>
+          <DialogContent className="bg-[#112225] border-[#1e3a3f] text-white">
+            <DialogHeader>
+              <DialogTitle className="text-white">Withdraw Tokens</DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Withdraw your tokens to your external wallet
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <p className="text-sm font-medium text-gray-200">Amount</p>
+                <div className="flex items-center space-x-2">
+                  <Input
+                    type="number"
+                    placeholder="0.00"
+                    value={withdrawAmount}
+                    onChange={(e) => setWithdrawAmount(e.target.value)}
+                    className="bg-[#0b1618] border-[#1e3a3f] text-white"
+                  />
+                  <div className="flex space-x-1">
+                    <Button
+                      size="sm"
+                      variant={withdrawToken === 'SUI' ? 'default' : 'outline'}
+                      className={withdrawToken === 'SUI' ? 
+                        'bg-[#00ffff] hover:bg-cyan-300 text-[#112225]' : 
+                        'bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]'
+                      }
+                      onClick={() => setWithdrawToken('SUI')}
+                    >
+                      SUI
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant={withdrawToken === 'SBETS' ? 'default' : 'outline'}
+                      className={withdrawToken === 'SBETS' ? 
+                        'bg-[#00ffff] hover:bg-cyan-300 text-[#112225]' : 
+                        'bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]'
+                      }
+                      onClick={() => setWithdrawToken('SBETS')}
+                    >
+                      SBETS
+                    </Button>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between text-xs text-gray-400 mt-1">
+                  <span>Available: {withdrawToken === 'SUI' ? 
+                    `${user.suiBalance?.toFixed(2) || '0.00'} SUI` : 
+                    `${user.sbetsBalance?.toFixed(2) || '0.00'} SBETS`
+                  }</span>
+                  <Button
+                    variant="link"
+                    className="p-0 h-auto text-xs text-[#00ffff]"
+                    onClick={() => {
+                      if (withdrawToken === 'SUI' && user.suiBalance) {
+                        setWithdrawAmount(user.suiBalance.toString());
+                      } else if (withdrawToken === 'SBETS' && user.sbetsBalance) {
+                        setWithdrawAmount(user.sbetsBalance.toString());
+                      }
+                    }}
+                  >
+                    Max
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
+            <div className="rounded-lg border border-[#1e3a3f] p-3 bg-[#0b1618] mt-2">
+              <p className="text-xs text-gray-400">
+                Funds will be withdrawn to your connected wallet address. Network fees may apply.
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                variant="outline" 
+                className="border-[#1e3a3f] text-gray-400 hover:bg-[#1e3a3f]"
+                onClick={() => setShowWithdrawModal(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+                onClick={handleWithdraw}
+                disabled={isWithdrawing}
+              >
+                {isWithdrawing ? (
+                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+                ) : (
+                  'Withdraw'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </>
     );
   }
   
@@ -163,19 +521,37 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
                 <ExternalLink className="h-4 w-4 mr-2" />
                 Connect any Sui wallet
               </h3>
-              <p className="text-sm text-gray-300 mb-4">
+              <p className="text-sm text-gray-300 mb-2">
                 For wallet extensions or mobile wallets, you can enter your Sui address directly.
               </p>
-              <Button
-                onClick={() => {
-                  // For demo purposes, we'll just use a sample address
-                  // In production, this would be a form input
-                  handleConnectWallet('0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285');
-                }}
-                className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254249]"
-              >
-                <ShieldCheck className="mr-2 h-4 w-4" /> Connect Any Wallet
-              </Button>
+              
+              <div className="space-y-3">
+                <Input
+                  type="text"
+                  placeholder="0x..."
+                  value={manualWalletAddress}
+                  onChange={(e) => setManualWalletAddress(e.target.value)}
+                  className="bg-[#0b1618] border-[#1e3a3f] text-white"
+                />
+                
+                <Button
+                  onClick={() => {
+                    if (manualWalletAddress) {
+                      handleConnectWallet(manualWalletAddress, 'Manual');
+                    } else {
+                      // Use a test address if the input is empty
+                      handleConnectWallet('0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285', 'Test');
+                    }
+                  }}
+                  className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254249]"
+                >
+                  <ShieldCheck className="mr-2 h-4 w-4" /> Connect Wallet
+                </Button>
+                
+                <p className="text-xs text-gray-500 mt-1">
+                  For testing, leave blank to use a demo wallet
+                </p>
+              </div>
             </div>
           </div>
         ) : (

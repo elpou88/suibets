@@ -17,7 +17,7 @@ export class ApiSportsService {
   private cacheExpiry: number = 1 * 60 * 1000; // Default cache expiry - reduced to 1 minute for more frequent updates
   
   // Cache version to force refresh when code changes
-  private cacheVersionKey: string = "v3"; // Increment this when making changes to force cache refresh
+  private cacheVersionKey: string = "v4"; // Increment this when making changes to force cache refresh
   
   // API endpoints for each sport - expanded to include all sports from the API
   private sportEndpoints: Record<string, string> = {
@@ -78,18 +78,18 @@ export class ApiSportsService {
   };
 
   constructor(apiKey?: string) {
-    // Accept apiKey parameter, then fall back to environment variables
-    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
+    // Override with the new key if available
+    this.apiKey = "3ec255b133882788e32f6349eff77b21";
     
-    if (!this.apiKey) {
-      console.warn('No API key provided for API-Sports. API-Sports functionality will be limited.');
-    } else {
-      console.log(`[ApiSportsService] API key found, length: ${this.apiKey.length}`);
-      
-      // Verify API key works correctly for direct API - start with most important APIs
-      this.verifyApiConnections();
-      this.checkForLiveFixtures();
-    }
+    // Log key information
+    console.log(`[ApiSportsService] API key set, length: ${this.apiKey.length}`);
+    
+    // Set longer timeout for API requests
+    axios.defaults.timeout = 15000;
+    
+    // Verify API key works correctly for direct API - start with most important APIs
+    this.verifyApiConnections();
+    this.checkForLiveFixtures();
   }
   
   /**
@@ -207,11 +207,13 @@ export class ApiSportsService {
       // Combat sports
       mma: 'https://v1.mma.api-sports.io',
       boxing: 'https://v1.boxing.api-sports.io',
+      'mma-ufc': 'https://v1.mma.api-sports.io', // Add UFC/MMA alias
       
       // Team sports
       volleyball: 'https://v1.volleyball.api-sports.io',
       handball: 'https://v1.handball.api-sports.io',
       aussie_rules: 'https://v1.aussie-rules.api-sports.io',
+      afl: 'https://v1.aussie-rules.api-sports.io', // Add AFL alias
       
       // Racket sports
       badminton: 'https://v1.badminton.api-sports.io',
@@ -245,10 +247,10 @@ export class ApiSportsService {
     return axios.create({
       baseURL: baseUrl,
       headers: {
-        'x-rapidapi-key': this.apiKey,
-        'x-rapidapi-host': new URL(baseUrl).hostname,
+        'x-apisports-key': this.apiKey,
         'Accept': 'application/json'
-      }
+      },
+      timeout: 20000 // Increase timeout to 20 seconds
     });
   }
 

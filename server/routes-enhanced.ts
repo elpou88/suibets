@@ -23,13 +23,10 @@ import { cricketService } from './services/cricketService';
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
 import { fallbackEventService } from './services/fallbackEventService';
 
-// Ensure API key is available
-const apiSportsKey = process.env.API_SPORTS_KEY || "";
+// Use the hardcoded API key that is confirmed to work
+const apiSportsKey = "3ec255b133882788e32f6349eff77b21";
 
-if (!apiSportsKey) {
-  console.warn("⚠️ WARNING: No sports data API key found in environment variables!");
-  console.warn("Please set API_SPORTS_KEY for full API functionality.");
-}
+console.log("Using API key for sports data API");
 
 // Create instance of ApiSportsService with the API key
 const apiSportsService = new ApiSportsService(apiSportsKey);

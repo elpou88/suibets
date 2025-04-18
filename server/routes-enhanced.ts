@@ -49,6 +49,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register debug routes
   registerDebugRoutes(app);
   
+  // Cricket specific API endpoint for reliable data
+  app.get("/api/events/cricket", async (_req: Request, res: Response) => {
+    try {
+      console.log("[CricketAPI] Fetching cricket events from specialized endpoint");
+      // Try to get cricket events from the cricket service
+      const cricketEvents = await cricketService.getAllEvents();
+      
+      // If we got events from the cricket service, return them
+      if (cricketEvents && cricketEvents.length > 0) {
+        console.log(`[CricketAPI] Returning ${cricketEvents.length} cricket events from service`);
+        return res.json(cricketEvents);
+      }
+      
+      // Fallback to enhanced sports service
+      console.log("[CricketAPI] No cricket events found from service, using enhanced sports service");
+      const events = await enhancedSportsService.getEvents(9); // 9 is cricket
+      
+      // Format and return the events
+      const formattedEvents = events.map(event => ({
+        ...event,
+        sportId: 9, // Ensure cricket ID
+      }));
+      
+      console.log(`[CricketAPI] Returning ${formattedEvents.length} cricket events`);
+      return res.json(formattedEvents);
+    } catch (error) {
+      console.error("[CricketAPI] Error fetching cricket events:", error);
+      res.status(500).json({ error: "Failed to fetch cricket events" });
+    }
+  });
+  
   // Register Walrus protocol routes
   registerWalrusRoutes(app);
   console.log("[Routes] Registered Walrus protocol routes for blockchain betting");

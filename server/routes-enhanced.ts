@@ -49,15 +49,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register debug routes
   registerDebugRoutes(app);
   
+  // Set up basic error handling middleware
+  app.use((req, res, next) => {
+    // Set per-request timeout to prevent long-running requests
+    req.setTimeout(15000, () => {
+      console.log(`[Routes] Request deadline reached for ${req.path} (${req.query.isLive ? 'isLive: ' + req.query.isLive : ''}${req.query.sportId ? ', sportId: ' + req.query.sportId : ''})`);
+      if (!res.headersSent) {
+        res.status(504).json({
+          error: "Request timeout",
+          message: "The request took too long to process"
+        });
+      }
+    });
+    next();
+  });
+
   // Cricket specific API endpoint for reliable data
-  app.get("/api/events/cricket", async (_req: Request, res: Response) => {
+  app.get("/api/events/cricket", async (req: Request, res: Response) => {
     try {
       console.log("[CricketAPI] Fetching cricket events from specialized endpoint");
-      // Try to get cricket events from the cricket service
-      const cricketEvents = await cricketService.getAllEvents();
+      // Try to get cricket events from the cricket service with timeout
+      const cricketEventsPromise = cricketService.getEvents();
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("Cricket API timeout")), 10000)
+      );
+      
+      const cricketEvents = await Promise.race([cricketEventsPromise, timeoutPromise])
+        .catch(error => {
+          console.error("[CricketAPI] Error:", error.message);
+          return null;
+        });
       
       // If we got events from the cricket service, return them
-      if (cricketEvents && cricketEvents.length > 0) {
+      if (cricketEvents && Array.isArray(cricketEvents) && cricketEvents.length > 0) {
         console.log(`[CricketAPI] Returning ${cricketEvents.length} cricket events from service`);
         return res.json(cricketEvents);
       }

@@ -116,6 +116,9 @@ export default function SportsSidebar() {
 
   // Calculate event counts by sport
   useEffect(() => {
+    // Only update if all data is available to prevent unnecessary renders
+    if (!sports || !liveEvents || !upcomingEvents) return;
+    
     const counts: Record<number, { live: number, upcoming: number }> = {};
 
     // Initialize counts for all sports
@@ -140,8 +143,11 @@ export default function SportsSidebar() {
     setSportEventCounts(counts);
   }, [sports, liveEvents, upcomingEvents]);
 
-  console.log("Loaded events for betting", upcomingEvents.length + liveEvents.length);
-  console.log("Loaded sports for betting", sports.length);
+  // Move these logs outside useEffect to prevent multiple renders
+  useEffect(() => {
+    console.log("Loaded events for betting", upcomingEvents.length + liveEvents.length);
+    console.log("Loaded sports for betting", sports.length);
+  }, [upcomingEvents.length, liveEvents.length, sports.length]);
   
   // Map correct sportId to slug
   const getSportIdForSlug = (slug: string): number => {

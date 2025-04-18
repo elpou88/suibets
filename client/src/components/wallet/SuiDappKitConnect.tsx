@@ -174,7 +174,7 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
   return (
     <div className="sui-dapp-kit-connect">
       <Button
-        className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
+        className="w-full bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-bold"
         onClick={handleButtonClick}
         disabled={isConnecting}
       >

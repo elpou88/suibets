@@ -146,9 +146,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         console.log("[Routes] Attempting to fetch events from tracking service");
         
-        // Create a timeout promise that rejects after FETCH_TIMEOUT milliseconds
-        const timeoutPromise = new Promise((_, reject) => {
-          setTimeout(() => reject(new Error('Tracking service fetch timed out')), FETCH_TIMEOUT);
+        // Create a timeout promise that resolves with null instead of rejecting
+        const timeoutPromise = new Promise((resolve) => {
+          setTimeout(() => {
+            console.log('[Routes] Tracking service request timed out, resolving with empty array');
+            resolve([]);
+          }, FETCH_TIMEOUT);
         });
         
         if (isLive) {
@@ -168,9 +171,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // If no events found in tracking service, try to fetch from blockchain storage
           console.log("[Routes] No events from tracking service, trying blockchain storage");
           try {
-            // Create a new timeout promise for blockchain fetch
-            const blockchainTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Blockchain storage fetch timed out')), FETCH_TIMEOUT);
+            // Create a new timeout promise for blockchain fetch that resolves with empty array
+            const blockchainTimeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                console.log('[Routes] Blockchain storage request timed out, resolving with empty array');
+                resolve([]);
+              }, FETCH_TIMEOUT);
             });
             
             // Race the blockchain fetch against the timeout
@@ -184,9 +190,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Final fallback to traditional storage
             console.log("[Routes] Error from blockchain storage, falling back to traditional storage");
             
-            // Create a new timeout promise for traditional storage fetch
-            const storageTimeoutPromise = new Promise((_, reject) => {
-              setTimeout(() => reject(new Error('Traditional storage fetch timed out')), FETCH_TIMEOUT);
+            // Create a new timeout promise for traditional storage fetch that resolves with empty array
+            const storageTimeoutPromise = new Promise((resolve) => {
+              setTimeout(() => {
+                console.log('[Routes] Traditional storage request timed out, resolving with empty array');
+                resolve([]);
+              }, FETCH_TIMEOUT);
             });
             
             // Race the traditional storage fetch against the timeout

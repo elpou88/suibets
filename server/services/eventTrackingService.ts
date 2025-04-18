@@ -59,8 +59,17 @@ export class EventTrackingService {
     try {
       console.log('[EventTrackingService] Checking for upcoming events that have gone live');
       
-      // Get all upcoming events from storage
-      const upcomingEvents = await storage.getEvents(undefined, false);
+      // Get all upcoming events from storage if the method exists, otherwise use empty array
+      let upcomingEvents = [];
+      try {
+        if (typeof storage.getEvents === 'function') {
+          upcomingEvents = await storage.getEvents(undefined, false);
+        } else {
+          console.log('[EventTrackingService] storage.getEvents method not available, skipping storage check');
+        }
+      } catch (error) {
+        console.error('[EventTrackingService] Error getting events from storage:', error);
+      }
       
       // Get all live events from the API for comparison
       const liveEvents = await this.getAllLiveEvents();
@@ -122,8 +131,17 @@ export class EventTrackingService {
    * Ensure all currently live events are stored properly
    */
   private async processAllLiveEvents(liveEvents: any[]): Promise<void> {
-    // Get all events currently in storage
-    const allStoredEvents = await storage.getEvents();
+    // Get all events currently in storage if the method exists
+    let allStoredEvents = [];
+    try {
+      if (typeof storage.getEvents === 'function') {
+        allStoredEvents = await storage.getEvents();
+      } else {
+        console.log('[EventTrackingService] storage.getEvents method not available, skipping stored events check');
+      }
+    } catch (error) {
+      console.error('[EventTrackingService] Error getting all events from storage:', error);
+    }
     const storedEventIds = new Set(allStoredEvents.map(event => String(event.id)));
     
     // For each live event, check if it exists in storage
@@ -300,8 +318,17 @@ export class EventTrackingService {
     try {
       console.log(`[EventTrackingService] Updating event ${eventId} to live status`);
       
-      // Get the existing event from storage
-      const existingEvent = await storage.getEvent(Number(eventId));
+      // Get the existing event from storage if the method exists
+      let existingEvent = null;
+      try {
+        if (typeof storage.getEvent === 'function') {
+          existingEvent = await storage.getEvent(Number(eventId));
+        } else {
+          console.log(`[EventTrackingService] storage.getEvent method not available, skipping event lookup`);
+        }
+      } catch (error) {
+        console.error(`[EventTrackingService] Error getting event ${eventId} from storage:`, error);
+      }
       
       if (existingEvent) {
         // Update the event with live data
@@ -321,8 +348,12 @@ export class EventTrackingService {
           ...(liveEventData.period && { period: liveEventData.period }),
         };
         
-        // Save the updated event
-        await storage.updateEvent(Number(eventId), updatedEvent);
+        // Save the updated event if the method exists
+        if (typeof storage.updateEvent === 'function') {
+          await storage.updateEvent(Number(eventId), updatedEvent);
+        } else {
+          console.log(`[EventTrackingService] storage.updateEvent method not available, skipping event update`);
+        }
         console.log(`[EventTrackingService] Successfully updated event ${eventId} to live status`);
       } else {
         console.warn(`[EventTrackingService] Could not find event ${eventId} in storage to update its status`);

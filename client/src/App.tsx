@@ -62,21 +62,22 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <SuietWalletProvider>
-          <WalProvider>
-            <WalrusProtocolProvider>
-              <AuthProvider>
-                <BettingProvider>
-                  <div className="root-container">
-                    <Switch>
-                    {/* Main Routes - Use real data pages as the default */}
-                    <Route path="/" component={HomeReal} />
-                    <Route path="/sports" component={HomeReal} />
-                    <Route path="/sport/:slug*" component={SportsLive} />
-                    <Route path="/match/:id" component={Match} />
-                    <Route path="/match-detail/:id" component={MatchDetail} />
-                    <Route path="/live" component={LiveReal} />
-                    <Route path="/live/:id" component={LiveEventPage} />
+        <SuiDappKitProvider>
+          <SuietWalletProvider>
+            <WalProvider>
+              <WalrusProtocolProvider>
+                <AuthProvider>
+                  <BettingProvider>
+                    <div className="root-container">
+                      <Switch>
+                      {/* Main Routes - Use real data pages as the default */}
+                      <Route path="/" component={HomeReal} />
+                      <Route path="/sports" component={HomeReal} />
+                      <Route path="/sport/:slug*" component={SportsLive} />
+                      <Route path="/match/:id" component={Match} />
+                      <Route path="/match-detail/:id" component={MatchDetail} />
+                      <Route path="/live" component={LiveReal} />
+                      <Route path="/live/:id" component={LiveEventPage} />
                     
                     {/* Additional Pages - Using real-time data pages */}
                     <Route path="/promotions" component={PromotionsReal} />
@@ -152,6 +153,7 @@ function App() {
           </WalrusProtocolProvider>
         </WalProvider>
       </SuietWalletProvider>
+    </SuiDappKitProvider>
     </ErrorBoundary>
     </QueryClientProvider>
   );

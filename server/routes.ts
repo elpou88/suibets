@@ -138,9 +138,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log('[Routes] Cricket service returned no events, falling back to API');
       }
       
-      // Get events from storage for non-live events
-      let events = await storage.getEvents(reqSportId, isLive);
-      console.log(`Found ${events.length} events for sportId: ${reqSportId} in database`);
+      // Try to get events directly from event tracking service which has cached events
+      let events = [];
+      try {
+        console.log("[Routes] Attempting to fetch events from tracking service");
+        
+        if (isLive) {
+          events = eventTrackingService.getLiveEvents(reqSportId);
+          console.log(`[Routes] Got ${events.length} live events for sportId: ${reqSportId} from tracking service`);
+        } else {
+          events = eventTrackingService.getUpcomingEvents(reqSportId);
+          console.log(`[Routes] Got ${events.length} upcoming events for sportId: ${reqSportId} from tracking service`);
+        }
+        
+        if (!events || events.length === 0) {
+          // Fallback to traditional storage if tracking service didn't have events
+          console.log("[Routes] No events from tracking service, falling back to traditional storage");
+          events = await storage.getEvents(reqSportId, isLive);
+        }
+      } catch (trackingError) {
+        console.error("Error fetching events from tracking service:", trackingError);
+        // Fallback to traditional storage
+        console.log("[Routes] Error from tracking service, falling back to traditional storage");
+        events = await storage.getEvents(reqSportId, isLive);
+      }
+      
+      console.log(`Found ${events ? events.length : 0} events for sportId: ${reqSportId} from data sources`);
       
       // Special handling for basketball
       if (reqSportId === 2) {

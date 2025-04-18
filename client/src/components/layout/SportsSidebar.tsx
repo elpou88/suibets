@@ -143,6 +143,54 @@ export default function SportsSidebar() {
   console.log("Loaded events for betting", upcomingEvents.length + liveEvents.length);
   console.log("Loaded sports for betting", sports.length);
   
+  // Map correct sportId to slug
+  const getSportIdForSlug = (slug: string): number => {
+    const mappings: Record<string, number> = {
+      'soccer': 1,
+      'football': 1,
+      'basketball': 2,
+      'tennis': 3,
+      'baseball': 4,
+      'hockey': 5,
+      'handball': 6,
+      'volleyball': 7,
+      'rugby': 8,
+      'cricket': 9,
+      'golf': 10,
+      'boxing': 11,
+      'mma-ufc': 12,
+      'formula_1': 13,
+      'cycling': 14,
+      'american_football': 15,
+      'afl': 16,
+      'snooker': 17,
+      'darts': 18,
+      'table-tennis': 19,
+      'badminton': 20,
+      'beach-volleyball': 21,
+      'winter-sports': 22,
+      'motorsport': 23,
+      'esports': 24,
+      'netball': 25,
+      'nba': 27,
+      'nhl': 28,
+      'nfl': 29,
+      'mlb': 30
+    };
+    return mappings[slug] || 1; // Default to soccer if not found
+  };
+
+  // Handle sport click to ensure correct sport ID is used
+  const handleSportClick = (sport: any) => {
+    // Store the sport ID for event filtering
+    localStorage.setItem('currentSportId', String(sport.id));
+    localStorage.setItem('currentSportSlug', sport.slug);
+    console.log(`Selected sport: ${sport.name} (ID: ${sport.id}, slug: ${sport.slug})`);
+    
+    // Navigate to the sport page
+    setLocation(`/sports-live/${sport.slug}`);
+  };
+
   return (
     <div className="p-4">
       <div className="mb-8">
@@ -198,7 +246,7 @@ export default function SportsSidebar() {
                   <Button
                     variant="ghost"
                     className="w-full justify-between items-center text-cyan-200 hover:text-cyan-400 hover:bg-[#1e3a3f] transition-colors py-2"
-                    onClick={() => setLocation(`/sports-live/${sport.slug}`)}
+                    onClick={() => handleSportClick(sport)}
                   >
                     <div className="flex items-center">
                       {sport.icon && <span className="mr-2">{sport.icon}</span>}

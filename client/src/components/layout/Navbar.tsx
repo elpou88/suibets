@@ -6,7 +6,7 @@ import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
-import { Bell, Settings, LogOut, Wallet } from "lucide-react";
+import { Bell, Settings, LogOut, Wallet, Plus } from "lucide-react";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -218,22 +218,27 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button when not connected */}
+            {/* Connect Wallet Button when not connected, with plus sign for deposit function */}
             <Button 
-              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium flex items-center" 
               onClick={attemptQuickWalletConnection}
               disabled={isAttemptingConnection}
             >
-              <Wallet className="h-4 w-4 mr-2" />
-              {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
+              <div className="flex items-center justify-center">
+                <Wallet className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5 -ml-1" />
+              </div>
+              <span className="ml-1.5">
+                {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
+              </span>
             </Button>
             
-            {/* Join Now Button */}
-            <Link href="/join" className="ml-3">
+            {/* Telegram Join Now Button */}
+            <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="ml-3">
               <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
-                Join Now
+                Join Telegram
               </Button>
-            </Link>
+            </a>
           </div>
         )}
       </div>

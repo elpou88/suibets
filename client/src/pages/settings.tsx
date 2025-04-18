@@ -6,7 +6,8 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useSettings } from "@/context/SettingsContext";
 import { useToast } from "@/hooks/use-toast";
-import { ChevronLeft, Save, Check, RefreshCw } from "lucide-react";
+import { ChevronLeft, Save, Check, RefreshCw, Palette } from "lucide-react";
+import { HexColorPicker } from "react-colorful";
 import {
   Select,
   SelectContent,
@@ -29,6 +30,11 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 export default function Settings() {
   const [, setLocation] = useLocation();
@@ -46,9 +52,12 @@ export default function Settings() {
     setReceiveNewsletter,
     darkMode,
     setDarkMode,
+    accentColor,
+    setAccentColor,
     gasSettings,
     setGasSettings,
-    saveSettings 
+    saveSettings,
+    applyTheme
   } = useSettings();
 
   const handleSaveSettings = () => {
@@ -149,6 +158,61 @@ export default function Settings() {
                       checked={darkMode}
                       onCheckedChange={setDarkMode}
                     />
+                  </div>
+
+                  <div className="flex items-center justify-between py-3 border-t border-[#2a4a54]">
+                    <span>Accent Color</span>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          className="w-[100px] h-[36px] border-2 p-0 relative"
+                          style={{ backgroundColor: accentColor, borderColor: '#fff' }}
+                        >
+                          <div className="absolute inset-0 grid place-items-center bg-black bg-opacity-30">
+                            <Palette className="h-5 w-5 text-white" />
+                          </div>
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-3 bg-[#112225] border-[#2a4a54]">
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-medium text-sm">Pick a Color</h4>
+                            <div className="ml-2 h-5 w-5 rounded" style={{ backgroundColor: accentColor }}></div>
+                          </div>
+                          <HexColorPicker 
+                            color={accentColor} 
+                            onChange={(color) => {
+                              setAccentColor(color);
+                              applyTheme();
+                            }} 
+                          />
+                          <div className="flex justify-between mt-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="flex-1 h-8 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20"
+                              onClick={() => {
+                                setAccentColor('#00FFFF');
+                                applyTheme();
+                              }}
+                            >
+                              Reset
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="flex-1 h-8 ml-2 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/90"
+                              onClick={() => {
+                                saveSettings();
+                                applyTheme();
+                              }}
+                            >
+                              Apply
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </CardContent>
               </Card>

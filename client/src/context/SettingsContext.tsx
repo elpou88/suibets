@@ -13,9 +13,12 @@ interface SettingsContextType {
   setReceiveNewsletter: (receive: boolean) => void;
   darkMode: boolean;
   setDarkMode: (dark: boolean) => void;
+  accentColor: string;
+  setAccentColor: (color: string) => void;
   gasSettings: 'low' | 'medium' | 'high';
   setGasSettings: (setting: 'low' | 'medium' | 'high') => void;
   saveSettings: () => void;
+  applyTheme: () => void;
 }
 
 const defaultSettings = {
@@ -25,6 +28,7 @@ const defaultSettings = {
   onSiteNotifications: true,
   receiveNewsletter: false,
   darkMode: true,
+  accentColor: "#00FFFF", // Default cyan/teal accent color
   gasSettings: 'medium' as 'low' | 'medium' | 'high',
 };
 
@@ -38,7 +42,51 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   const [onSiteNotifications, setOnSiteNotifications] = useState(defaultSettings.onSiteNotifications);
   const [receiveNewsletter, setReceiveNewsletter] = useState(defaultSettings.receiveNewsletter);
   const [darkMode, setDarkMode] = useState(defaultSettings.darkMode);
+  const [accentColor, setAccentColor] = useState(defaultSettings.accentColor);
   const [gasSettings, setGasSettings] = useState<'low' | 'medium' | 'high'>(defaultSettings.gasSettings);
+
+  // Apply theme to DOM based on current settings
+  const applyTheme = () => {
+    // Apply theme variables to document root
+    const root = document.documentElement;
+    root.style.setProperty('--accent-color', accentColor);
+    
+    // Apply dark mode settings
+    if (darkMode) {
+      document.body.classList.add('dark-mode');
+      root.style.setProperty('--background-color', '#112225');
+      root.style.setProperty('--card-background', '#1e3a3f');
+      root.style.setProperty('--border-color', '#2a4a54');
+      root.style.setProperty('--text-color', '#ffffff');
+    } else {
+      document.body.classList.remove('dark-mode');
+      root.style.setProperty('--background-color', '#f5f5f5');
+      root.style.setProperty('--card-background', '#ffffff');
+      root.style.setProperty('--border-color', '#ddd');
+      root.style.setProperty('--text-color', '#333333');
+    }
+    
+    // Apply accent color to various site elements
+    const accentElements = document.querySelectorAll('.accent-color');
+    accentElements.forEach(element => {
+      (element as HTMLElement).style.color = accentColor;
+    });
+    
+    const accentBgElements = document.querySelectorAll('.accent-bg');
+    accentBgElements.forEach(element => {
+      (element as HTMLElement).style.backgroundColor = accentColor;
+    });
+    
+    const accentBorderElements = document.querySelectorAll('.accent-border');
+    accentBorderElements.forEach(element => {
+      (element as HTMLElement).style.borderColor = accentColor;
+    });
+  };
+
+  // Apply theme when settings change
+  useEffect(() => {
+    applyTheme();
+  }, [darkMode, accentColor]);
 
   // Load settings from localStorage on initial render
   useEffect(() => {
@@ -52,6 +100,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setOnSiteNotifications(parsedSettings.onSiteNotifications !== undefined ? parsedSettings.onSiteNotifications : defaultSettings.onSiteNotifications);
         setReceiveNewsletter(parsedSettings.receiveNewsletter !== undefined ? parsedSettings.receiveNewsletter : defaultSettings.receiveNewsletter);
         setDarkMode(parsedSettings.darkMode !== undefined ? parsedSettings.darkMode : defaultSettings.darkMode);
+        setAccentColor(parsedSettings.accentColor || defaultSettings.accentColor);
         setGasSettings(parsedSettings.gasSettings || defaultSettings.gasSettings);
       }
     } catch (error) {
@@ -69,10 +118,14 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         onSiteNotifications,
         receiveNewsletter,
         darkMode,
+        accentColor,
         gasSettings
       };
       localStorage.setItem('suibets-settings', JSON.stringify(settingsToSave));
       console.log('Settings saved successfully!');
+      
+      // Apply theme when settings are saved
+      applyTheme();
     } catch (error) {
       console.error('Error saving settings:', error);
     }
@@ -93,9 +146,12 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
         setReceiveNewsletter,
         darkMode,
         setDarkMode,
+        accentColor,
+        setAccentColor,
         gasSettings,
         setGasSettings,
-        saveSettings
+        saveSettings,
+        applyTheme
       }}
     >
       {children}

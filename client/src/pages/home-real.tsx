@@ -24,12 +24,40 @@ export default function HomeReal() {
     queryKey: ['/api/events', { type: 'upcoming' }],
     queryFn: async () => {
       console.log('Fetching upcoming events from API');
-      const response = await apiRequest('GET', '/api/events');
-      const data = await response.json();
-      console.log(`Received ${data.length} events, filtering for upcoming events`);
-      return data.filter((event: any) => event.status === 'upcoming' || event.status === 'scheduled');
+      try {
+        const response = await apiRequest('GET', '/api/events', undefined, { timeout: 15000 });
+        if (!response.ok) {
+          console.warn(`Server error ${response.status} from ${response.url}`);
+          return []; // Return empty array on error
+        }
+        const data = await response.json();
+        console.log(`Received ${data.length} events, filtering for upcoming events`);
+        
+        // Make sure the data is valid before filtering
+        if (!Array.isArray(data)) {
+          console.warn('Received non-array data for upcoming events');
+          return [];
+        }
+        
+        // Filter events and ensure each has required properties
+        return data
+          .filter((event: any) => event.status === 'upcoming' || event.status === 'scheduled')
+          .map((event: any) => ({
+            ...event,
+            // Ensure minimum required properties
+            homeTeam: event.homeTeam || 'Team A',
+            awayTeam: event.awayTeam || 'Team B',
+            name: event.name || `${event.homeTeam || 'Team A'} vs ${event.awayTeam || 'Team B'}`,
+            markets: Array.isArray(event.markets) ? event.markets : []
+          }));
+      } catch (error) {
+        console.warn(`Error fetching upcoming events: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return []; // Return empty array on error
+      }
     },
-    refetchInterval: 60000 // Refetch every minute - upcoming events don't change as frequently
+    refetchInterval: 60000, // Refetch every minute - upcoming events don't change as frequently
+    retry: 3, // Retry up to 3 times if there's an error
+    retryDelay: 2000 // Wait 2 seconds between retries
   });
   
   // Fetch live events using the isLive parameter
@@ -38,13 +66,29 @@ export default function HomeReal() {
     queryFn: async () => {
       console.log('Fetching live events from API');
       try {
-        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 10000 });
+        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 15000 });
         if (!response.ok) {
-          throw new Error(`Server error ${response.status} from ${response.url}`);
+          console.warn(`Server error ${response.status} from ${response.url}`);
+          return []; // Return empty array on error
         }
         const data = await response.json();
         console.log(`Received ${data.length} live events`);
-        return data;
+        
+        // Make sure the data is valid
+        if (!Array.isArray(data)) {
+          console.warn('Received non-array data for live events');
+          return [];
+        }
+        
+        // Ensure each event has required properties
+        return data.map((event: any) => ({
+          ...event,
+          // Ensure minimum required properties
+          homeTeam: event.homeTeam || 'Team A',
+          awayTeam: event.awayTeam || 'Team B',
+          name: event.name || `${event.homeTeam || 'Team A'} vs ${event.awayTeam || 'Team B'}`,
+          markets: Array.isArray(event.markets) ? event.markets : []
+        }));
       } catch (error) {
         console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
         // Return empty array on error to avoid breaking the UI
@@ -52,8 +96,8 @@ export default function HomeReal() {
       }
     },
     refetchInterval: 15000, // Refetch every 15 seconds
-    retry: 2, // Retry up to 2 times if there's an error
-    retryDelay: 1000 // Wait 1 second between retries
+    retry: 3, // Retry up to 3 times if there's an error
+    retryDelay: 2000 // Wait 2 seconds between retries
   });
   
   // Fetch sports for the sidebar

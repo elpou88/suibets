@@ -136,15 +136,47 @@ export function LiveBettingMarkets() {
     queryKey: ['/api/events'],
     queryFn: async () => {
       try {
-        // Use direct events endpoint with isLive parameter with timeout
-        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 10000 });
+        // Use direct events endpoint with isLive parameter with increased timeout
+        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 15000 });
         
         if (!response.ok) {
-          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+          console.warn(`Server error ${response.status} from ${response.url}`);
+          return []; // Return empty array on error
         }
         
         const data = await response.json();
-        console.log("API response for live events:", data);
+        
+        // Make sure the data is valid
+        if (!Array.isArray(data)) {
+          console.warn('Received non-array data for live events');
+          return [];
+        }
+        
+        console.log("Received", data.length, "live events");
+        
+        // Ensure each event has required properties
+        const processedData = data.map((event: any) => ({
+          ...event,
+          // Ensure minimum required properties
+          id: event.id || `event-${Math.random().toString(36).substring(2, 8)}`,
+          homeTeam: event.homeTeam || 'Team A',
+          awayTeam: event.awayTeam || 'Team B',
+          name: event.name || `${event.homeTeam || 'Team A'} vs ${event.awayTeam || 'Team B'}`,
+          markets: Array.isArray(event.markets) ? event.markets.map((market: any) => ({
+            ...market,
+            id: market.id || `market-${Math.random().toString(36).substring(2, 8)}`,
+            name: market.name || 'Match Result',
+            outcomes: Array.isArray(market.outcomes) ? market.outcomes.map((outcome: any) => ({
+              ...outcome,
+              id: outcome.id || `outcome-${Math.random().toString(36).substring(2, 8)}`,
+              name: outcome.name || 'Unknown',
+              odds: typeof outcome.odds === 'number' ? outcome.odds : 2.0,
+              status: outcome.status || 'active'
+            })) : []
+          })) : []
+        }));
+        
+        console.log("Loaded events for display:", processedData.length);
         
         // Debug the sports IDs we're getting before classification
         const sportIdsSet = new Set<number>();

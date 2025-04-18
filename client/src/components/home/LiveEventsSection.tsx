@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import FeaturedEventCard from "./FeaturedEventCard";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export function LiveEventsSection() {
   const { data: liveEvents = [], isLoading } = useQuery<Event[]>({
@@ -367,8 +367,15 @@ export function LiveEventsSection() {
           {sortedSports.slice(0, 10).map((sport, sportIndex) => (
             <div key={sportIndex} className="mb-5 bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden">
               {/* Sport header with collapsible accordion style */}
-              <div className="flex items-center justify-between p-3 bg-[#0b1618] cursor-pointer hover:bg-[#112225] transition-colors">
+              <div 
+                className="flex items-center justify-between p-3 bg-[#0b1618] cursor-pointer hover:bg-[#112225] transition-colors"
+                onClick={() => toggleSportExpand(sport.name)}
+              >
                 <h3 className="text-cyan-400 font-bold flex items-center">
+                  {expandedSports[sport.name] ? 
+                    <ChevronDown className="h-4 w-4 mr-2 text-cyan-300" /> : 
+                    <ChevronRight className="h-4 w-4 mr-2 text-cyan-300" />
+                  }
                   {sport.name.toUpperCase()} 
                   <span className="ml-2 px-1.5 py-0.5 bg-[#1e3a3f] rounded-sm text-xs text-cyan-300/90">
                     {sport.count}
@@ -379,7 +386,7 @@ export function LiveEventsSection() {
                     <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
                     LIVE
                   </span>
-                  <Link href={`/sport/${sport.name.toLowerCase()}`}>
+                  <Link href={`/sport/${sport.name.toLowerCase()}`} onClick={(e) => e.stopPropagation()}>
                     <Button variant="outline" size="sm" className="border-cyan-400 text-cyan-300 hover:bg-cyan-400/20 text-xs">
                       View All
                     </Button>
@@ -387,83 +394,86 @@ export function LiveEventsSection() {
                 </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
-                {sport.events.slice(0, 3).map((event) => (
-                  <Link key={event.id} href={`/match/${event.id}`}>
-                    <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-3 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md h-full">
-                      <div className="flex justify-between items-center mb-2">
-                        <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center font-semibold">
-                          <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
-                          LIVE
-                        </span>
-                        <span className="text-cyan-300 text-xs font-medium">{event.leagueName}</span>
-                      </div>
-                      
-                      <div className="flex justify-between items-center mb-2.5">
-                        <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
-                        {event.markets && event.markets[0] && event.markets[0].outcomes ? (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Add bet to betslip logic would go here
-                              console.log('Adding home bet for:', event.homeTeam);
-                            }}
-                          >
-                            {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
-                          >
-                            2.10
-                          </Button>
-                        )}
-                      </div>
-                      
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
-                        {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] ? (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Add bet to betslip logic would go here
-                              console.log('Adding away bet for:', event.awayTeam);
-                            }}
-                          >
-                            {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
-                          >
-                            1.90
-                          </Button>
-                        )}
-                      </div>
-                      
-                      {event.score && (
-                        <div className="mt-3 text-center">
-                          <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
-                            {event.score}
+              {/* Show sport events when expanded */}
+              {expandedSports[sport.name] && (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
+                  {sport.events.slice(0, 3).map((event) => (
+                    <Link key={event.id} href={`/match/${event.id}`}>
+                      <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-3 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md h-full">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center font-semibold">
+                            <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
+                            LIVE
                           </span>
+                          <span className="text-cyan-300 text-xs font-medium">{event.leagueName}</span>
                         </div>
-                      )}
-                    </div>
-                  </Link>
-                ))}
-              </div>
+                        
+                        <div className="flex justify-between items-center mb-2.5">
+                          <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
+                          {event.markets && event.markets[0] && event.markets[0].outcomes ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Add bet to betslip logic would go here
+                                console.log('Adding home bet for:', event.homeTeam);
+                              }}
+                            >
+                              {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                            >
+                              2.10
+                            </Button>
+                          )}
+                        </div>
+                        
+                        <div className="flex justify-between items-center mb-1">
+                          <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
+                          {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] ? (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Add bet to betslip logic would go here
+                                console.log('Adding away bet for:', event.awayTeam);
+                              }}
+                            >
+                              {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
+                            </Button>
+                          ) : (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                            >
+                              1.90
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {event.score && (
+                          <div className="mt-3 text-center">
+                            <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
+                              {event.score}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </div>

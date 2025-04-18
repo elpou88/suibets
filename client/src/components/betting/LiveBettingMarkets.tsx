@@ -65,6 +65,21 @@ const SPORT_ICONS: Record<number, React.ReactNode> = {
   23: <Gamepad2 className="h-5 w-5 mr-2" />, // Esports
 };
 
+// Generate a unique identifier for events
+function uniqueEventId(sportId: number, eventId: string, index: number): string {
+  return `sport-${sportId}-event-${eventId}-idx-${index}`;
+}
+
+// Generate a unique identifier for markets
+function uniqueMarketId(eventId: string, marketId: string, index: number): string {
+  return `event-${eventId}-market-${marketId}-idx-${index}`;
+}
+
+// Generate a unique identifier for outcomes
+function uniqueOutcomeId(marketId: string, outcomeId: string, index: number): string {
+  return `market-${marketId}-outcome-${outcomeId}-idx-${index}`;
+}
+
 function LiveBettingMarkets() {
   // Refs to prevent unnecessary rerenders
   const cacheRef = useRef<Event[]>([]);
@@ -407,7 +422,7 @@ function LiveBettingMarkets() {
           
           {availableSports.map(sport => (
             <Button 
-              key={sport.id}
+              key={`sport-tab-${sport.id}`}
               variant={activeSportFilter === sport.id ? "default" : "outline"}
               size="sm"
               onClick={() => setActiveSportFilter(sport.id)}
@@ -425,7 +440,7 @@ function LiveBettingMarkets() {
       
       {/* Main content div with max height and scrolling */}
       <div className="max-h-[calc(100vh-220px)] overflow-y-auto pr-2 custom-scrollbar">
-        {Object.entries(filteredEvents || {}).map(([sportId, sportEvents]) => {
+        {Object.entries(filteredEvents || {}).map(([sportId, sportEvents], sportIndex) => {
           if (!sportEvents || sportEvents.length === 0) return null;
           
           const sportIdNum = parseInt(sportId);
@@ -433,16 +448,16 @@ function LiveBettingMarkets() {
           const sportName = sport ? sport.name : `Sport ${sportId}`;
           
           return (
-            <div key={sportId} className="mb-6">
+            <div key={`sport-section-${sportId}-${sportIndex}`} className="mb-6">
               <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
                 {/* Sport-specific icon */}
                 {SPORT_ICONS[sportIdNum] || <Activity className="h-5 w-5 mr-2" />}
                 {sportName}
               </div>
               
-              {sportEvents && sportEvents.map((event) => (
+              {sportEvents.map((event, eventIndex) => (
                 <Card 
-                  key={`${event.id}-card`}
+                  key={uniqueEventId(sportIdNum, event.id, eventIndex)}
                   className="mb-4 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10 overflow-hidden"
                 >
                   {/* Event header with toggle */}
@@ -472,8 +487,11 @@ function LiveBettingMarkets() {
                   {expandedEvents[event.id] && (
                     <CardContent className="p-3">
                       {event.markets && event.markets.length > 0 ? (
-                        event.markets.map((market) => (
-                          <div key={`${market.id}-market`} className="mb-3 last:mb-0">
+                        event.markets.map((market, marketIndex) => (
+                          <div 
+                            key={uniqueMarketId(event.id, market.id, marketIndex)} 
+                            className="mb-3 last:mb-0"
+                          >
                             {/* Market header with toggle */}
                             <div 
                               className="px-3 py-2 bg-[#0f1c1f] rounded-t border-[#1e3a3f] border flex justify-between items-center cursor-pointer"
@@ -486,9 +504,9 @@ function LiveBettingMarkets() {
                             {expandedMarkets[`${event.id}-${market.id}`] && (
                               <div className="p-3 bg-[#0b1618] border-[#1e3a3f] border-t-0 border rounded-b">
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                  {market.outcomes && market.outcomes.map((outcome) => (
+                                  {market.outcomes && market.outcomes.map((outcome, outcomeIndex) => (
                                     <Button
-                                      key={`${outcome.id || ''}-outcome`}
+                                      key={uniqueOutcomeId(market.id, outcome.id || '', outcomeIndex)}
                                       variant="outline"
                                       onClick={() => handleBetClick(event, market, outcome)}
                                       className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-[#0f3942] hover:border-[#00ffff] hover:text-[#00ffff] transition-all duration-200 py-3"

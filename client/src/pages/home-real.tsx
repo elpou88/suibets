@@ -183,7 +183,9 @@ export default function HomeReal() {
                         <div className="flex justify-between items-center h-14">
                           <div className="flex flex-col justify-center w-[45%]">
                             <div className="text-white font-bold truncate">{event.homeTeam}</div>
-                            <div className="text-gray-400 text-xs mt-1">{getSportName(event.sportId)}</div>
+                            <div className="text-gray-400 text-xs mt-1">
+                              {sports.find((s: any) => s.id === event.sportId)?.name || 'Sport'}
+                            </div>
                           </div>
                           
                           <div className="bg-[#0b1618] rounded-md px-3 py-1 flex items-center justify-center min-w-[45px]">
@@ -262,10 +264,11 @@ export default function HomeReal() {
                         </div>
                       </div>
                       
-                      {/* Clickable overlay */}
-                      <Link href={`/match/${event.id}`}>
-                        <div className="absolute inset-0 z-0 cursor-pointer"></div>
-                      </Link>
+                      {/* Clickable overlay for card navigation */}
+                      <div 
+                        className="absolute inset-0 z-0 cursor-pointer" 
+                        onClick={() => setLocation(`/match/${event.id}`)}
+                      ></div>
                     </div>
                   ))}
                 </div>

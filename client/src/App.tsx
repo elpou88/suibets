@@ -34,6 +34,7 @@ import GotoSports from "@/pages/goto-sports";
 import { AuthProvider } from "@/context/AuthContext";
 import { BlockchainAuthProvider } from "@/hooks/useBlockchainAuth"; // Add blockchain authentication provider
 import { BettingProvider } from "@/context/BettingContext";
+import { SettingsProvider } from "@/context/SettingsContext"; // Add settings provider
 import { WalProvider } from "@/components/ui/wal-components";
 import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
@@ -72,9 +73,10 @@ function App() {
               <WalrusProtocolProvider>
                 <BlockchainAuthProvider>
                   <AuthProvider>
-                    <BettingProvider>
-                      <div className="root-container">
-                        <Switch>
+                    <SettingsProvider>
+                      <BettingProvider>
+                        <div className="root-container">
+                          <Switch>
                           {/* Main Routes - Use real data pages as the default */}
                           <Route path="/" component={HomeReal} />
                           <Route path="/sports" component={HomeReal} />
@@ -167,6 +169,7 @@ function App() {
                       <SpecialLinks />
                       <Toaster />
                     </BettingProvider>
+                    </SettingsProvider>
                   </AuthProvider>
                 </BlockchainAuthProvider>
               </WalrusProtocolProvider>

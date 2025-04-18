@@ -61,107 +61,120 @@ const FeaturedEventCard: React.FC<FeaturedEventCardProps> = ({ event, getSportNa
   };
 
   return (
-    <div className="bg-[#18323a] rounded-md border border-[#2a4c55] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg h-full flex flex-col">
-      <div className="bg-gradient-to-r from-cyan-600/30 to-blue-600/20 p-3 border-b border-[#2a4c55] flex justify-between items-center">
-        <div className="flex items-center">
-          <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-          <span className="text-cyan-300 font-semibold text-xs">{getSportName(event.sportId)}</span>
+    <div className="bg-[#112225] rounded-md border border-[#1e3a3f] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg h-full flex flex-col relative">
+      {/* Header with team names and live indicator */}
+      <div className="p-3 border-b border-[#1e3a3f]">
+        <div className="flex justify-between items-center mb-1.5">
+          <div className="text-white font-medium text-sm truncate pr-2 flex-1">
+            {event.homeTeam} <span className="text-gray-400">vs</span> {event.awayTeam}
+          </div>
+          {event.isLive && (
+            <div className="bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded">
+              LIVE
+            </div>
+          )}
         </div>
-        <span className="text-xs text-cyan-300 bg-[#18323a] px-2 py-0.5 rounded font-medium">
-          {event.leagueName}
-        </span>
+        <div className="flex justify-between items-center text-xs">
+          <span className="text-cyan-300 font-medium">{getSportName(event.sportId)}</span>
+          <span className="text-gray-400">{event.leagueName}</span>
+        </div>
       </div>
       
-      <div className="p-4 flex-grow flex flex-col justify-between">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex-1 mr-3">
-            <div className="text-cyan-300 font-bold text-sm mb-3">{event.homeTeam}</div>
-            <div className="text-cyan-300 font-bold text-sm">{event.awayTeam}</div>
-          </div>
+      {/* Score display (for live events) */}
+      {event.isLive && event.score && (
+        <div className="bg-[#0b1618] py-2 px-3 border-b border-[#1e3a3f] text-center">
+          <span className="text-cyan-300 text-lg font-bold">
+            {event.score}
+          </span>
         </div>
-        
-        <div className="flex flex-col space-y-3 mt-auto">
+      )}
+      
+      {/* Betting options with team names and odds */}
+      <div className="p-3 flex-grow flex flex-col justify-between">
+        <div className="space-y-3">
           {event.markets && event.markets[0] && event.markets[0].outcomes ? (
             <>
-              {/* Home team button - OUTSIDE the Link component for direct clicking */}
+              {/* Market name */}
+              <div className="text-center text-xs text-gray-400 mb-2">
+                {event.markets[0]?.name || 'Match Result'}
+              </div>
+              
+              {/* Home team button */}
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full"
+                className="h-12 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white w-full"
                 onClick={(e) => {
                   if (event.markets && event.markets[0] && event.markets[0].outcomes) {
                     handleAddBet(e, event.homeTeam, event.markets[0].outcomes[0]);
                   }
                 }}
               >
-                <span className="flex justify-between w-full">
-                  <span>{event.homeTeam}</span>
-                  <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-sm font-medium">{event.homeTeam}</span>
+                  <span className="text-lg font-bold">
                     {event.markets[0].outcomes[0]?.odds.toFixed(2) || '2.00'}
                   </span>
-                </span>
+                </div>
               </Button>
               
-              {/* Away team button - OUTSIDE the Link component for direct clicking */}
+              {/* Away team button */}
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full"
+                className="h-12 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white w-full"
                 onClick={(e) => {
                   if (event.markets && event.markets[0] && event.markets[0].outcomes) {
                     handleAddBet(e, event.awayTeam, event.markets[0].outcomes[1]);
                   }
                 }}
               >
-                <span className="flex justify-between w-full">
-                  <span>{event.awayTeam}</span>
-                  <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-sm font-medium">{event.awayTeam}</span>
+                  <span className="text-lg font-bold">
                     {event.markets[0].outcomes[1]?.odds.toFixed(2) || '3.50'}
                   </span>
-                </span>
+                </div>
               </Button>
             </>
           ) : (
             <>
+              {/* Fallback for when market data isn't available */}
+              <div className="text-center text-xs text-gray-400 mb-2">
+                Match Result
+              </div>
+              
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full"
+                className="h-12 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white w-full"
                 onClick={(e) => e.stopPropagation()}
               >
-                <span className="flex justify-between w-full">
-                  <span>{event.homeTeam}</span>
-                  <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">2.10</span>
-                </span>
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-sm font-medium">{event.homeTeam}</span>
+                  <span className="text-lg font-bold">2.10</span>
+                </div>
               </Button>
               
               <Button 
                 size="sm" 
                 variant="outline" 
-                className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full"
+                className="h-12 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white w-full"
                 onClick={(e) => e.stopPropagation()}
               >
-                <span className="flex justify-between w-full">
-                  <span>{event.awayTeam}</span>
-                  <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">1.90</span>
-                </span>
+                <div className="flex flex-col items-center w-full">
+                  <span className="text-sm font-medium">{event.awayTeam}</span>
+                  <span className="text-lg font-bold">1.90</span>
+                </div>
               </Button>
             </>
           )}
         </div>
-        
-        {event.score && (
-          <div className="mt-4 text-center">
-            <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
-              {event.score}
-            </span>
-          </div>
-        )}
       </div>
       
-      {/* This is a transparent overlay that makes the whole card clickable for navigation */}
+      {/* Transparent overlay for card navigation */}
       <Link href={`/match/${event.id}`}>
-        <div className="absolute inset-0 z-10" style={{ pointerEvents: 'auto' }}></div>
+        <div className="absolute inset-0 z-0" style={{ pointerEvents: 'auto' }}></div>
       </Link>
     </div>
   );

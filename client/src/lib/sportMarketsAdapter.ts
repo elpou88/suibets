@@ -5,7 +5,9 @@
  * and ensure proper display and betting functionality across all supported sports.
  */
 
-import { Market, Outcome } from '@/types';
+// Import types if available in the project, otherwise define them here
+// We'll define them here to make this module self-contained
+// If you get import conflicts, use the project's existing types instead
 
 // Sport IDs based on API
 export enum SportIds {
@@ -26,6 +28,24 @@ export enum SportIds {
   AFL = 15,
   SNOOKER = 16,
   DARTS = 17
+}
+
+// Type definition for outcome (if not already defined elsewhere)
+export interface Outcome {
+  id: string | number;
+  name: string;
+  odds: number;
+  status?: string;
+  probability?: number;
+}
+
+// Type definition for market (if not already defined elsewhere)
+export interface Market {
+  id: string | number;
+  name: string;
+  type?: string;
+  status?: string;
+  outcomes: Outcome[];
 }
 
 // Market types by sport

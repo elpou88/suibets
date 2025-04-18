@@ -12,7 +12,18 @@ import {
   BadgeInfo,
   CircleDot, 
   Cpu,
-  Snowflake
+  Snowflake,
+  Dumbbell,
+  Trophy,
+  Golf,
+  FlagTriangleRight,
+  Bike,
+  Dice5,
+  Target,
+  Table2,
+  Shirt,
+  Car,
+  Gamepad2
 } from 'lucide-react';
 import { formatOdds } from '@/lib/utils';
 import { Sport } from '@/types';

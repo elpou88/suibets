@@ -56,27 +56,34 @@ export function LiveEventsSection() {
     return acc;
   }, {} as Record<string, Event[]>);
 
-  // Helper function to get sport name from sportId
+  // Helper function to get sport name from sportId (updated to match API data)
   const getSportName = (sportId: number | null): string => {
     switch(sportId) {
       case 1: return 'Football';
       case 2: return 'Basketball';
       case 3: return 'Tennis';
-      case 4: return 'Hockey';
-      case 5: return 'Volleyball';
+      case 4: return 'Baseball';  // Correct ID for Baseball
+      case 5: return 'Hockey';
       case 6: return 'Handball';
-      case 7: return 'Baseball';
+      case 7: return 'Volleyball';
       case 8: return 'Rugby';
-      case 9: return 'Cricket';
+      case 9: return 'Cricket';  // Cricket ID
       case 10: return 'Golf';
       case 11: return 'Boxing';
       case 12: return 'MMA/UFC';
-      case 13: return 'Formula 1';
+      case 13: return 'Golf';    // Second Golf ID in some APIs
       case 14: return 'Cycling';
       case 15: return 'American Football';
-      case 16: return 'Australian Football';
-      case 17: return 'Snooker';
-      case 18: return 'Darts';
+      case 16: return 'American Football'; // Updated from API data
+      case 17: return 'Rugby';    // Another Rugby ID
+      case 19: return 'Volleyball'; // Volleyball
+      case 20: return 'Snooker';  // Snooker
+      case 21: return 'Darts';    // Darts
+      case 22: return 'Table Tennis';
+      case 23: return 'Badminton';
+      case 24: return 'Beach Volleyball';
+      case 25: return 'Winter Sports';
+      case 26: return 'Motorsport';
       default: return 'Other';
     }
   };
@@ -114,9 +121,69 @@ export function LiveEventsSection() {
           View All
         </Button>
       </CardHeader>
-      <CardContent className="p-0 max-h-[600px] overflow-auto custom-scrollbar">
+      <CardContent className="p-0 max-h-[700px] overflow-auto custom-scrollbar">
+        {/* Featured Events Banner */}
+        <div className="bg-gradient-to-r from-[#112225] to-[#14292e] p-4 border-b border-[#1e3a3f]">
+          <h3 className="text-cyan-400 font-bold mb-2 flex items-center">
+            <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+            FEATURED LIVE EVENTS
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {liveEvents.slice(0, 3).map((event) => (
+              <Link key={event.id} href={`/match/${event.id}`}>
+                <div className="bg-[#0b1618] rounded border border-[#1e3a3f] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg shadow-black/20">
+                  <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-2 border-b border-[#1e3a3f] flex justify-between items-center">
+                    <div className="flex items-center">
+                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
+                      <span className="text-cyan-300 font-medium text-xs">{getSportName(event.sportId)}</span>
+                    </div>
+                    <span className="text-xs text-white/70 bg-[#112225] px-2 py-0.5 rounded">
+                      {event.leagueName}
+                    </span>
+                  </div>
+                  <div className="p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex-1">
+                        <div className="text-white font-medium truncate">{event.homeTeam}</div>
+                        <div className="text-white font-medium truncate mt-1">{event.awayTeam}</div>
+                      </div>
+                      <div className="flex flex-col space-y-1">
+                        {event.markets && event.markets[0] && event.markets[0].outcomes && (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/20 hover:text-cyan-400 hover:border-cyan-400 min-w-[60px]"
+                            >
+                              {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-7 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/20 hover:text-cyan-400 hover:border-cyan-400 min-w-[60px]"
+                            >
+                              {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    {event.score && (
+                      <div className="mt-2 text-center">
+                        <span className="text-cyan-400 text-sm font-bold bg-[#112225] px-3 py-1 rounded shadow-inner shadow-black/20">
+                          {event.score}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+        
         {/* Sports Tabs */}
-        <div className="flex items-center bg-[#0b1618] p-2 border-b border-[#1e3a3f] overflow-x-auto">
+        <div className="flex items-center bg-[#0b1618] p-2 border-b border-[#1e3a3f] overflow-x-auto sticky top-0 z-10">
           {sortedSports.map((sport, idx) => (
             <Button 
               key={idx}
@@ -133,54 +200,60 @@ export function LiveEventsSection() {
           ))}
         </div>
 
-        {/* Display events in a compact card format */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 p-2">
-          {Object.entries(groupedEvents).slice(0, 6).map(([leagueSlug, events]) => (
-            <div key={leagueSlug} className="mb-2">
-              <div className="flex items-center justify-between bg-[#112225] p-2 rounded-t border-t border-l border-r border-[#1e3a3f]">
-                <div className="flex items-center">
-                  <Activity className="h-4 w-4 mr-2 text-cyan-400" />
-                  <span className="text-sm font-medium text-cyan-100">{events[0].leagueName || 'League'}</span>
-                </div>
-                <div className="text-xs text-gray-400">
-                  {events.length} {events.length === 1 ? 'event' : 'events'}
-                </div>
+        {/* Display events by sport in compact grid format */}
+        <div className="p-3">
+          {sortedSports.slice(0, 5).map((sport, sportIndex) => (
+            <div key={sportIndex} className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-cyan-400 font-bold text-sm flex items-center">
+                  {sport.name.toUpperCase()} <span className="ml-2 text-xs text-cyan-300/70">({sport.count})</span>
+                </h3>
+                <Link href={`/sport/${sport.name.toLowerCase()}`}>
+                  <span className="text-xs text-cyan-400 hover:underline cursor-pointer">View All</span>
+                </Link>
               </div>
               
-              <div className="bg-[#14292e] rounded-b border-b border-l border-r border-[#1e3a3f]">
-                {events.slice(0, 2).map((event) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                {sport.events.slice(0, 3).map((event) => (
                   <Link key={event.id} href={`/match/${event.id}`}>
-                    <div className="cursor-pointer hover:bg-[#1a3138] p-2 border-t border-[#1e3a3f] first:border-t-0">
+                    <div className="cursor-pointer bg-[#0f1c1f] hover:bg-[#1a3138] p-2 border border-[#1e3a3f] hover:border-cyan-400/50 rounded transition-all duration-200">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded">LIVE</span>
-                        <span className="text-gray-300 text-xs">{getSportName(event.sportId)}</span>
+                        <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center">
+                          <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
+                          LIVE
+                        </span>
+                        <span className="text-cyan-200 text-xs">{event.leagueName}</span>
                       </div>
                       
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-white font-medium">{event.homeTeam}</span>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
-                        >
-                          {event.homeOdds?.toFixed(2) || '1.00'}
-                        </Button>
+                        <span className="text-white font-medium truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
+                        {event.markets && event.markets[0] && event.markets[0].outcomes && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
+                          >
+                            {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
+                          </Button>
+                        )}
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-white font-medium">{event.awayTeam}</span>
-                        <Button 
-                          size="sm" 
-                          variant="outline" 
-                          className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
-                        >
-                          {event.awayOdds?.toFixed(2) || '1.00'}
-                        </Button>
+                        <span className="text-white font-medium truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
+                        {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] && (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
+                          >
+                            {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
+                          </Button>
+                        )}
                       </div>
                       
                       {event.score && (
                         <div className="mt-1 text-center">
-                          <span className="text-cyan-400 text-xs bg-[#112225] px-2 py-0.5 rounded">
+                          <span className="text-cyan-400 text-xs bg-[#112225] px-2 py-0.5 rounded shadow-inner shadow-black/30">
                             {event.score}
                           </span>
                         </div>
@@ -188,24 +261,18 @@ export function LiveEventsSection() {
                     </div>
                   </Link>
                 ))}
-                
-                {events.length > 2 && (
-                  <div className="p-2 text-center text-xs text-cyan-400 hover:underline cursor-pointer border-t border-[#1e3a3f]">
-                    View {events.length - 2} more events
-                  </div>
-                )}
               </div>
             </div>
           ))}
         </div>
         
-        {Object.entries(groupedEvents).length > 6 && (
-          <div className="p-3 text-center">
-            <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10">
+        <div className="p-3 text-center bg-gradient-to-r from-[#112225] to-[#14292e] border-t border-[#1e3a3f]">
+          <Link href="/live">
+            <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/80">
               View All Live Events
             </Button>
-          </div>
-        )}
+          </Link>
+        </div>
       </CardContent>
     </Card>
   );

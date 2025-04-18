@@ -281,11 +281,12 @@ export function ParlayPage() {
                   <p className="text-gray-400 mb-4">
                     Add selections from the sportsbook to build your parlay bet.
                   </p>
-                  <Link href="/">
-                    <Button className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]">
-                      Browse Sports
-                    </Button>
-                  </Link>
+                  <Button 
+                    className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+                    onClick={() => window.location.href = "/"}
+                  >
+                    Browse Sports
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -411,11 +412,16 @@ export function ParlayPage() {
                   <p className="text-gray-400 mb-4">
                     Please connect your wallet to view your parlay history.
                   </p>
-                  <Link href="/wallet">
-                    <Button className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]">
-                      Connect Wallet
-                    </Button>
-                  </Link>
+                  <Button 
+                    className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+                    onClick={() => {
+                      // Dispatch an event to trigger the wallet modal
+                      const event = new CustomEvent('suibets:connect-wallet-required');
+                      window.dispatchEvent(event);
+                    }}
+                  >
+                    Connect Wallet
+                  </Button>
                 </div>
               ) : parlayBets.length === 0 ? (
                 <div className="text-center p-4 border border-dashed border-[#1e3a3f] rounded-lg bg-[#0b1618]">

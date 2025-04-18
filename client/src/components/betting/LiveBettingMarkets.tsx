@@ -1,39 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useBetting } from '@/context/BettingContext';
 import { apiRequest } from '@/lib/queryClient';
-import { 
-  RefreshCw, 
-  Clock, 
-  Activity,
-  BookType,
-  BadgeInfo,
-  CircleDot, 
-  Cpu,
-  Snowflake,
-  Dumbbell,
-  Trophy,
-  Flag,
-  FlagTriangleRight,
-  Bike,
-  Dice5,
-  Target,
-  Table2,
-  Shirt,
-  Car,
-  Gamepad2
-} from 'lucide-react';
 import { formatOdds } from '@/lib/utils';
+import { 
+  RefreshCw, Clock, Activity, BookType, BadgeInfo, CircleDot, 
+  Cpu, Snowflake, Dumbbell, Trophy, Flag, FlagTriangleRight,
+  Bike, Dice5, Target, Table2, Shirt, Car, Gamepad2
+} from 'lucide-react';
 import { Sport } from '@/types';
 
+// Event Market interface
 interface Market {
   id: string;
   name: string;
   outcomes: Outcome[];
 }
 
+// Event Outcome interface
 interface Outcome {
   id: string;
   name: string;
@@ -41,6 +27,7 @@ interface Outcome {
   probability: number;
 }
 
+// Event interface
 interface Event {
   id: string;
   sportId: number;
@@ -54,16 +41,43 @@ interface Event {
   isLive: boolean;
 }
 
+// Map of sport IDs to icons
+const SPORT_ICONS: Record<number, React.ReactNode> = {
+  1: <Activity className="h-5 w-5 mr-2" />, // Soccer
+  2: <BookType className="h-5 w-5 mr-2" />, // Basketball
+  3: <BadgeInfo className="h-5 w-5 mr-2" />, // Tennis
+  4: <Cpu className="h-5 w-5 mr-2" />, // Baseball
+  5: <Snowflake className="h-5 w-5 mr-2" />, // Hockey
+  6: <Trophy className="h-5 w-5 mr-2" />, // Rugby
+  7: <Flag className="h-5 w-5 mr-2" />, // Golf
+  8: <FlagTriangleRight className="h-5 w-5 mr-2" />, // Boxing
+  9: <CircleDot className="h-5 w-5 mr-2" />, // Cricket
+  10: <Dumbbell className="h-5 w-5 mr-2" />, // MMA
+  11: <Bike className="h-5 w-5 mr-2" />, // Cycling
+  12: <Target className="h-5 w-5 mr-2" />, // Darts
+  13: <Flag className="h-5 w-5 mr-2" />, // Golf
+  16: <Activity className="h-5 w-5 mr-2" />, // American Football
+  17: <Trophy className="h-5 w-5 mr-2" />, // Rugby
+  19: <Dice5 className="h-5 w-5 mr-2" />, // Volleyball
+  20: <Table2 className="h-5 w-5 mr-2" />, // Snooker
+  21: <Shirt className="h-5 w-5 mr-2" />, // Handball
+  22: <Car className="h-5 w-5 mr-2" />, // Formula 1
+  23: <Gamepad2 className="h-5 w-5 mr-2" />, // Esports
+};
+
 function LiveBettingMarkets() {
+  // Refs to prevent unnecessary rerenders
+  const cacheRef = useRef<Event[]>([]);
   const { addBet } = useBetting();
+  
+  // UI state
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
   const [expandedMarkets, setExpandedMarkets] = useState<Record<string, boolean>>({});
   const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
-  const [cachedEvents, setCachedEvents] = useState<Event[]>([]);
   
-  // Helper function to classify events into proper sports based on their characteristics
-  const classifySport = (event: Event): number => {
-    // If we have a valid sportId that's not one of the ambiguous ones, use it directly
+  // Helper function to classify/correct sport IDs based on event data
+  const classifySport = useCallback((event: Event): number => {
+    // If we have a valid sportId, use it directly
     const originalSportId = event.sportId;
     
     // Look for basketball indicators
@@ -121,7 +135,7 @@ function LiveBettingMarkets() {
       return 9; // Cricket
     }
     
-    // Map additional popular sports that we saw in the data
+    // Map additional popular sports
     if (originalSportId === 13) return 13; // Golf
     if (originalSportId === 16) return 16; // American Football
     if (originalSportId === 17) return 17; // Rugby
@@ -129,155 +143,132 @@ function LiveBettingMarkets() {
     if (originalSportId === 20) return 20; // Snooker
     
     // Default to football/soccer if no other indicators found
-    return 1; // Football/Soccer
-  };
+    return originalSportId || 1; // Football/Soccer as fallback
+  }, []);
   
-  // Fetch all live events from all sports
-  const { data: rawEvents = [], isLoading: eventsLoading, error: eventsError, refetch } = useQuery<Event[]>({
-    queryKey: ['/api/events'],
+  // Fetch live events with increased timeout and retry logic
+  const { 
+    data: rawEvents = [], 
+    isLoading: eventsLoading, 
+    error: eventsError, 
+    refetch 
+  } = useQuery<Event[]>({
+    queryKey: ['/api/events/live'],
     queryFn: async () => {
       try {
-        // Use direct events endpoint with isLive parameter with increased timeout
-        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 15000 });
+        const response = await apiRequest(
+          'GET', 
+          '/api/events?isLive=true', 
+          undefined, 
+          { timeout: 15000 }
+        );
         
         if (!response.ok) {
-          console.warn(`Server error ${response.status} from ${response.url}`);
-          return []; // Return empty array on error
+          console.warn(`Server error ${response.status} from live events endpoint`);
+          return []; 
         }
         
         const data = await response.json();
-        
-        // Make sure the data is valid
         if (!Array.isArray(data)) {
           console.warn('Received non-array data for live events');
           return [];
         }
         
-        console.log("Received", data.length, "live events");
-        
-        // Ensure each event has required properties
-        const processedData = data.map((event: any) => ({
-          ...event,
-          // Ensure minimum required properties
-          id: event.id || `event-${Math.random().toString(36).substring(2, 8)}`,
-          homeTeam: event.homeTeam || 'Team A',
-          awayTeam: event.awayTeam || 'Team B',
-          name: event.name || `${event.homeTeam || 'Team A'} vs ${event.awayTeam || 'Team B'}`,
-          markets: Array.isArray(event.markets) ? event.markets.map((market: any) => ({
-            ...market,
-            id: market.id || `market-${Math.random().toString(36).substring(2, 8)}`,
-            name: market.name || 'Match Result',
-            outcomes: Array.isArray(market.outcomes) ? market.outcomes.map((outcome: any) => ({
-              ...outcome,
-              id: outcome.id || `outcome-${Math.random().toString(36).substring(2, 8)}`,
-              name: outcome.name || 'Unknown',
-              odds: typeof outcome.odds === 'number' ? outcome.odds : 2.0,
-              status: outcome.status || 'active'
-            })) : []
-          })) : []
-        }));
-        
-        console.log("Loaded events for display:", processedData.length);
-        
-        // Debug the sports IDs we're getting before classification
-        const sportIdsSet = new Set<number>();
-        data.forEach((event: Event) => {
-          sportIdsSet.add(event.sportId);
-        });
-        const sportIds = Array.from(sportIdsSet);
-        console.log("Available sport IDs in live events:", sportIds);
-        
-        // Debug the events by sport ID before classification
-        const eventsBySportId: Record<number, number> = {};
-        data.forEach((event: Event) => {
-          eventsBySportId[event.sportId] = (eventsBySportId[event.sportId] || 0) + 1;
-        });
-        console.log("Event count by sport ID:", eventsBySportId);
-        
+        console.log(`Received ${data.length} live events`);
         return data;
       } catch (error) {
         console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Return empty array on error to avoid breaking the UI
         return [];
       }
     },
-    refetchInterval: 20000, // Refetch every 20 seconds
-    retry: 2, // Retry failed requests 2 times
-    retryDelay: 1000 // Wait 1 second between retries
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 2, 
+    retryDelay: 1000,
+    staleTime: 15000, // Consider data fresh for 15 seconds
   });
   
-  // Process and classify events into correct sports
+  // Process and normalize events, using cached events if API fails
   const events = useMemo(() => {
-    // If no raw events or empty array, use cached events if available
+    // If no raw events from API, use cached events
     if (!rawEvents || !Array.isArray(rawEvents) || rawEvents.length === 0) {
-      return cachedEvents.length > 0 ? cachedEvents : [];
+      return cacheRef.current.length > 0 ? cacheRef.current : [];
     }
     
-    // Map over the raw events and classify them into the correct sports
-    const classified = rawEvents.map(event => {
-      // Handle potentially invalid events
-      if (!event || typeof event !== 'object') {
-        console.warn('Invalid event object in rawEvents:', event);
-        return null;
-      }
-      
-      return {
+    // Map and normalize raw events
+    const processed = rawEvents
+      .filter(event => event && typeof event === 'object')
+      .map(event => ({
         ...event,
-        // Make sure we have minimum required fields
         id: event.id || `event-${Math.random().toString(36).substring(2, 8)}`,
-        sportId: classifySport(event), // Assign the corrected sport ID
+        sportId: classifySport(event),
         homeTeam: event.homeTeam || 'Unknown Team',
         awayTeam: event.awayTeam || 'Unknown Opponent',
-        markets: Array.isArray(event.markets) ? event.markets : []
-      };
-    }).filter(Boolean) as Event[]; // Filter out null/undefined events and cast to Event[]
+        markets: Array.isArray(event.markets) ? event.markets.filter(m => 
+          m && Array.isArray(m.outcomes) && m.outcomes.length > 0
+        ) : []
+      }))
+      .filter(event => event.markets.length > 0); // Only keep events with valid markets
     
-    // If we got valid events, cache them for future use
-    if (classified.length > 0) {
-      setCachedEvents(classified);
+    // Update cache for future use
+    if (processed.length > 0) {
+      cacheRef.current = processed;
     }
     
-    return classified;
-  }, [rawEvents, cachedEvents, classifySport]);
+    return processed;
+  }, [rawEvents, classifySport]);
   
-  // Fetch all sports for accurate sport names
+  // Fetch sports data for accurate sport names
   const { data: sports = [] } = useQuery<Sport[]>({
     queryKey: ['/api/sports'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/sports');
-      return response.json();
-    }
+      try {
+        const response = await apiRequest('GET', '/api/sports');
+        return response.json();
+      } catch (error) {
+        console.warn(`Error fetching sports: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return [];
+      }
+    },
+    staleTime: 3600000, // Cache sports for 1 hour
   });
   
   // Create a lookup dictionary for sports by ID
-  const sportsById = sports.reduce((acc, sport) => {
-    acc[sport.id] = sport;
-    return acc;
-  }, {} as Record<number, Sport>);
+  const sportsById = useMemo(() => {
+    return sports.reduce((acc, sport) => {
+      acc[sport.id] = sport;
+      return acc;
+    }, {} as Record<number, Sport>);
+  }, [sports]);
   
   // Group events by sport
-  const eventsBySport = events.reduce((acc, event) => {
-    if (!event) return acc;
-    
-    const sportId = event.sportId.toString();
-    if (!acc[sportId]) {
-      acc[sportId] = [];
-    }
-    acc[sportId].push(event);
-    return acc;
-  }, {} as Record<string, Event[]>);
+  const eventsBySport = useMemo(() => {
+    return events.reduce((acc, event) => {
+      if (!event) return acc;
+      
+      const sportId = event.sportId.toString();
+      if (!acc[sportId]) {
+        acc[sportId] = [];
+      }
+      acc[sportId].push(event);
+      return acc;
+    }, {} as Record<string, Event[]>);
+  }, [events]);
   
-  // Get all available sports for the sports filter
-  const availableSports = Object.keys(eventsBySport).map(sportId => ({
-    id: parseInt(sportId),
-    name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
-    count: eventsBySport[sportId].length
-  }));
+  // Get available sports for filters
+  const availableSports = useMemo(() => {
+    return Object.keys(eventsBySport).map(sportId => ({
+      id: parseInt(sportId),
+      name: sportsById[parseInt(sportId)]?.name || `Sport ${sportId}`,
+      count: eventsBySport[sportId].length
+    })).sort((a, b) => b.count - a.count); // Sort by event count, most first
+  }, [eventsBySport, sportsById]);
   
-  // Filter events by selected sport or show all if none selected
-  const filteredEvents = activeSportFilter 
-    ? { [activeSportFilter]: eventsBySport[activeSportFilter.toString()] }
-    : eventsBySport;
+  // Apply sport filter if needed
+  const filteredEvents = useMemo(() => {
+    return activeSportFilter 
+      ? { [activeSportFilter]: eventsBySport[activeSportFilter.toString()] }
+      : eventsBySport;
+  }, [activeSportFilter, eventsBySport]);
   
   // Initialize expanded states for events when data is loaded
   useEffect(() => {
@@ -285,12 +276,12 @@ function LiveBettingMarkets() {
       const initialExpandedEvents: Record<string, boolean> = {};
       const initialExpandedMarkets: Record<string, boolean> = {};
       
-      // Auto-expand the first 3 events
+      // Auto-expand first 3 events
       events.slice(0, 3).forEach(event => {
         if (event) {
           initialExpandedEvents[event.id] = true;
           
-          // Auto-expand the first market for each expanded event
+          // Auto-expand first market for each expanded event
           if (event.markets && event.markets.length > 0) {
             initialExpandedMarkets[`${event.id}-${event.markets[0].id}`] = true;
           }
@@ -303,24 +294,24 @@ function LiveBettingMarkets() {
   }, [events.length]);
   
   // Toggle event expansion
-  const toggleEvent = (eventId: string) => {
+  const toggleEvent = useCallback((eventId: string) => {
     setExpandedEvents(prev => ({
       ...prev,
       [eventId]: !prev[eventId]
     }));
-  };
+  }, []);
   
   // Toggle market expansion
-  const toggleMarket = (eventId: string, marketId: string) => {
+  const toggleMarket = useCallback((eventId: string, marketId: string) => {
     const key = `${eventId}-${marketId}`;
     setExpandedMarkets(prev => ({
       ...prev,
       [key]: !prev[key]
     }));
-  };
+  }, []);
   
   // Handle bet click - add to bet slip
-  const handleBetClick = (event: Event, market: Market, outcome: Outcome) => {
+  const handleBetClick = useCallback((event: Event, market: Market, outcome: Outcome) => {
     // Create a unique ID for this bet
     const betId = `${event.id}-${market.id}-${outcome.id}-${Date.now()}`;
     
@@ -352,9 +343,10 @@ function LiveBettingMarkets() {
     });
     
     console.log(`Added bet: ${outcome.name} @ ${outcome.odds} for ${event.homeTeam} vs ${event.awayTeam}`);
-  };
+  }, [addBet]);
   
-  if (eventsLoading) {
+  // Loading state
+  if (eventsLoading && cacheRef.current.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-40">
         <RefreshCw className="animate-spin h-8 w-8 text-cyan-400" />
@@ -362,6 +354,7 @@ function LiveBettingMarkets() {
     );
   }
   
+  // No events state
   if (events.length === 0) {
     return (
       <Card className="border-[#1e3a3f] bg-[#112225] shadow-lg shadow-cyan-900/10">
@@ -380,6 +373,7 @@ function LiveBettingMarkets() {
     );
   }
   
+  // Main content
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
@@ -441,25 +435,14 @@ function LiveBettingMarkets() {
           return (
             <div key={sportId} className="mb-6">
               <div className="text-lg font-bold text-cyan-400 mb-2 flex items-center sticky top-0 bg-[#112225] py-2 z-10">
-                {/* Sport-specific icons */}
-                {parseInt(sportId) === 1 && <Activity className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 2 && <BookType className="h-5 w-5 mr-2" />} 
-                {parseInt(sportId) === 3 && <BadgeInfo className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 4 && <Cpu className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 5 && <Snowflake className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 9 && <CircleDot className="h-5 w-5 mr-2" />}
-                {parseInt(sportId) === 13 && <BadgeInfo className="h-5 w-5 mr-2" />} {/* Golf */}
-                {parseInt(sportId) === 16 && <Activity className="h-5 w-5 mr-2" />} {/* American Football */}
-                {parseInt(sportId) === 17 && <BookType className="h-5 w-5 mr-2" />} {/* Rugby */}
-                {parseInt(sportId) === 19 && <BadgeInfo className="h-5 w-5 mr-2" />} {/* Volleyball */}
-                {parseInt(sportId) === 20 && <Cpu className="h-5 w-5 mr-2" />} {/* Snooker */}
-                {![1, 2, 3, 4, 5, 9, 13, 16, 17, 19, 20].includes(parseInt(sportId)) && <Activity className="h-5 w-5 mr-2" />}
+                {/* Sport-specific icon */}
+                {SPORT_ICONS[sportIdNum] || <Activity className="h-5 w-5 mr-2" />}
                 {sportName}
               </div>
               
               {sportEvents && sportEvents.map((event) => (
                 <Card 
-                  key={`${event.id}-${Math.random().toString(36).substring(2, 8)}`}
+                  key={`${event.id}-card`}
                   className="mb-4 border-[#1e3a3f] bg-gradient-to-b from-[#14292e] to-[#112225] shadow-lg shadow-cyan-900/10 overflow-hidden"
                 >
                   {/* Event header with toggle */}
@@ -490,7 +473,7 @@ function LiveBettingMarkets() {
                     <CardContent className="p-3">
                       {event.markets && event.markets.length > 0 ? (
                         event.markets.map((market) => (
-                          <div key={`${market.id}-${Math.random().toString(36).substring(2, 8)}`} className="mb-3 last:mb-0">
+                          <div key={`${market.id}-market`} className="mb-3 last:mb-0">
                             {/* Market header with toggle */}
                             <div 
                               className="px-3 py-2 bg-[#0f1c1f] rounded-t border-[#1e3a3f] border flex justify-between items-center cursor-pointer"
@@ -505,7 +488,7 @@ function LiveBettingMarkets() {
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                   {market.outcomes && market.outcomes.map((outcome) => (
                                     <Button
-                                      key={`${outcome.id || ''}-${Math.random().toString(36).substring(2, 8)}`}
+                                      key={`${outcome.id || ''}-outcome`}
                                       variant="outline"
                                       onClick={() => handleBetClick(event, market, outcome)}
                                       className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-[#0f3942] hover:border-[#00ffff] hover:text-[#00ffff] transition-all duration-200 py-3"

@@ -170,10 +170,8 @@ export class WalrusService {
       });
       
       // In a real implementation, this transaction would be signed by the user's wallet
-      // For now, we'll just return a mock transaction hash
-      const mockTxHash = `${Date.now().toString(16)}_claim_${betId.substring(0, 8)}`;
-      
-      return mockTxHash;
+      // For now, we'll return a serialized representation of the transaction
+      return tx.serialize();
     } catch (error) {
       console.error('Error claiming winnings from Walrus protocol:', error);
       throw error;
@@ -231,10 +229,8 @@ export class WalrusService {
       });
       
       // In a real implementation, this transaction would be signed by the user's wallet
-      // For now, we'll just return a mock transaction hash
-      const mockTxHash = `${Date.now().toString(16)}_dividends_${walletAddress.substring(0, 8)}`;
-      
-      return mockTxHash;
+      // For now, we'll return a serialized representation of the transaction
+      return tx.serialize();
     } catch (error) {
       console.error('Error claiming dividends from Walrus protocol:', error);
       throw error;
@@ -269,9 +265,8 @@ export class WalrusService {
       });
       
       // In a real implementation, this transaction would be signed by the user's wallet
-      // For now, we'll return the transaction bytes that would be sent to the blockchain
-      const txBytes = await tx.build({ client: this.provider });
-      return txBytes.toString('hex');
+      // For now, we'll return a serialized representation of the transaction
+      return tx.serialize();
     } catch (error) {
       console.error('Error staking tokens with Walrus protocol:', error);
       throw error;
@@ -298,9 +293,9 @@ export class WalrusService {
         ]
       });
       
-      // Return the transaction bytes that would be sent to the blockchain
-      const txBytes = await tx.build({ client: this.provider });
-      return txBytes.toString('hex');
+      // In a real implementation, this transaction would be signed by the user's wallet
+      // For now, we'll return a serialized representation of the transaction
+      return tx.serialize();
     } catch (error) {
       console.error('Error unstaking tokens from Walrus protocol:', error);
       throw error;
@@ -327,9 +322,9 @@ export class WalrusService {
         ]
       });
       
-      // Return the transaction bytes that would be sent to the blockchain
-      const txBytes = await tx.build({ client: this.provider });
-      return txBytes.toString('hex');
+      // In a real implementation, this transaction would be signed by the user's wallet
+      // For now, we'll return a serialized representation of the transaction
+      return tx.serialize();
     } catch (error) {
       console.error('Error harvesting yield from Walrus protocol:', error);
       throw error;

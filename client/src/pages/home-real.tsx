@@ -192,19 +192,20 @@ export default function HomeReal() {
                         </div>
                       </div>
                       
-                      {/* Betting options with better visibility */}
-                      <div className="p-3 grid grid-cols-3 gap-2 bg-[#081214]">
+                      {/* Betting options with better visibility and consistent sizing */}
+                      <div className="p-3 bg-[#081214]">
+                        <div className="grid grid-cols-3 gap-3">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
                             <Button
                               key={outcome.id || idx}
                               variant="outline"
-                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                               onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="text-sm font-medium text-white">{outcome.name}</span>
-                                <span className="text-xl font-bold text-cyan-300 mt-1">{outcome.odds.toFixed(2)}</span>
+                              <div className="flex flex-col items-center w-full">
+                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">{outcome.name}</span>
+                                <span className="text-xl font-bold text-cyan-300">{outcome.odds.toFixed(2)}</span>
                               </div>
                             </Button>
                           ))
@@ -212,45 +213,46 @@ export default function HomeReal() {
                           <>
                             <Button
                               variant="outline"
-                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                               onClick={() => {
                                 const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="text-sm font-medium text-white">{event.homeTeam}</span>
-                                <span className="text-xl font-bold text-cyan-300 mt-1">2.10</span>
+                              <div className="flex flex-col items-center w-full">
+                                <span className="text-sm font-medium text-white mb-2">1</span>
+                                <span className="text-xl font-bold text-cyan-300">2.10</span>
                               </div>
                             </Button>
                             <Button
                               variant="outline"
-                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                               onClick={() => {
                                 const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="text-sm font-medium text-white">Draw</span>
-                                <span className="text-xl font-bold text-cyan-300 mt-1">3.25</span>
+                              <div className="flex flex-col items-center w-full">
+                                <span className="text-sm font-medium text-white mb-2">X</span>
+                                <span className="text-xl font-bold text-cyan-300">3.25</span>
                               </div>
                             </Button>
                             <Button
                               variant="outline"
-                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                               onClick={() => {
                                 const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
                             >
-                              <div className="flex flex-col items-center">
-                                <span className="text-sm font-medium text-white">{event.awayTeam}</span>
-                                <span className="text-xl font-bold text-cyan-300 mt-1">3.40</span>
+                              <div className="flex flex-col items-center w-full">
+                                <span className="text-sm font-medium text-white mb-2">2</span>
+                                <span className="text-xl font-bold text-cyan-300">3.40</span>
                               </div>
                             </Button>
                           </>
                         )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -317,19 +319,20 @@ export default function HomeReal() {
                                 </div>
                               </div>
                               
-                              {/* Betting options with better visibility - matching live events style */}
-                              <div className="p-3 grid grid-cols-3 gap-2 bg-[#081214]">
+                              {/* Betting options with better visibility and sizing */}
+                              <div className="p-3 bg-[#081214]">
+                                <div className="grid grid-cols-3 gap-3">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
                                     <Button
                                       key={outcome.id || idx}
                                       variant="outline"
-                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
-                                      <div className="flex flex-col items-center">
-                                        <span className="text-sm font-medium text-white">{outcome.name}</span>
-                                        <span className="text-lg font-bold text-cyan-300 mt-1">{outcome.odds.toFixed(2)}</span>
+                                      <div className="flex flex-col items-center w-full">
+                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">{outcome.name}</span>
+                                        <span className="text-xl font-bold text-cyan-300">{outcome.odds.toFixed(2)}</span>
                                       </div>
                                     </Button>
                                   ))
@@ -337,45 +340,46 @@ export default function HomeReal() {
                                   <>
                                     <Button
                                       variant="outline"
-                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                                       onClick={() => {
                                         const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
                                     >
-                                      <div className="flex flex-col items-center">
-                                        <span className="text-sm font-medium text-white">1</span>
-                                        <span className="text-lg font-bold text-cyan-300 mt-1">2.10</span>
+                                      <div className="flex flex-col items-center w-full">
+                                        <span className="text-sm font-medium text-white mb-2">1</span>
+                                        <span className="text-xl font-bold text-cyan-300">2.10</span>
                                       </div>
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                                       onClick={() => {
                                         const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
                                     >
-                                      <div className="flex flex-col items-center">
-                                        <span className="text-sm font-medium text-white">X</span>
-                                        <span className="text-lg font-bold text-cyan-300 mt-1">3.25</span>
+                                      <div className="flex flex-col items-center w-full">
+                                        <span className="text-sm font-medium text-white mb-2">X</span>
+                                        <span className="text-xl font-bold text-cyan-300">3.25</span>
                                       </div>
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                                       onClick={() => {
                                         const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
                                     >
-                                      <div className="flex flex-col items-center">
-                                        <span className="text-sm font-medium text-white">2</span>
-                                        <span className="text-lg font-bold text-cyan-300 mt-1">3.40</span>
+                                      <div className="flex flex-col items-center w-full">
+                                        <span className="text-sm font-medium text-white mb-2">2</span>
+                                        <span className="text-xl font-bold text-cyan-300">3.40</span>
                                       </div>
                                     </Button>
                                   </>
                                 )}
+                                </div>
                               </div>
                             </div>
                           ))}

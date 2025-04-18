@@ -202,7 +202,7 @@ export default function Sidebar() {
       
       // Find which category contains this sport
       for (const category of sportsCategories) {
-        if (category.sports.some(sport => sport.slug === sportSlug)) {
+        if (category.sports.some((sport: any) => sport.slug === sportSlug)) {
           if (!expandedCategories.includes(category.name)) {
             setExpandedCategories([...expandedCategories, category.name]);
           }
@@ -210,7 +210,7 @@ export default function Sidebar() {
         }
       }
     }
-  }, [window.location.pathname, sportsCategories]); // Update when pathname or sports change
+  }, [window.location.pathname, sportsCategories, expandedCategories]); // Update when pathname or sports change
 
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories(prev => 
@@ -302,7 +302,7 @@ export default function Sidebar() {
       
       {/* Sports navigation - categorized */}
       <div className="flex-grow overflow-y-auto no-scrollbar py-2">
-        {sportsCategories.map((category) => (
+        {sportsCategories.map((category: any) => (
           <div key={category.name} className="mb-2">
             {/* Category Header */}
             <div 
@@ -319,7 +319,7 @@ export default function Sidebar() {
             {/* Category Content */}
             {expandedCategories.includes(category.name) && (
               <div className="pl-2">
-                {category.sports.map((sport) => {
+                {category.sports.map((sport: any) => {
                   const href = sport.slug === 'upcoming' 
                     ? "/" 
                     : sport.slug === 'live' 

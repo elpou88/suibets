@@ -1,10 +1,12 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { SettingsModalProps } from "@/types";
+import { useSettings } from "@/context/SettingsContext";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -16,11 +18,20 @@ import {
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
-  const [language, setLanguage] = useState("english");
-  const [oddsFormat, setOddsFormat] = useState("decimal");
-  const [showFiatAmount, setShowFiatAmount] = useState(true);
-  const [onSiteNotifications, setOnSiteNotifications] = useState(true);
-  const [receiveNewsletter, setReceiveNewsletter] = useState(true);
+  const { toast } = useToast();
+  const { 
+    language, 
+    setLanguage, 
+    oddsFormat, 
+    setOddsFormat, 
+    showFiatAmount, 
+    setShowFiatAmount, 
+    onSiteNotifications, 
+    setOnSiteNotifications, 
+    receiveNewsletter, 
+    setReceiveNewsletter,
+    saveSettings 
+  } = useSettings();
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -125,6 +136,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </p>
               <Button>Request Self-Exclusion</Button>
             </div>
+          </div>
+          
+          {/* Save button */}
+          <div className="flex justify-end pt-4">
+            <Button 
+              onClick={() => {
+                saveSettings();
+                toast({
+                  title: "Settings Saved",
+                  description: "Your preferences have been updated successfully.",
+                });
+                onClose();
+              }}
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black"
+            >
+              Save Changes
+            </Button>
           </div>
         </div>
       </DialogContent>

@@ -157,7 +157,7 @@ export default function HomeReal() {
             </div>
             
             {/* Featured Live Events */}
-            {liveEvents.length > 0 && (
+            {(liveEvents.length > 0 || liveEventsLoading) && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
                   <div className="w-3 h-3 rounded-full bg-red-500 mr-2 animate-pulse"></div>

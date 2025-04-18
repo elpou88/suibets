@@ -47,7 +47,7 @@ export function useWalrusProtocol() {
   const [error, setError] = useState<string | null>(null);
   
   // Connect wallet to Walrus protocol
-  const connectToWalrusProtocolMutation = useMutation({
+  const connectToWurlusProtocolMutation = useMutation({
     mutationFn: async (walletAddress: string) => {
       const res = await apiRequest('POST', '/api/walrus/connect', { walletAddress });
       return await res.json();
@@ -257,7 +257,7 @@ export function useWalrusProtocol() {
     error,
     
     // Mutations
-    connectToWurlusProtocol: connectToWalrusProtocolMutation.mutateAsync,
+    connectToWurlusProtocol: connectToWurlusProtocolMutation.mutateAsync,
     placeBet: placeBetMutation.mutateAsync,
     claimWinnings: claimWinningsMutation.mutateAsync,
     claimDividends: claimDividendsMutation.mutateAsync,
@@ -269,7 +269,7 @@ export function useWalrusProtocol() {
     useWalletDividends,
     
     // Loading states
-    isConnecting: connectToWalrusProtocolMutation.isPending,
+    isConnecting: connectToWurlusProtocolMutation.isPending,
     isPlacingBet: placeBetMutation.isPending,
     isClaimingWinnings: claimWinningsMutation.isPending,
     isClaimingDividends: claimDividendsMutation.isPending,

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { WALLET_TYPES } from "@/lib/utils";
 import { ChevronRight, AlertCircle, Loader2, WalletIcon } from "lucide-react";
-import { useWurlusProtocol } from "@/hooks/useWurlusProtocol";
+import { useWalrusProtocol } from "@/hooks/useWalrusProtocol";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { ConnectButton, useWallet } from '@suiet/wallet-kit';
@@ -18,7 +18,7 @@ interface ConnectWalletModalProps {
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
   const { user, connectWallet } = useAuth();
   const { connect: connectAdapter, address, isConnected, error: walletError } = useWalletAdapter();
-  const { connectToWurlusProtocol, checkRegistrationStatus, error: wurlusError } = useWurlusProtocol();
+  const { connectToWurlusProtocol, checkRegistrationStatus, error: walrusError } = useWalrusProtocol();
   const { toast } = useToast();
   // Get Suiet wallet connection state
   const suietWallet = useWallet();
@@ -141,10 +141,10 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
     } catch (err: any) {
       console.error("Error connecting wallet:", err);
-      setError(err?.message || wurlusError || "Failed to connect wallet. Please try again.");
+      setError(err?.message || walrusError || "Failed to connect wallet. Please try again.");
       toast({
         title: "Connection Failed",
-        description: err?.message || wurlusError || "Failed to connect wallet. Please try again.",
+        description: err?.message || walrusError || "Failed to connect wallet. Please try again.",
         variant: "destructive",
       });
       setConnecting(false);
@@ -204,12 +204,12 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             <Loader2 className="h-10 w-10 text-primary animate-spin" />
             <div className="text-center">
               <h3 className="font-medium text-lg">
-                {connectionStep === 'connecting' ? 'Connecting Wallet' : 'Registering with Wurlus Protocol'}
+                {connectionStep === 'connecting' ? 'Connecting Wallet' : 'Registering with Walrus Protocol'}
               </h3>
               <p className="text-muted-foreground mt-1">
                 {connectionStep === 'connecting' 
                   ? 'Please approve the connection in your wallet...' 
-                  : 'Registering your wallet with the Wurlus protocol...'}
+                  : 'Registering your wallet with the Walrus protocol...'}
               </p>
             </div>
             {selectedWallet && (

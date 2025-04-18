@@ -126,7 +126,7 @@ export default function HomeReal() {
                       <CardContent className="p-0">
                         <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-[#1e3a3f] to-[#00ffff]">
                           <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h3>
+                            <h3 className="text-lg font-semibold text-black">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h3>
                             <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
                               LIVE
                             </div>
@@ -137,13 +137,13 @@ export default function HomeReal() {
                             <div className="mt-2 flex justify-center bg-[#0b1618] rounded-md p-3">
                               <div className="flex items-center justify-between w-full">
                                 <div className="text-right flex-1 mr-4">
-                                  <div className="font-bold">{event.homeTeam}</div>
+                                  <div className="font-bold text-white">{event.homeTeam}</div>
                                 </div>
-                                <div className="text-xl font-bold bg-black rounded-md py-1 px-4">
+                                <div className="text-xl font-bold bg-black rounded-md py-1 px-4 text-white">
                                   {event.score}
                                 </div>
                                 <div className="text-left flex-1 ml-4">
-                                  <div className="font-bold">{event.awayTeam}</div>
+                                  <div className="font-bold text-white">{event.awayTeam}</div>
                                 </div>
                               </div>
                             </div>
@@ -173,7 +173,7 @@ export default function HomeReal() {
                                       ? 'text-[#00ffff]' 
                                       : 'text-gray-400'
                                   }`}>
-                                    {outcome.odds.toFixed(2)}
+                                    {typeof outcome.odds === 'number' ? outcome.odds.toFixed(2) : outcome.odds}
                                   </span>
                                 </Button>
                               ))}
@@ -238,7 +238,9 @@ export default function HomeReal() {
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
                                       <span className="truncate text-cyan-200">{outcome.name}</span>
-                                      <span className="font-medium ml-2 text-[#00ffff]">{outcome.odds.toFixed(2)}</span>
+                                      <span className="font-medium ml-2 text-[#00ffff]">
+                                        {typeof outcome.odds === 'number' ? outcome.odds.toFixed(2) : outcome.odds}
+                                      </span>
                                     </Button>
                                   ))}
                                 </div>

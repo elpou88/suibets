@@ -56,34 +56,40 @@ export function LiveEventsSection() {
     return acc;
   }, {} as Record<string, Event[]>);
 
-  // Helper function to get sport name from sportId (updated to match API data)
+  // Helper function to get sport name from sportId (completely updated to match API data)
   const getSportName = (sportId: number | null): string => {
     switch(sportId) {
       case 1: return 'Football';
       case 2: return 'Basketball';
-      case 3: return 'Tennis';
-      case 4: return 'Baseball';  // Correct ID for Baseball
-      case 5: return 'Hockey';
-      case 6: return 'Handball';
-      case 7: return 'Volleyball';
-      case 8: return 'Rugby';
-      case 9: return 'Cricket';  // Cricket ID
-      case 10: return 'Golf';
-      case 11: return 'Boxing';
-      case 12: return 'MMA/UFC';
-      case 13: return 'Golf';    // Second Golf ID in some APIs
+      case 3: return 'Baseball';  
+      case 4: return 'Hockey';
+      case 5: return 'Rugby';
+      case 6: return 'Cricket';  
+      case 7: return 'Tennis';
+      case 8: return 'Handball';
+      case 9: return 'Cricket';  // Cricket ID from API-SPORTS
+      case 10: return 'Baseball'; // Baseball ID from API-SPORTS
+      case 11: return 'American Football';
+      case 12: return 'Rugby';    // Rugby ID from API-SPORTS
+      case 13: return 'Soccer';   // Alternate Soccer ID
       case 14: return 'Cycling';
-      case 15: return 'American Football';
-      case 16: return 'American Football'; // Updated from API data
-      case 17: return 'Rugby';    // Another Rugby ID
-      case 19: return 'Volleyball'; // Volleyball
-      case 20: return 'Snooker';  // Snooker
-      case 21: return 'Darts';    // Darts
+      case 15: return 'Volleyball';
+      case 16: return 'Motorsport';
+      case 17: return 'Snooker';  // Snooker
+      case 18: return 'Ice Hockey';
+      case 19: return 'Volleyball'; 
+      case 20: return 'Badminton';
+      case 21: return 'Darts';    
       case 22: return 'Table Tennis';
       case 23: return 'Badminton';
       case 24: return 'Beach Volleyball';
       case 25: return 'Winter Sports';
-      case 26: return 'Motorsport';
+      case 26: return 'Formula 1';
+      case 27: return 'MMA/UFC';
+      case 28: return 'Boxing';
+      case 29: return 'Golf';     // Golf ID from API-SPORTS
+      case 30: return 'Horse Racing';
+      case 31: return 'Greyhounds';
       default: return 'Other';
     }
   };

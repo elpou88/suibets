@@ -218,19 +218,14 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button when not connected, with plus sign for deposit function */}
+            {/* Connect Wallet Button - no plus sign */}
             <Button 
-              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium flex items-center" 
+              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
               onClick={attemptQuickWalletConnection}
               disabled={isAttemptingConnection}
             >
-              <div className="flex items-center justify-center">
-                <Wallet className="h-4 w-4" />
-                <Plus className="h-3.5 w-3.5 -ml-1" />
-              </div>
-              <span className="ml-1.5">
-                {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
-              </span>
+              <Wallet className="h-4 w-4 mr-2" />
+              {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
             </Button>
             
             {/* Telegram Join Now Button */}

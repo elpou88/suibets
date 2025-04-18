@@ -176,45 +176,45 @@ export function LiveEventsSection() {
   const sortedSports = Object.values(sportGroups).sort((a, b) => b.count - a.count);
   
   return (
-    <Card className="mb-4 bg-[#0b1618] border-[#1e3a3f]">
-      <CardHeader className="bg-[#112225] p-3 flex flex-row items-center justify-between border-b border-[#1e3a3f]">
+    <Card className="mb-4 bg-[#18323a] border-[#2a4c55] shadow-lg">
+      <CardHeader className="bg-[#214550] p-3 flex flex-row items-center justify-between border-b border-[#2a4c55]">
         <div className="flex items-center">
           <div className="flex items-center">
-            <span className="flex items-center text-cyan-400 font-bold">
+            <span className="flex items-center text-cyan-300 font-bold">
               <span className="w-2 h-2 bg-red-500 rounded-full inline-block mr-2 animate-pulse"></span>
               LIVE EVENTS
             </span>
           </div>
         </div>
-        <Button variant="outline" size="sm" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 text-xs">
+        <Button variant="outline" size="sm" className="border-cyan-400 text-cyan-300 hover:bg-cyan-400/20 text-xs">
           View All
         </Button>
       </CardHeader>
       <CardContent className="p-0 max-h-[700px] overflow-auto custom-scrollbar">
         {/* Featured Events Banner */}
-        <div className="bg-gradient-to-r from-[#112225] to-[#14292e] p-4 border-b border-[#1e3a3f]">
-          <h3 className="text-cyan-400 font-bold mb-2 flex items-center">
+        <div className="bg-gradient-to-r from-[#214550] to-[#2a5665] p-4 border-b border-[#2a4c55]">
+          <h3 className="text-cyan-300 font-bold mb-3 flex items-center text-base">
             <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
             FEATURED LIVE EVENTS
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {liveEvents.slice(0, 3).map((event) => (
               <Link key={event.id} href={`/match/${event.id}`}>
-                <div className="bg-[#0b1618] rounded border border-[#1e3a3f] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg shadow-black/20">
-                  <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 p-2 border-b border-[#1e3a3f] flex justify-between items-center">
+                <div className="bg-[#18323a] rounded-md border border-[#2a4c55] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg">
+                  <div className="bg-gradient-to-r from-cyan-600/30 to-blue-600/20 p-2 border-b border-[#2a4c55] flex justify-between items-center">
                     <div className="flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2 live-pulse"></span>
-                      <span className="text-cyan-300 font-medium text-xs">{getSportName(event.sportId)}</span>
+                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
+                      <span className="text-cyan-200 font-semibold text-xs">{getSportName(event.sportId)}</span>
                     </div>
-                    <span className="text-xs text-white/70 bg-[#112225] px-2 py-0.5 rounded">
+                    <span className="text-xs text-white bg-[#18323a] px-2 py-0.5 rounded font-medium">
                       {event.leagueName}
                     </span>
                   </div>
                   <div className="p-3">
                     <div className="flex justify-between items-center mb-2">
                       <div className="flex-1">
-                        <div className="text-white font-medium truncate">{event.homeTeam}</div>
-                        <div className="text-white font-medium truncate mt-1">{event.awayTeam}</div>
+                        <div className="text-white font-bold truncate text-sm">{event.homeTeam}</div>
+                        <div className="text-white font-bold truncate mt-1 text-sm">{event.awayTeam}</div>
                       </div>
                       <div className="flex flex-col space-y-1">
                         {event.markets && event.markets[0] && event.markets[0].outcomes && (
@@ -222,14 +222,14 @@ export function LiveEventsSection() {
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/20 hover:text-cyan-400 hover:border-cyan-400 min-w-[60px]"
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold"
                             >
                               {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/20 hover:text-cyan-400 hover:border-cyan-400 min-w-[60px]"
+                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold"
                             >
                               {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
                             </Button>
@@ -239,7 +239,7 @@ export function LiveEventsSection() {
                     </div>
                     {event.score && (
                       <div className="mt-2 text-center">
-                        <span className="text-cyan-400 text-sm font-bold bg-[#112225] px-3 py-1 rounded shadow-inner shadow-black/20">
+                        <span className="text-cyan-100 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
                           {event.score}
                         </span>
                       </div>
@@ -252,7 +252,7 @@ export function LiveEventsSection() {
         </div>
         
         {/* Sports Tabs */}
-        <div className="flex items-center bg-[#0b1618] p-2 border-b border-[#1e3a3f] overflow-x-auto sticky top-0 z-10">
+        <div className="flex items-center bg-[#214550] p-2 border-b border-[#2a4c55] overflow-x-auto sticky top-0 z-10 shadow-md">
           {sortedSports.map((sport, idx) => (
             <Button 
               key={idx}
@@ -260,8 +260,8 @@ export function LiveEventsSection() {
               size="sm" 
               className={`mr-2 text-xs whitespace-nowrap ${
                 idx === 0 
-                  ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500' 
-                  : 'border-[#1e3a3f] text-gray-300 hover:text-cyan-400 hover:border-cyan-400'
+                  ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500 font-semibold' 
+                  : 'border-[#2a4c55] text-white hover:text-cyan-200 hover:border-cyan-400 bg-[#18323a]/70'
               }`}
             >
               {sport.name} ({sport.count})
@@ -285,22 +285,22 @@ export function LiveEventsSection() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {sport.events.slice(0, 3).map((event) => (
                   <Link key={event.id} href={`/match/${event.id}`}>
-                    <div className="cursor-pointer bg-[#0f1c1f] hover:bg-[#1a3138] p-2 border border-[#1e3a3f] hover:border-cyan-400/50 rounded transition-all duration-200">
+                    <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-2 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md">
                       <div className="flex justify-between items-center mb-1">
-                        <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center">
+                        <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center font-semibold">
                           <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
                           LIVE
                         </span>
-                        <span className="text-cyan-200 text-xs">{event.leagueName}</span>
+                        <span className="text-cyan-200 text-xs font-medium">{event.leagueName}</span>
                       </div>
                       
                       <div className="flex justify-between items-center mb-1">
-                        <span className="text-white font-medium truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
+                        <span className="text-white font-bold truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
                         {event.markets && event.markets[0] && event.markets[0].outcomes && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
+                            className="h-6 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold"
                           >
                             {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
                           </Button>
@@ -308,12 +308,12 @@ export function LiveEventsSection() {
                       </div>
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-white font-medium truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
+                        <span className="text-white font-bold truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
                         {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] && (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-xs border-[#1e3a3f] bg-[#112225] hover:bg-cyan-400/10 hover:text-cyan-400 hover:border-cyan-400"
+                            className="h-6 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold"
                           >
                             {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
                           </Button>
@@ -321,8 +321,8 @@ export function LiveEventsSection() {
                       </div>
                       
                       {event.score && (
-                        <div className="mt-1 text-center">
-                          <span className="text-cyan-400 text-xs bg-[#112225] px-2 py-0.5 rounded shadow-inner shadow-black/30">
+                        <div className="mt-2 text-center">
+                          <span className="text-cyan-100 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
                             {event.score}
                           </span>
                         </div>
@@ -335,9 +335,9 @@ export function LiveEventsSection() {
           ))}
         </div>
         
-        <div className="p-3 text-center bg-gradient-to-r from-[#112225] to-[#14292e] border-t border-[#1e3a3f]">
+        <div className="p-3 text-center bg-gradient-to-r from-[#214550] to-[#2a5665] border-t border-[#2a4c55]">
           <Link href="/live">
-            <Button variant="outline" className="border-cyan-400 text-cyan-400 hover:bg-cyan-400/10 hover:border-cyan-400/80">
+            <Button variant="outline" className="border-cyan-400 text-cyan-300 bg-[#18323a]/70 hover:bg-cyan-500 hover:text-white hover:border-cyan-500 font-semibold shadow-md">
               View All Live Events
             </Button>
           </Link>

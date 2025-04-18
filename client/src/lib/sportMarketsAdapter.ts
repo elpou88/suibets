@@ -210,6 +210,14 @@ export const getAvailableMarketTypesForSport = (sportId: number): string[] => {
         MarketTypes.HANDICAP
       ];
       
+    case SportIds.RUGBY:
+      return [
+        MarketTypes.MATCH_RESULT,
+        MarketTypes.HANDICAP,
+        MarketTypes.OVER_UNDER,
+        MarketTypes.FIRST_TEAM_TO_SCORE
+      ];
+      
     case SportIds.CRICKET:
       return [
         MarketTypes.MATCH_WINNER,
@@ -217,6 +225,13 @@ export const getAvailableMarketTypesForSport = (sportId: number): string[] => {
         MarketTypes.TOP_BOWLER,
         MarketTypes.METHOD_OF_DISMISSAL,
         MarketTypes.TOTAL_MATCH_SIXES
+      ];
+      
+    case SportIds.VOLLEYBALL:
+      return [
+        MarketTypes.MATCH_WINNER,
+        MarketTypes.SET_WINNER,
+        MarketTypes.HANDICAP
       ];
       
     case SportIds.MMA_UFC:
@@ -235,12 +250,36 @@ export const getAvailableMarketTypesForSport = (sportId: number): string[] => {
         MarketTypes.FASTEST_LAP
       ];
       
+    case SportIds.CYCLING:
+      return [
+        MarketTypes.RACE_WINNER,
+        MarketTypes.TOP_5_FINISH,
+        MarketTypes.HEAD_TO_HEAD
+      ];
+      
+    case SportIds.AMERICAN_FOOTBALL:
+      return [
+        MarketTypes.MATCH_WINNER,
+        MarketTypes.HANDICAP,
+        MarketTypes.OVER_UNDER,
+        MarketTypes.FIRST_TEAM_TO_SCORE
+      ];
+      
     case SportIds.GOLF:
       return [
         MarketTypes.TOURNAMENT_WINNER,
         MarketTypes.TOP_5_FINISH,
         MarketTypes.TOP_10_FINISH,
         MarketTypes.HEAD_TO_HEAD
+      ];
+      
+    case SportIds.SNOOKER:
+    case SportIds.DARTS:
+      return [
+        MarketTypes.MATCH_WINNER,
+        MarketTypes.HANDICAP,
+        MarketTypes.OVER_UNDER,
+        MarketTypes.CORRECT_SCORE
       ];
       
     // For all other sports, use general markets
@@ -289,13 +328,97 @@ export const enhanceMarketsForSport = (markets: Market[], sportId: number): Mark
   }
   
   return markets.map(market => {
-    // For soccer, standardize the market names
-    if (sportId === SportIds.SOCCER) {
-      if (market.name.includes('1x2') || market.name.toLowerCase().includes('match result')) {
-        market.name = MarketTypes.MATCH_RESULT;
-      } else if (market.name.toLowerCase().includes('both teams to score')) {
-        market.name = MarketTypes.BOTH_TEAMS_TO_SCORE;
-      }
+    // Standardize market names based on sport type
+    switch(sportId) {
+      case SportIds.SOCCER:
+        if (market.name.includes('1x2') || market.name.toLowerCase().includes('match result')) {
+          market.name = MarketTypes.MATCH_RESULT;
+        } else if (market.name.toLowerCase().includes('both teams to score')) {
+          market.name = MarketTypes.BOTH_TEAMS_TO_SCORE;
+        } else if (market.name.toLowerCase().includes('double chance')) {
+          market.name = MarketTypes.DOUBLE_CHANCE;
+        } else if (market.name.toLowerCase().includes('correct score')) {
+          market.name = MarketTypes.CORRECT_SCORE;
+        }
+        break;
+        
+      case SportIds.BASKETBALL:
+        if (market.name.toLowerCase().includes('winner') || market.name.toLowerCase().includes('moneyline')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('total')) {
+          market.name = MarketTypes.TOTAL_POINTS;
+        } else if (market.name.toLowerCase().includes('quarter')) {
+          market.name = MarketTypes.QUARTER_WINNER;
+        }
+        break;
+        
+      case SportIds.TENNIS:
+        if (market.name.toLowerCase().includes('winner')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('set')) {
+          market.name = MarketTypes.SET_WINNER;
+        } else if (market.name.toLowerCase().includes('total games')) {
+          market.name = MarketTypes.TOTAL_GAMES;
+        }
+        break;
+        
+      case SportIds.BASEBALL:
+        if (market.name.toLowerCase().includes('winner') || market.name.toLowerCase().includes('moneyline')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('total')) {
+          market.name = MarketTypes.OVER_UNDER;
+        }
+        break;
+        
+      case SportIds.CRICKET:
+        if (market.name.toLowerCase().includes('winner') || market.name.toLowerCase().includes('match winner')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('top batsman')) {
+          market.name = MarketTypes.TOP_BATSMAN;
+        } else if (market.name.toLowerCase().includes('top bowler')) {
+          market.name = MarketTypes.TOP_BOWLER;
+        }
+        break;
+        
+      case SportIds.MMA_UFC:
+      case SportIds.BOXING:
+        if (market.name.toLowerCase().includes('winner')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('method of victory')) {
+          market.name = MarketTypes.METHOD_OF_VICTORY;
+        } else if (market.name.toLowerCase().includes('round')) {
+          market.name = MarketTypes.ROUND_BETTING;
+        }
+        break;
+        
+      case SportIds.FORMULA_1:
+      case SportIds.CYCLING:
+        if (market.name.toLowerCase().includes('winner')) {
+          market.name = MarketTypes.RACE_WINNER;
+        } else if (market.name.toLowerCase().includes('podium')) {
+          market.name = MarketTypes.PODIUM_FINISH;
+        }
+        break;
+        
+      case SportIds.GOLF:
+        if (market.name.toLowerCase().includes('winner')) {
+          market.name = MarketTypes.TOURNAMENT_WINNER;
+        } else if (market.name.toLowerCase().includes('top 5')) {
+          market.name = MarketTypes.TOP_5_FINISH;
+        } else if (market.name.toLowerCase().includes('top 10')) {
+          market.name = MarketTypes.TOP_10_FINISH;
+        }
+        break;
+        
+      // For other sports, keep the original market name or apply a default standardization
+      default:
+        if (market.name.toLowerCase().includes('winner')) {
+          market.name = MarketTypes.MATCH_WINNER;
+        } else if (market.name.toLowerCase().includes('total') || 
+                  market.name.toLowerCase().includes('over/under')) {
+          market.name = MarketTypes.OVER_UNDER;
+        }
+        break;
     }
     
     // Standardize outcome names across all sports

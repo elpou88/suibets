@@ -164,41 +164,48 @@ export default function HomeReal() {
                   Live Events
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                  {liveEvents.slice(0, 8).map((event: any) => (
-                    <div key={event.id} className="bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden">
-                      {/* Compact header with team names */}
-                      <div className="p-2 flex justify-between items-center bg-[#112225] border-b border-[#1e3a3f]">
-                        <div className="flex-1 text-left truncate">
-                          <span className="text-white text-sm font-medium">{event.homeTeam}</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {liveEvents.slice(0, 9).map((event: any) => (
+                    <div key={event.id} className="bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden hover:border-cyan-800">
+                      {/* Sport and Live indicator */}
+                      <div className="px-3 py-2 flex justify-between items-center bg-[#0b1618] border-b border-[#1e3a3f]">
+                        <div className="flex items-center space-x-2">
+                          <span className="inline-block w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
+                          <span className="text-xs font-bold text-red-500">LIVE</span>
                         </div>
-                        <div className="mx-1 px-2 py-0.5 rounded bg-red-600 text-xs font-bold text-white">
-                          LIVE
-                        </div>
-                        <div className="flex-1 text-right truncate">
-                          <span className="text-white text-sm font-medium">{event.awayTeam}</span>
+                        <div className="text-xs text-right text-gray-400">
+                          {sports.find((s: any) => s.id === event.sportId)?.name || 'Sport'}
                         </div>
                       </div>
                       
-                      {/* Score display */}
-                      <div className="flex items-center justify-center p-2 bg-[#0b1618]">
-                        <span className="text-cyan-300 font-bold text-lg">{event.score || "0-0"}</span>
+                      {/* Team names in full display */}
+                      <div className="px-3 py-2 bg-[#112225]">
+                        <div className="flex justify-between mb-2">
+                          <div className="w-5/12">
+                            <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
+                          </div>
+                          <div className="w-2/12 flex justify-center text-center">
+                            <span className="text-cyan-300 font-bold">{event.score || "0-0"}</span>
+                          </div>
+                          <div className="w-5/12 text-right">
+                            <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
+                          </div>
+                        </div>
                       </div>
                       
-                      {/* Betting buttons in compact layout */}
-                      <div className="p-2 grid grid-cols-3 gap-1">
+                      {/* Betting options with better visibility */}
+                      <div className="p-3 grid grid-cols-3 gap-2 bg-[#081214]">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
                             <Button
                               key={outcome.id || idx}
                               variant="outline"
-                              size="sm"
-                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
+                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                               onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                             >
                               <div className="flex flex-col items-center">
-                                <span className="text-xs">{outcome.name}</span>
-                                <span className="text-base font-bold">{outcome.odds.toFixed(2)}</span>
+                                <span className="text-sm font-medium text-white">{outcome.name}</span>
+                                <span className="text-xl font-bold text-cyan-300 mt-1">{outcome.odds.toFixed(2)}</span>
                               </div>
                             </Button>
                           ))
@@ -206,35 +213,41 @@ export default function HomeReal() {
                           <>
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
-                              onClick={() => {}}
+                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              onClick={() => {
+                                const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
+                                handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                              }}
                             >
                               <div className="flex flex-col items-center">
-                                <span className="text-xs">1</span>
-                                <span className="text-base font-bold">2.10</span>
+                                <span className="text-sm font-medium text-white">{event.homeTeam}</span>
+                                <span className="text-xl font-bold text-cyan-300 mt-1">2.10</span>
                               </div>
                             </Button>
                             <Button
                               variant="outline"
-                              size="sm"
-                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
-                              onClick={() => {}}
+                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              onClick={() => {
+                                const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
+                                handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                              }}
                             >
                               <div className="flex flex-col items-center">
-                                <span className="text-xs">X</span>
-                                <span className="text-base font-bold">3.25</span>
+                                <span className="text-sm font-medium text-white">Draw</span>
+                                <span className="text-xl font-bold text-cyan-300 mt-1">3.25</span>
                               </div>
                             </Button>
                             <Button
                               variant="outline"
-                              size="sm" 
-                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
-                              onClick={() => {}}
+                              className="py-3 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              onClick={() => {
+                                const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
+                                handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                              }}
                             >
                               <div className="flex flex-col items-center">
-                                <span className="text-xs">2</span>
-                                <span className="text-base font-bold">3.40</span>
+                                <span className="text-sm font-medium text-white">{event.awayTeam}</span>
+                                <span className="text-xl font-bold text-cyan-300 mt-1">3.40</span>
                               </div>
                             </Button>
                           </>
@@ -280,34 +293,47 @@ export default function HomeReal() {
                         
                         <div className="divide-y divide-[#1e3a3f]">
                           {sportEvents.slice(0, 3).map((event: any) => (
-                            <div key={event.id} className="p-2 bg-[#112225]">
-                              {/* Simple compact header with teams & time */}
-                              <div className="flex justify-between text-xs text-gray-400 mb-1">
-                                <div>{format(new Date(event.startTime), 'dd MMM HH:mm')}</div>
-                                <div>{event.leagueName || sport.name}</div>
+                            <div key={event.id} className="bg-[#0b1618] border-b border-[#1e3a3f] hover:bg-[#081214]">
+                              {/* Header with time and league */}
+                              <div className="px-3 py-2 flex justify-between items-center bg-[#0b1618] border-b border-[#1e3a3f]">
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs font-medium text-cyan-300">
+                                    {format(new Date(event.startTime), 'dd MMM HH:mm')}
+                                  </span>
+                                </div>
+                                <div className="text-xs text-right text-gray-400">
+                                  {event.leagueName || sport.name}
+                                </div>
                               </div>
                               
-                              {/* Teams in compact format */}
-                              <div className="flex justify-between mb-2">
-                                <div className="text-sm text-white font-medium truncate w-[45%]">{event.homeTeam}</div>
-                                <div className="text-xs text-gray-400">vs</div>
-                                <div className="text-sm text-white font-medium truncate w-[45%] text-right">{event.awayTeam}</div>
+                              {/* Team names with FULL visibility */}
+                              <div className="px-3 py-2 bg-[#112225]">
+                                <div className="flex justify-between mb-1">
+                                  <div className="w-5/12">
+                                    <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
+                                  </div>
+                                  <div className="w-2/12 flex justify-center text-center">
+                                    <span className="text-gray-400 text-xs">vs</span>
+                                  </div>
+                                  <div className="w-5/12 text-right">
+                                    <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
+                                  </div>
+                                </div>
                               </div>
                               
-                              {/* Betting buttons in compact layout */}
-                              <div className="grid grid-cols-3 gap-1">
+                              {/* Betting options with better visibility - matching live events style */}
+                              <div className="p-3 grid grid-cols-3 gap-2 bg-[#081214]">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
                                     <Button
                                       key={outcome.id || idx}
-                                      variant="outline" 
-                                      size="sm"
-                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
+                                      variant="outline"
+                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
                                       <div className="flex flex-col items-center">
-                                        <span className="text-xs">{outcome.name}</span>
-                                        <span className="text-sm font-bold">{outcome.odds.toFixed(2)}</span>
+                                        <span className="text-sm font-medium text-white">{outcome.name}</span>
+                                        <span className="text-lg font-bold text-cyan-300 mt-1">{outcome.odds.toFixed(2)}</span>
                                       </div>
                                     </Button>
                                   ))
@@ -315,35 +341,41 @@ export default function HomeReal() {
                                   <>
                                     <Button
                                       variant="outline"
-                                      size="sm"
-                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
-                                      onClick={() => {}}
+                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      onClick={() => {
+                                        const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
+                                        handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                                      }}
                                     >
                                       <div className="flex flex-col items-center">
-                                        <span className="text-xs">1</span>
-                                        <span className="text-sm font-bold">2.10</span>
+                                        <span className="text-sm font-medium text-white">1</span>
+                                        <span className="text-lg font-bold text-cyan-300 mt-1">2.10</span>
                                       </div>
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      size="sm"
-                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
-                                      onClick={() => {}}
+                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      onClick={() => {
+                                        const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
+                                        handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                                      }}
                                     >
                                       <div className="flex flex-col items-center">
-                                        <span className="text-xs">X</span>
-                                        <span className="text-sm font-bold">3.25</span>
+                                        <span className="text-sm font-medium text-white">X</span>
+                                        <span className="text-lg font-bold text-cyan-300 mt-1">3.25</span>
                                       </div>
                                     </Button>
                                     <Button
                                       variant="outline"
-                                      size="sm"
-                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
-                                      onClick={() => {}}
+                                      className="py-2 h-auto bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      onClick={() => {
+                                        const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
+                                        handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
+                                      }}
                                     >
                                       <div className="flex flex-col items-center">
-                                        <span className="text-xs">2</span>
-                                        <span className="text-sm font-bold">3.40</span>
+                                        <span className="text-sm font-medium text-white">2</span>
+                                        <span className="text-lg font-bold text-cyan-300 mt-1">3.40</span>
                                       </div>
                                     </Button>
                                   </>

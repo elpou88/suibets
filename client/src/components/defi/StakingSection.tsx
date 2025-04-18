@@ -8,7 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { useBlockchainAuth } from '@/hooks/useBlockchainAuth';
-import { Loader2, ArrowLeft, TrendingUp, Award, Timer, ChevronRight, BarChart3, ArrowDown, ArrowUp, PiggyBank, Wallet, HelpCircle, Target, Trophy, Landmark } from 'lucide-react';
+import { Loader2, ArrowLeft, TrendingUp, Award, Timer, ChevronRight, BarChart3, ArrowDown, ArrowUp, PiggyBank, Wallet, HelpCircle, Target, Trophy, Landmark, CheckCircle2, Lightbulb, Play, Calculator, AlertCircle } from 'lucide-react';
 import { useLocation } from 'wouter';
 
 // Types for staking pools
@@ -163,6 +163,7 @@ export function StakingSection() {
   const [showUnstakeModal, setShowUnstakeModal] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<StakingPosition | null>(null);
   const [isUnstaking, setIsUnstaking] = useState(false);
+  const [showHowItWorksDialog, setShowHowItWorksDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<'pools' | 'your-stakes'>('pools');
   
   // Calculate totals for user dashboard
@@ -512,7 +513,12 @@ export function StakingSection() {
                 Outcome-Based Yield Farming
                 <div className="ml-2 px-2.5 py-0.5 bg-[#1e3a3f] rounded-full text-xs font-medium text-[#00ffff]">New</div>
               </h2>
-              <Button variant="outline" size="sm" className="bg-[#0b1618] border-[#1e3a3f] text-cyan-400 hover:bg-[#1e3a3f]">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="bg-[#0b1618] border-[#1e3a3f] text-cyan-400 hover:bg-[#1e3a3f]"
+                onClick={() => setShowHowItWorksDialog(true)}
+              >
                 <HelpCircle className="h-4 w-4 mr-1" />
                 How it works
               </Button>
@@ -951,6 +957,125 @@ export function StakingSection() {
               ) : (
                 'Unstake'
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* How It Works Dialog */}
+      <Dialog open={showHowItWorksDialog} onOpenChange={setShowHowItWorksDialog}>
+        <DialogContent className="bg-[#112225] border-[#1e3a3f] text-white max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center">
+              <Target className="h-5 w-5 mr-2 text-[#00ffff]" />
+              Outcome-Based Yield Farming
+            </DialogTitle>
+            <DialogDescription className="text-gray-400">
+              A revolutionary DeFi feature that combines sports betting outcomes with traditional yield farming
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 mt-2">
+            <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4">
+              <h3 className="text-white font-medium mb-2 flex items-center">
+                <Lightbulb className="h-4 w-4 mr-2 text-amber-500" />
+                What is Outcome-Based Yield Farming?
+              </h3>
+              <p className="text-gray-300 text-sm">
+                Outcome-Based Yield Farming is a unique staking model that bridges DeFi yields with sports betting outcomes. 
+                It allows you to stake your tokens on sports event outcomes while earning guaranteed base APR, with potential 
+                bonus rewards if your chosen outcome is correct. Unlike traditional sports betting, your principal is always 
+                safe and earning yield, regardless of the outcome.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4">
+                <h3 className="text-white font-medium mb-2 flex items-center">
+                  <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" />
+                  Key Benefits
+                </h3>
+                <ul className="text-gray-300 text-sm space-y-2 list-disc pl-5">
+                  <li><span className="text-white">Risk-Free Principal</span> - Your staked tokens are always returned regardless of the outcome</li>
+                  <li><span className="text-white">Guaranteed Yield</span> - Earn base APR even if your outcome prediction is wrong</li>
+                  <li><span className="text-white">Outcome Bonuses</span> - Receive significant APR bonuses when your prediction is correct</li>
+                  <li><span className="text-white">Diversified Exposure</span> - Combine DeFi yields with sports outcome predictions</li>
+                  <li><span className="text-white">Blockchain Security</span> - All pools are secured by the Sui blockchain</li>
+                </ul>
+              </div>
+              
+              <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4">
+                <h3 className="text-white font-medium mb-2 flex items-center">
+                  <Play className="h-4 w-4 mr-2 text-[#00ffff]" />
+                  How It Works
+                </h3>
+                <ol className="text-gray-300 text-sm space-y-2 list-decimal pl-5">
+                  <li>Choose an outcome-based staking pool for a specific event</li>
+                  <li>Stake your SUI or SBETS tokens on your chosen outcome</li>
+                  <li>Your tokens immediately start earning the base APR yield</li>
+                  <li>Tokens are locked until the event is completed</li>
+                  <li>After the event, if your outcome was correct, you receive the base APR plus the outcome bonus</li>
+                  <li>If your outcome was incorrect, you still receive the base APR</li>
+                  <li>Your principal amount is returned in full once the lock period ends</li>
+                </ol>
+              </div>
+            </div>
+            
+            <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4">
+              <h3 className="text-white font-medium mb-2 flex items-center">
+                <Calculator className="h-4 w-4 mr-2 text-amber-500" />
+                Yield Example
+              </h3>
+              <div className="space-y-3">
+                <p className="text-gray-300 text-sm">
+                  Let's say you stake 100 SUI tokens on Barcelona to win against Real Madrid:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="border border-[#1e3a3f] rounded-lg p-3">
+                    <h4 className="text-[#00ffff] text-sm font-medium mb-2">If Barcelona Wins</h4>
+                    <ul className="text-gray-300 text-sm space-y-1.5">
+                      <li>• Base yield: 28.4% APR</li>
+                      <li>• Outcome bonus: +50% APR</li>
+                      <li>• Total APR: 78.4%</li>
+                      <li>• 2-day lock period rewards: ~0.43 SUI</li>
+                      <li>• Return: 100 SUI principal + 0.43 SUI reward</li>
+                    </ul>
+                  </div>
+                  <div className="border border-[#1e3a3f] rounded-lg p-3">
+                    <h4 className="text-amber-500 text-sm font-medium mb-2">If Barcelona Doesn't Win</h4>
+                    <ul className="text-gray-300 text-sm space-y-1.5">
+                      <li>• Base yield: 28.4% APR</li>
+                      <li>• Outcome bonus: 0% APR</li>
+                      <li>• Total APR: 28.4%</li>
+                      <li>• 2-day lock period rewards: ~0.16 SUI</li>
+                      <li>• Return: 100 SUI principal + 0.16 SUI reward</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-r from-[#1e3a3f]/40 to-[#254249]/40 rounded-lg p-4 border border-[#1e3a3f]">
+              <h3 className="text-white font-medium mb-2 flex items-center">
+                <AlertCircle className="h-4 w-4 mr-2 text-amber-500" />
+                Risk Considerations
+              </h3>
+              <ul className="text-gray-300 text-sm space-y-1.5 list-disc pl-5">
+                <li>Your principal is safe, but your tokens are locked until the lock period ends</li>
+                <li>Early unstaking before the lock period isn't possible</li>
+                <li>Event cancellations or postponements could extend lock periods</li>
+                <li>APR rates are annualized - actual earnings depend on lock period duration</li>
+                <li>Always review pool details and event information before staking</li>
+              </ul>
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-4">
+            <Button 
+              className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+              onClick={() => setShowHowItWorksDialog(false)}
+            >
+              Got it
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -178,17 +178,16 @@ export default function HomeReal() {
                         </div>
                       </div>
                       
-                      {/* Team names in full display */}
-                      <div className="px-3 py-2 bg-[#112225]">
-                        <div className="flex justify-between mb-2">
-                          <div className="w-5/12">
+                      {/* Team names in full display - stacked to avoid squashing */}
+                      <div className="px-3 py-3 bg-[#112225]">
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex items-center justify-between">
                             <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right">{event.score?.split(' - ')[0] || "0"}</div>
                           </div>
-                          <div className="w-2/12 flex justify-center text-center">
-                            <span className="text-cyan-300 font-bold">{event.score || "0-0"}</span>
-                          </div>
-                          <div className="w-5/12 text-right">
+                          <div className="flex items-center justify-between">
                             <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right">{event.score?.split(' - ')[1] || "0"}</div>
                           </div>
                         </div>
                       </div>
@@ -307,15 +306,12 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Team names with FULL visibility */}
-                              <div className="px-3 py-2 bg-[#112225]">
-                                <div className="flex justify-between mb-1">
-                                  <div className="w-5/12">
+                              <div className="px-3 py-3 bg-[#112225]">
+                                <div className="grid grid-cols-1 gap-2">
+                                  <div className="w-full">
                                     <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
                                   </div>
-                                  <div className="w-2/12 flex justify-center text-center">
-                                    <span className="text-gray-400 text-xs">vs</span>
-                                  </div>
-                                  <div className="w-5/12 text-right">
+                                  <div className="w-full">
                                     <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
                                   </div>
                                 </div>

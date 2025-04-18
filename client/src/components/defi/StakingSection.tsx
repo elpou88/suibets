@@ -43,12 +43,13 @@ interface StakingPosition {
 
 // Mock data for staking pools
 const STAKING_POOLS: StakingPool[] = [
+  // Traditional staking pools
   {
     id: 'sui-flexible',
     name: 'SUI Flexible',
     icon: <Wallet className="h-5 w-5 text-[#00ffff]" />,
     apr: 7.5,
-    description: 'Stake SUI with no lock period. Withdraw anytime with 0.5% fee.',
+    description: 'Stake SUI with no lock period. Withdraw anytime with 0.5% fee. Earn passive income regardless of market outcomes.',
     lockPeriod: 0,
     totalStaked: 125000,
     token: 'SUI',
@@ -59,7 +60,7 @@ const STAKING_POOLS: StakingPool[] = [
     name: 'SUI Locked',
     icon: <PiggyBank className="h-5 w-5 text-[#00ffff]" />,
     apr: 12.8,
-    description: 'Stake SUI for 30 days. Higher APR but locked funds.',
+    description: 'Stake SUI for 30 days. Higher APR but locked funds. Earn passive income regardless of market outcomes.',
     lockPeriod: 30,
     totalStaked: 345000,
     token: 'SUI',
@@ -70,7 +71,7 @@ const STAKING_POOLS: StakingPool[] = [
     name: 'SBETS Flexible',
     icon: <Wallet className="h-5 w-5 text-amber-500" />,
     apr: 15.2,
-    description: 'Stake SBETS tokens with no lock period. Withdraw anytime with 0.5% fee.',
+    description: 'Stake SBETS tokens with no lock period. Withdraw anytime with 0.5% fee. Earn passive income regardless of market outcomes.',
     lockPeriod: 0,
     totalStaked: 78000,
     token: 'SBETS',
@@ -81,11 +82,73 @@ const STAKING_POOLS: StakingPool[] = [
     name: 'SBETS Locked',
     icon: <PiggyBank className="h-5 w-5 text-amber-500" />,
     apr: 24.6,
-    description: 'Stake SBETS for 60 days. Highest APR but longest lock period.',
+    description: 'Stake SBETS for 60 days. Highest APR but longest lock period. Earn passive income regardless of market outcomes.',
     lockPeriod: 60,
     totalStaked: 220000,
     token: 'SBETS',
     minStake: 50
+  },
+  
+  // Outcome-based staking pools
+  {
+    id: 'home-win-barca-real',
+    name: 'Barcelona Win',
+    icon: <Target className="h-5 w-5 text-[#00ffff]" />,
+    apr: 28.5,
+    description: 'Stake on Barcelona to win against Real Madrid. Earn 28.5% APR base yield plus 50% bonus if outcome is correct.',
+    lockPeriod: 2,
+    totalStaked: 87500,
+    token: 'SUI',
+    minStake: 10,
+    outcomeRelated: true,
+    outcomeDescription: 'Barcelona to win',
+    eventName: 'Barcelona vs Real Madrid',
+    additionalYield: 50
+  },
+  {
+    id: 'draw-barca-real',
+    name: 'Draw Outcome',
+    icon: <Target className="h-5 w-5 text-amber-500" />,
+    apr: 35.2,
+    description: 'Stake on a draw between Barcelona and Real Madrid. Earn 35.2% APR base yield plus 75% bonus if outcome is correct.',
+    lockPeriod: 2,
+    totalStaked: 32000,
+    token: 'SUI',
+    minStake: 10,
+    outcomeRelated: true,
+    outcomeDescription: 'Draw',
+    eventName: 'Barcelona vs Real Madrid',
+    additionalYield: 75
+  },
+  {
+    id: 'away-win-barca-real',
+    name: 'Real Madrid Win',
+    icon: <Target className="h-5 w-5 text-green-500" />,
+    apr: 30.6,
+    description: 'Stake on Real Madrid to win against Barcelona. Earn 30.6% APR base yield plus 60% bonus if outcome is correct.',
+    lockPeriod: 2,
+    totalStaked: 62000,
+    token: 'SUI',
+    minStake: 10,
+    outcomeRelated: true,
+    outcomeDescription: 'Real Madrid to win',
+    eventName: 'Barcelona vs Real Madrid',
+    additionalYield: 60
+  },
+  {
+    id: 'nba-lakers-win',
+    name: 'Lakers Win',
+    icon: <Trophy className="h-5 w-5 text-purple-500" />,
+    apr: 25.3,
+    description: 'Stake on Lakers to win against Celtics. Earn 25.3% APR base yield plus 45% bonus if outcome is correct.',
+    lockPeriod: 1,
+    totalStaked: 43800,
+    token: 'SBETS',
+    minStake: 25,
+    outcomeRelated: true,
+    outcomeDescription: 'Lakers to win',
+    eventName: 'Lakers vs Celtics',
+    additionalYield: 45
   }
 ];
 
@@ -385,53 +448,144 @@ export function StakingSection() {
         </TabsList>
         
         {/* Pools Tab */}
-        <TabsContent value="pools" className="mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {STAKING_POOLS.map((pool) => (
-              <Card key={pool.id} className="bg-[#112225] border-[#1e3a3f] text-white">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center">
-                      {pool.icon}
-                      <CardTitle className="ml-2 text-lg">{pool.name}</CardTitle>
+        <TabsContent value="pools" className="mt-4 space-y-8">
+          {/* Standard Staking Pools Section */}
+          <div>
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <Landmark className="h-5 w-5 mr-2 text-[#00ffff]" />
+              Standard Staking Pools
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {STAKING_POOLS.filter(pool => !pool.outcomeRelated).map((pool) => (
+                <Card key={pool.id} className="bg-[#112225] border-[#1e3a3f] text-white hover:shadow-[0_0_10px_rgba(0,255,255,0.1)]">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {pool.icon}
+                        <CardTitle className="ml-2 text-lg">{pool.name}</CardTitle>
+                      </div>
+                      <div className="flex items-center bg-[#0b1618] px-3 py-1 rounded-full border border-[#1e3a3f]">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-green-500 font-medium">{pool.apr}% APR</span>
+                      </div>
                     </div>
-                    <div className="flex items-center bg-[#0b1618] px-3 py-1 rounded-full border border-[#1e3a3f]">
-                      <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
-                      <span className="text-green-500 font-medium">{pool.apr}% APR</span>
+                    <CardDescription className="text-gray-400">
+                      {pool.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <div className="space-y-3">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Lock Period:</span>
+                        <span className="text-white">
+                          {pool.lockPeriod === 0 ? 'Flexible' : `${pool.lockPeriod} days`}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Min Stake:</span>
+                        <span className="text-white">{pool.minStake} {pool.token}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Total Staked:</span>
+                        <span className="text-white">{pool.totalStaked.toLocaleString()} {pool.token}</span>
+                      </div>
                     </div>
-                  </div>
-                  <CardDescription className="text-gray-400">
-                    {pool.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="pb-2">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Lock Period:</span>
-                      <span className="text-white">
-                        {pool.lockPeriod === 0 ? 'Flexible' : `${pool.lockPeriod} days`}
-                      </span>
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      onClick={() => handleStakeClick(pool)}
+                      className="w-full bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]"
+                    >
+                      Stake {pool.token}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
+          </div>
+          
+          {/* Outcome-Based Staking Pools Section */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-white flex items-center">
+                <Target className="h-5 w-5 mr-2 text-[#00ffff]" />
+                Outcome-Based Yield Farming
+                <div className="ml-2 px-2.5 py-0.5 bg-[#1e3a3f] rounded-full text-xs font-medium text-[#00ffff]">New</div>
+              </h2>
+              <Button variant="outline" size="sm" className="bg-[#0b1618] border-[#1e3a3f] text-cyan-400 hover:bg-[#1e3a3f]">
+                <HelpCircle className="h-4 w-4 mr-1" />
+                How it works
+              </Button>
+            </div>
+            
+            <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4 mb-4">
+              <p className="text-gray-300 text-sm">
+                Stake on event outcomes while earning yield! These special pools provide a base APR regardless of the outcome, 
+                plus bonus rewards if your chosen outcome is correct. Your principal is always safe and earning.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {STAKING_POOLS.filter(pool => pool.outcomeRelated).map((pool) => (
+                <Card key={pool.id} className="bg-[#112225] border-[#1e3a3f] text-white hover:shadow-[0_0_10px_rgba(0,255,255,0.1)]">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center">
+                        {pool.icon}
+                        <CardTitle className="ml-2 text-lg">{pool.name}</CardTitle>
+                      </div>
+                      <div className="flex items-center bg-[#0b1618] px-3 py-1 rounded-full border border-[#1e3a3f]">
+                        <TrendingUp className="h-4 w-4 text-green-500 mr-1" />
+                        <span className="text-green-500 font-medium">{pool.apr}% APR</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Min Stake:</span>
-                      <span className="text-white">{pool.minStake} {pool.token}</span>
+                    <CardDescription className="text-gray-400">
+                      {pool.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pb-2">
+                    <div className="bg-[#1e3a3f]/30 rounded-md p-3 mb-3 border border-[#1e3a3f]">
+                      <div className="flex justify-between mb-1.5 text-sm">
+                        <span className="text-gray-300">Event:</span>
+                        <span className="text-white font-medium">{pool.eventName}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-300">Your Outcome:</span>
+                        <span className="text-[#00ffff] font-medium">{pool.outcomeDescription}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Total Staked:</span>
-                      <span className="text-white">{pool.totalStaked.toLocaleString()} {pool.token}</span>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Bonus if Correct:</span>
+                        <span className="text-green-400 font-medium">+{pool.additionalYield}% APR</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Lock Period:</span>
+                        <span className="text-white">{pool.lockPeriod} days</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Min Stake:</span>
+                        <span className="text-white">{pool.minStake} {pool.token}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Total Liquidity:</span>
+                        <span className="text-white">{pool.totalStaked.toLocaleString()} {pool.token}</span>
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-                <CardFooter>
-                  <Button 
-                    onClick={() => handleStakeClick(pool)}
-                    className="w-full bg-[#1e3a3f] hover:bg-[#254249] text-[#00ffff] border-[#1e3a3f]"
-                  >
-                    Stake {pool.token}
-                  </Button>
-                </CardFooter>
-              </Card>
-            ))}
+                  </CardContent>
+                  <CardFooter>
+                    <Button 
+                      onClick={() => handleStakeClick(pool)}
+                      className="w-full bg-gradient-to-r from-[#1e3a3f] to-[#254249] hover:from-[#254249] hover:to-[#2a4e55] text-[#00ffff] border-[#1e3a3f]"
+                    >
+                      <Target className="h-4 w-4 mr-2" />
+                      Stake on Outcome
+                    </Button>
+                  </CardFooter>
+                </Card>
+              ))}
+            </div>
           </div>
         </TabsContent>
         
@@ -547,13 +701,39 @@ export function StakingSection() {
       <Dialog open={showStakeModal} onOpenChange={setShowStakeModal}>
         <DialogContent className="bg-[#112225] border-[#1e3a3f] text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">
-              Stake {selectedPool?.token}
+            <DialogTitle className="text-white flex items-center">
+              {selectedPool?.outcomeRelated ? (
+                <>
+                  <Target className="h-5 w-5 mr-2 text-[#00ffff]" />
+                  Outcome-Based Staking
+                </>
+              ) : (
+                <>Stake {selectedPool?.token}</>
+              )}
             </DialogTitle>
             <DialogDescription className="text-gray-400">
-              Stake your tokens to earn {selectedPool?.apr}% APR.
+              {selectedPool?.outcomeRelated ? (
+                <>Stake on "{selectedPool?.outcomeDescription}" for {selectedPool?.eventName}</>
+              ) : (
+                <>Stake your tokens to earn {selectedPool?.apr}% APR.</>
+              )}
             </DialogDescription>
           </DialogHeader>
+          
+          {selectedPool?.outcomeRelated && (
+            <div className="bg-gradient-to-r from-[#1e3a3f]/50 to-[#254249]/50 p-3 rounded-md border border-[#1e3a3f] mb-3">
+              <h4 className="text-[#00ffff] text-sm font-medium mb-2 flex items-center">
+                <HelpCircle className="h-4 w-4 mr-1.5" />
+                How Outcome-Based Staking Works
+              </h4>
+              <ul className="text-xs text-gray-300 space-y-1.5 list-disc pl-4">
+                <li>Your stake earns a <span className="text-green-400 font-medium">{selectedPool.apr}% base APR</span> regardless of the event outcome</li>
+                <li>If your outcome is correct, you earn an <span className="text-green-400 font-medium">additional {selectedPool.additionalYield}% APR bonus</span></li>
+                <li>Your principal amount is always safe and will be returned when you unstake</li>
+                <li>Minimum lock period is {selectedPool.lockPeriod} days (until event resolution)</li>
+              </ul>
+            </div>
+          )}
           
           <div className="space-y-4 my-2">
             <div className="space-y-2">
@@ -601,6 +781,18 @@ export function StakingSection() {
               <div className="rounded-lg border border-[#1e3a3f] p-3 bg-[#0b1618]">
                 <h4 className="text-sm font-medium text-white mb-2">Staking Summary</h4>
                 <div className="space-y-1 text-xs">
+                  {selectedPool.outcomeRelated && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Event:</span>
+                        <span className="text-white">{selectedPool.eventName}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Your Outcome:</span>
+                        <span className="text-[#00ffff]">{selectedPool.outcomeDescription}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-gray-400">Pool:</span>
                     <span className="text-white">{selectedPool.name}</span>
@@ -611,16 +803,44 @@ export function StakingSection() {
                       {selectedPool.lockPeriod === 0 ? 'Flexible' : `${selectedPool.lockPeriod} days`}
                     </span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">APR:</span>
-                    <span className="text-green-500">{selectedPool.apr}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-400">Est. Monthly Reward:</span>
-                    <span className="text-green-500">
-                      {((parseFloat(stakeAmount) * selectedPool.apr / 100) / 12).toFixed(4)} {selectedPool.token}
-                    </span>
-                  </div>
+                  
+                  {selectedPool.outcomeRelated ? (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Base APR:</span>
+                        <span className="text-green-500">{selectedPool.apr}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Bonus if Correct:</span>
+                        <span className="text-green-500">+{selectedPool.additionalYield}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Est. Base Monthly Reward:</span>
+                        <span className="text-green-500">
+                          {((parseFloat(stakeAmount) * selectedPool.apr / 100) / 12).toFixed(4)} {selectedPool.token}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Potential Bonus:</span>
+                        <span className="text-green-500">
+                          +{((parseFloat(stakeAmount) * selectedPool.additionalYield / 100) / 12).toFixed(4)} {selectedPool.token}/mo
+                        </span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">APR:</span>
+                        <span className="text-green-500">{selectedPool.apr}%</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-400">Est. Monthly Reward:</span>
+                        <span className="text-green-500">
+                          {((parseFloat(stakeAmount) * selectedPool.apr / 100) / 12).toFixed(4)} {selectedPool.token}
+                        </span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -636,12 +856,20 @@ export function StakingSection() {
               Cancel
             </Button>
             <Button
-              className="bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+              className={selectedPool?.outcomeRelated 
+                ? "bg-gradient-to-r from-[#00d8d8] to-[#00ffff] hover:from-[#00c3c3] hover:to-[#00e6e6] text-[#112225]" 
+                : "bg-[#00ffff] hover:bg-cyan-300 text-[#112225]"
+              }
               onClick={handleStakeSubmit}
               disabled={isStaking || !stakeAmount || parseFloat(stakeAmount) <= 0}
             >
               {isStaking ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Processing...</>
+              ) : selectedPool?.outcomeRelated ? (
+                <>
+                  <Target className="h-4 w-4 mr-2" />
+                  Stake on Outcome
+                </>
               ) : (
                 'Stake'
               )}

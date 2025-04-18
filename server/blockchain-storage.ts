@@ -288,14 +288,27 @@ export class BlockchainStorage {
       // Since we're in transition to blockchain storage, we'll delegate to the API services
       // This allows our app to continue functioning while we implement blockchain storage
       
-      // Delegate to API service
-      const apiSportsService = require('./services/apiSportsService');
+      // Delegate to API service using dynamic import instead of require
       let events: Event[] = [];
       
-      if (isLive) {
-        events = await apiSportsService.default.getLiveEvents(sportId);
-      } else {
-        events = await apiSportsService.default.getUpcomingEvents(sportId);
+      try {
+        // Get a reference to the EventTrackingService which can provide us with events
+        const { getEventTrackingService } = await import('./services/eventTrackingService');
+        const eventTrackingService = getEventTrackingService();
+        
+        if (eventTrackingService) {
+          if (isLive) {
+            events = await eventTrackingService.getLiveEvents(sportId);
+          } else {
+            // For upcoming events, we can use the tracking service's cached data
+            events = eventTrackingService.getUpcomingEvents(sportId);
+          }
+        } else {
+          console.log('[BlockchainStorage] EventTrackingService not available, using empty events array');
+        }
+      } catch (importError) {
+        console.error('[BlockchainStorage] Error importing event service:', importError);
+        // Continue with empty events array
       }
       
       if (limit && events.length > limit) {

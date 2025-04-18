@@ -53,6 +53,7 @@ import BetHistoryPage from "@/pages/bet-history"; // Our new bet history page
 import DividendsReal from "@/pages/dividends-real";
 import Parlay from "@/pages/parlay";
 import SportPage from "@/pages/sports-live/[sport]";
+import GenericSportPage from "@/pages/sport-page"; // New generic sports page that supports all sports
 import DefiStaking from "@/pages/defi-staking";
 import StoragePage from "@/pages/storage";
 import LiveScoresPage from "@/pages/live-scores";

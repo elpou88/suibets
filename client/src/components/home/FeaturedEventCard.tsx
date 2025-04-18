@@ -41,8 +41,8 @@ const FeaturedEventCard: React.FC<FeaturedEventCardProps> = ({ event, getSportNa
     // Convert eventId to string if it's a number
     const eventIdString = typeof event.id === 'number' ? event.id.toString() : event.id;
     
-    // Create a bet object
-    const bet = {
+    // Create a bet object that satisfies the SelectedBet interface
+    const bet: SelectedBet = {
       id: `${eventIdString}-${event.markets[0]?.id || 'market'}-${outcome.id || 'outcome'}-${Date.now()}`,
       eventId: eventIdString,
       eventName: `${event.homeTeam} vs ${event.awayTeam}`,

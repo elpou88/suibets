@@ -25,71 +25,110 @@ export default function CricketPage() {
     queryKey: ['/api/events/cricket', { isLive: selectedTab === 'live' }],
     queryFn: async () => {
       try {
-        const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
-        const url = `/api/events?sportId=9${isLiveParam}`;
-        console.log(`Fetching cricket events: Live: ${selectedTab === 'live'}`);
-        console.log(`Cricket API URL: ${url}`);
+        // First, try the dedicated cricket endpoint
+        console.log(`Fetching cricket data from dedicated endpoint (${selectedTab})`);
         
-        // Try direct fetch with cricket API
-        const response = await fetch(url, {
-          method: 'GET',
-          headers: {},
-          credentials: 'include',
-        });
+        // Setting up AbortController for timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000);
         
-        if (response.status >= 200 && response.status < 300) {
-          const data = await response.json();
-          console.log(`Success! Received ${data.length} cricket events`);
-          
-          // Filter to ensure only cricket events
-          const cricketEvents = data.filter((event: any) => {
-            return Number(event.sportId) === 9;
+        try {
+          // Use dedicated endpoint first
+          const cricketResponse = await fetch('/api/events/cricket', {
+            signal: controller.signal,
+            method: 'GET',
+            headers: {},
+            credentials: 'include',
           });
           
-          console.log(`Filtered to ${cricketEvents.length} cricket events`);
+          clearTimeout(timeoutId);
           
-          // If we didn't get any cricket events, try the fallback endpoint
-          if (cricketEvents.length === 0) {
-            try {
-              console.log("Using cricket fallback endpoint");
-              const fallbackResponse = await fetch('/api/events/cricket');
-              if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                if (Array.isArray(fallbackData)) {
-                  console.log(`Fallback found ${fallbackData.length} cricket events`);
-                  return fallbackData;
-                } else {
-                  console.warn("Cricket fallback data is not an array");
-                  return [];
-                }
-              }
-            } catch (fallbackError) {
-              console.error(`Cricket fallback failed: ${fallbackError}`);
-              return [];
-            }
-          }
-          
-          return cricketEvents;
-        } else {
-          // Try fallback if API fails
-          try {
-            console.log("Using cricket fallback after API failure");
-            const fallbackResponse = await fetch('/api/events/cricket');
-            if (fallbackResponse.ok) {
-              const fallbackData = await fallbackResponse.json();
-              if (Array.isArray(fallbackData)) {
-                console.log(`Fallback found ${fallbackData.length} cricket events`);
-                return fallbackData;
-              } else {
-                console.warn("Cricket fallback data is not an array");
-                return [];
+          if (cricketResponse.ok) {
+            const cricketData = await cricketResponse.json();
+            console.log(`Success! Received ${cricketData.length} cricket events from dedicated endpoint`);
+            
+            if (Array.isArray(cricketData) && cricketData.length > 0) {
+              // Filter for live/upcoming based on tab
+              const filteredData = selectedTab === 'live'
+                ? cricketData.filter((event: any) => event.isLive || event.status === 'live' || event.status === 'in_play')
+                : cricketData.filter((event: any) => !event.isLive && event.status !== 'live' && event.status !== 'in_play');
+              
+              console.log(`Filtered to ${filteredData.length} ${selectedTab} cricket events`);
+              if (filteredData.length > 0) {
+                return filteredData;
               }
             }
-          } catch (fallbackError) {
-            console.error(`Cricket fallback failed: ${fallbackError}`);
           }
-          return [];
+        } catch (dedicatedError) {
+          console.warn(`Cricket dedicated endpoint error: ${dedicatedError.message}`);
+          // Continue to fallback
         }
+        
+        // Fallback to normal endpoint with sportId
+        console.log("Trying standard API with sportId=9");
+        const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
+        const url = `/api/events?sportId=9${isLiveParam}`;
+        
+        // New controller for this request
+        const fallbackController = new AbortController();
+        const fallbackTimeoutId = setTimeout(() => fallbackController.abort(), 8000);
+        
+        try {
+          const response = await fetch(url, {
+            signal: fallbackController.signal,
+            method: 'GET',
+            headers: {},
+            credentials: 'include',
+          });
+          
+          clearTimeout(fallbackTimeoutId);
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Standard endpoint returned ${data.length} events`);
+            
+            // Filter to ensure only cricket events
+            const cricketEvents = data.filter((event: any) => {
+              return Number(event.sportId) === 9;
+            });
+            
+            console.log(`Filtered to ${cricketEvents.length} cricket events`);
+            
+            if (cricketEvents.length > 0) {
+              return cricketEvents;
+            }
+          }
+        } catch (standardError) {
+          console.warn(`Standard API error: ${standardError.message}`);
+          // Continue to next fallback
+        }
+        
+        // Last resort - try tracked events API
+        console.log("Trying tracked events API as final fallback");
+        try {
+          const trackedResponse = await fetch('/api/events/tracked');
+          if (trackedResponse.ok) {
+            const trackedData = await trackedResponse.json();
+            if (Array.isArray(trackedData)) {
+              // Filter to cricket events only
+              const cricketEvents = trackedData.filter((event: any) => Number(event.sportId) === 9);
+              
+              // Then filter by live status if needed
+              const filteredEvents = selectedTab === 'live'
+                ? cricketEvents.filter((event: any) => event.isLive || event.status === 'live' || event.status === 'in_play')
+                : cricketEvents.filter((event: any) => !event.isLive && event.status !== 'live' && event.status !== 'in_play');
+              
+              console.log(`Tracked API fallback found ${filteredEvents.length} cricket events`);
+              return filteredEvents;
+            }
+          }
+        } catch (trackedError) {
+          console.error(`Tracked API fallback failed: ${trackedError}`);
+        }
+        
+        // If we've gotten here, no data was found, return empty array
+        console.warn("All cricket data sources failed, returning empty array");
+        return [];
       } catch (error) {
         console.error(`Error fetching cricket events:`, error);
         toast({
@@ -101,6 +140,8 @@ export default function CricketPage() {
       }
     },
     refetchInterval: selectedTab === 'live' ? 30000 : 60000,
+    retry: 2,
+    retryDelay: 1000,
   });
 
   // Get background gradient for cricket

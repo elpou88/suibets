@@ -264,11 +264,110 @@ export class BlockchainStorage {
           providerId: 'sports_provider_1'
         },
         {
+          id: 4,
+          name: 'Baseball',
+          slug: 'baseball',
+          icon: '⚾',
+          wurlusSportId: 'baseball_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 5,
+          name: 'Hockey',
+          slug: 'hockey',
+          icon: '🏒',
+          wurlusSportId: 'hockey_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 6,
+          name: 'Rugby',
+          slug: 'rugby',
+          icon: '🏉',
+          wurlusSportId: 'rugby_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 7,
+          name: 'Golf',
+          slug: 'golf',
+          icon: '⛳',
+          wurlusSportId: 'golf_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 8,
+          name: 'Boxing',
+          slug: 'boxing',
+          icon: '🥊',
+          wurlusSportId: 'boxing_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
           id: 9,
           name: 'Cricket',
           slug: 'cricket',
           icon: '🏏',
           wurlusSportId: 'cricket_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 10,
+          name: 'MMA/UFC',
+          slug: 'mma-ufc',
+          icon: '🥋',
+          wurlusSportId: 'mma_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 11,
+          name: 'Formula 1',
+          slug: 'formula_1',
+          icon: '🏎️',
+          wurlusSportId: 'formula1_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 12,
+          name: 'American Football',
+          slug: 'american_football',
+          icon: '🏈',
+          wurlusSportId: 'american_football_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 13,
+          name: 'Cycling',
+          slug: 'cycling',
+          icon: '🚴',
+          wurlusSportId: 'cycling_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 14,
+          name: 'Snooker',
+          slug: 'snooker',
+          icon: '🎱',
+          wurlusSportId: 'snooker_wurlus_id',
+          isActive: true,
+          providerId: 'sports_provider_1'
+        },
+        {
+          id: 15,
+          name: 'Darts',
+          slug: 'darts',
+          icon: '🎯',
+          wurlusSportId: 'darts_wurlus_id',
           isActive: true,
           providerId: 'sports_provider_1'
         }

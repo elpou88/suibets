@@ -45,85 +45,153 @@ import {
 } from "react-icons/gi";
 import { useQuery } from "@tanstack/react-query";
 
-// Sports organized by categories
-const sportsCategories = [
-  {
-    name: "Main",
-    sports: [
-      { id: 1, name: 'Homepage', slug: 'upcoming', icon: 'grid' },
-      { id: 2, name: 'Live Now', slug: 'live', icon: 'live', highlight: true },
-      { id: 3, name: 'Live Scores', slug: 'live-scores', icon: 'chart' }
-    ]
-  },
-  {
-    name: "Popular Sports",
-    sports: [
-      { id: 3, name: 'Football', slug: 'football', icon: 'soccer' },
-      { id: 4, name: 'Basketball', slug: 'basketball', icon: 'basketball' },
-      { id: 5, name: 'Tennis', slug: 'tennis', icon: 'tennis' },
-      { id: 6, name: 'Baseball', slug: 'baseball', icon: 'baseball' },
-      { id: 7, name: 'Esports', slug: 'esports', icon: 'esports', highlight: true },
-      { id: 8, name: 'Hockey', slug: 'hockey', icon: 'hockey' },
-      { id: 9, name: 'American Football', slug: 'american-football', icon: 'american-football' }
-    ]
-  },
-  {
-    name: "Combat Sports",
-    sports: [
-      { id: 10, name: 'Boxing', slug: 'boxing', icon: 'boxing' },
-      { id: 11, name: 'MMA / UFC', slug: 'mma-ufc', icon: 'mma' }
-    ]
-  },
-  {
-    name: "Team Sports",
-    sports: [
-      { id: 12, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball' },
-      { id: 13, name: 'Beach Volleyball', slug: 'beach-volleyball', icon: 'beach-volleyball' },
-      { id: 14, name: 'Rugby League', slug: 'rugby-league', icon: 'rugby' },
-      { id: 15, name: 'Rugby Union', slug: 'rugby-union', icon: 'rugby' },
-      { id: 16, name: 'Cricket', slug: 'cricket', icon: 'cricket' },
-      { id: 17, name: 'AFL', slug: 'afl', icon: 'football' },
-      { id: 18, name: 'Handball', slug: 'handball', icon: 'handball' },
-      { id: 19, name: 'Netball', slug: 'netball', icon: 'netball' }
-    ]
-  },
-  {
-    name: "Racquet Sports",
-    sports: [
-      { id: 20, name: 'Table Tennis', slug: 'table-tennis', icon: 'tabletennis' },
-      { id: 21, name: 'Badminton', slug: 'badminton', icon: 'badminton' }
-    ]
-  },
-  {
-    name: "Racing",
-    sports: [
-      { id: 22, name: 'Horse Racing', slug: 'horse-racing', icon: 'horse' },
-      { id: 23, name: 'Greyhounds', slug: 'greyhounds', icon: 'dog' },
-      { id: 24, name: 'Formula 1', slug: 'formula-1', icon: 'formula1' },
-      { id: 25, name: 'MotoGP', slug: 'motogp', icon: 'motogp' },
-      { id: 26, name: 'Cycling', slug: 'cycling', icon: 'cycling' }
-    ]
-  },
-  {
-    name: "Other Sports",
-    sports: [
-      { id: 27, name: 'Snooker', slug: 'snooker', icon: 'snooker' },
-      { id: 28, name: 'Darts', slug: 'darts', icon: 'darts' },
-      { id: 29, name: 'Golf', slug: 'golf', icon: 'golf' },
-      { id: 30, name: 'Winter Sports', slug: 'winter-sports', icon: 'winter-sports' }
-    ]
+// Basic categories that will always be available
+const MAIN_CATEGORY = {
+  name: "Main",
+  sports: [
+    { id: 0, name: 'Homepage', slug: 'upcoming', icon: 'grid' },
+    { id: 0, name: 'Live Now', slug: 'live', icon: 'live', highlight: true },
+    { id: 0, name: 'Live Scores', slug: 'live-scores', icon: 'chart' }
+  ]
+};
+
+// Map of icons for sports
+const SPORT_ICON_MAP: Record<string, string> = {
+  'soccer': 'soccer',
+  'football': 'soccer',
+  'basketball': 'basketball',
+  'tennis': 'tennis',
+  'baseball': 'baseball',
+  'hockey': 'hockey',
+  'american_football': 'american-football',
+  'boxing': 'boxing',
+  'mma-ufc': 'mma',
+  'volleyball': 'volleyball',
+  'beach-volleyball': 'beach-volleyball',
+  'rugby': 'rugby',
+  'rugby-league': 'rugby',
+  'rugby-union': 'rugby',
+  'cricket': 'cricket',
+  'handball': 'handball',
+  'table-tennis': 'tabletennis',
+  'badminton': 'badminton',
+  'horse-racing': 'horse',
+  'formula_1': 'formula1',
+  'formula-1': 'formula1',
+  'cycling': 'cycling',
+  'snooker': 'snooker',
+  'darts': 'darts',
+  'golf': 'golf',
+  'winter-sports': 'winter-sports',
+  'afl': 'football',
+  'aussie-rules': 'football',
+  'esports': 'esports',
+  'motogp': 'motogp',
+};
+
+// Organize sports into their categories
+const organizeSports = (apiSports: Sport[]) => {
+  const categorizedSports = {
+    popular: [] as any[],
+    combat: [] as any[],
+    team: [] as any[],
+    racquet: [] as any[],
+    racing: [] as any[],
+    other: [] as any[]
+  };
+  
+  // Convert API sports to sidebar format and categorize
+  apiSports.forEach(sport => {
+    const sportItem = {
+      id: sport.id,
+      name: sport.name,
+      slug: sport.slug,
+      icon: SPORT_ICON_MAP[sport.slug] || 'grid',
+      highlight: false
+    };
+    
+    // Categorize each sport
+    if (['soccer', 'football', 'basketball', 'tennis', 'baseball', 'hockey', 'american_football', 'esports'].includes(sport.slug)) {
+      categorizedSports.popular.push(sportItem);
+    } 
+    else if (['boxing', 'mma-ufc', 'mma'].includes(sport.slug)) {
+      categorizedSports.combat.push(sportItem);
+    }
+    else if (['volleyball', 'beach-volleyball', 'rugby', 'rugby-league', 'rugby-union', 'cricket', 'handball', 'netball', 'afl'].includes(sport.slug)) {
+      categorizedSports.team.push(sportItem);
+    }
+    else if (['table-tennis', 'badminton'].includes(sport.slug)) {
+      categorizedSports.racquet.push(sportItem);
+    }
+    else if (['formula_1', 'formula-1', 'motorsport', 'cycling', 'horse-racing', 'motogp'].includes(sport.slug)) {
+      categorizedSports.racing.push(sportItem);
+    }
+    else {
+      categorizedSports.other.push(sportItem);
+    }
+  });
+  
+  // Build final categories array
+  const categories = [MAIN_CATEGORY];
+  
+  if (categorizedSports.popular.length > 0) {
+    categories.push({
+      name: "Popular Sports",
+      sports: categorizedSports.popular
+    });
   }
-];
+  
+  if (categorizedSports.combat.length > 0) {
+    categories.push({
+      name: "Combat Sports",
+      sports: categorizedSports.combat
+    });
+  }
+  
+  if (categorizedSports.team.length > 0) {
+    categories.push({
+      name: "Team Sports",
+      sports: categorizedSports.team
+    });
+  }
+  
+  if (categorizedSports.racquet.length > 0) {
+    categories.push({
+      name: "Racquet Sports",
+      sports: categorizedSports.racquet
+    });
+  }
+  
+  if (categorizedSports.racing.length > 0) {
+    categories.push({
+      name: "Racing",
+      sports: categorizedSports.racing
+    });
+  }
+  
+  if (categorizedSports.other.length > 0) {
+    categories.push({
+      name: "Other Sports",
+      sports: categorizedSports.other
+    });
+  }
+  
+  return categories;
+};
 
 export default function Sidebar() {
   const [activeSport, setActiveSport] = useState("upcoming");
   const [expandedCategories, setExpandedCategories] = useState<string[]>(["Main", "Popular Sports"]);
   
+  // Fetch sports from API
   const { data: apiSports = [] } = useQuery<Sport[]>({
     queryKey: ['/api/sports']
   });
+  
+  // Create sports categories from fetched data
+  const sportsCategories = organizeSports(apiSports);
 
-  // Set active sport based on path
+  // Set active sport based on path and expand the relevant category
   useEffect(() => {
     const path = window.location.pathname;
     if (path === '/' || path === '/sports') {
@@ -142,7 +210,7 @@ export default function Sidebar() {
         }
       }
     }
-  }, [window.location.pathname]); // Update when the pathname changes
+  }, [window.location.pathname, sportsCategories]); // Update when pathname or sports change
 
   const toggleCategory = (categoryName: string) => {
     setExpandedCategories(prev => 

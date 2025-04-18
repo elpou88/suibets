@@ -16,7 +16,7 @@ const MemStore = MemoryStore(session);
 export class BlockchainStorage {
   private provider: SuiClient;
   private walrusService: typeof walrusService;
-  sessionStore: session.SessionStore;
+  sessionStore: any; // Use any type to avoid SessionStore import issues
   
   private readonly packagesConfig = {
     // Walrus protocol package ID
@@ -102,13 +102,18 @@ export class BlockchainStorage {
         id: parseInt(walletAddress.substring(0, 8), 16), // Generate ID from wallet address
         username: `user_${walletAddress.substring(0, 6)}`,
         password: '', // No password for wallet-based users
+        email: null,
         walletAddress,
+        walletFingerprint: null,
         walletType: 'Sui',
         balance: 0,
         suiBalance: 0,
         sbetsBalance: 0,
         createdAt: new Date(),
-        wurlusRegistered: true
+        wurlusRegistered: true,
+        wurlusProfileId: null,
+        wurlusProfileCreatedAt: null,
+        lastLoginAt: null
       };
       
       // Cache the user
@@ -150,15 +155,18 @@ export class BlockchainStorage {
         id: parseInt(walletAddress.substring(0, 8), 16), // Generate ID from wallet address
         username: insertUser.username || `user_${walletAddress.substring(0, 6)}`,
         password: '', // No password for wallet-based users
-        walletAddress,
-        walletType: insertUser.walletType || 'Sui',
         email: insertUser.email || null,
+        walletAddress,
+        walletFingerprint: null,
+        walletType: insertUser.walletType || 'Sui',
         balance: 0,
         suiBalance: 0,
         sbetsBalance: 0,
         createdAt: new Date(),
         wurlusRegistered: true,
-        wurlusProfileCreatedAt: new Date()
+        wurlusProfileId: null,
+        wurlusProfileCreatedAt: new Date(),
+        lastLoginAt: null
       };
       
       // Cache the user
@@ -193,7 +201,9 @@ export class BlockchainStorage {
         id: userId,
         username: `user_${walletAddress.substring(0, 6)}`,
         password: '', // No password for wallet-based users
+        email: null,
         walletAddress,
+        walletFingerprint: null,
         walletType: walletType || 'Sui',
         balance: 0,
         suiBalance: 0,
@@ -201,6 +211,7 @@ export class BlockchainStorage {
         createdAt: new Date(),
         lastLoginAt: new Date(),
         wurlusRegistered: true,
+        wurlusProfileId: null,
         wurlusProfileCreatedAt: new Date()
       };
       

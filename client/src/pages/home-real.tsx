@@ -164,111 +164,82 @@ export default function HomeReal() {
                   Live Events
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
                   {liveEvents.slice(0, 8).map((event: any) => (
-                    <div key={event.id} className="bg-[#112225] rounded-lg border border-[#1e3a3f] overflow-hidden shadow-lg h-full flex flex-col relative">
-                      {/* Header with league info */}
-                      <div className="bg-[#0b1618] p-3 flex justify-between items-center border-b border-[#1e3a3f]">
-                        <div className="flex items-center">
-                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
-                          <span className="text-xs font-semibold text-cyan-300">LIVE</span>
+                    <div key={event.id} className="bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden">
+                      {/* Compact header with team names */}
+                      <div className="p-2 flex justify-between items-center bg-[#112225] border-b border-[#1e3a3f]">
+                        <div className="flex-1 text-left truncate">
+                          <span className="text-white text-sm font-medium">{event.homeTeam}</span>
                         </div>
-                        <div className="text-xs text-gray-400 truncate max-w-[70%] text-right">
-                          {event.leagueName}
+                        <div className="mx-1 px-2 py-0.5 rounded bg-red-600 text-xs font-bold text-white">
+                          LIVE
                         </div>
-                      </div>
-                      
-                      {/* Teams and score section */}
-                      <div className="p-3 border-b border-[#1e3a3f] bg-[#112225]">
-                        <div className="flex justify-between items-center h-14">
-                          <div className="flex flex-col justify-center w-[45%]">
-                            <div className="text-white font-bold truncate">{event.homeTeam}</div>
-                            <div className="text-gray-400 text-xs mt-1">
-                              {sports.find((s: any) => s.id === event.sportId)?.name || 'Sport'}
-                            </div>
-                          </div>
-                          
-                          <div className="bg-[#0b1618] rounded-md px-3 py-1 flex items-center justify-center min-w-[45px]">
-                            <span className="text-cyan-300 font-bold text-lg">
-                              {event.score ? event.score : "0-0"}
-                            </span>
-                          </div>
-                          
-                          <div className="flex flex-col justify-center items-end w-[45%]">
-                            <div className="text-white font-bold truncate text-right">{event.awayTeam}</div>
-                            <div className="text-gray-400 text-xs mt-1">vs</div>
-                          </div>
+                        <div className="flex-1 text-right truncate">
+                          <span className="text-white text-sm font-medium">{event.awayTeam}</span>
                         </div>
                       </div>
                       
-                      {/* Betting options */}
-                      <div className="p-3 flex-grow">
-                        <div className="text-center text-xs text-gray-400 mb-3">
-                          {event.markets && event.markets[0]?.name || "Match Result"}
-                        </div>
-                        
-                        <div className="grid grid-cols-3 gap-2">
-                          {event.markets && event.markets[0]?.outcomes ? (
-                            event.markets[0].outcomes.map((outcome: any, idx: number) => (
-                              <Button
-                                key={outcome.id || idx}
-                                variant="outline"
-                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  handleBetSelection(event, event.markets[0], outcome);
-                                }}
-                              >
-                                <span className="text-xs font-normal truncate">{outcome.name}</span>
-                                <span className="text-base font-bold mt-1">{outcome.odds.toFixed(2)}</span>
-                              </Button>
-                            ))
-                          ) : (
-                            <>
-                              <Button
-                                variant="outline"
-                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                }}
-                              >
-                                <span className="text-xs font-normal truncate">{event.homeTeam}</span>
-                                <span className="text-base font-bold mt-1">2.10</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                }}
-                              >
-                                <span className="text-xs font-normal truncate">Draw</span>
-                                <span className="text-base font-bold mt-1">3.25</span>
-                              </Button>
-                              <Button
-                                variant="outline"
-                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                }}
-                              >
-                                <span className="text-xs font-normal truncate">{event.awayTeam}</span>
-                                <span className="text-base font-bold mt-1">3.40</span>
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                      {/* Score display */}
+                      <div className="flex items-center justify-center p-2 bg-[#0b1618]">
+                        <span className="text-cyan-300 font-bold text-lg">{event.score || "0-0"}</span>
                       </div>
                       
-                      {/* Clickable overlay for card navigation */}
-                      <div 
-                        className="absolute inset-0 z-0 cursor-pointer" 
-                        onClick={() => setLocation(`/match/${event.id}`)}
-                      ></div>
+                      {/* Betting buttons in compact layout */}
+                      <div className="p-2 grid grid-cols-3 gap-1">
+                        {event.markets && event.markets[0]?.outcomes ? (
+                          event.markets[0].outcomes.map((outcome: any, idx: number) => (
+                            <Button
+                              key={outcome.id || idx}
+                              variant="outline"
+                              size="sm"
+                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
+                              onClick={() => handleBetSelection(event, event.markets[0], outcome)}
+                            >
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs">{outcome.name}</span>
+                                <span className="text-base font-bold">{outcome.odds.toFixed(2)}</span>
+                              </div>
+                            </Button>
+                          ))
+                        ) : (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
+                              onClick={() => {}}
+                            >
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs">1</span>
+                                <span className="text-base font-bold">2.10</span>
+                              </div>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
+                              onClick={() => {}}
+                            >
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs">X</span>
+                                <span className="text-base font-bold">3.25</span>
+                              </div>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm" 
+                              className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 h-12"
+                              onClick={() => {}}
+                            >
+                              <div className="flex flex-col items-center">
+                                <span className="text-xs">2</span>
+                                <span className="text-base font-bold">3.40</span>
+                              </div>
+                            </Button>
+                          </>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -297,42 +268,87 @@ export default function HomeReal() {
                           <Button 
                             variant="link" 
                             className="text-[#00ffff] px-0 hover:text-[#00d8d8]"
-                            onClick={() => navigateToSport(sport.slug)}
+                            onClick={(e) => {
+                              e.preventDefault(); 
+                              // This will just be a button to see more events
+                              // We're NOT navigating to a different page
+                            }}
                           >
-                            View All
+                            See More
                           </Button>
                         </div>
                         
                         <div className="divide-y divide-[#1e3a3f]">
                           {sportEvents.slice(0, 3).map((event: any) => (
-                            <div key={event.id} className="p-4 bg-[#112225] hover:bg-[#0b1618]">
-                              <div className="flex justify-between items-center mb-2">
-                                <h4 className="font-medium text-white">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h4>
-                                <div className="flex items-center text-sm text-gray-400">
-                                  {format(new Date(event.startTime), 'dd MMM')}
-                                  <span className="mx-2">|</span>
-                                  {format(new Date(event.startTime), 'HH:mm')}
-                                </div>
+                            <div key={event.id} className="p-2 bg-[#112225]">
+                              {/* Simple compact header with teams & time */}
+                              <div className="flex justify-between text-xs text-gray-400 mb-1">
+                                <div>{format(new Date(event.startTime), 'dd MMM HH:mm')}</div>
+                                <div>{event.leagueName || sport.name}</div>
                               </div>
                               
-                              {/* Main market */}
-                              {event.markets && event.markets.length > 0 && (
-                                <div className="grid grid-cols-3 gap-2 mt-3">
-                                  {event.markets[0].outcomes && event.markets[0].outcomes.map((outcome: any) => (
+                              {/* Teams in compact format */}
+                              <div className="flex justify-between mb-2">
+                                <div className="text-sm text-white font-medium truncate w-[45%]">{event.homeTeam}</div>
+                                <div className="text-xs text-gray-400">vs</div>
+                                <div className="text-sm text-white font-medium truncate w-[45%] text-right">{event.awayTeam}</div>
+                              </div>
+                              
+                              {/* Betting buttons in compact layout */}
+                              <div className="grid grid-cols-3 gap-1">
+                                {event.markets && event.markets[0]?.outcomes ? (
+                                  event.markets[0].outcomes.map((outcome: any, idx: number) => (
                                     <Button
-                                      key={outcome.id}
-                                      variant="outline"
-                                      className="flex justify-between items-center bg-[#0b1618] border-[#1e3a3f] hover:bg-[#00ffff] hover:text-black"
+                                      key={outcome.id || idx}
+                                      variant="outline" 
+                                      size="sm"
+                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
-                                      <span className="truncate text-cyan-200">{outcome.name}</span>
-                                      <span className="font-medium ml-2 text-[#00ffff]">
-                                        {typeof outcome.odds === 'number' ? outcome.odds.toFixed(2) : outcome.odds}
-                                      </span>
+                                      <div className="flex flex-col items-center">
+                                        <span className="text-xs">{outcome.name}</span>
+                                        <span className="text-sm font-bold">{outcome.odds.toFixed(2)}</span>
+                                      </div>
                                     </Button>
-                                  ))}
-                                </div>
-                              )}
+                                  ))
+                                ) : (
+                                  <>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
+                                      onClick={() => {}}
+                                    >
+                                      <div className="flex flex-col items-center">
+                                        <span className="text-xs">1</span>
+                                        <span className="text-sm font-bold">2.10</span>
+                                      </div>
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
+                                      onClick={() => {}}
+                                    >
+                                      <div className="flex flex-col items-center">
+                                        <span className="text-xs">X</span>
+                                        <span className="text-sm font-bold">3.25</span>
+                                      </div>
+                                    </Button>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-cyan-600 text-cyan-300 py-1 h-10"
+                                      onClick={() => {}}
+                                    >
+                                      <div className="flex flex-col items-center">
+                                        <span className="text-xs">2</span>
+                                        <span className="text-sm font-bold">3.40</span>
+                                      </div>
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
                             </div>
                           ))}
                         </div>

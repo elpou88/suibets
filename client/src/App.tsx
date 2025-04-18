@@ -51,12 +51,14 @@ import PromotionsReal from "@/pages/promotions-real";
 import BetHistoryReal from "@/pages/bet-history-real";
 import BetHistoryPage from "@/pages/bet-history"; // Our new bet history page
 import DividendsReal from "@/pages/dividends-real";
-import Parlay from "@/pages/parlay";
 import SportPage from "@/pages/sports-live/[sport]";
 import GenericSportPage from "@/pages/sport-page"; // New generic sports page that supports all sports
-import DefiStaking from "@/pages/defi-staking";
 import StoragePage from "@/pages/storage";
 import LiveScoresPage from "@/pages/live-scores";
+// Import components directly instead of pages
+import { ParlayPage } from "@/components/parlay/ParlayPage";
+import { StakingSection } from "@/components/defi/StakingSection";
+import Layout from "@/components/layout/Layout";
 
 function App() {
   console.log("Starting React application");
@@ -89,7 +91,13 @@ function App() {
                           <Route path="/settings" component={Settings} />
                           <Route path="/bet-history" component={BetHistoryPage} />
                           <Route path="/dividends" component={DividendsReal} />
-                          <Route path="/defi-staking" component={DefiStaking} />
+                          <Route path="/defi-staking">
+                            {() => (
+                              <Layout>
+                                <StakingSection />
+                              </Layout>
+                            )}
+                          </Route>
                           <Route path="/storage" component={StoragePage} />
                           
                           {/* Redirect connect-wallet route to HomePage with modal approach */}
@@ -138,7 +146,13 @@ function App() {
                           <Route path="/live-real" component={LiveReal} />
                           <Route path="/sports-live" component={SportsLive} />
                           <Route path="/sports-live/:sport" component={SportPage} />
-                          <Route path="/parlay" component={Parlay} />
+                          <Route path="/parlay">
+                            {() => (
+                              <Layout>
+                                <ParlayPage />
+                              </Layout>
+                            )}
+                          </Route>
                           
                           <Route component={NotFound} />
                         </Switch>

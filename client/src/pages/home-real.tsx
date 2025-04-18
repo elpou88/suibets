@@ -164,68 +164,109 @@ export default function HomeReal() {
                   Live Events
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {liveEvents.slice(0, 4).map((event: any) => (
-                    <Card key={event.id} className="bg-[#0b1618] border-[#1e3a3f] text-white overflow-hidden">
-                      <CardContent className="p-0">
-                        <div className="p-4 border-b border-[#1e3a3f] bg-gradient-to-r from-[#1e3a3f] to-[#00ffff]">
-                          <div className="flex justify-between items-center">
-                            <h3 className="text-lg font-semibold text-black">{event.name || `${event.homeTeam} vs ${event.awayTeam}`}</h3>
-                            <div className="bg-red-600 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
-                              LIVE
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4 gap-5">
+                  {liveEvents.slice(0, 8).map((event: any) => (
+                    <div key={event.id} className="bg-[#112225] rounded-lg border border-[#1e3a3f] overflow-hidden shadow-lg h-full flex flex-col relative">
+                      {/* Header with league info */}
+                      <div className="bg-[#0b1618] p-3 flex justify-between items-center border-b border-[#1e3a3f]">
+                        <div className="flex items-center">
+                          <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse mr-2"></div>
+                          <span className="text-xs font-semibold text-cyan-300">LIVE</span>
+                        </div>
+                        <div className="text-xs text-gray-400 truncate max-w-[70%] text-right">
+                          {event.leagueName}
+                        </div>
+                      </div>
+                      
+                      {/* Teams and score section */}
+                      <div className="p-3 border-b border-[#1e3a3f] bg-[#112225]">
+                        <div className="flex justify-between items-center h-14">
+                          <div className="flex flex-col justify-center w-[45%]">
+                            <div className="text-white font-bold truncate">{event.homeTeam}</div>
+                            <div className="text-gray-400 text-xs mt-1">{getSportName(event.sportId)}</div>
                           </div>
                           
-                          {/* Live score */}
-                          {event.score && (
-                            <div className="mt-2 flex justify-center bg-[#0b1618] rounded-md p-3">
-                              <div className="flex items-center justify-between w-full">
-                                <div className="text-right flex-1 mr-4">
-                                  <div className="font-bold text-white">{event.homeTeam}</div>
-                                </div>
-                                <div className="text-xl font-bold bg-black rounded-md py-1 px-4 text-white">
-                                  {event.score}
-                                </div>
-                                <div className="text-left flex-1 ml-4">
-                                  <div className="font-bold text-white">{event.awayTeam}</div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
+                          <div className="bg-[#0b1618] rounded-md px-3 py-1 flex items-center justify-center min-w-[45px]">
+                            <span className="text-cyan-300 font-bold text-lg">
+                              {event.score ? event.score : "0-0"}
+                            </span>
+                          </div>
+                          
+                          <div className="flex flex-col justify-center items-end w-[45%]">
+                            <div className="text-white font-bold truncate text-right">{event.awayTeam}</div>
+                            <div className="text-gray-400 text-xs mt-1">vs</div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Betting options */}
+                      <div className="p-3 flex-grow">
+                        <div className="text-center text-xs text-gray-400 mb-3">
+                          {event.markets && event.markets[0]?.name || "Match Result"}
                         </div>
                         
-                        {/* Main market */}
-                        {event.markets && event.markets.length > 0 && (
-                          <div className="px-4 py-3">
-                            <h4 className="text-sm text-gray-400 mb-2">{event.markets[0].name}</h4>
-                            <div className="grid grid-cols-3 gap-2">
-                              {event.markets[0].outcomes && event.markets[0].outcomes.map((outcome: any) => (
-                                <Button
-                                  key={outcome.id}
-                                  variant="outline"
-                                  className={`flex justify-between items-center border-[#1e3a3f] hover:bg-[#00ffff] hover:text-black ${
-                                    outcome.status === 'active' 
-                                      ? 'bg-[#112225]' 
-                                      : 'bg-gray-800 opacity-70 cursor-not-allowed'
-                                  }`}
-                                  disabled={outcome.status !== 'active'}
-                                  onClick={() => handleBetSelection(event, event.markets[0], outcome)}
-                                >
-                                  <span className="truncate text-cyan-200">{outcome.name}</span>
-                                  <span className={`font-medium ml-2 ${
-                                    outcome.status === 'active' 
-                                      ? 'text-[#00ffff]' 
-                                      : 'text-gray-400'
-                                  }`}>
-                                    {typeof outcome.odds === 'number' ? outcome.odds.toFixed(2) : outcome.odds}
-                                  </span>
-                                </Button>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
+                        <div className="grid grid-cols-3 gap-2">
+                          {event.markets && event.markets[0]?.outcomes ? (
+                            event.markets[0].outcomes.map((outcome: any, idx: number) => (
+                              <Button
+                                key={outcome.id || idx}
+                                variant="outline"
+                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleBetSelection(event, event.markets[0], outcome);
+                                }}
+                              >
+                                <span className="text-xs font-normal truncate">{outcome.name}</span>
+                                <span className="text-base font-bold mt-1">{outcome.odds.toFixed(2)}</span>
+                              </Button>
+                            ))
+                          ) : (
+                            <>
+                              <Button
+                                variant="outline"
+                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                              >
+                                <span className="text-xs font-normal truncate">{event.homeTeam}</span>
+                                <span className="text-base font-bold mt-1">2.10</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                              >
+                                <span className="text-xs font-normal truncate">Draw</span>
+                                <span className="text-base font-bold mt-1">3.25</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                className="bg-[#1e3a3f] border-[#2a4c55] hover:bg-[#00ffff] hover:text-black text-cyan-300 h-12 flex flex-col items-center justify-center py-1"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                              >
+                                <span className="text-xs font-normal truncate">{event.awayTeam}</span>
+                                <span className="text-base font-bold mt-1">3.40</span>
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Clickable overlay */}
+                      <Link href={`/match/${event.id}`}>
+                        <div className="absolute inset-0 z-0 cursor-pointer"></div>
+                      </Link>
+                    </div>
                   ))}
                 </div>
               </div>

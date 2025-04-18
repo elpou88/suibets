@@ -150,6 +150,7 @@ export function BlockchainAuthProvider({ children }: { children: ReactNode }) {
   // Effect to handle Suiet wallet connection
   useEffect(() => {
     if (suietWallet.connected && suietWallet.address) {
+      console.log('Suiet wallet connected:', suietWallet.address);
       // Connect the wallet to our blockchain authentication system
       connectWalletMutation.mutate({
         walletAddress: suietWallet.address,
@@ -157,6 +158,17 @@ export function BlockchainAuthProvider({ children }: { children: ReactNode }) {
       });
     }
   }, [suietWallet.connected, suietWallet.address]);
+  
+  // Add additional debug info for wallet connection issues
+  useEffect(() => {
+    if (connectWalletMutation.isError) {
+      console.error('Wallet connection error:', connectWalletMutation.error);
+    }
+    
+    if (walletStatusData) {
+      console.log('Wallet status:', walletStatusData);
+    }
+  }, [connectWalletMutation.isError, connectWalletMutation.error, walletStatusData]);
   
   // Effect to update user state
   useEffect(() => {

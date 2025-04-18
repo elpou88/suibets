@@ -146,9 +146,9 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
             <div className="w-full rounded overflow-hidden mb-4">
               <Button
                 onClick={() => {
-                  // In a production app, we would integrate with Sui Wallet here
-                  // For demo purposes, we'll just use the handleConnectWallet function
-                  handleConnectWallet('0x' + Math.random().toString(16).substring(2, 42), 'SuiWallet');
+                  // Use a consistent test wallet address to avoid connection issues
+                  const demoWalletAddress = "0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285";
+                  handleConnectWallet(demoWalletAddress, 'SuiWallet');
                 }}
                 className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254249] py-3 px-4 rounded flex items-center justify-center"
               >

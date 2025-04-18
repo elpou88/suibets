@@ -21,6 +21,7 @@ import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 import { cricketService } from './services/cricketService';
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
+import { fallbackEventService } from './services/fallbackEventService';
 
 // Ensure API key is available
 const apiSportsKey = process.env.API_SPORTS_KEY || "";

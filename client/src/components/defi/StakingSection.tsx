@@ -165,11 +165,32 @@ export function StakingSection() {
   const [isUnstaking, setIsUnstaking] = useState(false);
   const [showHowItWorksDialog, setShowHowItWorksDialog] = useState(false);
   const [activeTab, setActiveTab] = useState<'pools' | 'your-stakes'>('pools');
+  const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [availableEvents, setAvailableEvents] = useState<{id: string, name: string, sport: string}[]>([]);
   
   // Calculate totals for user dashboard
   const totalStaked = stakingPositions.reduce((sum, position) => sum + position.amount, 0);
   const totalRewards = stakingPositions.reduce((sum, position) => sum + position.rewards, 0);
   
+  // Load events for outcome-based staking pools
+  useEffect(() => {
+    // This would fetch upcoming events from API in a real app
+    const sampleEvents = [
+      { id: 'soccer-1', name: 'Barcelona vs Real Madrid', sport: 'soccer' },
+      { id: 'soccer-2', name: 'Manchester United vs Liverpool', sport: 'soccer' },
+      { id: 'basketball-1', name: 'Lakers vs Celtics', sport: 'basketball' },
+      { id: 'basketball-2', name: 'Bulls vs Warriors', sport: 'basketball' },
+      { id: 'tennis-1', name: 'Djokovic vs Nadal', sport: 'tennis' },
+      { id: 'tennis-2', name: 'Federer vs Murray', sport: 'tennis' },
+      { id: 'boxing-1', name: 'Joshua vs Fury', sport: 'boxing' },
+      { id: 'mma-1', name: 'Jones vs Ngannou', sport: 'mma' },
+      { id: 'cricket-1', name: 'India vs Australia', sport: 'cricket' },
+      { id: 'american-football-1', name: 'Chiefs vs Eagles', sport: 'american-football' }
+    ];
+    
+    setAvailableEvents(sampleEvents);
+  }, []);
+
   // Load user staking positions (mock)
   useEffect(() => {
     if (user?.authenticated) {
@@ -531,8 +552,45 @@ export function StakingSection() {
               </p>
             </div>
             
+            {/* Sport Filter */}
+            <div className="mb-6">
+              <div className="text-sm text-gray-300 mb-2">Filter by Sport:</div>
+              <div className="flex flex-wrap gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  className={`${selectedSport === 'all' 
+                    ? 'bg-[#1e3a3f] text-[#00ffff]' 
+                    : 'bg-[#0b1618] text-gray-300'} border-[#1e3a3f] hover:bg-[#1e3a3f]`}
+                  onClick={() => setSelectedSport('all')}
+                >
+                  All Sports
+                </Button>
+                {Array.from(new Set(availableEvents.map(e => e.sport))).map(sport => (
+                  <Button 
+                    key={sport}
+                    variant="outline" 
+                    size="sm"
+                    className={`${selectedSport === sport 
+                      ? 'bg-[#1e3a3f] text-[#00ffff]' 
+                      : 'bg-[#0b1618] text-gray-300'} border-[#1e3a3f] hover:bg-[#1e3a3f]`}
+                    onClick={() => setSelectedSport(sport)}
+                  >
+                    {sport.charAt(0).toUpperCase() + sport.slice(1)}
+                  </Button>
+                ))}
+              </div>
+            </div>
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {STAKING_POOLS.filter(pool => pool.outcomeRelated).map((pool) => (
+              {STAKING_POOLS.filter(pool => {
+                if (!pool.outcomeRelated) return false;
+                if (selectedSport === 'all') return true;
+                
+                // Find the event that matches this pool's event name
+                const event = availableEvents.find(e => e.name === pool.eventName);
+                return event && event.sport === selectedSport;
+              }).map((pool) => (
                 <Card key={pool.id} className="bg-[#112225] border-[#1e3a3f] text-white hover:shadow-[0_0_10px_rgba(0,255,255,0.1)]">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">

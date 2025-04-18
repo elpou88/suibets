@@ -207,19 +207,38 @@ export function LiveBettingMarkets() {
   
   // Process and classify events into correct sports
   const events = useMemo(() => {
+    if (!rawEvents || !Array.isArray(rawEvents) || rawEvents.length === 0) {
+      return [];
+    }
+    
     // Map over the raw events and classify them into the correct sports
-    const classified = rawEvents.map(event => ({
-      ...event,
-      sportId: classifySport(event) // Assign the corrected sport ID
-    }));
+    const classified = rawEvents.map(event => {
+      // Handle potentially invalid events
+      if (!event || typeof event !== 'object') {
+        console.warn('Invalid event object in rawEvents:', event);
+        return null;
+      }
+      
+      return {
+        ...event,
+        // Make sure we have minimum required fields
+        id: event.id || `event-${Math.random().toString(36).substring(2, 8)}`,
+        sportId: classifySport(event), // Assign the corrected sport ID
+        homeTeam: event.homeTeam || 'Unknown Team',
+        awayTeam: event.awayTeam || 'Unknown Opponent',
+        markets: Array.isArray(event.markets) ? event.markets : []
+      };
+    }).filter(Boolean); // Filter out null/undefined events
     
     // Debug after classification
     const classifiedSportIds = new Set<number>();
     const classifiedEventsBySportId: Record<number, number> = {};
     
     classified.forEach(event => {
-      classifiedSportIds.add(event.sportId);
-      classifiedEventsBySportId[event.sportId] = (classifiedEventsBySportId[event.sportId] || 0) + 1;
+      if (event && typeof event.sportId === 'number') {
+        classifiedSportIds.add(event.sportId);
+        classifiedEventsBySportId[event.sportId] = (classifiedEventsBySportId[event.sportId] || 0) + 1;
+      }
     });
     
     console.log("Sport IDs after classification:", Array.from(classifiedSportIds));
@@ -245,6 +264,8 @@ export function LiveBettingMarkets() {
   
   // Group events by sport
   const eventsBySport = events.reduce((acc, event) => {
+    if (!event) return acc;
+    
     const sportId = event.sportId.toString();
     if (!acc[sportId]) {
       acc[sportId] = [];
@@ -489,14 +510,16 @@ export function LiveBettingMarkets() {
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                                   {market.outcomes.map((outcome) => (
                                     <Button
-                                      key={`${outcome.id}-${Math.random().toString(36).substring(2, 8)}`}
+                                      key={`${outcome.id || ''}-${Math.random().toString(36).substring(2, 8)}`}
                                       variant="outline"
                                       onClick={() => handleBetClick(event, market, outcome)}
-                                      className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 py-3"
+                                      className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-[#0f3942] hover:border-[#00ffff] hover:text-[#00ffff] transition-all duration-200 py-3"
                                     >
-                                      <span className="text-cyan-200">{outcome.name}</span>
+                                      <span className="text-cyan-200">{outcome.name || 'Unknown'}</span>
                                       <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                                        {formatOdds(outcome.odds)}
+                                        {typeof outcome.odds === 'number' 
+                                          ? formatOdds(outcome.odds) 
+                                          : (outcome.odds || '2.00')}
                                       </span>
                                     </Button>
                                   ))}

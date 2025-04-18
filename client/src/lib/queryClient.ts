@@ -61,35 +61,54 @@ export async function apiRequest(
       clearTimeout(timeoutId);
     }
 
-    // Special handling for network errors and sports data API issues
-    if (res.status >= 500) {
+    // Enhanced handling for network errors and sports data API issues
+    if (res.status >= 500 || res.status === 0) {
       console.warn(`Server error ${res.status} from ${url}`);
       
-      // For specific endpoints related to sports data, try to use the tracked data as fallback
-      if (url.includes('/api/events') && url.includes('sportId=')) {
-        // Extract sportId from URL
-        const sportIdMatch = url.match(/sportId=(\d+)/);
-        const sportId = sportIdMatch ? Number(sportIdMatch[1]) : null;
+      // For any endpoints related to sports data, try to use fallbacks
+      if (url.includes('/api/events')) {
+        console.log(`Attempting fallback for API request: ${url}`);
         
-        // For certain problematic sports (Cricket, Cycling, etc.), try fallback
-        if (sportId && [9, 14].includes(sportId)) {
-          console.log(`Attempting fallback for sport ID ${sportId}`);
-          try {
-            // Try the tracked events endpoint which is more reliable
-            const fallbackResponse = await fetch('/api/events/tracked');
-            if (fallbackResponse.ok) {
-              // Custom enhanced response object with original status and ok properties
-              const enhancedRes = fallbackResponse.clone();
-              // Add metadata about using fallback
-              Object.defineProperty(enhancedRes, 'usedFallback', {
-                value: true,
-                writable: false
-              });
-              return enhancedRes;
-            }
-          } catch (fallbackError) {
-            console.error('Fallback fetch also failed:', fallbackError);
+        try {
+          // First, try the tracked events endpoint which is more reliable
+          const fallbackResponse = await fetch('/api/events/tracked', {
+            credentials: "include",
+            // Set a timeout for fallback requests
+            signal: AbortSignal.timeout(10000)
+          });
+          
+          if (fallbackResponse.ok) {
+            console.log("Successfully used tracked events fallback");
+            // Add metadata about using fallback
+            Object.defineProperty(fallbackResponse, 'usedFallback', {
+              value: true,
+              writable: false
+            });
+            return fallbackResponse;
           }
+        } catch (fallbackError) {
+          console.warn('Primary fallback request failed:', fallbackError);
+        }
+        
+        // If tracked events fails or is not available, try events without parameters
+        try {
+          const secondaryFallbackResponse = await fetch('/api/events', {
+            credentials: "include",
+            // Set a timeout for secondary fallback
+            signal: AbortSignal.timeout(8000)
+          });
+          
+          if (secondaryFallbackResponse.ok) {
+            console.log("Successfully used secondary events fallback");
+            // Add metadata about using fallback
+            Object.defineProperty(secondaryFallbackResponse, 'usedFallback', {
+              value: true,
+              writable: false
+            });
+            return secondaryFallbackResponse;
+          }
+        } catch (secondaryFallbackError) {
+          console.warn('Secondary fallback request also failed:', secondaryFallbackError);
         }
       }
     }

@@ -20,6 +20,7 @@ export type WalletContextType = {
   stake: (amount: number) => Promise<string>;
   unstake: (amount: number) => Promise<string>;
   claimDividends: () => Promise<string>;
+  updateConnectionState: (walletAddress: string, walletType?: string) => Promise<void>;
   address: string | null;
   isConnected: boolean;
   balances: TokenBalances;
@@ -36,6 +37,7 @@ const WalletContext = createContext<WalletContextType>({
   stake: async () => '',
   unstake: async () => '',
   claimDividends: async () => '',
+  updateConnectionState: async () => {},
   address: null,
   isConnected: false,
   balances: { SUI: 0, SBETS: 0 },
@@ -712,4 +714,5 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 };
 
 // Custom hook to use the wallet context
+// Export the hook to use the wallet context
 export const useWalletAdapter = () => useContext(WalletContext);

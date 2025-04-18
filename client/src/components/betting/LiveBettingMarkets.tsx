@@ -54,11 +54,12 @@ interface Event {
   isLive: boolean;
 }
 
-export function LiveBettingMarkets() {
+function LiveBettingMarkets() {
   const { addBet } = useBetting();
   const [expandedEvents, setExpandedEvents] = useState<Record<string, boolean>>({});
   const [expandedMarkets, setExpandedMarkets] = useState<Record<string, boolean>>({});
   const [activeSportFilter, setActiveSportFilter] = useState<number | null>(null);
+  const [cachedEvents, setCachedEvents] = useState<Event[]>([]);
   
   // Helper function to classify events into proper sports based on their characteristics
   const classifySport = (event: Event): number => {
@@ -207,8 +208,9 @@ export function LiveBettingMarkets() {
   
   // Process and classify events into correct sports
   const events = useMemo(() => {
+    // If no raw events or empty array, use cached events if available
     if (!rawEvents || !Array.isArray(rawEvents) || rawEvents.length === 0) {
-      return [];
+      return cachedEvents.length > 0 ? cachedEvents : [];
     }
     
     // Map over the raw events and classify them into the correct sports
@@ -228,24 +230,15 @@ export function LiveBettingMarkets() {
         awayTeam: event.awayTeam || 'Unknown Opponent',
         markets: Array.isArray(event.markets) ? event.markets : []
       };
-    }).filter(Boolean); // Filter out null/undefined events
+    }).filter(Boolean) as Event[]; // Filter out null/undefined events and cast to Event[]
     
-    // Debug after classification
-    const classifiedSportIds = new Set<number>();
-    const classifiedEventsBySportId: Record<number, number> = {};
-    
-    classified.forEach(event => {
-      if (event && typeof event.sportId === 'number') {
-        classifiedSportIds.add(event.sportId);
-        classifiedEventsBySportId[event.sportId] = (classifiedEventsBySportId[event.sportId] || 0) + 1;
-      }
-    });
-    
-    console.log("Sport IDs after classification:", Array.from(classifiedSportIds));
-    console.log("Event count by sport ID after classification:", classifiedEventsBySportId);
+    // If we got valid events, cache them for future use
+    if (classified.length > 0) {
+      setCachedEvents(classified);
+    }
     
     return classified;
-  }, [rawEvents]);
+  }, [rawEvents, cachedEvents, classifySport]);
   
   // Fetch all sports for accurate sport names
   const { data: sports = [] } = useQuery<Sport[]>({
@@ -294,11 +287,13 @@ export function LiveBettingMarkets() {
       
       // Auto-expand the first 3 events
       events.slice(0, 3).forEach(event => {
-        initialExpandedEvents[event.id] = true;
-        
-        // Auto-expand the first market for each expanded event
-        if (event.markets && event.markets.length > 0) {
-          initialExpandedMarkets[`${event.id}-${event.markets[0].id}`] = true;
+        if (event) {
+          initialExpandedEvents[event.id] = true;
+          
+          // Auto-expand the first market for each expanded event
+          if (event.markets && event.markets.length > 0) {
+            initialExpandedMarkets[`${event.id}-${event.markets[0].id}`] = true;
+          }
         }
       });
       
@@ -508,19 +503,17 @@ export function LiveBettingMarkets() {
                             {expandedMarkets[`${event.id}-${market.id}`] && (
                               <div className="p-3 bg-[#0b1618] border-[#1e3a3f] border-t-0 border rounded-b">
                                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                  {market.outcomes.map((outcome) => (
+                                  {market.outcomes && market.outcomes.map((outcome) => (
                                     <Button
                                       key={`${outcome.id || ''}-${Math.random().toString(36).substring(2, 8)}`}
                                       variant="outline"
                                       onClick={() => handleBetClick(event, market, outcome)}
                                       className="flex flex-col border-[#1e3a3f] bg-[#0b1618] hover:bg-[#0f3942] hover:border-[#00ffff] hover:text-[#00ffff] transition-all duration-200 py-3"
                                     >
-                                      <span className="text-cyan-200">{outcome.name || 'Unknown'}</span>
-                                      <span className="text-sm font-bold mt-1 bg-[#0f3942] text-cyan-300 px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                                        {typeof outcome.odds === 'number' 
-                                          ? formatOdds(outcome.odds) 
-                                          : (outcome.odds || '2.00')}
-                                      </span>
+                                      <span className="text-sm font-medium">{outcome.name}</span>
+                                      <div className="flex items-center justify-center mt-1 px-2 py-1 bg-[#1e3a3f] rounded text-cyan-400 text-xs">
+                                        {formatOdds(outcome.odds)}
+                                      </div>
                                     </Button>
                                   ))}
                                 </div>
@@ -529,9 +522,7 @@ export function LiveBettingMarkets() {
                           </div>
                         ))
                       ) : (
-                        <div className="text-center text-gray-400 py-3">
-                          No markets available for this event
-                        </div>
+                        <p className="text-gray-400 text-center py-2">No markets available for this event</p>
                       )}
                     </CardContent>
                   )}

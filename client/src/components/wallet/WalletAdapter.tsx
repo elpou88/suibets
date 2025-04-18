@@ -701,6 +701,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         stake,
         unstake,
         claimDividends,
+        updateConnectionState,
         address,
         isConnected,
         balances,

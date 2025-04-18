@@ -1,8 +1,14 @@
 import { useEffect, useState } from 'react';
-import { ConnectButton } from '@mysten/dapp-kit';
+import { 
+  ConnectButton, 
+  useCurrentAccount, 
+  useWallets, 
+  useCurrentWallet,
+  useDisconnectWallet
+} from '@mysten/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
-import { toast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/use-toast';
 import { useWalletAdapter } from './WalletAdapter';
 import { ArrowRight } from 'lucide-react';
 
@@ -11,47 +17,78 @@ interface SuiDappKitConnectProps {
 }
 
 export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect }) => {
+  const { toast } = useToast();
   const [walletConnected, setWalletConnected] = useState(false);
   const [walletName, setWalletName] = useState('');
-  const { updateConnectionState } = useWalletAdapter() as any;
-
-  // Handle wallet connection events
-  const handleWalletConnect = (address: string, name: string) => {
-    console.log('Sui dApp Kit Connected:', address);
-    
-    // Update our app's connection state
-    if (updateConnectionState) {
+  const { updateConnectionState } = useWalletAdapter();
+  
+  // Use the DappKit wallet hooks to get wallet status
+  const currentAccount = useCurrentAccount();
+  const { currentWallet } = useCurrentWallet();
+  const { wallets } = useWallets();
+  const { disconnect } = useDisconnectWallet();
+  
+  // Handle wallet connection when currentAccount changes
+  useEffect(() => {
+    if (currentAccount) {
+      const address = currentAccount.address;
+      const name = currentWallet?.name || "Sui Wallet";
+      
+      console.log('Sui dApp Kit Connected:', address);
+      
+      // Update our app's connection state
       updateConnectionState(address, 'sui');
+      
+      // Call the onConnect callback if provided
+      if (onConnect) {
+        onConnect(address);
+      }
+      
+      setWalletConnected(true);
+      setWalletName(name);
+      
+      toast({
+        title: 'Wallet Connected',
+        description: `Connected to ${name}: ${address.slice(0, 6)}...${address.slice(-4)}`,
+      });
+    } else {
+      setWalletConnected(false);
+      setWalletName('');
     }
-    
-    // Call the onConnect callback if provided
-    if (onConnect) {
-      onConnect(address);
+  }, [currentAccount, currentWallet, onConnect, updateConnectionState, toast]);
+
+  // Handle button click
+  const handleButtonClick = async () => {
+    if (walletConnected) {
+      // Disconnect wallet
+      await disconnect();
+      setWalletConnected(false);
+      setWalletName('');
+      
+      toast({
+        title: 'Wallet Disconnected',
+        description: 'Your wallet has been disconnected',
+      });
+    } else {
+      // Show the connect button which will display the wallet selector
+      const connectButtonEl = document.querySelector('.sui-dappkit-connect-button') as HTMLElement;
+      if (connectButtonEl) {
+        connectButtonEl.click();
+      } else {
+        toast({
+          title: 'Connection Error',
+          description: 'Unable to initiate wallet connection',
+          variant: 'destructive',
+        });
+      }
     }
-    
-    setWalletConnected(true);
-    setWalletName(name);
-    
-    toast({
-      title: 'Wallet Connected',
-      description: `Connected to ${name || 'Sui wallet'}: ${address.slice(0, 6)}...${address.slice(-4)}`,
-    });
   };
 
   return (
     <div className="sui-dapp-kit-connect">
       <Button
         className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
-        onClick={() => {
-          if (walletConnected) {
-            // Disconnect logic
-            console.log("Disconnecting wallet");
-            // We don't need additional disconnection logic as the ConnectButton handles it
-          } else {
-            // Show wallet selection dialog
-            console.log("Showing wallet selection dialog");
-          }
-        }}
+        onClick={handleButtonClick}
       >
         {walletConnected ? (
           <>
@@ -64,10 +101,12 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
           </>
         )}
       </Button>
-      <ConnectButton 
-        connectText="Connect with Sui dApp Kit"
-        className="mt-4"
-      />
+      <div className="hidden">
+        <ConnectButton 
+          connectText="Connect with Sui dApp Kit"
+          className="mt-4 sui-dappkit-connect-button"
+        />
+      </div>
     </div>
   );
 };

@@ -200,46 +200,83 @@ export function LiveEventsSection() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {liveEvents.slice(0, 3).map((event) => (
               <Link key={event.id} href={`/match/${event.id}`}>
-                <div className="bg-[#18323a] rounded-md border border-[#2a4c55] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg">
-                  <div className="bg-gradient-to-r from-cyan-600/30 to-blue-600/20 p-2 border-b border-[#2a4c55] flex justify-between items-center">
+                <div className="bg-[#18323a] rounded-md border border-[#2a4c55] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg h-full">
+                  <div className="bg-gradient-to-r from-cyan-600/30 to-blue-600/20 p-3 border-b border-[#2a4c55] flex justify-between items-center">
                     <div className="flex items-center">
                       <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-                      <span className="text-cyan-200 font-semibold text-xs">{getSportName(event.sportId)}</span>
+                      <span className="text-cyan-300 font-semibold text-xs">{getSportName(event.sportId)}</span>
                     </div>
-                    <span className="text-xs text-white bg-[#18323a] px-2 py-0.5 rounded font-medium">
+                    <span className="text-xs text-cyan-300 bg-[#18323a] px-2 py-0.5 rounded font-medium">
                       {event.leagueName}
                     </span>
                   </div>
-                  <div className="p-3">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex-1">
-                        <div className="text-white font-bold truncate text-sm">{event.homeTeam}</div>
-                        <div className="text-white font-bold truncate mt-1 text-sm">{event.awayTeam}</div>
+                  <div className="p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <div className="flex-1 mr-3">
+                        <div className="text-cyan-300 font-bold text-sm">{event.homeTeam}</div>
+                        <div className="text-cyan-300 font-bold text-sm mt-2">{event.awayTeam}</div>
                       </div>
-                      <div className="flex flex-col space-y-1">
-                        {event.markets && event.markets[0] && event.markets[0].outcomes && (
+                      <div className="flex flex-col space-y-2">
+                        {event.markets && event.markets[0] && event.markets[0].outcomes ? (
                           <>
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold"
+                              className="h-8 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Add bet to betslip logic would go here
+                                console.log('Featured event: Adding home bet for:', event.homeTeam);
+                              }}
                             >
                               {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
                             </Button>
                             <Button 
                               size="sm" 
                               variant="outline" 
-                              className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold"
+                              className="h-8 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                // Add bet to betslip logic would go here
+                                console.log('Featured event: Adding away bet for:', event.awayTeam);
+                              }}
                             >
                               {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
+                            </Button>
+                          </>
+                        ) : (
+                          <>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                            >
+                              2.10
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="h-8 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 min-w-[60px] font-semibold px-3"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                              }}
+                            >
+                              1.90
                             </Button>
                           </>
                         )}
                       </div>
                     </div>
                     {event.score && (
-                      <div className="mt-2 text-center">
-                        <span className="text-cyan-100 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
+                      <div className="mt-3 text-center">
+                        <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
                           {event.score}
                         </span>
                       </div>
@@ -285,44 +322,72 @@ export function LiveEventsSection() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
                 {sport.events.slice(0, 3).map((event) => (
                   <Link key={event.id} href={`/match/${event.id}`}>
-                    <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-2 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md">
-                      <div className="flex justify-between items-center mb-1">
+                    <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-3 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md h-full">
+                      <div className="flex justify-between items-center mb-2">
                         <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center font-semibold">
                           <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
                           LIVE
                         </span>
-                        <span className="text-cyan-200 text-xs font-medium">{event.leagueName}</span>
+                        <span className="text-cyan-300 text-xs font-medium">{event.leagueName}</span>
                       </div>
                       
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-white font-bold truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
-                        {event.markets && event.markets[0] && event.markets[0].outcomes && (
+                      <div className="flex justify-between items-center mb-2.5">
+                        <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.homeTeam}</span>
+                        {event.markets && event.markets[0] && event.markets[0].outcomes ? (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold"
+                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // Add bet to betslip logic would go here
+                              console.log('Adding home bet for:', event.homeTeam);
+                            }}
                           >
                             {event.markets[0].outcomes[0]?.odds.toFixed(2) || '1.90'}
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                          >
+                            2.10
                           </Button>
                         )}
                       </div>
                       
-                      <div className="flex justify-between items-center">
-                        <span className="text-white font-bold truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
-                        {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] && (
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-cyan-300 font-bold truncate pr-2 max-w-[65%]">{event.awayTeam}</span>
+                        {event.markets && event.markets[0] && event.markets[0].outcomes && event.markets[0].outcomes[1] ? (
                           <Button 
                             size="sm" 
                             variant="outline" 
-                            className="h-6 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-100 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold"
+                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              // Add bet to betslip logic would go here
+                              console.log('Adding away bet for:', event.awayTeam);
+                            }}
                           >
                             {event.markets[0].outcomes[1]?.odds.toFixed(2) || '2.10'}
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="h-7 text-xs bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-500 hover:text-white hover:border-cyan-400 font-semibold px-3"
+                          >
+                            1.90
                           </Button>
                         )}
                       </div>
                       
                       {event.score && (
-                        <div className="mt-2 text-center">
-                          <span className="text-cyan-100 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
+                        <div className="mt-3 text-center">
+                          <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
                             {event.score}
                           </span>
                         </div>

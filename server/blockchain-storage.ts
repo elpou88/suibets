@@ -517,6 +517,41 @@ export class BlockchainStorage {
       throw error;
     }
   }
+  
+  /**
+   * Get promotions (blockchain approach)
+   */
+  async getPromotions(): Promise<any[]> {
+    console.log('Getting promotions from blockchain');
+    
+    try {
+      // In a full implementation, we would query the blockchain for promotions
+      // For now, we'll return default promotions
+      return [
+        {
+          id: 1,
+          title: 'Welcome Bonus',
+          description: 'Get 100% bonus on your first deposit',
+          image: '/images/promotions/welcome-bonus.png',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2025-12-31'),
+          isActive: true
+        },
+        {
+          id: 2,
+          title: 'Refer a Friend',
+          description: 'Get 50 SBETS for each friend you refer',
+          image: '/images/promotions/refer-friend.png',
+          startDate: new Date('2025-01-01'),
+          endDate: new Date('2025-12-31'),
+          isActive: true
+        }
+      ];
+    } catch (error) {
+      console.error('Error getting promotions from blockchain:', error);
+      return [];
+    }
+  }
 }
 
 // Export a singleton instance

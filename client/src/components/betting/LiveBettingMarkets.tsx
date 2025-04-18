@@ -154,6 +154,13 @@ export function LiveBettingMarkets() {
         const sportIds = Array.from(sportIdsSet);
         console.log("Available sport IDs in live events:", sportIds);
         
+        // Debug the events by sport ID before classification
+        const eventsBySportId: Record<number, number> = {};
+        data.forEach((event: Event) => {
+          eventsBySportId[event.sportId] = (eventsBySportId[event.sportId] || 0) + 1;
+        });
+        console.log("Event count by sport ID:", eventsBySportId);
+        
         return data;
       } catch (error) {
         console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -161,20 +168,9 @@ export function LiveBettingMarkets() {
         return [];
       }
     },
-    refetchInterval: 15000, // Refetch every 15 seconds
+    refetchInterval: 20000, // Refetch every 20 seconds
     retry: 2, // Retry failed requests 2 times
     retryDelay: 1000 // Wait 1 second between retries
-      
-      // Debug the events by sport ID before classification
-      const eventsBySportId: Record<number, number> = {};
-      data.forEach((event: Event) => {
-        eventsBySportId[event.sportId] = (eventsBySportId[event.sportId] || 0) + 1;
-      });
-      console.log("Event count by sport ID:", eventsBySportId);
-      
-      return data;
-    },
-    refetchInterval: 20000, // Refetch every 20 seconds
   });
   
   // Process and classify events into correct sports

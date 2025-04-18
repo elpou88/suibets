@@ -14,13 +14,43 @@ import {
 export default function SportsSidebar() {
   const [, setLocation] = useLocation();
   
-  // Fetch sports for the sidebar
+  // Fetch sports for the sidebar directly from the API with error handling
   const { data: sports = [] } = useQuery({
     queryKey: ['/api/sports'],
     queryFn: async () => {
-      const response = await apiRequest('GET', '/api/sports');
-      return response.json();
-    }
+      try {
+        console.log("Fetching sports for sidebar...");
+        const response = await apiRequest('GET', '/api/sports', undefined, { timeout: 5000 });
+        if (!response.ok) {
+          throw new Error(`Failed to fetch sports: ${response.status} ${response.statusText}`);
+        }
+        const data = await response.json();
+        console.log(`Fetched ${data.length} sports for sidebar`, data);
+        return data;
+      } catch (error) {
+        console.error("Error fetching sports:", error);
+        // Return hardcoded default sports as fallback to ensure sidebar always shows something
+        return [
+          { id: 1, name: 'Football', slug: 'football', icon: 'football', isActive: true },
+          { id: 2, name: 'Basketball', slug: 'basketball', icon: 'basketball', isActive: true },
+          { id: 3, name: 'Tennis', slug: 'tennis', icon: 'tennis', isActive: true },
+          { id: 4, name: 'Baseball', slug: 'baseball', icon: 'baseball', isActive: true },
+          { id: 5, name: 'Hockey', slug: 'hockey', icon: 'hockey', isActive: true },
+          { id: 9, name: 'Cricket', slug: 'cricket', icon: 'cricket', isActive: true },
+          { id: 10, name: 'Golf', slug: 'golf', icon: 'golf', isActive: true },
+          { id: 13, name: 'Formula 1', slug: 'formula_1', icon: 'formula1', isActive: true },
+          { id: 14, name: 'Cycling', slug: 'cycling', icon: 'cycling', isActive: true },
+          { id: 16, name: 'Australian Football', slug: 'afl', icon: 'australian-football', isActive: true },
+          { id: 17, name: 'Snooker', slug: 'snooker', icon: 'snooker', isActive: true },
+          { id: 18, name: 'Darts', slug: 'darts', icon: 'darts', isActive: true }
+        ];
+      }
+    },
+    // Refresh every 5 minutes
+    refetchInterval: 300000,
+    // Retry 3 times with exponential backoff
+    retry: 3,
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
   
   // No icons beside sport names as requested

@@ -203,102 +203,122 @@ export function LiveEventsSection() {
             </Link>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            {liveEvents.slice(0, 3).map((event) => (
-              <div key={event.id} className="relative bg-[#112225] rounded-md border border-[#1e3a3f] overflow-hidden shadow-md">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {liveEvents.slice(0, 6).map((event) => (
+              <div key={event.id} className="relative bg-[#112225] rounded-md border border-[#1e3a3f] overflow-hidden shadow-md h-full flex flex-col">
                 {/* Event header */}
-                <div className="bg-[#0b1618] p-2.5 relative">
-                  <div className="text-white font-bold">{event.homeTeam}</div>
-                  <div className="text-gray-400 text-sm my-0.5">vs</div>
-                  <div className="text-white font-bold">{event.awayTeam}</div>
+                <div className="bg-[#0b1618] p-3 relative border-b border-[#1e3a3f]">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-xs text-cyan-300 font-medium">{getSportName(event.sportId)}</span>
+                    <span className="text-xs text-gray-400">{event.leagueName}</span>
+                  </div>
                   
-                  <div className="absolute top-2.5 right-2.5 bg-red-600/80 rounded text-xs px-1.5 py-0.5 flex items-center">
+                  <div className="text-white font-bold text-sm mb-1">{event.homeTeam}</div>
+                  <div className="text-gray-400 text-xs mb-1">vs</div>
+                  <div className="text-white font-bold text-sm">{event.awayTeam}</div>
+                  
+                  <div className="absolute top-3 right-3 bg-red-600 rounded text-xs px-1.5 py-0.5 flex items-center">
                     <span className="w-1.5 h-1.5 bg-white rounded-full mr-1 animate-pulse"></span>
                     <span className="text-white font-semibold">LIVE</span>
                   </div>
                 </div>
                 
                 {/* Score display */}
-                <div className="bg-[#0b1618] py-1.5 text-center font-bold border-t border-b border-[#1e3a3f]">
-                  <span className="text-cyan-300">{event.score || "0 - 0"}</span>
-                </div>
+                {event.score && (
+                  <div className="bg-[#0b1618] py-2 text-center font-bold border-b border-[#1e3a3f]">
+                    <span className="text-cyan-300 text-lg">{event.score}</span>
+                  </div>
+                )}
                 
                 {/* Betting options */}
-                <div className="p-3 bg-[#112225]">
-                  <div className="text-xs text-gray-400 text-center mb-2">
-                    Match Result
+                <div className="p-3 bg-[#112225] flex-grow flex flex-col justify-between">
+                  <div className="text-xs text-gray-400 text-center mb-3">
+                    {event.markets && event.markets[0]?.name || "Match Result"}
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-2">
-                    <button 
-                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        const bet = {
-                          id: `${event.id}-home-${Date.now()}`,
-                          eventId: event.id,
-                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
-                          selectionName: event.homeTeam,
-                          odds: 2.10,
-                          stake: 10,
-                          market: "Match Result",
-                          uniqueId: Math.random().toString(36).substring(2, 8)
-                        };
-                        // Add bet to betslip here
-                        console.log('Adding bet for home team:', bet);
-                      }}
-                    >
-                      2.10
-                    </button>
-                    <button 
-                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        const bet = {
-                          id: `${event.id}-draw-${Date.now()}`,
-                          eventId: event.id,
-                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
-                          selectionName: "Draw",
-                          odds: 3.20,
-                          stake: 10,
-                          market: "Match Result",
-                          uniqueId: Math.random().toString(36).substring(2, 8)
-                        };
-                        // Add bet to betslip here
-                        console.log('Adding bet for draw:', bet);
-                      }}
-                    >
-                      3.20
-                    </button>
-                    <button 
-                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        e.preventDefault();
-                        const bet = {
-                          id: `${event.id}-away-${Date.now()}`,
-                          eventId: event.id,
-                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
-                          selectionName: event.awayTeam,
-                          odds: 3.40,
-                          stake: 10,
-                          market: "Match Result",
-                          uniqueId: Math.random().toString(36).substring(2, 8)
-                        };
-                        // Add bet to betslip here
-                        console.log('Adding bet for away team:', bet);
-                      }}
-                    >
-                      3.40
-                    </button>
+                  <div className="space-y-3">
+                    {event.markets && event.markets[0] && event.markets[0].outcomes ? (
+                      // Use real market data when available
+                      event.markets[0].outcomes.map((outcome, index) => (
+                        <button 
+                          key={outcome.id || index}
+                          className="w-full bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2.5 px-3 rounded-sm text-sm font-medium transition-colors flex justify-between items-center border border-[#2a4c55]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const bet = {
+                              id: `${event.id}-${outcome.id || index}-${Date.now()}`,
+                              eventId: event.id,
+                              eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                              selectionName: outcome.name,
+                              odds: outcome.odds,
+                              stake: 10,
+                              market: event.markets[0].name,
+                              uniqueId: Math.random().toString(36).substring(2, 8)
+                            };
+                            // Add bet to betslip here
+                            console.log('Adding bet:', bet);
+                          }}
+                        >
+                          <span>{outcome.name}</span>
+                          <span className="bg-[#0b1618] px-2 py-0.5 rounded text-cyan-400 text-xs font-bold">
+                            {outcome.odds.toFixed(2)}
+                          </span>
+                        </button>
+                      ))
+                    ) : (
+                      // Fallback buttons with default data
+                      <>
+                        <button 
+                          className="w-full bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2.5 px-3 rounded-sm text-sm font-medium transition-colors flex justify-between items-center border border-[#2a4c55]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const bet = {
+                              id: `${event.id}-home-${Date.now()}`,
+                              eventId: event.id,
+                              eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                              selectionName: event.homeTeam,
+                              odds: 2.10,
+                              stake: 10,
+                              market: "Match Result",
+                              uniqueId: Math.random().toString(36).substring(2, 8)
+                            };
+                            console.log('Adding bet for home team:', bet);
+                          }}
+                        >
+                          <span>{event.homeTeam}</span>
+                          <span className="bg-[#0b1618] px-2 py-0.5 rounded text-cyan-400 text-xs font-bold">2.10</span>
+                        </button>
+                        <button 
+                          className="w-full bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2.5 px-3 rounded-sm text-sm font-medium transition-colors flex justify-between items-center border border-[#2a4c55]"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            const bet = {
+                              id: `${event.id}-away-${Date.now()}`,
+                              eventId: event.id,
+                              eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                              selectionName: event.awayTeam,
+                              odds: 3.40,
+                              stake: 10,
+                              market: "Match Result",
+                              uniqueId: Math.random().toString(36).substring(2, 8)
+                            };
+                            console.log('Adding bet for away team:', bet);
+                          }}
+                        >
+                          <span>{event.awayTeam}</span>
+                          <span className="bg-[#0b1618] px-2 py-0.5 rounded text-cyan-400 text-xs font-bold">3.40</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
                 
                 {/* Clickable link to event details */}
                 <Link href={`/match/${event.id}`}>
-                  <span className="absolute inset-0 cursor-pointer z-10"></span>
+                  <span className="absolute inset-0 cursor-pointer z-0"></span>
                 </Link>
               </div>
             ))}

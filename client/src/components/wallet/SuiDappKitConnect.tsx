@@ -25,8 +25,8 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
   // Use the DappKit wallet hooks to get wallet status
   const currentAccount = useCurrentAccount();
   const { currentWallet } = useCurrentWallet();
-  const { wallets } = useWallets();
-  const { disconnect } = useDisconnectWallet();
+  const wallets = useWallets();
+  const disconnectMutation = useDisconnectWallet();
   
   // Handle wallet connection when currentAccount changes
   useEffect(() => {
@@ -60,8 +60,8 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
   // Handle button click
   const handleButtonClick = async () => {
     if (walletConnected) {
-      // Disconnect wallet
-      await disconnect();
+      // Disconnect wallet using the mutation
+      await disconnectMutation.mutateAsync();
       setWalletConnected(false);
       setWalletName('');
       

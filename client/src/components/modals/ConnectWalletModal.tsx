@@ -7,7 +7,10 @@ import { ChevronRight, AlertCircle, Loader2, WalletIcon } from "lucide-react";
 import { useWalrusProtocol } from "@/hooks/useWalrusProtocol";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
-import { ConnectButton, useWallet } from '@suiet/wallet-kit';
+import { ConnectButton } from '@suiet/wallet-kit';
+import { useWallet as useSuietWallet } from '@suiet/wallet-kit';
+import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
+import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -21,7 +24,7 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const { connectToWurlusProtocol, checkRegistrationStatus, error: walrusError } = useWalrusProtocol();
   const { toast } = useToast();
   // Get Suiet wallet connection state
-  const suietWallet = useWallet();
+  const suietWallet = useSuietWallet();
 
   const modalRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
@@ -164,19 +167,47 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* Suiet Wallet Kit Connect Button - This is the main wallet connector that works with all Sui wallets */}
+            {/* Wallet connection components */}
             <div className="w-full rounded overflow-hidden mb-4">
-              <ConnectButton 
-                className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold py-3 px-4 rounded flex items-center justify-center"
-                style={{
-                  fontSize: '16px',
-                  height: '56px',
-                  boxShadow: '0 4px 6px -1px rgba(0, 255, 255, 0.2), 0 2px 4px -1px rgba(0, 255, 255, 0.1)'
+              <SuiDappKitConnect 
+                onConnect={(address) => {
+                  if (connectWallet) {
+                    connectWallet(address, 'sui')
+                      .then(() => {
+                        toast({
+                          title: "Wallet Connected",
+                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
+                        });
+                        onClose();
+                      })
+                      .catch((error) => {
+                        console.error('Error syncing wallet with auth:', error);
+                      });
+                  }
                 }}
-              >
-                <WalletIcon className="h-5 w-5 mr-2" />
-                <span>Connect Any Sui Wallet</span>
-              </ConnectButton>
+              />
+            </div>
+            
+            <div className="w-full text-center text-sm text-gray-400 my-2">- or use Suiet wallet -</div>
+            
+            <div className="w-full rounded overflow-hidden mb-4">
+              <SuietWalletConnect 
+                onConnect={(address) => {
+                  if (connectWallet) {
+                    connectWallet(address, 'sui')
+                      .then(() => {
+                        toast({
+                          title: "Wallet Connected",
+                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
+                        });
+                        onClose();
+                      })
+                      .catch((error) => {
+                        console.error('Error syncing wallet with auth:', error);
+                      });
+                  }
+                }}
+              />
             </div>
             
             <div className="w-full text-center text-sm text-gray-400 my-2">- or select wallet manually -</div>

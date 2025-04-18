@@ -15,7 +15,7 @@ import {
   Snowflake,
   Dumbbell,
   Trophy,
-  Golf,
+  Flag,
   FlagTriangleRight,
   Bike,
   Dice5,

@@ -59,7 +59,7 @@ export default function CricketPage() {
               }
             }
           }
-        } catch (dedicatedError) {
+        } catch (dedicatedError: any) {
           console.warn(`Cricket dedicated endpoint error: ${dedicatedError.message}`);
           // Continue to fallback
         }
@@ -98,7 +98,7 @@ export default function CricketPage() {
               return cricketEvents;
             }
           }
-        } catch (standardError) {
+        } catch (standardError: any) {
           console.warn(`Standard API error: ${standardError.message}`);
           // Continue to next fallback
         }
@@ -272,7 +272,18 @@ export default function CricketPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      <SimpleMarkets event={event} />
+                      <SimpleMarkets 
+                        sportType="cricket"
+                        eventId={event.id}
+                        eventName={`${event.homeTeam} vs ${event.awayTeam}`}
+                        homeTeam={event.homeTeam}
+                        awayTeam={event.awayTeam}
+                        homeOdds={event.homeOdds || 2.0}
+                        drawOdds={event.drawOdds || 3.2}
+                        awayOdds={event.awayOdds || 2.5}
+                        isLive={true}
+                        event={event}
+                      />
                     </CardContent>
                   </Card>
                 ))}
@@ -322,7 +333,18 @@ export default function CricketPage() {
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4">
-                      <SimpleMarkets event={event} />
+                      <SimpleMarkets 
+                        sportType="cricket"
+                        eventId={event.id}
+                        eventName={`${event.homeTeam} vs ${event.awayTeam}`}
+                        homeTeam={event.homeTeam}
+                        awayTeam={event.awayTeam}
+                        homeOdds={event.homeOdds || 2.0}
+                        drawOdds={event.drawOdds || 3.2}
+                        awayOdds={event.awayOdds || 2.5}
+                        isLive={false}
+                        event={event}
+                      />
                     </CardContent>
                   </Card>
                 ))}

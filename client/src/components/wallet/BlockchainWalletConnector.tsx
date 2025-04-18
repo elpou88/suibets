@@ -112,6 +112,9 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
     setShowWallets(!showWallets);
   };
   
+  // Platform deposit wallet address
+  const platformDepositWalletAddress = "0x14277cecf9d3f819c2ec39e9be93c35fb3bdd85d2fd5f6dcd1fad931aee232e8";
+  
   const handleDeposit = async () => {
     setIsDepositing(true);
     try {
@@ -128,12 +131,31 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
         return;
       }
       
+      // Show deposit instructions with the platform wallet address
+      toast({
+        title: "Send Tokens to Platform Address",
+        description: `Send your tokens to: ${platformDepositWalletAddress.substring(0, 10)}...${platformDepositWalletAddress.substring(platformDepositWalletAddress.length - 6)}`,
+        variant: "default",
+        duration: 5000
+      });
+      
       // Simulate blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Format the message
+      let message = '';
+      if (!isNaN(suiAmount) && suiAmount > 0) {
+        message += `${suiAmount} SUI`;
+      }
+      
+      if (!isNaN(sbetsAmount) && sbetsAmount > 0) {
+        if (message) message += ' and ';
+        message += `${sbetsAmount} SBETS`;
+      }
       
       toast({
         title: "Deposit Successful",
-        description: `Successfully deposited ${suiAmount > 0 ? `${suiAmount} SUI` : ''} ${sbetsAmount > 0 ? `${sbetsAmount} SBETS` : ''}`,
+        description: `Successfully deposited ${message} to platform wallet`,
         variant: "default",
       });
       
@@ -152,6 +174,9 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
       setIsDepositing(false);
     }
   };
+  
+  // Platform withdrawal wallet address
+  const platformWithdrawalWalletAddress = "0xd8e37ef7507b086f1f9f29de543cb2c4e9249e886558a734923aafa4c103658c";
   
   const handleWithdraw = async () => {
     setIsWithdrawing(true);
@@ -187,12 +212,20 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
         return;
       }
       
+      // Show withdrawal info with platform address
+      toast({
+        title: "Processing Withdrawal Request",
+        description: `Funds will be sent from ${platformWithdrawalWalletAddress.substring(0, 8)}...${platformWithdrawalWalletAddress.substring(platformWithdrawalWalletAddress.length - 6)}`,
+        variant: "default",
+        duration: 5000
+      });
+      
       // Simulate blockchain transaction
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       toast({
         title: "Withdrawal Successful",
-        description: `Successfully withdrew ${amount} ${withdrawToken}`,
+        description: `Successfully withdrew ${amount} ${withdrawToken} to your wallet`,
         variant: "default",
       });
       
@@ -339,9 +372,29 @@ export function BlockchainWalletConnector({ onConnect }: BlockchainWalletConnect
             </div>
             
             <div className="rounded-lg border border-[#1e3a3f] p-3 bg-[#0b1618] mt-2">
-              <p className="text-xs text-gray-400">
-                Funds will be deposited directly to your wallet on the Sui blockchain. Transaction fees may apply.
-              </p>
+              <div className="space-y-2">
+                <p className="text-xs text-gray-400">
+                  Send funds to the following deposit address to credit your account. Transaction fees may apply.
+                </p>
+                <div className="flex items-center justify-between bg-[#112225] p-2 rounded border border-[#1e3a3f]">
+                  <span className="text-xs font-mono text-[#00ffff] truncate mr-2">{platformDepositWalletAddress}</span>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-6 w-6 text-gray-400 hover:text-[#00ffff] flex-shrink-0"
+                    onClick={() => {
+                      navigator.clipboard.writeText(platformDepositWalletAddress);
+                      toast({
+                        title: "Address Copied",
+                        description: "Deposit address copied to clipboard",
+                        variant: "default",
+                      });
+                    }}
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
             </div>
             
             <DialogFooter>

@@ -139,7 +139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Setup a timeout to prevent requests from hanging too long
-      const FETCH_TIMEOUT = 5000; // 5 seconds
+      const FETCH_TIMEOUT = 8000; // 8 seconds - increased timeout for better results
       
       // Try to get events directly from event tracking service which has cached events
       let events = [];
@@ -155,12 +155,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         if (isLive) {
-          // Race the actual fetch against the timeout
-          const liveEvents = await Promise.race([
-            eventTrackingService.getLiveEvents(reqSportId),
-            timeoutPromise
-          ]);
-          events = liveEvents;
+          try {
+            // Race the actual fetch against the timeout
+            const liveEvents = await Promise.race([
+              eventTrackingService.getLiveEvents(reqSportId),
+              timeoutPromise
+            ]);
+            events = liveEvents || [];
+          } catch (serviceError) {
+            console.error('[Routes] Error fetching from tracking service:', serviceError);
+            events = [];
+          }
           console.log(`[Routes] Got ${events.length} live events for sportId: ${reqSportId} from tracking service`);
         } else {
           events = eventTrackingService.getUpcomingEvents(reqSportId);

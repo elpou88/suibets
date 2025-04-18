@@ -273,8 +273,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             </Button>
           </p>
           
-          <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
-            <p className="mb-2 text-gray-600 dark:text-gray-400">Wallet Connection Options:</p>
+          <div className="mt-4 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
+            <p className="mb-2 text-gray-600 dark:text-gray-400 font-medium">Wallet Connection Options:</p>
             
             <div className="flex flex-col justify-center items-center mb-4">
               <p className="text-center text-gray-600 dark:text-gray-400 mb-2">
@@ -335,6 +335,24 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
                   • Martian Wallet
                 </a>
               </div>
+            </div>
+
+            <div className="mt-3 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md border border-yellow-100 dark:border-yellow-800">
+              <div className="flex items-center text-yellow-700 dark:text-yellow-300 font-medium mb-1">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>Troubleshooting Tips</span>
+              </div>
+              <ul className="text-[10px] text-yellow-700 dark:text-yellow-400 list-disc pl-4 space-y-1">
+                <li>Make sure your wallet extension is installed and enabled</li>
+                <li>Unlock your wallet before connecting</li>
+                <li>If connecting fails, try refreshing the page</li>
+                <li>Check that your wallet is on the Sui network</li>
+                <li>Allow pop-ups from this site in your browser settings</li>
+              </ul>
+            </div>
+            
+            <div className="mt-3 text-[10px] text-center text-gray-500">
+              Need help? Check out the <a href="https://docs.sui.io/guides/wallet-browser" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sui Wallet documentation</a> for detailed setup instructions.
             </div>
           </div>
         </div>

@@ -160,8 +160,14 @@ export const SuietWalletConnect: React.FC<SuietWalletConnectProps> = ({ onConnec
       <Button
         className="w-full bg-gradient-to-r from-cyan-600 to-cyan-400 hover:from-cyan-700 hover:to-cyan-500 text-black font-bold"
         onClick={handleWalletAction}
+        disabled={isConnecting}
       >
-        {walletConnected ? (
+        {isConnecting ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Connecting...
+          </>
+        ) : walletConnected ? (
           <>
             Connected to Suiet
           </>
@@ -172,6 +178,15 @@ export const SuietWalletConnect: React.FC<SuietWalletConnectProps> = ({ onConnec
           </>
         )}
       </Button>
+      
+      {/* Fallback info for users without wallet extensions */}
+      <div className="mt-2 text-xs text-gray-500 text-center">
+        <p>
+          {!walletConnected && 
+            "Don't have Suiet wallet? You can still connect using any Sui wallet address."
+          }
+        </p>
+      </div>
     </div>
   );
 };

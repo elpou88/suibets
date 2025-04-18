@@ -192,123 +192,114 @@ export function LiveEventsSection() {
         </Button>
       </CardHeader>
       <CardContent className="p-0 max-h-[700px] overflow-auto custom-scrollbar">
-        {/* Featured Events Banner */}
-        <div className="bg-gradient-to-r from-[#214550] to-[#2a5665] p-4 border-b border-[#2a4c55]">
-          <h3 className="text-cyan-300 font-bold mb-3 flex items-center text-base">
-            <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-            FEATURED LIVE EVENTS
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Featured Events */}
+        <div className="bg-[#0b1618] p-4 border-b border-[#1e3a3f]">
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-cyan-300 text-lg font-bold">Featured Events</div>
+            <Link href="/live">
+              <button className="bg-cyan-500 text-black text-xs font-semibold rounded py-1 px-3 hover:bg-cyan-400">
+                View All Live
+              </button>
+            </Link>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {liveEvents.slice(0, 3).map((event) => (
-              <div key={event.id} className="relative">
-                <div className="bg-[#18323a] rounded-md border border-[#2a4c55] cursor-pointer hover:border-cyan-400 transition-all duration-200 overflow-hidden shadow-lg h-full flex flex-col">
-                  <div className="bg-gradient-to-r from-cyan-600/30 to-blue-600/20 p-3 border-b border-[#2a4c55] flex justify-between items-center">
-                    <div className="flex items-center">
-                      <span className="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></span>
-                      <span className="text-cyan-300 font-semibold text-xs">{getSportName(event.sportId)}</span>
-                    </div>
-                    <span className="text-xs text-cyan-300 bg-[#18323a] px-2 py-0.5 rounded font-medium">
-                      {event.leagueName}
-                    </span>
-                  </div>
+              <div key={event.id} className="relative bg-[#112225] rounded-md border border-[#1e3a3f] overflow-hidden shadow-md">
+                {/* Event header */}
+                <div className="bg-[#0b1618] p-2.5 relative">
+                  <div className="text-white font-bold">{event.homeTeam}</div>
+                  <div className="text-gray-400 text-sm my-0.5">vs</div>
+                  <div className="text-white font-bold">{event.awayTeam}</div>
                   
-                  <div className="p-4 flex-grow flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-6">
-                      <div className="flex-1 mr-3">
-                        <div className="text-cyan-300 font-bold text-sm mb-3">{event.homeTeam}</div>
-                        <div className="text-cyan-300 font-bold text-sm">{event.awayTeam}</div>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-col space-y-3 mt-auto">
-                      {event.markets && event.markets[0] && event.markets[0].outcomes ? (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full z-20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Add bet to betslip logic would go here
-                              console.log('Adding home bet for:', event.homeTeam, event.markets[0].outcomes[0]?.odds);
-                            }}
-                          >
-                            <span className="flex justify-between w-full">
-                              <span>{event.homeTeam}</span>
-                              <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">
-                                {event.markets[0].outcomes[0]?.odds.toFixed(2) || '2.00'}
-                              </span>
-                            </span>
-                          </Button>
-                          
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full z-20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              // Add bet to betslip logic would go here
-                              console.log('Adding away bet for:', event.awayTeam, event.markets[0].outcomes[1]?.odds);
-                            }}
-                          >
-                            <span className="flex justify-between w-full">
-                              <span>{event.awayTeam}</span>
-                              <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">
-                                {event.markets[0].outcomes[1]?.odds.toFixed(2) || '3.50'}
-                              </span>
-                            </span>
-                          </Button>
-                        </>
-                      ) : (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full z-20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            <span className="flex justify-between w-full">
-                              <span>{event.homeTeam}</span>
-                              <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">2.10</span>
-                            </span>
-                          </Button>
-                          
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="h-9 text-sm bg-cyan-700/30 border-cyan-500/50 text-cyan-300 hover:bg-cyan-600 hover:text-white hover:border-cyan-400 font-semibold px-3 w-full z-20"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                            }}
-                          >
-                            <span className="flex justify-between w-full">
-                              <span>{event.awayTeam}</span>
-                              <span className="bg-[#0b1618] px-2 py-0.5 rounded-sm text-cyan-400">1.90</span>
-                            </span>
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                    
-                    {event.score && (
-                      <div className="mt-4 text-center">
-                        <span className="text-cyan-300 text-sm font-bold bg-[#2a4c55] px-3 py-1 rounded shadow-inner shadow-black/20 border border-cyan-500/30">
-                          {event.score}
-                        </span>
-                      </div>
-                    )}
+                  <div className="absolute top-2.5 right-2.5 bg-red-600/80 rounded text-xs px-1.5 py-0.5 flex items-center">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full mr-1 animate-pulse"></span>
+                    <span className="text-white font-semibold">LIVE</span>
                   </div>
-                  
-                  <Link href={`/match/${event.id}`} className="absolute inset-0">
-                    <span className="sr-only">View match details</span>
-                  </Link>
                 </div>
+                
+                {/* Score display */}
+                <div className="bg-[#0b1618] py-1.5 text-center font-bold border-t border-b border-[#1e3a3f]">
+                  <span className="text-cyan-300">{event.score || "0 - 0"}</span>
+                </div>
+                
+                {/* Betting options */}
+                <div className="p-3 bg-[#112225]">
+                  <div className="text-xs text-gray-400 text-center mb-2">
+                    Match Result
+                  </div>
+                  
+                  <div className="grid grid-cols-3 gap-2">
+                    <button 
+                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const bet = {
+                          id: `${event.id}-home-${Date.now()}`,
+                          eventId: event.id,
+                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                          selectionName: event.homeTeam,
+                          odds: 2.10,
+                          stake: 10,
+                          market: "Match Result",
+                          uniqueId: Math.random().toString(36).substring(2, 8)
+                        };
+                        // Add bet to betslip here
+                        console.log('Adding bet for home team:', bet);
+                      }}
+                    >
+                      2.10
+                    </button>
+                    <button 
+                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const bet = {
+                          id: `${event.id}-draw-${Date.now()}`,
+                          eventId: event.id,
+                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                          selectionName: "Draw",
+                          odds: 3.20,
+                          stake: 10,
+                          market: "Match Result",
+                          uniqueId: Math.random().toString(36).substring(2, 8)
+                        };
+                        // Add bet to betslip here
+                        console.log('Adding bet for draw:', bet);
+                      }}
+                    >
+                      3.20
+                    </button>
+                    <button 
+                      className="bg-[#1e3a3f] hover:bg-cyan-800 text-cyan-300 py-2 rounded-sm text-sm font-medium transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const bet = {
+                          id: `${event.id}-away-${Date.now()}`,
+                          eventId: event.id,
+                          eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+                          selectionName: event.awayTeam,
+                          odds: 3.40,
+                          stake: 10,
+                          market: "Match Result",
+                          uniqueId: Math.random().toString(36).substring(2, 8)
+                        };
+                        // Add bet to betslip here
+                        console.log('Adding bet for away team:', bet);
+                      }}
+                    >
+                      3.40
+                    </button>
+                  </div>
+                </div>
+                
+                {/* Clickable link to event details */}
+                <Link href={`/match/${event.id}`}>
+                  <span className="absolute inset-0 cursor-pointer z-10"></span>
+                </Link>
               </div>
             ))}
           </div>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { useBetting } from '@/context/BettingContext';
 import { Link } from 'wouter';
+import { SelectedBet } from '@/types';
 
 interface CardEvent {
   id: string | number;
@@ -37,10 +38,13 @@ const FeaturedEventCard: React.FC<FeaturedEventCardProps> = ({ event, getSportNa
     e.preventDefault();
     e.stopPropagation();
     
+    // Convert eventId to string if it's a number
+    const eventIdString = typeof event.id === 'number' ? event.id.toString() : event.id;
+    
     // Create a bet object
     const bet = {
-      id: `${event.id}-${event.markets[0]?.id || 'market'}-${outcome.id || 'outcome'}-${Date.now()}`,
-      eventId: event.id,
+      id: `${eventIdString}-${event.markets[0]?.id || 'market'}-${outcome.id || 'outcome'}-${Date.now()}`,
+      eventId: eventIdString,
       eventName: `${event.homeTeam} vs ${event.awayTeam}`,
       selectionName: teamName,
       odds: outcome.odds,

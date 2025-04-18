@@ -204,7 +204,7 @@ export default function HomeReal() {
                               onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                             >
                               <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">{outcome.name}</span>
+                                <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
                                 <span className="text-xl font-bold text-cyan-300">{outcome.odds.toFixed(2)}</span>
                               </div>
                             </Button>
@@ -331,7 +331,7 @@ export default function HomeReal() {
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
                                       <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">{outcome.name}</span>
+                                        <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
                                         <span className="text-xl font-bold text-cyan-300">{outcome.odds.toFixed(2)}</span>
                                       </div>
                                     </Button>

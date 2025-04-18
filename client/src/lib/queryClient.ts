@@ -34,14 +34,32 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
+  options?: { timeout?: number },
 ): Promise<Response> {
   try {
+    // If a timeout is specified, use AbortController to enforce it
+    let abortController: AbortController | undefined;
+    let timeoutId: NodeJS.Timeout | undefined;
+    
+    if (options?.timeout) {
+      abortController = new AbortController();
+      timeoutId = setTimeout(() => {
+        abortController?.abort(`Request timeout after ${options.timeout}ms`);
+      }, options.timeout);
+    }
+    
     const res = await fetch(url, {
       method,
       headers: data ? { "Content-Type": "application/json" } : {},
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
+      signal: abortController?.signal,
     });
+    
+    // Clear the timeout if the request completed successfully
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
 
     // Special handling for network errors and sports data API issues
     if (res.status >= 500) {

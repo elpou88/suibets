@@ -139,7 +139,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Setup a timeout to prevent requests from hanging too long
-      const FETCH_TIMEOUT = 8000; // 8 seconds - increased timeout for better results
+      const FETCH_TIMEOUT = isLive ? 5000 : 8000; // 5 seconds for live events, 8 seconds for others
+      
+      // Set a hard deadline for the entire API endpoint
+      const requestDeadline = setTimeout(() => {
+        console.warn(`[Routes] Request deadline reached for /api/events (isLive: ${isLive}, sportId: ${reqSportId})`);
+        if (!res.headersSent) {
+          // If we haven't already sent a response, send whatever we have or empty array
+          return res.json([]);
+        }
+      }, 15000); // Hard deadline of 15 seconds for the entire request
       
       // Try to get events directly from event tracking service which has cached events
       let events = [];

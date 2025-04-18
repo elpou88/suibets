@@ -33,16 +33,27 @@ export default function HomeReal() {
   });
   
   // Fetch live events using the isLive parameter
-  const { data: liveEvents = [], isLoading: liveEventsLoading } = useQuery({
+  const { data: liveEvents = [], isLoading: liveEventsLoading, error: liveEventsError } = useQuery({
     queryKey: ['/api/events', { isLive: true }],
     queryFn: async () => {
       console.log('Fetching live events from API');
-      const response = await apiRequest('GET', '/api/events?isLive=true');
-      const data = await response.json();
-      console.log(`Received ${data.length} live events`);
-      return data;
+      try {
+        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 10000 });
+        if (!response.ok) {
+          throw new Error(`Server error ${response.status} from ${response.url}`);
+        }
+        const data = await response.json();
+        console.log(`Received ${data.length} live events`);
+        return data;
+      } catch (error) {
+        console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Return empty array on error to avoid breaking the UI
+        return [];
+      }
     },
-    refetchInterval: 15000 // Refetch every 15 seconds
+    refetchInterval: 15000, // Refetch every 15 seconds
+    retry: 2, // Retry up to 2 times if there's an error
+    retryDelay: 1000 // Wait 1 second between retries
   });
   
   // Fetch sports for the sidebar

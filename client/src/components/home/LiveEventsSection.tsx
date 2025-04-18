@@ -1,11 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { Event, Sport } from "@/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { ChevronDown, Activity } from "lucide-react";
+import { ChevronDown, ChevronRight, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import FeaturedEventCard from "./FeaturedEventCard";
+import { useState } from "react";
 
 export function LiveEventsSection() {
   const { data: liveEvents = [], isLoading } = useQuery<Event[]>({
@@ -176,6 +177,24 @@ export function LiveEventsSection() {
   // Sort sports by count 
   const sortedSports = Object.values(sportGroups).sort((a, b) => b.count - a.count);
   
+  // State for expanded/collapsed sport sections
+  const [expandedSports, setExpandedSports] = useState<Record<string, boolean>>({});
+  
+  // Initialize the first sport as expanded
+  useEffect(() => {
+    if (sortedSports.length > 0 && Object.keys(expandedSports).length === 0) {
+      setExpandedSports({ [sortedSports[0].name]: true });
+    }
+  }, [sortedSports, expandedSports]);
+  
+  // Toggle accordion
+  const toggleSportExpand = (sportName: string) => {
+    setExpandedSports(prev => ({
+      ...prev,
+      [sportName]: !prev[sportName]
+    }));
+  };
+  
   return (
     <Card className="mb-4 bg-[#18323a] border-[#2a4c55] shadow-lg">
       <CardHeader className="bg-[#214550] p-3 flex flex-row items-center justify-between border-b border-[#2a4c55]">
@@ -345,18 +364,30 @@ export function LiveEventsSection() {
 
         {/* Display events by sport in compact grid format */}
         <div className="p-3">
-          {sortedSports.slice(0, 5).map((sport, sportIndex) => (
-            <div key={sportIndex} className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-cyan-400 font-bold text-sm flex items-center">
-                  {sport.name.toUpperCase()} <span className="ml-2 text-xs text-cyan-300/70">({sport.count})</span>
+          {sortedSports.slice(0, 10).map((sport, sportIndex) => (
+            <div key={sportIndex} className="mb-5 bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden">
+              {/* Sport header with collapsible accordion style */}
+              <div className="flex items-center justify-between p-3 bg-[#0b1618] cursor-pointer hover:bg-[#112225] transition-colors">
+                <h3 className="text-cyan-400 font-bold flex items-center">
+                  {sport.name.toUpperCase()} 
+                  <span className="ml-2 px-1.5 py-0.5 bg-[#1e3a3f] rounded-sm text-xs text-cyan-300/90">
+                    {sport.count}
+                  </span>
                 </h3>
-                <Link href={`/sport/${sport.name.toLowerCase()}`}>
-                  <span className="text-xs text-cyan-400 hover:underline cursor-pointer">View All</span>
-                </Link>
+                <div className="flex items-center gap-2">
+                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-sm flex items-center font-semibold">
+                    <span className="w-1 h-1 bg-white rounded-full mr-1 animate-pulse"></span>
+                    LIVE
+                  </span>
+                  <Link href={`/sport/${sport.name.toLowerCase()}`}>
+                    <Button variant="outline" size="sm" className="border-cyan-400 text-cyan-300 hover:bg-cyan-400/20 text-xs">
+                      View All
+                    </Button>
+                  </Link>
+                </div>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 p-3">
                 {sport.events.slice(0, 3).map((event) => (
                   <Link key={event.id} href={`/match/${event.id}`}>
                     <div className="cursor-pointer bg-[#18323a] hover:bg-[#214550] p-3 border border-[#2a4c55] hover:border-cyan-400/50 rounded transition-all duration-200 shadow-md h-full">

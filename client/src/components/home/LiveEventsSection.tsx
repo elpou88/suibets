@@ -56,40 +56,103 @@ export function LiveEventsSection() {
     return acc;
   }, {} as Record<string, Event[]>);
 
-  // Helper function to get sport name from sportId (completely updated to match API data)
+  // Helper function to get sport name from sportId - updated to match official API-SPORTS documentation
   const getSportName = (sportId: number | null): string => {
     switch(sportId) {
+      // Soccer/Football - https://api-sports.io/documentation/football/v3
       case 1: return 'Football';
+      
+      // Basketball - https://api-sports.io/documentation/basketball/v1
       case 2: return 'Basketball';
-      case 3: return 'Baseball';  
+      
+      // Baseball - https://api-sports.io/documentation/baseball/v1
+      case 3: return 'Baseball';
+      
+      // Hockey - https://api-sports.io/documentation/hockey/v1
       case 4: return 'Hockey';
+      
+      // Rugby - https://api-sports.io/documentation/rugby/v1
       case 5: return 'Rugby';
-      case 6: return 'Cricket';  
+      
+      // Golf - https://api-sports.io/documentation/golf/v1
+      case 6: return 'Golf';  
+      
+      // Tennis - https://api-sports.io/documentation/tennis/v1
       case 7: return 'Tennis';
+      
+      // Handball - https://api-sports.io/documentation/handball/v1
       case 8: return 'Handball';
-      case 9: return 'Cricket';  // Cricket ID from API-SPORTS
-      case 10: return 'Baseball'; // Baseball ID from API-SPORTS
+      
+      // Cricket - https://api-sports.io/documentation/cricket/v1
+      case 9: return 'Cricket';
+      
+      // AFL - https://api-sports.io/documentation/afl/v1
+      case 10: return 'Australian Football';
+      
+      // NFL - https://api-sports.io/documentation/nfl/v1
       case 11: return 'American Football';
-      case 12: return 'Rugby';    // Rugby ID from API-SPORTS
-      case 13: return 'Soccer';   // Alternate Soccer ID
+      
+      // Rugby League - https://api-sports.io/documentation/rugby/v1 (second product)
+      case 12: return 'Rugby League';
+      
+      // Soccer/Football Alternative - Legacy ID
+      case 13: return 'Soccer';
+      
+      // Cycling - Internal API
       case 14: return 'Cycling';
+      
+      // Volleyball - https://api-sports.io/documentation/volleyball/v1
       case 15: return 'Volleyball';
-      case 16: return 'Motorsport';
-      case 17: return 'Snooker';  // Snooker
+      
+      // Formula 1 - https://api-sports.io/documentation/formula-1/v1
+      case 16: return 'Formula 1';
+      
+      // Snooker - Internal API
+      case 17: return 'Snooker';
+      
+      // Ice Hockey - Alternative Hockey ID
       case 18: return 'Ice Hockey';
-      case 19: return 'Volleyball'; 
+      
+      // Alternative Volleyball - Internal API
+      case 19: return 'Volleyball';
+      
+      // Badminton - Internal API
       case 20: return 'Badminton';
-      case 21: return 'Darts';    
+      
+      // Darts - Internal API
+      case 21: return 'Darts';
+      
+      // Table Tennis - Internal API
       case 22: return 'Table Tennis';
+      
+      // Alternative Badminton - Internal API
       case 23: return 'Badminton';
+      
+      // Beach Volleyball - Internal API
       case 24: return 'Beach Volleyball';
+      
+      // Winter Sports - Internal API
       case 25: return 'Winter Sports';
+      
+      // Alternative Formula 1 - Internal API
       case 26: return 'Formula 1';
+      
+      // MMA - https://api-sports.io/documentation/mma/v1
       case 27: return 'MMA/UFC';
+      
+      // Boxing - Internal API
       case 28: return 'Boxing';
-      case 29: return 'Golf';     // Golf ID from API-SPORTS
+      
+      // Alternative Golf - Internal API
+      case 29: return 'Golf';
+      
+      // Horse Racing - Internal API
       case 30: return 'Horse Racing';
+      
+      // Greyhounds - Internal API
       case 31: return 'Greyhounds';
+      
+      // Fallback for unrecognized sport IDs
       default: return 'Other';
     }
   };

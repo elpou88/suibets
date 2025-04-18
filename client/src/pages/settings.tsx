@@ -82,14 +82,29 @@ export default function Settings() {
           >
             <ChevronLeft className="h-6 w-6" />
           </Button>
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <h1 className="text-2xl font-bold text-[#00FFFF]">Settings</h1>
         </div>
 
         <Tabs defaultValue="general" className="w-full max-w-4xl mx-auto">
-          <TabsList className="grid grid-cols-3 mb-8">
-            <TabsTrigger value="general">General</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
-            <TabsTrigger value="blockchain">Blockchain</TabsTrigger>
+          <TabsList className="grid grid-cols-3 mb-8 bg-[#0b1618] border-[#1e3a3f]">
+            <TabsTrigger 
+              value="general" 
+              className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00FFFF]"
+            >
+              General
+            </TabsTrigger>
+            <TabsTrigger 
+              value="preferences" 
+              className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00FFFF]"
+            >
+              Preferences
+            </TabsTrigger>
+            <TabsTrigger 
+              value="blockchain" 
+              className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00FFFF]"
+            >
+              Blockchain
+            </TabsTrigger>
           </TabsList>
 
           {/* General Settings Tab */}
@@ -129,6 +144,12 @@ export default function Settings() {
                             <SelectItem value="spanish">Spanish</SelectItem>
                             <SelectItem value="french">French</SelectItem>
                             <SelectItem value="german">German</SelectItem>
+                            <SelectItem value="italian">Italian</SelectItem>
+                            <SelectItem value="portuguese">Portuguese</SelectItem>
+                            <SelectItem value="russian">Russian</SelectItem>
+                            <SelectItem value="chinese">Chinese</SelectItem>
+                            <SelectItem value="japanese">Japanese</SelectItem>
+                            <SelectItem value="korean">Korean</SelectItem>
                           </SelectGroup>
                         </SelectContent>
                       </Select>
@@ -160,60 +181,7 @@ export default function Settings() {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between py-3 border-t border-[#2a4a54]">
-                    <span>Accent Color</span>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button 
-                          variant="outline" 
-                          className="w-[100px] h-[36px] border-2 p-0 relative"
-                          style={{ backgroundColor: accentColor, borderColor: '#fff' }}
-                        >
-                          <div className="absolute inset-0 grid place-items-center bg-black bg-opacity-30">
-                            <Palette className="h-5 w-5 text-white" />
-                          </div>
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-3 bg-[#112225] border-[#2a4a54]">
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center">
-                            <h4 className="font-medium text-sm">Pick a Color</h4>
-                            <div className="ml-2 h-5 w-5 rounded" style={{ backgroundColor: accentColor }}></div>
-                          </div>
-                          <HexColorPicker 
-                            color={accentColor} 
-                            onChange={(color) => {
-                              setAccentColor(color);
-                              applyTheme();
-                            }} 
-                          />
-                          <div className="flex justify-between mt-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="flex-1 h-8 border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20"
-                              onClick={() => {
-                                setAccentColor('#00FFFF');
-                                applyTheme();
-                              }}
-                            >
-                              Reset
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              className="flex-1 h-8 ml-2 bg-[#00FFFF] text-black hover:bg-[#00FFFF]/90"
-                              onClick={() => {
-                                saveSettings();
-                                applyTheme();
-                              }}
-                            >
-                              Apply
-                            </Button>
-                          </div>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+
                 </CardContent>
               </Card>
 

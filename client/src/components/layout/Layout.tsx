@@ -21,17 +21,17 @@ const Layout: React.FC<LayoutProps> = ({
   const [location, setLocation] = useLocation();
   
   const topNavItems = [
-    { label: 'Sports', icon: <TrendingUp />, href: '/home-real' },
-    { label: 'Live', icon: <TrendingDown />, href: '/live-real' },
-    { label: 'Promotions', icon: <Megaphone />, href: '/promotions' },
+    { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/home-real' },
+    { label: 'Live', i18nKey: 'live', icon: <TrendingDown />, href: '/live-real' },
+    { label: 'Promotions', i18nKey: 'promotions', icon: <Megaphone />, href: '/promotions' },
   ];
 
   const bottomNavItems = [
-    { label: 'Home', icon: <Home />, href: '/home-real' },
-    { label: 'Live', icon: <TrendingUp />, href: '/live-real' },
-    { label: 'DeFi', icon: <Landmark />, href: '/defi-staking' },
-    { label: 'History', icon: <Clock />, href: '/bet-history' },
-    { label: 'Settings', icon: <Settings />, href: '/settings' },
+    { label: 'Home', i18nKey: 'home', icon: <Home />, href: '/home-real' },
+    { label: 'Live', i18nKey: 'live', icon: <TrendingUp />, href: '/live-real' },
+    { label: 'DeFi', i18nKey: 'staking', icon: <Landmark />, href: '/defi-staking' },
+    { label: 'History', i18nKey: 'bet_history', icon: <Clock />, href: '/bet-history' },
+    { label: 'Settings', i18nKey: 'settings', icon: <Settings />, href: '/settings' },
   ];
 
   const handleBack = () => {
@@ -105,7 +105,7 @@ const Layout: React.FC<LayoutProps> = ({
               {React.cloneElement(item.icon as React.ReactElement, { 
                 className: `h-4 w-4 mr-2 ${location === item.href ? 'text-cyan-400' : 'text-cyan-400/70'}` 
               })}
-              {item.label}
+              <span data-i18n={item.i18nKey}>{item.label}</span>
             </Button>
           ))}
 
@@ -165,7 +165,7 @@ const Layout: React.FC<LayoutProps> = ({
               {React.cloneElement(item.icon as React.ReactElement, { 
                 className: `h-5 w-5 mb-1 ${location === item.href ? 'text-cyan-400' : 'text-cyan-400/70'}`
               })}
-              <span className="text-xs">{item.label}</span>
+              <span className="text-xs" data-i18n={item.i18nKey}>{item.label}</span>
               {location === item.href && (
                 <span className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.8)]"></span>
               )}

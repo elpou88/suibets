@@ -32,6 +32,7 @@ import GotoSports from "@/pages/goto-sports";
 
 // Context providers and shared components
 import { AuthProvider } from "@/context/AuthContext";
+import { BlockchainAuthProvider } from "@/hooks/useBlockchainAuth"; // Add blockchain authentication provider
 import { BettingProvider } from "@/context/BettingContext";
 import { WalProvider } from "@/components/ui/wal-components";
 import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
@@ -66,95 +67,98 @@ function App() {
           <SuietWalletProvider>
             <WalProvider>
               <WalrusProtocolProvider>
-                <AuthProvider>
-                  <BettingProvider>
-                    <div className="root-container">
-                      <Switch>
-                      {/* Main Routes - Use real data pages as the default */}
-                      <Route path="/" component={HomeReal} />
-                      <Route path="/sports" component={HomeReal} />
-                      <Route path="/sport/:slug*" component={SportsLive} />
-                      <Route path="/match/:id" component={Match} />
-                      <Route path="/match-detail/:id" component={MatchDetail} />
-                      <Route path="/live" component={LiveReal} />
-                      <Route path="/live/:id" component={LiveEventPage} />
-                    
-                    {/* Additional Pages - Using real-time data pages */}
-                    <Route path="/promotions" component={PromotionsReal} />
-                    <Route path="/promotions/referral" component={ReferralPage} />
-                    <Route path="/notifications" component={Notifications} />
-                    <Route path="/settings" component={Settings} />
-                    <Route path="/bet-history" component={BetHistoryPage} />
-                    <Route path="/dividends" component={DividendsReal} />
-                    <Route path="/defi-staking" component={DefiStaking} />
-                    <Route path="/storage" component={StoragePage} />
-                    {/* Redirect connect-wallet route to HomePage with modal approach */}
-                    <Route path="/connect-wallet">
-                      {() => {
-                        // Create a component that handles the redirect and modal opening
-                        const ConnectWalletRedirect = () => {
-                          useEffect(() => {
-                            console.log('Connect-wallet route detected, triggering modal...');
-                            
-                            // Dispatch an event to trigger the wallet modal
-                            const event = new CustomEvent('suibets:connect-wallet-required');
-                            window.dispatchEvent(event);
-                            
-                            // Use history API to replace current URL without refreshing
-                            window.history.replaceState(null, '', '/');
-                          }, []);
+                <BlockchainAuthProvider>
+                  <AuthProvider>
+                    <BettingProvider>
+                      <div className="root-container">
+                        <Switch>
+                          {/* Main Routes - Use real data pages as the default */}
+                          <Route path="/" component={HomeReal} />
+                          <Route path="/sports" component={HomeReal} />
+                          <Route path="/sport/:slug*" component={SportsLive} />
+                          <Route path="/match/:id" component={Match} />
+                          <Route path="/match-detail/:id" component={MatchDetail} />
+                          <Route path="/live" component={LiveReal} />
+                          <Route path="/live/:id" component={LiveEventPage} />
                           
-                          // Return the home page
-                          return <HomeReal />;
-                        };
+                          {/* Additional Pages - Using real-time data pages */}
+                          <Route path="/promotions" component={PromotionsReal} />
+                          <Route path="/promotions/referral" component={ReferralPage} />
+                          <Route path="/notifications" component={Notifications} />
+                          <Route path="/settings" component={Settings} />
+                          <Route path="/bet-history" component={BetHistoryPage} />
+                          <Route path="/dividends" component={DividendsReal} />
+                          <Route path="/defi-staking" component={DefiStaking} />
+                          <Route path="/storage" component={StoragePage} />
+                          
+                          {/* Redirect connect-wallet route to HomePage with modal approach */}
+                          <Route path="/connect-wallet">
+                            {() => {
+                              // Create a component that handles the redirect and modal opening
+                              const ConnectWalletRedirect = () => {
+                                useEffect(() => {
+                                  console.log('Connect-wallet route detected, triggering modal...');
+                                  
+                                  // Dispatch an event to trigger the wallet modal
+                                  const event = new CustomEvent('suibets:connect-wallet-required');
+                                  window.dispatchEvent(event);
+                                  
+                                  // Use history API to replace current URL without refreshing
+                                  window.history.replaceState(null, '', '/');
+                                }, []);
+                                
+                                // Return the home page
+                                return <HomeReal />;
+                              };
+                              
+                              return <ConnectWalletRedirect />;
+                            }}
+                          </Route>
+                          <Route path="/wallet-dashboard" component={WalletDashboard} />
+                          <Route path="/join" component={HomeReal} />
+                          <Route path="/live-scores" component={LiveScoresPage} />
+                          
+                          {/* Info Pages */}
+                          <Route path="/info" component={Info} />
+                          <Route path="/community" component={Community} />
+                          <Route path="/contact" component={Contact} />
+                          
+                          {/* Legacy Routes - Redirects */}
+                          <Route path="/goto-sports" component={HomeReal} />
+                          <Route path="/goto-promotions" component={RedirectToPromotions} />
+                          <Route path="/goto-live" component={LiveReal} />
+                          <Route path="/sports-exact" component={HomeReal} />
+                          <Route path="/live-exact" component={LiveReal} />
+                          <Route path="/bet-slip" component={BetSlip} />
+                          <Route path="/bet-slip-2" component={BetSlip2} />
+                          
+                          {/* Legacy Routes with new names for backward compatibility */}
+                          <Route path="/home-real" component={HomeReal} />
+                          <Route path="/live-real" component={LiveReal} />
+                          <Route path="/sports-live" component={SportsLive} />
+                          <Route path="/sports-live/:sport" component={SportPage} />
+                          <Route path="/parlay" component={Parlay} />
+                          
+                          <Route component={NotFound} />
+                        </Switch>
                         
-                        return <ConnectWalletRedirect />;
-                      }}
-                    </Route>
-                    <Route path="/wallet-dashboard" component={WalletDashboard} />
-                    <Route path="/join" component={HomeReal} />
-                    <Route path="/live-scores" component={LiveScoresPage} />
-                    
-                    {/* Info Pages */}
-                    <Route path="/info" component={Info} />
-                    <Route path="/community" component={Community} />
-                    <Route path="/contact" component={Contact} />
-                    
-                    {/* Legacy Routes - Redirects */}
-                    <Route path="/goto-sports" component={HomeReal} />
-                    <Route path="/goto-promotions" component={RedirectToPromotions} />
-                    <Route path="/goto-live" component={LiveReal} />
-                    <Route path="/sports-exact" component={HomeReal} />
-                    <Route path="/live-exact" component={LiveReal} />
-                    <Route path="/bet-slip" component={BetSlip} />
-                    <Route path="/bet-slip-2" component={BetSlip2} />
-                    
-                    {/* Legacy Routes with new names for backward compatibility */}
-                    <Route path="/home-real" component={HomeReal} />
-                    <Route path="/live-real" component={LiveReal} />
-                    <Route path="/sports-live" component={SportsLive} />
-                    <Route path="/sports-live/:sport" component={SportPage} />
-                    <Route path="/parlay" component={Parlay} />
-                    
-                    <Route component={NotFound} />
-                  </Switch>
-                  
-                  {/* Floating deposit/withdraw buttons that appear on all pages */}
-                  <DepositWithdrawFAB />
-                  
-                  {/* Universal betting handlers to enable betting across all pages */}
-                  <UniversalClickHandler />
-                  <SportBettingWrapper />
-                </div>
-                <SpecialLinks />
-                <Toaster />
-              </BettingProvider>
-            </AuthProvider>
-          </WalrusProtocolProvider>
-        </WalProvider>
-      </SuietWalletProvider>
-    </SuiDappKitProvider>
-    </ErrorBoundary>
+                        {/* Floating deposit/withdraw buttons that appear on all pages */}
+                        <DepositWithdrawFAB />
+                        
+                        {/* Universal betting handlers to enable betting across all pages */}
+                        <UniversalClickHandler />
+                        <SportBettingWrapper />
+                      </div>
+                      <SpecialLinks />
+                      <Toaster />
+                    </BettingProvider>
+                  </AuthProvider>
+                </BlockchainAuthProvider>
+              </WalrusProtocolProvider>
+            </WalProvider>
+          </SuietWalletProvider>
+        </SuiDappKitProvider>
+      </ErrorBoundary>
     </QueryClientProvider>
   );
 }

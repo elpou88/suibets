@@ -1,6 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, Server } from "http";
 import { storage } from "./storage";
+import { blockchainStorage } from "./blockchain-storage";
 import { db } from "./db";
 import { ApiSportsService } from "./services/apiSportsService";
 import { aggregatorService } from "./services/aggregatorService"; 
@@ -89,6 +90,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Sports routes
   app.get("/api/sports", async (req: Request, res: Response) => {
     try {
+      // Try to get sports from blockchain storage first
+      try {
+        console.log("[Routes] Attempting to fetch sports from blockchain storage");
+        const blockchainSports = await blockchainStorage.getSports();
+        
+        if (blockchainSports && blockchainSports.length > 0) {
+          console.log(`[Routes] Returning ${blockchainSports.length} sports from blockchain storage`);
+          return res.json(blockchainSports);
+        }
+      } catch (blockchainError) {
+        console.error("Error fetching sports from blockchain:", blockchainError);
+      }
+      
+      // Fallback to traditional storage
+      console.log("[Routes] Falling back to traditional storage for sports");
       const sports = await storage.getSports();
       return res.json(sports);
     } catch (error) {

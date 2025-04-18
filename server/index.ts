@@ -2,6 +2,8 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes"; // Using main routes.ts instead of routes-simple.ts
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
+import { setupBlockchainAuth } from "./blockchain-auth";
+import { blockchainStorage } from "./blockchain-storage";
 
 const app = express();
 app.use(express.json());
@@ -48,8 +50,15 @@ app.use((req, res, next) => {
     log('Database initialized and seeded successfully');
   } catch (error) {
     console.error('Error initializing database:', error);
-    process.exit(1);
+    log('Continuing with blockchain-based authentication and storage');
   }
+  
+  // Setup blockchain-based authentication
+  const { requireWalletAuth } = setupBlockchainAuth(app);
+  log('Blockchain-based authentication system initialized');
+  
+  // Use blockchain-based storage for the app
+  log('Blockchain-based storage system initialized');
   
   const server = await registerRoutes(app);
 

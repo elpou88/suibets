@@ -132,21 +132,38 @@ export function LiveBettingMarkets() {
   };
   
   // Fetch all live events from all sports
-  const { data: rawEvents = [], isLoading: eventsLoading, refetch } = useQuery<Event[]>({
+  const { data: rawEvents = [], isLoading: eventsLoading, error: eventsError, refetch } = useQuery<Event[]>({
     queryKey: ['/api/events'],
     queryFn: async () => {
-      // Use direct events endpoint with isLive parameter instead of the redirect
-      const response = await apiRequest('GET', '/api/events?isLive=true');
-      const data = await response.json();
-      console.log("API response for live events:", data);
-      
-      // Debug the sports IDs we're getting before classification
-      const sportIdsSet = new Set<number>();
-      data.forEach((event: Event) => {
-        sportIdsSet.add(event.sportId);
-      });
-      const sportIds = Array.from(sportIdsSet);
-      console.log("Available sport IDs in live events:", sportIds);
+      try {
+        // Use direct events endpoint with isLive parameter with timeout
+        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 10000 });
+        
+        if (!response.ok) {
+          throw new Error(`Server returned ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log("API response for live events:", data);
+        
+        // Debug the sports IDs we're getting before classification
+        const sportIdsSet = new Set<number>();
+        data.forEach((event: Event) => {
+          sportIdsSet.add(event.sportId);
+        });
+        const sportIds = Array.from(sportIdsSet);
+        console.log("Available sport IDs in live events:", sportIds);
+        
+        return data;
+      } catch (error) {
+        console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        // Return empty array on error to avoid breaking the UI
+        return [];
+      }
+    },
+    refetchInterval: 15000, // Refetch every 15 seconds
+    retry: 2, // Retry failed requests 2 times
+    retryDelay: 1000 // Wait 1 second between retries
       
       // Debug the events by sport ID before classification
       const eventsBySportId: Record<number, number> = {};

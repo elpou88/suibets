@@ -126,21 +126,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
-      // CRITICAL FIX: Special handling for cricket data (sportId 9)
-      if (reqSportId === 9) {
-        // Import cricket service here to avoid circular dependencies
-        const { cricketService } = require('./services/cricketService');
+      // Map sport IDs to names for special handling cases
+      const sportMap: Record<number, string> = {
+        1: 'football',
+        2: 'basketball',
+        3: 'tennis',
+        4: 'baseball',
+        5: 'hockey',
+        6: 'handball',
+        7: 'volleyball',
+        8: 'rugby',
+        9: 'cricket',
+        10: 'golf',
+        11: 'boxing',
+        12: 'mma-ufc',
+        13: 'formula_1', 
+        14: 'cycling',
+        15: 'american_football',
+        16: 'afl',
+        17: 'snooker',
+        18: 'darts',
+        19: 'table-tennis',
+        20: 'badminton',
+        21: 'beach-volleyball',
+        22: 'winter-sports',
+        23: 'motorsport', 
+        24: 'esports',
+        25: 'netball',
+        26: 'soccer',
+        27: 'nba',
+        28: 'nhl',
+        29: 'nfl',
+        30: 'mlb'
+      };
+      
+      // Try special sport-specific services first if relevant
+      if (reqSportId) {
+        const sportName = sportMap[reqSportId] || 'unknown';
+        console.log(`[Routes] Sport-specific handling for ${sportName} (ID: ${reqSportId})`);
         
-        // Get cricket events from dedicated service that handles cricket API issues
-        const cricketEvents = await cricketService.getEvents(isLive);
-        console.log(`[Routes] Cricket service returned ${cricketEvents.length} ${isLive ? 'live' : 'upcoming'} cricket events`);
-        
-        // If the cricket service returned events, use those
-        if (cricketEvents.length > 0) {
-          return res.json(cricketEvents);
+        try {
+          let specialEvents = null;
+          
+          // Use dedicated service based on sport ID
+          switch(reqSportId) {
+            case 9: // Cricket
+              // Import cricket service here to avoid circular dependencies
+              const { cricketService } = require('./services/cricketService');
+              specialEvents = await cricketService.getEvents(isLive);
+              console.log(`[Routes] Cricket service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 2: // Basketball
+              specialEvents = await basketballService.getBasketballGames(isLive === true);
+              console.log(`[Routes] Basketball service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 8: // Rugby
+              const { rugbyService } = require('./services/rugbyService');
+              specialEvents = isLive 
+                ? await rugbyService.getLiveGames() 
+                : await rugbyService.getUpcomingGames();
+              console.log(`[Routes] Rugby service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 4: // Baseball
+              specialEvents = await baseballService.getGames(isLive === true);
+              console.log(`[Routes] Baseball service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 11: // Boxing
+              const { boxingService } = require('./services/boxing');
+              specialEvents = await boxingService.getEvents(isLive === true);
+              console.log(`[Routes] Boxing service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 13: // Formula 1
+              specialEvents = await formula1Service.getEvents(isLive === true);
+              console.log(`[Routes] Formula 1 service returned ${specialEvents?.length || 0} events`);
+              break;
+          }
+          
+          // If special service returned events, use those
+          if (specialEvents && specialEvents.length > 0) {
+            // Ensure all events have the correct sportId
+            const fixedEvents = specialEvents.map((event: any) => ({
+              ...event,
+              sportId: reqSportId // Force correct sport ID
+            }));
+            
+            console.log(`[Routes] Using ${fixedEvents.length} events from specialized service for ${sportName}`);
+            return res.json(fixedEvents);
+          }
+          
+          console.log(`[Routes] No events from specialized service for ${sportName}, falling back to normal flow`);
+        } catch (specialServiceError) {
+          console.error(`[Routes] Error in specialized service for ${sportName}:`, specialServiceError);
+          // Continue with normal flow
         }
-        
-        console.log('[Routes] Cricket service returned no events, falling back to API');
       }
       
       // Setup a timeout to prevent requests from hanging too long

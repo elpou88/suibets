@@ -366,12 +366,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ]) as any[];
           }
         }
-      } catch (fetchError) {
+      } catch (fetchError: any) {
         console.error("Error fetching events:", fetchError);
         
         // If it's a timeout error, provide a meaningful log
-        if (fetchError.message && fetchError.message.includes('timed out')) {
+        if (fetchError?.message && typeof fetchError.message === 'string' && fetchError.message.includes('timed out')) {
           console.warn(`[Routes] Request timed out: ${fetchError.message}`);
+        }
+        
+        // If headers have already been sent, don't attempt to send a response
+        if (res.headersSent) {
+          console.warn('[Routes] Headers already sent, skipping error response');
+          return; // Exit early to prevent further response attempts
         }
         
         // Try blockchain storage after tracking service error

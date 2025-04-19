@@ -41,19 +41,25 @@ export async function apiRequest(
     let abortController: AbortController | undefined;
     let timeoutId: NodeJS.Timeout | undefined;
     
-    if (options?.timeout) {
-      abortController = new AbortController();
-      timeoutId = setTimeout(() => {
-        abortController?.abort(`Request timeout after ${options.timeout}ms`);
-      }, options.timeout);
-    }
+    // Increase default timeout for API calls to 20 seconds for events endpoints
+    const effectiveTimeout = url.includes('/api/events') ? 
+      (options?.timeout || 20000) : // Use 20 seconds for events endpoints if not specified
+      (options?.timeout || 15000);  // Use 15 seconds for other endpoints if not specified
+    
+    // Always use an AbortController with timeout to avoid hanging requests
+    abortController = new AbortController();
+    timeoutId = setTimeout(() => {
+      abortController?.abort(`Request timeout after ${effectiveTimeout}ms`);
+    }, effectiveTimeout);
+    
+    console.log(`API Request to ${url} with ${effectiveTimeout}ms timeout`);
     
     const res = await fetch(url, {
       method,
       headers: data ? { "Content-Type": "application/json" } : {},
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
-      signal: abortController?.signal,
+      signal: abortController.signal,
     });
     
     // Clear the timeout if the request completed successfully

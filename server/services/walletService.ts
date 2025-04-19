@@ -122,7 +122,7 @@ export class WalletService {
     betAmount: bigint,
     tokenType: string,
     marketId: string
-  ): Promise<Transaction> {
+  ): Promise<any> {
     try {
       // Here we would create a Sui transaction for placing a bet
       // This is a simplified example
@@ -133,11 +133,17 @@ export class WalletService {
       // 3. Add metadata about the bet (market ID, odds, etc.)
       
       // For now, we'll just return a placeholder transaction
-      const tx = new Transaction();
-      // Add appropriate transaction blocks here
+      const tx = new TransactionBlock();
+      
+      // Add a simple transfer operation as a placeholder
+      // In a real implementation, this would be a full betting transaction
+      tx.transferObjects(
+        [], // Coins to transfer would go here
+        tx.pure(walletAddress) // Recipient of the transaction
+      );
       
       return tx;
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[WalletService] Error creating bet transaction:`, error);
       throw new Error(`Failed to create bet transaction: ${error.message}`);
     }

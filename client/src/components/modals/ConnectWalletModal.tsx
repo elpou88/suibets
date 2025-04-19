@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { WALLET_TYPES } from "@/lib/utils";
-import { ChevronRight, AlertCircle, Loader2, WalletIcon } from "lucide-react";
+import { ChevronRight, AlertCircle, Loader2, WalletIcon, Info } from "lucide-react";
 import { useWalrusProtocol } from "@/hooks/useWalrusProtocol";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
@@ -11,6 +11,7 @@ import { ConnectButton } from '@suiet/wallet-kit';
 import { useWallet as useSuietWallet } from '@suiet/wallet-kit';
 import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
 import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
+import { WalletDetector } from "@/components/wallet/WalletDetector";
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -167,11 +168,19 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
+            {/* Wallet detector component */}
+            <WalletDetector />
+            
             {/* Wallet connection components */}
-            <div className="w-full rounded overflow-hidden mb-4">
+            <div className="w-full rounded overflow-hidden mt-4 mb-4">
+              <h3 className="text-sm font-medium mb-2 flex items-center text-[#00FFFF]">
+                <Info className="h-4 w-4 mr-2" />
+                Recommended Connection Method
+              </h3>
               <SuiDappKitConnect 
                 onConnect={(address) => {
                   if (connectWallet) {
+                    console.log('SuiDappKitConnect onConnect called with address:', address);
                     connectWallet(address, 'sui')
                       .then(() => {
                         toast({

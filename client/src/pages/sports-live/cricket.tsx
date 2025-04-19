@@ -110,8 +110,18 @@ export default function CricketPage() {
           if (trackedResponse.ok) {
             const responseData = await trackedResponse.json();
             
-            // Extract the tracked array from the response - response is in format { tracked: [] }
-            const trackedData = responseData.tracked || [];
+            // Extract the tracked array from the response - handle in safe way
+            let trackedData = [];
+            
+            // Check if responseData exists and contains the tracked property
+            if (responseData && typeof responseData === 'object') {
+              if (Array.isArray(responseData.tracked)) {
+                trackedData = responseData.tracked;
+              } else if (Array.isArray(responseData)) {
+                // Direct array response
+                trackedData = responseData;
+              }
+            }
             
             console.log(`Tracked events response:`,
               `Type: ${typeof trackedData},`,
@@ -120,18 +130,35 @@ export default function CricketPage() {
             );
             
             if (Array.isArray(trackedData) && trackedData.length > 0) {
-              // Filter to cricket events only
-              const cricketEvents = trackedData.filter((event: any) => Number(event.sportId) === 9);
+              // Filter to cricket events only with added safety checks
+              const cricketEvents = trackedData.filter((event: any) => 
+                event && 
+                typeof event === 'object' && 
+                Number(event.sportId) === 9
+              );
               
               console.log(`Found ${cricketEvents.length} cricket events in tracked data`);
               
-              // Then filter by live status if needed
+              // Then filter by live status if needed with added safety checks
               const filteredEvents = selectedTab === 'live'
-                ? cricketEvents.filter((event: any) => event.isLive || event.status === 'live' || event.status === 'in_play')
-                : cricketEvents.filter((event: any) => !event.isLive && event.status !== 'live' && event.status !== 'in_play');
+                ? cricketEvents.filter((event: any) => 
+                    event && 
+                    (event.isLive === true || 
+                     event.status === 'live' || 
+                     event.status === 'in_play')
+                  )
+                : cricketEvents.filter((event: any) => 
+                    event && 
+                    event.isLive !== true && 
+                    event.status !== 'live' && 
+                    event.status !== 'in_play'
+                  );
               
               console.log(`Tracked API fallback found ${filteredEvents.length} cricket events after status filtering`);
-              return filteredEvents;
+              
+              if (filteredEvents.length > 0) {
+                return filteredEvents;
+              }
             } else {
               console.warn("No valid tracked events data found or empty array returned");
             }

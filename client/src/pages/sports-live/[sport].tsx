@@ -136,8 +136,18 @@ export default function SportPage() {
               if (fallbackResponse.ok) {
                 const responseData = await fallbackResponse.json();
                 
-                // Extract the tracked array from the response
-                const trackedEvents = responseData.tracked || [];
+                // Extract the tracked array from the response - handle in safe way
+                let trackedEvents = [];
+                
+                // Check if responseData exists and contains the tracked property
+                if (responseData && typeof responseData === 'object') {
+                  if (Array.isArray(responseData.tracked)) {
+                    trackedEvents = responseData.tracked;
+                  } else if (Array.isArray(responseData)) {
+                    // Direct array response
+                    trackedEvents = responseData;
+                  }
+                }
                 
                 console.log(`Tracked events response:`, 
                   `Type: ${typeof trackedEvents}, ` +
@@ -145,10 +155,12 @@ export default function SportPage() {
                   `Length: ${Array.isArray(trackedEvents) ? trackedEvents.length : 'N/A'}`
                 );
                 
-                // Safety check to make sure trackedEvents is an array
+                // Safety check (redundant but keeping for robustness)
                 if (Array.isArray(trackedEvents)) {
                   // Filter to just get this sport's events
-                  data = trackedEvents.filter((event: any) => Number(event.sportId) === sportId);
+                  data = trackedEvents.filter((event: any) => 
+                    event && typeof event === 'object' && Number(event.sportId) === sportId
+                  );
                   console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
                 } else {
                   console.warn("Second fallback data is not an array, cannot filter");

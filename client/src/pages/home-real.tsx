@@ -180,21 +180,21 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Team names in full display - stacked to avoid squashing */}
-                      <div className="px-3 py-0.5 bg-[#112225]">
+                      <div className="px-3 py-0 bg-[#112225]">
                         <div className="grid grid-cols-1 gap-0">
-                          <div className="flex items-center justify-between">
-                            <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
+                          <div className="flex items-center justify-between h-4">
+                            <div className="text-white text-[10px] font-semibold overflow-hidden">{event.homeTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right text-[10px]">{event.score?.split(' - ')[0] || "0"}</div>
                           </div>
-                          <div className="flex items-center justify-between">
-                            <div className="text-white text-xs font-semibold">{event.awayTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[1] || "0"}</div>
+                          <div className="flex items-center justify-between h-4">
+                            <div className="text-white text-[10px] font-semibold overflow-hidden">{event.awayTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right text-[10px]">{event.score?.split(' - ')[1] || "0"}</div>
                           </div>
                         </div>
                       </div>
                       
                       {/* Betting options with better visibility and consistent sizing */}
-                      <div className="pt-0 pb-0 bg-[#112225]">
+                      <div className="p-0 m-0 bg-[#112225]">
                         <div className="flex w-full my-0">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
@@ -289,19 +289,19 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Team names with FULL visibility */}
-                              <div className="px-3 py-0.5 bg-[#112225]">
+                              <div className="px-3 py-0 bg-[#112225]">
                                 <div className="grid grid-cols-1 gap-0">
-                                  <div className="w-full">
-                                    <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
+                                  <div className="w-full h-4">
+                                    <div className="text-white text-[10px] font-semibold overflow-hidden">{event.homeTeam}</div>
                                   </div>
-                                  <div className="w-full">
-                                    <div className="text-white text-xs font-semibold">{event.awayTeam}</div>
+                                  <div className="w-full h-4">
+                                    <div className="text-white text-[10px] font-semibold overflow-hidden">{event.awayTeam}</div>
                                   </div>
                                 </div>
                               </div>
                               
                               {/* Betting options with better visibility and sizing */}
-                              <div className="pt-0 pb-0 bg-[#112225]">
+                              <div className="p-0 m-0 bg-[#112225]">
                                 <div className="flex w-full my-0">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (

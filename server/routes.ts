@@ -120,6 +120,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Events routes
   app.get("/api/events", async (req: Request, res: Response) => {
+    // Set response timeout to avoid hanging connections
+    res.setTimeout(30000, () => {
+      if (!res.headersSent) {
+        console.log('[Routes] Response timeout reached, sending empty response');
+        return res.json([]);
+      }
+    });
+    
     // Create a timeout to ensure the request doesn't hang
     const requestTimeout = setTimeout(() => {
       console.log(`[Routes] Request deadline reached for /api/events (isLive: ${req.query.isLive}, sportId: ${req.query.sportId})`);
@@ -128,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return empty array rather than error for frontend compatibility
         return res.json([]);
       }
-    }, 10000); // 10 second timeout
+    }, 20000); // 20 second timeout - increased from 10 seconds
     
     try {
       const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;
@@ -1327,13 +1335,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // IMPORTANT: Add the live events endpoint BEFORE the :id endpoint to avoid routing conflicts
   app.get("/api/events/live", async (req: Request, res: Response) => {
+    // Set response timeout to avoid hanging connections
+    res.setTimeout(30000, () => {
+      if (!res.headersSent) {
+        console.log('[Routes] Response timeout reached for /api/events/live, sending empty response');
+        return res.json({ events: [] });
+      }
+    });
+    
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       
-      // Construct the redirect URL with all query parameters
+      // Try direct fetch with the event tracking service first
+      try {
+        console.log(`[Routes] Attempting to fetch live events directly for sportId: ${sportId || 'all'}`);
+        const liveEvents = await eventTrackingService.getLiveEvents(sportId);
+        
+        if (liveEvents && liveEvents.length > 0) {
+          console.log(`[Routes] Found ${liveEvents.length} live events directly, returning them`);
+          return res.json(liveEvents);
+        }
+      } catch (directError) {
+        console.error('[Routes] Error fetching live events directly:', directError);
+      }
+      
+      // If direct fetch fails, redirect to the main events endpoint
       const redirectUrl = `/api/events?isLive=true${sportId ? `&sportId=${sportId}` : ''}`;
       
-      console.log(`Redirecting /api/events/live to ${redirectUrl}`);
+      console.log(`[Routes] No live events found directly, redirecting /api/events/live to ${redirectUrl}`);
       
       // Issue a redirect to the events endpoint with isLive=true
       return res.redirect(302, redirectUrl);

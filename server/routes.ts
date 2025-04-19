@@ -1557,8 +1557,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // New lite API endpoint for live events that returns minimal data
+  // New lite API endpoint for live events that returns minimal data with strict string output
   app.get("/api/events/live-lite", async (req: Request, res: Response) => {
+    // Force application/json content type
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     
@@ -1572,11 +1573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let responseTimeout = setTimeout(() => {
         if (!res.headersSent) {
           console.log('[Routes] Live lite events response timeout reached');
-          return res.json([]);
+          // Always send a pure string JSON representation of an array
+          res.send('[]');
         }
       }, 8000); // 8 second max response time
       
-      // Create a shorter tracking promise with timeout for lite endpoint
+      // Create a safer events collection
       let trackedEvents: any[] = [];
       
       try {
@@ -1595,6 +1597,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }, timeoutMS);
             })
           ]);
+          
+          // Verify the events are an array immediately
+          if (!Array.isArray(trackedEvents)) {
+            console.warn(`[Routes] Tracking service returned non-array: ${typeof trackedEvents}`);
+            trackedEvents = [];
+          }
         } catch (error) {
           console.warn('[Routes] Error or timeout in tracking service for lite events:', error);
           trackedEvents = [];
@@ -1625,31 +1633,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(responseTimeout);
           console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
           
-          // Force array format and make sure it's properly stringified as JSON array
+          // Force array format
           const eventsArray = Array.isArray(liteEvents) ? liteEvents : [];
-          console.log(`[Routes] Returning ${eventsArray.length} lite events (confirmed array format)`);
           
-          // Use direct string response to ensure proper array format
-          res.setHeader('Content-Type', 'application/json');
-          return res.send(JSON.stringify(eventsArray));
+          // CRITICAL: Use JSON.stringify explicitly to guarantee array string format
+          const jsonString = JSON.stringify(eventsArray);
+          
+          // Verify the string starts with '[' and ends with ']'
+          if (!jsonString.startsWith('[') || !jsonString.endsWith(']')) {
+            console.error('[Routes] JSON serialization created invalid array format, using fallback');
+            return res.send('[]');
+          }
+          
+          console.log(`[Routes] Returning ${eventsArray.length} lite events with valid JSON array format`);
+          
+          // Return the explicitly stringified array
+          return res.send(jsonString);
         } catch (mapError) {
           console.error('[Routes] Error mapping lite events:', mapError);
           clearTimeout(responseTimeout);
-          // Ensure proper array format response
-          res.setHeader('Content-Type', 'application/json');
+          // Always use direct string return to ensure array format
           return res.send('[]');
         }
       }
       
-      // If no events found, return empty array with consistent format
+      // If no events found, return empty array guaranteed
       clearTimeout(responseTimeout);
       console.log('[Routes] No lite events found, returning empty array');
-      res.setHeader('Content-Type', 'application/json');
+      // Always use direct string literal to ensure array format
       return res.send('[]');
     } catch (error) {
       console.error('Error in lite live events endpoint:', error);
       if (!res.headersSent) {
-        res.setHeader('Content-Type', 'application/json');
+        // Always use direct string literal for array format
         return res.send('[]');
       }
     }

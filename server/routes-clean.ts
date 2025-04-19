@@ -7,6 +7,13 @@ import { setupBlockchainAuth } from './blockchain-auth';
 import { footballService } from './services/football-service';
 import { basketballService } from './services/basketball-service';
 import { tennisService } from './services/tennis-service';
+import { baseballService } from './services/baseball-service';
+import { hockeyService } from './services/hockey-service';
+import { rugbyService } from './services/rugby-service';
+import { cricketService } from './services/cricket-service';
+import { mmaService } from './services/mma-service';
+import { formula1Service } from './services/formula1-service';
+import { americanFootballService } from './services/american-football-service';
 
 /**
  * Register API routes with clean separation of sport endpoints
@@ -154,6 +161,41 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return isLive 
           ? await tennisService.getLiveEvents()
           : await tennisService.getUpcomingEvents(limit);
+          
+      case 4: // Baseball
+        return isLive 
+          ? await baseballService.getLiveEvents()
+          : await baseballService.getUpcomingEvents(limit);
+          
+      case 5: // Hockey
+        return isLive 
+          ? await hockeyService.getLiveEvents()
+          : await hockeyService.getUpcomingEvents(limit);
+          
+      case 6: // Rugby
+        return isLive 
+          ? await rugbyService.getLiveEvents()
+          : await rugbyService.getUpcomingEvents(limit);
+          
+      case 9: // Cricket
+        return isLive 
+          ? await cricketService.getLiveEvents()
+          : await cricketService.getUpcomingEvents(limit);
+          
+      case 10: // MMA/UFC
+        return isLive 
+          ? await mmaService.getLiveEvents()
+          : await mmaService.getUpcomingEvents(limit);
+          
+      case 13: // Formula 1
+        return isLive 
+          ? await formula1Service.getLiveEvents()
+          : await formula1Service.getUpcomingEvents(limit);
+          
+      case 15: // American Football
+        return isLive 
+          ? await americanFootballService.getLiveEvents()
+          : await americanFootballService.getUpcomingEvents(limit);
         
       default:
         console.log(`[Routes] No service implemented for sport ID ${sportId}`);

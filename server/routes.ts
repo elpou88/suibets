@@ -1568,48 +1568,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`[Routes] Fetching lite live events for sportId: ${sportId || 'all'}`);
       
-      // Create a tracking promise with shorter timeout for lite endpoint
-      const eventsPromise = new Promise<any[]>(async (resolve) => {
-        try {
-          const events = await eventTrackingService.getLiveEvents(sportId);
-          resolve(events || []);
-        } catch (error) {
-          console.error('[Routes] Error in tracking service for lite events:', error);
-          resolve([]);
+      // Set a shorter timeout for the response to avoid hanging connections
+      let responseTimeout = setTimeout(() => {
+        if (!res.headersSent) {
+          console.log('[Routes] Live lite events response timeout reached');
+          return res.json([]);
         }
-      });
+      }, 8000); // 8 second max response time
       
-      // Create a shorter timeout promise
-      const timeoutPromise = new Promise<any[]>((resolve) => {
-        setTimeout(() => {
-          console.log('[Routes] Live lite events request timed out');
-          resolve([]);
-        }, 5000); // 5 second timeout
-      });
+      // Create a shorter tracking promise with timeout for lite endpoint
+      let trackedEvents: any[] = [];
       
-      // Race the promises
-      let liveEvents = await Promise.race([eventsPromise, timeoutPromise]);
+      try {
+        // Use a promise with timeout to get events
+        const timeoutMS = 4000; // 4 second timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMS);
+        
+        try {
+          trackedEvents = await Promise.race([
+            eventTrackingService.getLiveEvents(sportId),
+            new Promise<any[]>((_, reject) => {
+              setTimeout(() => {
+                console.log('[Routes] Tracking service request timed out, resolving with empty array');
+                reject(new Error('Timeout'));
+              }, timeoutMS);
+            })
+          ]);
+        } catch (error) {
+          console.warn('[Routes] Error or timeout in tracking service for lite events:', error);
+          trackedEvents = [];
+        } finally {
+          clearTimeout(timeoutId);
+        }
+      } catch (innerError) {
+        console.error('[Routes] Inner error in lite events endpoint:', innerError);
+        trackedEvents = [];
+      }
       
       // If we have events, create a lite version (only essential fields)
-      if (liveEvents && liveEvents.length > 0) {
+      if (trackedEvents && trackedEvents.length > 0) {
         // Create a lite version of events with only essential fields
-        const liteEvents = liveEvents.slice(0, limit).map((event: any) => ({
+        const liteEvents = trackedEvents.slice(0, limit).map((event: any) => ({
           id: event.id,
           sportId: event.sportId,
-          homeTeam: event.homeTeam,
-          awayTeam: event.awayTeam,
-          leagueName: event.leagueName,
-          eventDate: event.eventDate,
+          homeTeam: event.homeTeam || event.home || event.team1 || "Team 1",
+          awayTeam: event.awayTeam || event.away || event.team2 || "Team 2",
+          leagueName: event.leagueName || "League",
+          eventDate: event.eventDate || new Date().toISOString(),
           isLive: true,
           score: event.score || { home: 0, away: 0 },
           status: event.status || 'live'
         }));
         
+        clearTimeout(responseTimeout);
         console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
         return res.json(liteEvents);
       }
       
       // If no events found, return empty array
+      clearTimeout(responseTimeout);
       console.log('[Routes] No lite events found, returning empty array');
       return res.json([]);
     } catch (error) {

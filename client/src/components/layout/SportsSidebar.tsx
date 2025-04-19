@@ -78,19 +78,22 @@ export default function SportsSidebar() {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
   
-  // Fetch live events with more robust error handling and increased timeout
+  // Fetch live events with our optimized lite endpoint with better error handling
   const { data: liveEvents = [] } = useQuery({
-    queryKey: ['/api/events/live'],
+    queryKey: ['/api/events/live-lite'],
     queryFn: async () => {
       try {
-        // Increased timeout to 15 seconds
-        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { 
-          timeout: 15000 
+        console.log("Fetching live events from lite API for sidebar");
+        
+        // Use the new lite endpoint with a shorter timeout
+        const response = await apiRequest('GET', '/api/events/live-lite', undefined, { 
+          timeout: 8000, // Shorter timeout for lite endpoint
+          retries: 1     // Fewer retries for sidebar
         });
         
         // Handle non-OK responses
         if (!response.ok) {
-          console.warn(`Live events API returned status ${response.status}`);
+          console.warn(`Live events lite API returned status ${response.status}`);
           return [];
         }
         
@@ -99,16 +102,18 @@ export default function SportsSidebar() {
         
         // Validate response is an array
         if (!Array.isArray(data)) {
-          console.warn("Live events API did not return an array:", typeof data);
+          console.warn("Live events lite API did not return an array:", typeof data);
           return [];
         }
+        
+        console.log(`Received ${data.length} lite events for sidebar`);
         
         // Filter out malformed events
         const validEvents = data.filter(event => 
           event && 
           typeof event === 'object' && 
           (event.id || event.eventId) && 
-          (event.homeTeam || event.home || event.team1)
+          (event.homeTeam || event.awayTeam || event.home || event.team1)
         );
         
         return validEvents;
@@ -117,7 +122,7 @@ export default function SportsSidebar() {
         return [];
       }
     },
-    refetchInterval: 30000, // More frequent updates for live events
+    refetchInterval: 20000, // More frequent updates for live events
     staleTime: 10000,  // Consider data fresh for 10 seconds
     retry: 3,          // Increase retry attempts
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)

@@ -1186,46 +1186,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint to track events that have gone live - MUST be before :id endpoint
   app.get("/api/events/tracked", async (_req: Request, res: Response) => {
-    try {
-      // Get tracked events safely
-      let trackedEvents = [];
-      
+    // Set a promise timeout to avoid hanging requests
+    const TIMEOUT_MS = 3000; // 3 seconds timeout
+    
+    // Create a promise that resolves after timeout
+    const timeoutPromise = new Promise<any[]>(resolve => {
+      setTimeout(() => {
+        console.log('[Routes] Tracking service request timed out, resolving with empty array');
+        resolve([]);
+      }, TIMEOUT_MS);
+    });
+    
+    // Create the actual data fetching promise
+    const fetchTrackedEventsPromise = new Promise<any[]>(async (resolve) => {
       try {
-        trackedEvents = eventTrackingService.getTrackedEvents() || [];
+        let events = eventTrackingService.getTrackedEvents() || [];
         
-        // Ensure tracked events is an array
-        if (!Array.isArray(trackedEvents)) {
-          console.error("Tracked events is not an array:", typeof trackedEvents);
-          trackedEvents = [];
+        // Ensure events is an array
+        if (!Array.isArray(events)) {
+          console.error("Tracked events is not an array:", typeof events);
+          events = [];
         }
         
         // Validate each event object to ensure it's properly formatted
-        trackedEvents = trackedEvents.filter(event => 
+        events = events.filter(event => 
           event && 
           typeof event === 'object' && 
           (event.id || event.eventId) && 
           (event.homeTeam || event.home || event.team1)
         );
         
-        console.log(`[Routes] Returning ${trackedEvents.length} validated tracked events`);
-      } catch (trackingServiceError) {
-        console.error("Error from tracking service:", trackingServiceError);
-        // Keep trackedEvents as empty array
+        console.log(`[Routes] Got ${events.length} tracked events from service`);
+        resolve(events);
+      } catch (error) {
+        console.error("Error fetching tracked events:", error);
+        resolve([]); // Return empty array on error
       }
+    });
+    
+    try {
+      // Race the two promises - whichever resolves first wins
+      const trackedEvents = await Promise.race([
+        fetchTrackedEventsPromise,
+        timeoutPromise
+      ]);
       
-      // Even if there's an error, always return a valid response with empty array if needed
+      // Always return a valid response
       return res.json({
-        tracked: trackedEvents,
-        count: trackedEvents.length,
-        message: "Events that have transitioned from upcoming to live"
+        tracked: trackedEvents || [], // Extra safety
+        count: Array.isArray(trackedEvents) ? trackedEvents.length : 0,
+        message: "Events that have transitioned from upcoming to live",
+        source: Array.isArray(trackedEvents) && trackedEvents.length > 0 ? "tracking_service" : "timeout_fallback"
       });
     } catch (error) {
-      console.error("Error in tracked events endpoint:", error);
-      // Always return a valid response structure with an empty array on error
+      console.error("Unhandled error in tracked events endpoint:", error);
+      // Redundant safety - always return a valid response structure with an empty array
       return res.json({
         tracked: [],
         count: 0,
-        message: "Error fetching tracked events, returning empty array"
+        message: "Error fetching tracked events, returning empty array",
+        source: "error_fallback"
       });
     }
   });

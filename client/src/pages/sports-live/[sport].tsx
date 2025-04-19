@@ -187,9 +187,10 @@ export default function SportPage() {
         if (sportId === 30) targetSportIds.push(4); // MLB → Baseball
         if (sportId === 26) targetSportIds.push(1); // Soccer → Football
         
-        // Special handling for Cricket - validate data without generating fake information
-        if (sportId === 9) {
-          console.log('🏏 CRICKET PAGE - Validating event data integrity');
+        // Special handling for sports with possible data integrity issues
+        if ([9, 14].includes(sportId)) { // Cricket, Cycling
+          const sportLabel = sportId === 9 ? '🏏 CRICKET' : '🚲 CYCLING';
+          console.log(`${sportLabel} PAGE - Validating event data integrity`);
           
           // Log original data for debugging
           console.log('Original data length:', data.length);
@@ -202,35 +203,46 @@ export default function SportPage() {
             );
           }
           
-          // Filter out any invalid data entries (must have id and team names)
+          // Filter out any invalid data entries
           const validatedData = Array.isArray(data) ? data.filter(event => {
-            return event && 
-                   typeof event === 'object' && 
-                   event.id && 
-                   (event.homeTeam || event.home || event.team1) &&
-                   (event.awayTeam || event.away || event.team2);
+            return event && typeof event === 'object';
           }) : [];
           
-          console.log(`Filtered ${data.length} events to ${validatedData.length} valid cricket events`);
+          console.log(`Filtered ${data.length} events to ${validatedData.length} valid events`);
           
-          // For each valid cricket event, ensure it has the essential fields
+          // For each valid event, ensure it has the essential fields
           const normalizedData = validatedData.map(event => {
-            // Ensure each cricket event has the required properties
-            // Use existing data where available, provide fallbacks only where needed
-            return {
-              ...event,
-              id: event.id,
-              sportId: event.sportId === 9 ? 9 : 9, // Ensure correct cricket ID
-              homeTeam: event.homeTeam || event.home || event.team1,
-              awayTeam: event.awayTeam || event.away || event.team2,
-              leagueName: event.leagueName || event.league || event.competition || "Cricket",
-              date: event.date || event.startTime || new Date().toISOString(),
-              markets: event.markets || [],
-              isLive: event.isLive || selectedTab === 'live'
-            };
-          });
+            // Different sports have different properties
+            if (sportId === 9) { // Cricket
+              // Cricket events have teams
+              return {
+                ...event,
+                id: event.id,
+                sportId: 9, // Ensure correct cricket ID
+                homeTeam: event.homeTeam || event.home || event.team1 || "Team 1",
+                awayTeam: event.awayTeam || event.away || event.team2 || "Team 2",
+                leagueName: event.leagueName || event.league || event.competition || "Cricket",
+                date: event.date || event.startTime || new Date().toISOString(),
+                markets: event.markets || [],
+                isLive: event.isLive || selectedTab === 'live'
+              };
+            } else if (sportId === 14) { // Cycling
+              // Cycling events may have racers instead of teams
+              return {
+                ...event,
+                id: event.id,
+                sportId: 14, // Ensure correct cycling ID
+                homeTeam: event.homeTeam || event.racer1 || event.participant1 || event.name || "Cyclist 1",
+                awayTeam: event.awayTeam || event.racer2 || event.participant2 || "Cyclist 2",
+                leagueName: event.leagueName || event.league || event.competition || event.raceName || "Cycling",
+                date: event.date || event.startTime || new Date().toISOString(),
+                markets: event.markets || [],
+                isLive: event.isLive || selectedTab === 'live'
+              };
+            }
+          }).filter(item => item !== undefined);
           
-          console.log(`Validated ${normalizedData.length} cricket events with required fields`);
+          console.log(`Validated ${normalizedData.length} events with required fields`);
           return normalizedData;
         }
         

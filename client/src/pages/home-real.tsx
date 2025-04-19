@@ -182,13 +182,13 @@ export default function HomeReal() {
                       {/* Team names in full display - stacked to avoid squashing */}
                       <div className="px-3 py-0 bg-[#112225]">
                         <div className="grid grid-cols-1 gap-0">
-                          <div className="flex items-center justify-between h-4">
-                            <div className="text-white text-[10px] font-semibold overflow-hidden">{event.homeTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right text-[10px]">{event.score?.split(' - ')[0] || "0"}</div>
+                          <div className="flex items-center justify-between h-5">
+                            <div className="text-white text-xs font-semibold overflow-hidden">{event.homeTeam}</div>
+                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
                           </div>
-                          <div className="flex items-center justify-between h-4">
-                            <div className="text-white text-[10px] font-semibold overflow-hidden">{event.awayTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right text-[10px]">{event.score?.split(' - ')[1] || "0"}</div>
+                          <div className="flex items-center justify-between h-5">
+                            <div className="text-white text-xs font-semibold overflow-hidden">{event.awayTeam}</div>
+                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[1] || "0"}</div>
                           </div>
                         </div>
                       </div>
@@ -291,11 +291,11 @@ export default function HomeReal() {
                               {/* Team names with FULL visibility */}
                               <div className="px-3 py-0 bg-[#112225]">
                                 <div className="grid grid-cols-1 gap-0">
-                                  <div className="w-full h-4">
-                                    <div className="text-white text-[10px] font-semibold overflow-hidden">{event.homeTeam}</div>
+                                  <div className="w-full h-5">
+                                    <div className="text-white text-xs font-semibold overflow-hidden">{event.homeTeam}</div>
                                   </div>
-                                  <div className="w-full h-4">
-                                    <div className="text-white text-[10px] font-semibold overflow-hidden">{event.awayTeam}</div>
+                                  <div className="w-full h-5">
+                                    <div className="text-white text-xs font-semibold overflow-hidden">{event.awayTeam}</div>
                                   </div>
                                 </div>
                               </div>

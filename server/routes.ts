@@ -120,6 +120,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Events routes
   app.get("/api/events", async (req: Request, res: Response) => {
+    // Create a timeout to ensure the request doesn't hang
+    const requestTimeout = setTimeout(() => {
+      console.log(`[Routes] Request deadline reached for /api/events (isLive: ${req.query.isLive}, sportId: ${req.query.sportId})`);
+      // Only send a response if one hasn't been sent already
+      if (!res.headersSent) {
+        // Return empty array rather than error for frontend compatibility
+        return res.json([]);
+      }
+    }, 10000); // 10 second timeout
+    
     try {
       const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const isLive = req.query.isLive ? req.query.isLive === 'true' : undefined;
@@ -1277,6 +1287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all events if we have them
       if (events && events.length > 0) {
         console.log(`[Routes] Successfully returning ${events.length} events`);
+        clearTimeout(requestTimeout); // Clear the request timeout
         return res.json(events);
       } else {
         // If we somehow got here with no events from any source, log and return an empty array
@@ -1285,6 +1296,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     } catch (error) {
       console.error("Error fetching events:", error);
+      clearTimeout(requestTimeout); // Clear the request timeout
       return res.status(500).json({ message: "Failed to fetch events" });
     }
   });

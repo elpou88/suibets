@@ -14,11 +14,18 @@ class CyclingService {
   private trackingService: EventTrackingService;
   private apiService: ApiSportsService;
   
-  constructor() {
-    // Create new service instances
-    // Get from global when possible
-    this.trackingService = new EventTrackingService();
-    this.apiService = new ApiSportsService();
+  constructor(
+    trackingService?: EventTrackingService, 
+    apiService?: ApiSportsService
+  ) {
+    // Use provided services if available, otherwise create new instances
+    this.trackingService = trackingService || 
+                          global.eventTrackingService || 
+                          new EventTrackingService();
+    
+    this.apiService = apiService || 
+                     global.apiSportsService || 
+                     new ApiSportsService();
   }
   
   /**

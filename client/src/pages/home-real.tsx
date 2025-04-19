@@ -183,11 +183,11 @@ export default function HomeReal() {
                       <div className="px-3 py-0 bg-[#112225]">
                         <div className="grid grid-cols-1 gap-0">
                           <div className="flex items-center justify-between h-5">
-                            <div className="text-white text-xs font-semibold overflow-hidden">{event.homeTeam}</div>
+                            <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.homeTeam}</div>
                             <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
                           </div>
                           <div className="flex items-center justify-between h-5">
-                            <div className="text-white text-xs font-semibold overflow-hidden">{event.awayTeam}</div>
+                            <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.awayTeam}</div>
                             <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[1] || "0"}</div>
                           </div>
                         </div>
@@ -292,10 +292,10 @@ export default function HomeReal() {
                               <div className="px-3 py-0 bg-[#112225]">
                                 <div className="grid grid-cols-1 gap-0">
                                   <div className="w-full h-5">
-                                    <div className="text-white text-xs font-semibold overflow-hidden">{event.homeTeam}</div>
+                                    <div className="text-white text-xs font-semibold truncate max-w-[90%]">{event.homeTeam}</div>
                                   </div>
                                   <div className="w-full h-5">
-                                    <div className="text-white text-xs font-semibold overflow-hidden">{event.awayTeam}</div>
+                                    <div className="text-white text-xs font-semibold truncate max-w-[90%]">{event.awayTeam}</div>
                                   </div>
                                 </div>
                               </div>

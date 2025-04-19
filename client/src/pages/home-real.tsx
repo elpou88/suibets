@@ -180,8 +180,8 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Team names in full display - stacked to avoid squashing */}
-                      <div className="px-3 py-2 bg-[#112225]">
-                        <div className="grid grid-cols-1 gap-1">
+                      <div className="px-3 py-0.5 bg-[#112225]">
+                        <div className="grid grid-cols-1 gap-0">
                           <div className="flex items-center justify-between">
                             <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
                             <div className="text-cyan-300 ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
@@ -289,8 +289,8 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Team names with FULL visibility */}
-                              <div className="px-3 py-2 bg-[#112225]">
-                                <div className="grid grid-cols-1 gap-1">
+                              <div className="px-3 py-0.5 bg-[#112225]">
+                                <div className="grid grid-cols-1 gap-0">
                                   <div className="w-full">
                                     <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
                                   </div>

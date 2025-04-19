@@ -93,13 +93,36 @@ export default function SportPage() {
             // For certain sports that have fallback hard-coded events
             if ([9, 14].includes(sportId)) { // Cricket, Cycling - special handling
               console.warn(`Using fallback strategy for sport ID ${sportId} (${sportName})`);
-              // Use the /api/events/tracked endpoint as fallback for these sports
-              const fallbackResponse = await fetch('/api/events/tracked');
-              if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                // Filter to just get this sport's events
-                data = fallbackData.filter((event: any) => Number(event.sportId) === sportId);
-                console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+              try {
+                // Use the /api/events/tracked endpoint as fallback for these sports
+                const fallbackResponse = await fetch('/api/events/tracked');
+                if (fallbackResponse.ok) {
+                  const responseData = await fallbackResponse.json();
+                  
+                  // Extract the tracked array from the response
+                  const trackedEvents = responseData.tracked || [];
+                  
+                  console.log(`Tracked events response:`, 
+                    `Type: ${typeof trackedEvents}, ` + 
+                    `Is Array: ${Array.isArray(trackedEvents)}, ` + 
+                    `Length: ${Array.isArray(trackedEvents) ? trackedEvents.length : 'N/A'}`
+                  );
+                  
+                  // Safety check to make sure trackedEvents is an array
+                  if (Array.isArray(trackedEvents)) {
+                    // Filter to just get this sport's events
+                    data = trackedEvents.filter((event: any) => Number(event.sportId) === sportId);
+                    console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+                  } else {
+                    console.warn("Fallback data is not an array, cannot filter");
+                    // Initialize empty array to prevent filtering errors
+                    data = [];
+                  }
+                }
+              } catch (fallbackErr) {
+                console.error("Error in special fallback:", fallbackErr);
+                // Initialize empty array to prevent filtering errors 
+                data = [];
               }
             }
           }
@@ -111,13 +134,32 @@ export default function SportPage() {
             try {
               const fallbackResponse = await fetch('/api/events/tracked');
               if (fallbackResponse.ok) {
-                const fallbackData = await fallbackResponse.json();
-                // Filter to just get this sport's events
-                data = fallbackData.filter((event: any) => Number(event.sportId) === sportId);
-                console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+                const responseData = await fallbackResponse.json();
+                
+                // Extract the tracked array from the response
+                const trackedEvents = responseData.tracked || [];
+                
+                console.log(`Tracked events response:`, 
+                  `Type: ${typeof trackedEvents}, ` +
+                  `Is Array: ${Array.isArray(trackedEvents)}, ` + 
+                  `Length: ${Array.isArray(trackedEvents) ? trackedEvents.length : 'N/A'}`
+                );
+                
+                // Safety check to make sure trackedEvents is an array
+                if (Array.isArray(trackedEvents)) {
+                  // Filter to just get this sport's events
+                  data = trackedEvents.filter((event: any) => Number(event.sportId) === sportId);
+                  console.log(`Fallback found ${data.length} events for sport ID ${sportId}`);
+                } else {
+                  console.warn("Second fallback data is not an array, cannot filter");
+                  // Initialize empty array to prevent filtering errors
+                  data = [];
+                }
               }
             } catch (fallbackError) {
               console.error(`Fallback also failed: ${fallbackError}`);
+              // Initialize empty array to prevent filtering errors
+              data = [];
             }
           }
         }

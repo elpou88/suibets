@@ -413,8 +413,8 @@ function LiveBettingMarkets() {
             onClick={() => setActiveSportFilter(null)}
             className={`whitespace-nowrap ${
               activeSportFilter === null 
-                ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500' 
-                : 'border-[#1e3a3f] text-gray-300 hover:text-cyan-400 hover:border-cyan-400'
+                ? 'bg-[#00ffff] text-[#112225] hover:bg-[#00ffff]/90' 
+                : 'border-[#1e3a3f] text-gray-300 hover:text-[#00ffff] hover:border-[#00ffff]'
             }`}
           >
             All Sports ({Object.values(eventsBySport).flat().length})
@@ -428,8 +428,8 @@ function LiveBettingMarkets() {
               onClick={() => setActiveSportFilter(sport.id)}
               className={`whitespace-nowrap ${
                 activeSportFilter === sport.id 
-                  ? 'bg-cyan-400 text-[#112225] hover:bg-cyan-500' 
-                  : 'border-[#1e3a3f] text-gray-300 hover:text-cyan-400 hover:border-cyan-400'
+                  ? 'bg-[#00ffff] text-[#112225] hover:bg-[#00ffff]/90' 
+                  : 'border-[#1e3a3f] text-gray-300 hover:text-[#00ffff] hover:border-[#00ffff]'
               }`}
             >
               {sport.name} ({sport.count})

@@ -16,20 +16,20 @@ import {
   AreaChart
 } from 'lucide-react';
 
-// Sport icon mapping
+// Sport icon mapping - using #00ffff color for all icons
 const SPORT_ICONS: Record<number, JSX.Element> = {
-  1: <Zap className="mr-2 h-4 w-4 text-cyan-400" />, // Soccer/Football
-  2: <Radio className="mr-2 h-4 w-4 text-cyan-400" />, // Basketball
-  3: <AreaChart className="mr-2 h-4 w-4 text-cyan-400" />, // Tennis
-  4: <AreaChart className="mr-2 h-4 w-4 text-cyan-400" />, // Baseball
-  5: <Radio className="mr-2 h-4 w-4 text-cyan-400" />, // Hockey
-  6: <Zap className="mr-2 h-4 w-4 text-cyan-400" />, // Rugby
-  7: <AreaChart className="mr-2 h-4 w-4 text-cyan-400" />, // Golf
-  8: <Zap className="mr-2 h-4 w-4 text-cyan-400" />, // Boxing
-  9: <Radio className="mr-2 h-4 w-4 text-cyan-400" />, // Cricket
-  13: <AreaChart className="mr-2 h-4 w-4 text-cyan-400" />, // Formula 1
-  16: <Zap className="mr-2 h-4 w-4 text-cyan-400" />, // American Football
-  17: <Zap className="mr-2 h-4 w-4 text-cyan-400" />, // Rugby
+  1: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Soccer/Football
+  2: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Basketball
+  3: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Tennis
+  4: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Baseball
+  5: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Hockey
+  6: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
+  7: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Golf
+  8: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Boxing
+  9: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Cricket
+  13: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Formula 1
+  16: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // American Football
+  17: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
 };
 
 export default function SportsSidebar() {

@@ -314,18 +314,43 @@ export default function SportPage() {
         }
         
         // Filter data to ensure only events for this sport are shown
-        const filteredData = data.filter((event: any) => {
-          const eventSportId = typeof event.sportId === 'string' 
-            ? parseInt(event.sportId, 10) 
-            : event.sportId;
-          
-          // CRITICAL FIX: Log filtering for cricket
-          if (sportId === 9) {
-            console.log(`Filtering event: sportId=${eventSportId}, teams=${event.homeTeam} vs ${event.awayTeam}`);
+        // First ensure data is an array and all items are objects
+        let filteredData = [];
+        
+        try {
+          if (!Array.isArray(data)) {
+            console.error("Error: data is not an array in filtering step", data);
+            data = []; // Set to empty array to avoid errors
           }
           
-          return targetSportIds.includes(eventSportId);
-        });
+          filteredData = data.filter((event: any) => {
+            // Safety check: make sure event is an object with required properties
+            if (!event || typeof event !== 'object') {
+              console.warn('Invalid event data encountered during filtering');
+              return false;
+            }
+            
+            // Safe sportId extraction with null/undefined handling
+            const eventSportId = event.sportId !== undefined && event.sportId !== null
+              ? (typeof event.sportId === 'string' ? parseInt(event.sportId, 10) : event.sportId)
+              : -1; // Use invalid sport ID if none exists
+            
+            // Logging for specific sports (for debugging)
+            if (sportId === 9) {
+              try {
+                console.log(`Filtering cricket event: sportId=${eventSportId}, teams=${event.homeTeam || 'Unknown'} vs ${event.awayTeam || 'Unknown'}`);
+              } catch (logError) {
+                console.warn('Error logging cricket event data');
+              }
+            }
+            
+            // Check if this event's sport ID is in our target list
+            return targetSportIds.includes(eventSportId);
+          });
+        } catch (filterError) {
+          console.error('Critical error during data filtering:', filterError);
+          filteredData = []; // Reset to empty array on error
+        }
         
         console.log(`Filtered to ${filteredData.length} events for sportId: ${sportId}`);
         
@@ -346,10 +371,42 @@ export default function SportPage() {
               18: 'darts'
             };
             
-            const nameFilteredData = data.filter((event: any) => {
-              const eventTitle = `${event.homeTeam} vs ${event.awayTeam} ${event.leagueName || ''}`.toLowerCase();
-              return eventTitle.includes(sportNames[sportId as keyof typeof sportNames]);
-            });
+            // Create a safer filtering function with null checks
+            let nameFilteredData = [];
+            
+            try {
+              // Make sure data is an array before filtering
+              if (!Array.isArray(data)) {
+                console.error("Error: data is not an array in name filtering", data);
+                data = [];
+              }
+              
+              nameFilteredData = data.filter((event: any) => {
+                try {
+                  // Guard against invalid event objects
+                  if (!event || typeof event !== 'object') {
+                    return false;
+                  }
+                  
+                  // Safely build the title with null/undefined checks
+                  const homeTeam = event.homeTeam || '';
+                  const awayTeam = event.awayTeam || '';
+                  const leagueName = event.leagueName || '';
+                  
+                  const eventTitle = `${homeTeam} vs ${awayTeam} ${leagueName}`.toLowerCase();
+                  const sportKeyword = sportNames[sportId as keyof typeof sportNames];
+                  
+                  // Check if the sport name is in the event title
+                  return eventTitle.includes(sportKeyword);
+                } catch (itemError) {
+                  console.warn('Error filtering by name:', itemError);
+                  return false;
+                }
+              });
+            } catch (filterError) {
+              console.error('Error during name filtering:', filterError);
+              nameFilteredData = [];
+            }
             
             if (nameFilteredData.length > 0) {
               console.log(`Found ${nameFilteredData.length} events by name filtering for ${sportName}`);
@@ -357,9 +414,29 @@ export default function SportPage() {
             }
           }
           
-          // If all else fails, return unfiltered data
+          // If all else fails, return unfiltered data with safety checks
           console.log(`Using unfiltered data for ${sportName} as fallback`);
-          return data.slice(0, 20); // Limit to 20 events to avoid overwhelming display
+          
+          try {
+            // Make sure data is an array before slicing
+            if (!Array.isArray(data)) {
+              console.error("Error: data is not an array when using as fallback", data);
+              return []; // Return empty array if data is not valid
+            }
+            
+            // Do basic validation on each item to ensure they're valid event objects
+            const validatedData = data.filter(event => 
+              event && typeof event === 'object' && 
+              (event.id || event.eventId) && // Must have some form of ID
+              (event.homeTeam || event.home || event.team1) // Must have at least one team
+            );
+            
+            console.log(`Found ${validatedData.length} valid events in unfiltered data`);
+            return validatedData.slice(0, 20); // Limit to 20 events to avoid overwhelming display
+          } catch (error) {
+            console.error("Error processing unfiltered data:", error);
+            return []; // Return empty array on error
+          }
         }
         
         // For Tennis and other non-football sports, adapt the data structure but don't replace real API data

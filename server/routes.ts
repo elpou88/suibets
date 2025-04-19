@@ -176,6 +176,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               specialEvents = await cricketService.getEvents(isLive);
               console.log(`[Routes] Cricket service returned ${specialEvents?.length || 0} events`);
               break;
+            case 14: // Cycling
+              // Import cycling service here to avoid circular dependencies
+              const { cyclingService } = require('./services/cyclingService');
+              specialEvents = await cyclingService.getEvents(isLive);
+              console.log(`[Routes] Cycling service returned ${specialEvents?.length || 0} events`);
+              break;
             case 2: // Basketball
               specialEvents = await basketballService.getBasketballGames(isLive === true);
               console.log(`[Routes] Basketball service returned ${specialEvents?.length || 0} events`);
@@ -191,10 +197,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
               specialEvents = await baseballService.getGames(isLive === true);
               console.log(`[Routes] Baseball service returned ${specialEvents?.length || 0} events`);
               break;
+            case 5: // Hockey
+              try {
+                // First try direct API for hockey events
+                specialEvents = await apiSportsService.getLiveEvents('hockey');
+                console.log(`[Routes] Hockey API returned ${specialEvents?.length || 0} events`);
+              } catch (err) {
+                console.log(`[Routes] Hockey API failed, using fallback: ${err}`);
+                // Try to get some upcoming events as fallback
+                specialEvents = await apiSportsService.getUpcomingEvents('hockey', 20);
+              }
+              break;
+            case 6: // Handball
+              try {
+                specialEvents = await apiSportsService.getLiveEvents('handball');
+                console.log(`[Routes] Handball API returned ${specialEvents?.length || 0} events`);
+              } catch (err) {
+                console.log(`[Routes] Handball API failed: ${err}`);
+                // Try to get some upcoming events as fallback
+                specialEvents = await apiSportsService.getUpcomingEvents('handball', 20);
+              }
+              break;
+            case 7: // Volleyball
+              try {
+                specialEvents = await apiSportsService.getLiveEvents('volleyball');
+                console.log(`[Routes] Volleyball API returned ${specialEvents?.length || 0} events`);
+              } catch (err) {
+                console.log(`[Routes] Volleyball API failed: ${err}`);
+                // Try to get some upcoming events as fallback
+                specialEvents = await apiSportsService.getUpcomingEvents('volleyball', 20);
+              }
+              break;
             case 11: // Boxing
               const { boxingService } = require('./services/boxing');
               specialEvents = await boxingService.getEvents(isLive === true);
               console.log(`[Routes] Boxing service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 12: // MMA/UFC
+              try {
+                specialEvents = await apiSportsService.getEvents('mma-ufc', isLive, 20);
+                console.log(`[Routes] MMA/UFC API returned ${specialEvents?.length || 0} events`);
+              } catch (err) {
+                console.log(`[Routes] MMA/UFC API failed: ${err}`);
+              }
               break;
             case 13: // Formula 1
               specialEvents = await formula1Service.getEvents(isLive === true);

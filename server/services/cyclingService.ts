@@ -1,6 +1,12 @@
 import { EventTrackingService } from './eventTrackingService';
 import { ApiSportsService } from './apiSportsService';
 
+// Declare global type extensions
+declare global {
+  var eventTrackingService: EventTrackingService | undefined;
+  var apiSportsService: ApiSportsService | undefined;
+}
+
 /**
  * Service specifically for handling cycling events with better validation
  */
@@ -9,6 +15,8 @@ class CyclingService {
   private apiService: ApiSportsService;
   
   constructor() {
+    // Create new service instances
+    // Get from global when possible
     this.trackingService = new EventTrackingService();
     this.apiService = new ApiSportsService();
   }

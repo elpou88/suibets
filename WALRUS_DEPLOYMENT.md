@@ -55,7 +55,7 @@ DEPOSIT_RECEIVER_ADDRESS=your_deposit_receiver_address
 WITHDRAWAL_PROVIDER_ADDRESS=your_withdrawal_provider_address
 ```
 
-2. The most critical environment variable is `DATABASE_URL`, which must be properly configured for the application to connect to the database.
+2. The `DATABASE_URL` is optional. While recommended for production, the application now has a fallback mechanism to use blockchain storage if no database connection is available. This makes deployment more flexible and resilient.
 
 ## Database Setup
 
@@ -114,7 +114,7 @@ After successful deployment, verify the following:
 
 If you encounter issues during deployment:
 
-1. **Database Connection Errors**: Ensure your `DATABASE_URL` is correctly formatted and accessible from the Walrus environment.
+1. **Database Connection Errors**: If you're using a database, ensure your `DATABASE_URL` is correctly formatted and accessible from the Walrus environment. Remember that the application can run without a database by using blockchain storage as a fallback.
 
 2. **API Key Issues**: Verify that all API keys are valid and correctly entered in the `.env` file.
 

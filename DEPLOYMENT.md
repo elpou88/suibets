@@ -6,6 +6,7 @@
 - Walrus CLI
 - Sui CLI (for blockchain operations)
 - Sports API keys
+- PostgreSQL database (optional - app now has blockchain storage fallback)
 
 ## Deployment Steps
 
@@ -23,7 +24,7 @@ Copy .env.example to .env and add your API keys:
 cp .env.example .env
 ```
 
-Edit the .env file with your actual API keys.
+Edit the .env file with your actual API keys. Note that DATABASE_URL is optional - the application can run without a database connection by using blockchain storage as a fallback.
 
 ### 3. Install Dependencies
 

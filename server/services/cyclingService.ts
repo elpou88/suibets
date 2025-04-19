@@ -21,7 +21,7 @@ class CyclingService {
     // Use provided services if available, otherwise create new instances
     this.trackingService = trackingService || 
                           global.eventTrackingService || 
-                          new EventTrackingService();
+                          new EventTrackingService({});
     
     this.apiService = apiService || 
                      global.apiSportsService || 

@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Routes] Rugby service returned ${specialEvents?.length || 0} events`);
               break;
             case 4: // Baseball
-              specialEvents = await baseballService.getGames(isLive === true);
+              specialEvents = await baseballService.getBaseballGames(isLive === true);
               console.log(`[Routes] Baseball service returned ${specialEvents?.length || 0} events`);
               break;
             case 5: // Hockey
@@ -245,7 +245,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               break;
             case 12: // MMA/UFC
               try {
-                specialEvents = await apiSportsService.getEvents('mma-ufc', isLive, 20);
+                specialEvents = isLive 
+                  ? await apiSportsService.getLiveEvents('mma-ufc')
+                  : await apiSportsService.getUpcomingEvents('mma-ufc', 20);
                 console.log(`[Routes] MMA/UFC API returned ${specialEvents?.length || 0} events`);
               } catch (err) {
                 console.log(`[Routes] MMA/UFC API failed: ${err}`);

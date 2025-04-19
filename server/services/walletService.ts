@@ -108,7 +108,7 @@ export class WalletService {
         objects: objects.data,
         lastUpdated: new Date().toISOString()
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[WalletService] Error getting wallet details:`, error);
       throw new Error(`Failed to get wallet details: ${error.message}`);
     }

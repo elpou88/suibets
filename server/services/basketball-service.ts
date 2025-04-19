@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { SportEvent, MarketData as Market, OutcomeData as Outcome } from '../types/betting';
+import { SportEvent, MarketData, OutcomeData } from '../types/betting';
 
 /**
  * Service for basketball API interactions
@@ -208,7 +208,7 @@ export class BasketballService {
         }
         
         // Create markets with outcomes for betting
-        const markets: Market[] = [{
+        const markets: MarketData[] = [{
           id: `${game.id}-market-match-winner`,
           name: 'Match Result',
           outcomes: [

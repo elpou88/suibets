@@ -157,10 +157,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Get live events (shorthand for /api/events?isLive=true)
   app.get('/api/events/live', (req: Request, res: Response, next: NextFunction) => {
     req.query.isLive = 'true';
-    next();
-  }, (req: Request, res: Response) => {
-    // This will be handled by the /api/events route
-    app.handle(req, res);
+    
+    // Forward to the /api/events route logic by calling the handler directly
+    app.get('/api/events')(req, res, next);
   });
   
   // Get live events in a lite format (minimal data for faster loading)

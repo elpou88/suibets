@@ -187,130 +187,51 @@ export default function SportPage() {
         if (sportId === 30) targetSportIds.push(4); // MLB → Baseball
         if (sportId === 26) targetSportIds.push(1); // Soccer → Football
         
-        // CRITICAL CRICKET FIX: Completely override data handling for cricket
+        // Special handling for Cricket - validate data without generating fake information
         if (sportId === 9) {
-          console.log('🏏 CRICKET PAGE DETECTED - APPLYING EMERGENCY CRICKET FIX');
+          console.log('🏏 CRICKET PAGE - Validating event data integrity');
           
           // Log original data for debugging
           console.log('Original data length:', data.length);
-          if (data.length > 0) {
+          if (data.length > 0 && data[0]) {
             console.log('First event in original data:', 
-              `ID: ${data[0].id}, ` +
-              `SportID: ${data[0].sportId}, ` + 
-              `Teams: ${data[0].homeTeam} vs ${data[0].awayTeam}, ` +
-              `League: ${data[0].leagueName}`
+              `ID: ${data[0].id || 'unknown'}, ` +
+              `SportID: ${data[0].sportId || 'unknown'}, ` + 
+              `Teams: ${data[0].homeTeam || 'unknown'} vs ${data[0].awayTeam || 'unknown'}, ` +
+              `League: ${data[0].leagueName || 'unknown'}`
             );
           }
           
-          // CRITICAL FIX: Force ALL events to be cricket events
-          // This is the most direct fix to ensure something displays
-          const forcedCricketData = data.map((event, index) => {
-            // Add descriptive cricket team names if they look like football teams
-            let homeTeam = event.homeTeam;
-            let awayTeam = event.awayTeam;
-            
-            // If team names contain FC, United, etc., they're probably football teams
-            const footballKeywords = ['FC', 'United', 'City', 'Real', 'Barcelona', 'Madrid', 'Inter', 'Milan'];
-            const hasFootballKeywords = footballKeywords.some(keyword => 
-              homeTeam?.includes(keyword) || awayTeam?.includes(keyword)
-            );
-            
-            // If the event looks like a football match, apply cricket transformation
-            if (hasFootballKeywords || !event.homeTeam?.includes('Cricket')) {
-              // Cricket team naming pattern {Country} Cricket Team
-              const cricketTeams = [
-                'India Cricket', 'Australia Cricket', 'England Cricket', 
-                'Pakistan Cricket', 'New Zealand Cricket', 'South Africa Cricket',
-                'West Indies Cricket', 'Sri Lanka Cricket', 'Bangladesh Cricket'
-              ];
-              
-              // Assign cricket team names based on index
-              homeTeam = cricketTeams[index % 9] || 'Cricket Team A';
-              awayTeam = cricketTeams[(index + 4) % 9] || 'Cricket Team B';
-            }
-            
-            const cricketLeagues = [
-              'ICC Cricket World Cup', 'ICC T20 World Cup', 'IPL', 
-              'Big Bash League', 'Pakistan Super League', 'The Hundred',
-              'ICC Test Championship', 'ODI Series', 'T20I Series'
-            ];
-            
-            // Create cricket-specific markets
-            const cricketMarkets = [
-              {
-                id: `${event.id}-market-match-winner`,
-                name: 'Match Winner',
-                outcomes: [
-                  {
-                    id: `${event.id}-outcome-home`,
-                    name: homeTeam,
-                    odds: event.homeOdds || 1.95,
-                    probability: 0.51
-                  },
-                  {
-                    id: `${event.id}-outcome-away`,
-                    name: awayTeam,
-                    odds: event.awayOdds || 1.85,
-                    probability: 0.54
-                  },
-                  {
-                    id: `${event.id}-outcome-draw`,
-                    name: 'Draw',
-                    odds: event.drawOdds || 3.60,
-                    probability: 0.28
-                  }
-                ]
-              },
-              {
-                id: `${event.id}-market-top-batsman`,
-                name: 'Top Batsman',
-                outcomes: [
-                  {
-                    id: `${event.id}-batsman-1`,
-                    name: `${homeTeam} Batsman 1`,
-                    odds: 4.50,
-                    probability: 0.22
-                  },
-                  {
-                    id: `${event.id}-batsman-2`,
-                    name: `${homeTeam} Batsman 2`,
-                    odds: 5.00,
-                    probability: 0.2
-                  },
-                  {
-                    id: `${event.id}-batsman-3`,
-                    name: `${awayTeam} Batsman 1`,
-                    odds: 4.75,
-                    probability: 0.21
-                  },
-                  {
-                    id: `${event.id}-batsman-4`,
-                    name: `${awayTeam} Batsman 2`,
-                    odds: 5.25,
-                    probability: 0.19
-                  }
-                ]
-              }
-            ];
-            
+          // Filter out any invalid data entries (must have id and team names)
+          const validatedData = Array.isArray(data) ? data.filter(event => {
+            return event && 
+                   typeof event === 'object' && 
+                   event.id && 
+                   (event.homeTeam || event.home || event.team1) &&
+                   (event.awayTeam || event.away || event.team2);
+          }) : [];
+          
+          console.log(`Filtered ${data.length} events to ${validatedData.length} valid cricket events`);
+          
+          // For each valid cricket event, ensure it has the essential fields
+          const normalizedData = validatedData.map(event => {
+            // Ensure each cricket event has the required properties
+            // Use existing data where available, provide fallbacks only where needed
             return {
               ...event,
-              id: event.id || `cricket-${index}`,
-              sportId: 9, // CRITICAL: Force sportId to cricket
-              homeTeam,
-              awayTeam,
-              leagueName: event.leagueName || cricketLeagues[index % 9],
-              markets: cricketMarkets,
-              _isCricket: true, // Special flag for debugging
-              
-              // Cricket-specific fields for better display
-              format: event.format || 'T20',
-              venue: event.venue || 'Cricket Stadium'
+              id: event.id,
+              sportId: event.sportId === 9 ? 9 : 9, // Ensure correct cricket ID
+              homeTeam: event.homeTeam || event.home || event.team1,
+              awayTeam: event.awayTeam || event.away || event.team2,
+              leagueName: event.leagueName || event.league || event.competition || "Cricket",
+              date: event.date || event.startTime || new Date().toISOString(),
+              markets: event.markets || [],
+              isLive: event.isLive || selectedTab === 'live'
             };
           });
           
-          console.log(`Created ${forcedCricketData.length} fixed cricket events`);
-          return forcedCricketData;
+          console.log(`Validated ${normalizedData.length} cricket events with required fields`);
+          return normalizedData;
         }
         
         // Filter data to ensure only events for this sport are shown

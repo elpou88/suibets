@@ -1559,34 +1559,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // New lite API endpoint for live events that returns minimal data with strict string output
   app.get("/api/events/live-lite", async (req: Request, res: Response) => {
-    // Force application/json content type
+    // CRITICAL: Force application/json content type and ensure no caching
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     
-    // CRITICAL: We're double-checking we're sending a pure array at all response points
+    // CRITICAL: Set a hard timeout for the entire request
+    let requestTimeout = setTimeout(() => {
+      if (!res.headersSent) {
+        console.log('[Routes] HARD TIMEOUT: Live lite events response timeout reached');
+        return res.end('[]');
+      }
+    }, 8000); // 8 second absolute max response time
+    
+    // Main try/catch to ensure we always return JSON array
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const limit = req.query.limit ? Math.min(Number(req.query.limit), 1000) : 200;
       
+      console.log(`[Routes] Fetching details for event ID: ${req.params.id || 'live-lite'}`);
       console.log(`[Routes] Fetching lite live events for sportId: ${sportId || 'all'}`);
       
-      // Set a shorter timeout for the response to avoid hanging connections
-      let responseTimeout = setTimeout(() => {
-        if (!res.headersSent) {
-          console.log('[Routes] Live lite events response timeout reached');
-          // Always send a pure string JSON representation of an empty array
-          res.end('[]');
-        }
-      }, 8000); // 8 second max response time
-      
-      // Create a safer events collection
+      // Create a safer events collection initialized as empty array
       let trackedEvents: any[] = [];
       
       try {
-        // Use a promise with timeout to get events
-        const timeoutMS = 4000; // 4 second timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMS);
+        console.log('[Routes] Attempting to fetch event from tracking service');
+        
+        // Use a promise race with shorter timeout to get events
+        const timeoutMS = 4000; // 4 second timeout for tracking service
         
         try {
           trackedEvents = await Promise.race([
@@ -1594,12 +1594,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             new Promise<any[]>((_, reject) => {
               setTimeout(() => {
                 console.log('[Routes] Tracking service request timed out, resolving with empty array');
-                reject(new Error('Timeout'));
+                reject(new Error('Tracking service timeout'));
               }, timeoutMS);
             })
           ]);
           
-          // Verify the events are an array immediately
+          // Double verify the events are an array immediately
           if (!Array.isArray(trackedEvents)) {
             console.warn(`[Routes] Tracking service returned non-array: ${typeof trackedEvents}`);
             trackedEvents = [];
@@ -1607,32 +1607,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.warn('[Routes] Error or timeout in tracking service for lite events:', error);
           trackedEvents = [];
-        } finally {
-          clearTimeout(timeoutId);
         }
       } catch (innerError) {
         console.error('[Routes] Inner error in lite events endpoint:', innerError);
         trackedEvents = [];
       }
       
-      // If we have events, create a lite version (only essential fields)
+      // Process events if we have any
       if (Array.isArray(trackedEvents) && trackedEvents.length > 0) {
         try {
-          // Create a lite version of events with only essential fields
-          const liteEvents = trackedEvents.slice(0, limit).map((event: any) => ({
-            id: event.id,
-            sportId: event.sportId,
-            homeTeam: event.homeTeam || event.home || event.team1 || "Team 1",
-            awayTeam: event.awayTeam || event.away || event.team2 || "Team 2",
-            leagueName: event.leagueName || "League",
-            eventDate: event.eventDate || new Date().toISOString(),
-            isLive: true,
-            score: event.score || { home: 0, away: 0 },
-            status: event.status || 'live'
-          }));
-          
-          clearTimeout(responseTimeout);
-          console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
+          // Create a lite version of events with only essential fields 
+          // and normalize the data to handle various formats
+          const liteEvents = trackedEvents.slice(0, limit).map((event: any) => {
+            // Ensure essential properties exist with fallbacks
+            const processedEvent = {
+              id: event.id || event.eventId || `event-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+              sportId: Number(event.sportId) || 1,
+              homeTeam: event.homeTeam || event.home || event.team1 || "Team A",
+              awayTeam: event.awayTeam || event.away || event.team2 || "Team B",
+              leagueName: event.leagueName || event.league?.name || "League",
+              eventDate: event.eventDate || event.date || new Date().toISOString(),
+              isLive: true,
+              score: event.score || "0 - 0",
+              status: event.status || 'live',
+              markets: Array.isArray(event.markets) ? event.markets.slice(0, 3) : []
+            };
+            
+            return processedEvent;
+          });
           
           // Guarantee we're working with a valid array
           const eventsArray = Array.isArray(liteEvents) ? liteEvents : [];
@@ -1644,34 +1646,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Verify the string starts with '[' and ends with ']'
             if (!jsonString.startsWith('[') || !jsonString.endsWith(']')) {
               console.error('[Routes] JSON serialization created invalid array format, using fallback');
+              clearTimeout(requestTimeout);
               return res.end('[]');
             }
             
             console.log(`[Routes] Returning ${eventsArray.length} lite events with valid JSON array format`);
             
-            // Return the explicitly stringified array
+            // All checks passed, clear timeout and return the explicitly stringified array
+            clearTimeout(requestTimeout);
             return res.end(jsonString);
           } catch (jsonError) {
             console.error('[Routes] JSON stringify error:', jsonError);
+            clearTimeout(requestTimeout);
             return res.end('[]');
           }
         } catch (mapError) {
           console.error('[Routes] Error mapping lite events:', mapError);
-          clearTimeout(responseTimeout);
-          // Always use direct string return to ensure array format
+          clearTimeout(requestTimeout);
           return res.end('[]');
         }
       }
       
-      // If no events found, return empty array guaranteed
-      clearTimeout(responseTimeout);
+      // If no events found or any processing error, return empty array guaranteed
       console.log('[Routes] No lite events found, returning empty array');
-      // Always use direct string literal to ensure array format
+      clearTimeout(requestTimeout);
       return res.end('[]');
     } catch (error) {
-      console.error('Error in lite live events endpoint:', error);
+      console.error('[Routes] Error in lite live events endpoint:', error);
+      clearTimeout(requestTimeout);
       if (!res.headersSent) {
-        // Always use direct string literal for array format
         return res.end('[]');
       }
     }

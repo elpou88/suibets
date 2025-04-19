@@ -1277,6 +1277,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Clear the request timeout as we have processed the data
+      clearTimeout(requestTimeout);
+      
       if (allEvents.length > 0) {
         console.log(`Found a total of ${allEvents.length} live events from all sports combined`);
         return res.json(allEvents);
@@ -1287,7 +1290,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all events if we have them
       if (events && events.length > 0) {
         console.log(`[Routes] Successfully returning ${events.length} events`);
-        clearTimeout(requestTimeout); // Clear the request timeout
         return res.json(events);
       } else {
         // If we somehow got here with no events from any source, log and return an empty array

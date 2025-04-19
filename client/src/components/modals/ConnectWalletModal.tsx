@@ -12,6 +12,7 @@ import { useWallet as useSuietWallet } from '@suiet/wallet-kit';
 import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
 import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
 import { WalletDetector } from "@/components/wallet/WalletDetector";
+import { MystenWalletConnect } from "@/components/wallet/MystenWalletConnect";
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -175,7 +176,34 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
             <div className="w-full rounded overflow-hidden mt-4 mb-4">
               <h3 className="text-sm font-medium mb-2 flex items-center text-[#00FFFF]">
                 <Info className="h-4 w-4 mr-2" />
-                Recommended Connection Method
+                Connect with Mysten Wallet Kit
+              </h3>
+              <MystenWalletConnect 
+                onConnect={(address) => {
+                  if (connectWallet) {
+                    console.log('MystenWalletConnect onConnect called with address:', address);
+                    connectWallet(address, 'sui')
+                      .then(() => {
+                        toast({
+                          title: "Wallet Connected",
+                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
+                        });
+                        onClose();
+                      })
+                      .catch((error) => {
+                        console.error('Error syncing wallet with auth:', error);
+                      });
+                  }
+                }}
+              />
+            </div>
+            
+            <div className="w-full text-center text-sm text-gray-400 my-2">- or use alternative connection methods -</div>
+            
+            <div className="w-full rounded overflow-hidden mb-2">
+              <h3 className="text-sm font-medium mb-2 flex items-center text-gray-300">
+                <Info className="h-4 w-4 mr-2" />
+                SuiDappKit Connect
               </h3>
               <SuiDappKitConnect 
                 onConnect={(address) => {
@@ -197,9 +225,11 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               />
             </div>
             
-            <div className="w-full text-center text-sm text-gray-400 my-2">- or use Suiet wallet -</div>
-            
-            <div className="w-full rounded overflow-hidden mb-4">
+            <div className="w-full rounded overflow-hidden mb-4 mt-3">
+              <h3 className="text-sm font-medium mb-2 flex items-center text-gray-300">
+                <Info className="h-4 w-4 mr-2" />
+                Suiet Wallet
+              </h3>
               <SuietWalletConnect 
                 onConnect={(address) => {
                   if (connectWallet) {

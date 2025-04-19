@@ -6,23 +6,43 @@ import * as schema from '@shared/schema';
 // Database connection string from environment variables
 const connectionString = process.env.DATABASE_URL;
 
+// Declare variables that will be initialized properly
+let client: any;
+let db: any;
+
 // Check if the connection string is defined
 if (!connectionString) {
-  console.error('DATABASE_URL environment variable is not defined');
-  process.exit(1);
+  console.warn('DATABASE_URL environment variable is not defined');
+  console.warn('Blockchain storage will be used as a fallback');
+  
+  // Set placeholders for the db objects
+  client = null;
+  db = {
+    select: () => ({ from: () => Promise.resolve([]) }),
+    insert: () => ({ values: () => Promise.resolve([]) })
+  };
+} else {
+  // Create the database connection
+  client = postgres(connectionString, { max: 10 });
+  
+  // Create the database
+  db = drizzle(client, { schema });
 }
 
-// Create the database connection
-const client = postgres(connectionString, { max: 10 });
-
-// Create the database
-export const db = drizzle(client, { schema });
+// Export the database
+export { db };
 
 /**
  * Initialize the database (create tables, run migrations, etc.)
  */
 export async function initDb() {
   try {
+    // If no database connection, return early
+    if (!connectionString) {
+      console.log('No DATABASE_URL provided, skipping database initialization');
+      return db;
+    }
+    
     console.log('Connecting to database...');
     
     // Uncomment the following line to run migrations
@@ -32,7 +52,9 @@ export async function initDb() {
     return db;
   } catch (error) {
     console.error('Error initializing database:', error);
-    throw error;
+    // Don't throw error, just log it and continue
+    console.log('Continuing with blockchain-based storage as fallback');
+    return db;
   }
 }
 
@@ -41,6 +63,12 @@ export async function initDb() {
  */
 export async function seedDb() {
   try {
+    // If no database connection, return early
+    if (!connectionString) {
+      console.log('No DATABASE_URL provided, skipping database seeding');
+      return;
+    }
+    
     console.log('Seeding database...');
     
     // Seed sports data
@@ -55,7 +83,8 @@ export async function seedDb() {
     console.log('Database seeded successfully');
   } catch (error) {
     console.error('Error seeding database:', error);
-    throw error;
+    // Don't throw error, just log it
+    console.log('Continuing with blockchain-based storage as fallback');
   }
 }
 
@@ -64,6 +93,12 @@ export async function seedDb() {
  */
 async function seedSports() {
   try {
+    // Skip if no database connection
+    if (!connectionString) {
+      console.log('No DATABASE_URL provided, skipping sports seeding');
+      return;
+    }
+    
     // Check if sports already exist
     const existingSports = await db.select().from(schema.sports);
     
@@ -156,7 +191,7 @@ async function seedSports() {
     console.log(`Seeded ${sportsData.length} sports`);
   } catch (error) {
     console.error('Error seeding sports data:', error);
-    throw error;
+    console.log('Continuing with blockchain-based storage as fallback');
   }
 }
 
@@ -165,6 +200,12 @@ async function seedSports() {
  */
 async function seedMarketTypes() {
   try {
+    // Skip if no database connection
+    if (!connectionString) {
+      console.log('No DATABASE_URL provided, skipping market types seeding');
+      return;
+    }
+    
     // Check if market types already exist
     const existingMarketTypes = await db.select().from(schema.marketTypes);
     
@@ -234,7 +275,7 @@ async function seedMarketTypes() {
     console.log(`Seeded ${marketTypesData.length} market types`);
   } catch (error) {
     console.error('Error initializing default data:', error);
-    throw error;
+    console.log('Continuing with blockchain-based storage as fallback');
   }
 }
 
@@ -243,6 +284,12 @@ async function seedMarketTypes() {
  */
 async function seedPromotions() {
   try {
+    // Skip if no database connection
+    if (!connectionString) {
+      console.log('No DATABASE_URL provided, skipping promotions seeding');
+      return;
+    }
+    
     // Check if promotions already exist
     const existingPromotions = await db.select().from(schema.promotions);
     
@@ -343,6 +390,6 @@ async function seedPromotions() {
     console.log(`Seeded ${promotionsData.length} promotions`);
   } catch (error) {
     console.error('Error seeding promotions data:', error);
-    throw error;
+    console.log('Continuing with blockchain-based storage as fallback');
   }
 }

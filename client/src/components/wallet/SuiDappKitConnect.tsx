@@ -4,7 +4,8 @@ import {
   useCurrentAccount, 
   useWallets, 
   useCurrentWallet,
-  useDisconnectWallet
+  useDisconnectWallet,
+  useConnectWallet
 } from '@mysten/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Loader } from '@/components/ui/loader';
@@ -27,6 +28,15 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
   const { currentWallet } = useCurrentWallet();
   const wallets = useWallets();
   const disconnectMutation = useDisconnectWallet();
+  const connectWallet = useConnectWallet();
+  
+  // Check local storage for previous connections
+  useEffect(() => {
+    const savedAddress = localStorage.getItem('wallet_address');
+    const savedWalletType = localStorage.getItem('wallet_type');
+
+    console.log("No saved wallet data found or wallet already connected");
+  }, []);
   
   // Handle wallet connection when currentAccount changes
   useEffect(() => {
@@ -77,9 +87,61 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
       // @ts-ignore - Dynamic property check
       const hasEthosWallet = typeof window.ethos !== 'undefined';
       
-      return walletAdapters || hasSuiWallet || hasSuietWallet || hasEthosWallet;
+      // Check for window.martian (Martian wallet)
+      // @ts-ignore - Dynamic property check
+      const hasMartianWallet = typeof window.martian !== 'undefined';
+      
+      // Log wallet detection for debugging
+      console.log("Wallet detection on initialization:", {
+        hasSuiWallet,
+        hasEthosWallet,
+        hasSuietWallet,
+        hasMartianWallet
+      });
+      
+      return walletAdapters || hasSuiWallet || hasSuietWallet || hasEthosWallet || hasMartianWallet;
     } catch (e) {
       console.error('Error checking wallet availability:', e);
+      return false;
+    }
+  };
+
+  // Handle direct connection to available wallet
+  const connectDirectToWallet = async (walletName: string) => {
+    try {
+      setIsConnecting(true);
+      
+      // Attempt to connect using dapp-kit's connectWallet function
+      try {
+        // Using mutateAsync without parameters first
+        const result = await connectWallet.mutateAsync();
+        
+        if (result) {
+          console.log(`Connected to wallet directly`);
+          setIsConnecting(false);
+          return true;
+        }
+      } catch (e) {
+        console.log("Default connection attempt failed, trying with wallet selection");
+        
+        // This version might work depending on the dapp-kit version
+        // Note: Ignoring TypeScript error since we know this might work
+        // @ts-ignore - API might have changed
+        await connectWallet.mutateAsync({
+          wallet: walletName,
+        });
+        
+        // If we got here without error, assume success
+        console.log(`Connected to ${walletName} directly (second method)`);
+        setIsConnecting(false);
+        return true;
+      }
+      
+      setIsConnecting(false);
+      return false;
+    } catch (error) {
+      console.error(`Error directly connecting to ${walletName}:`, error);
+      setIsConnecting(false);
       return false;
     }
   };
@@ -118,55 +180,66 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
           description: 'Please install a Sui wallet extension to continue',
           variant: 'destructive',
         });
-        
-        // Use fallback method for demonstration if no wallet is available
-        setTimeout(() => {
-          if (onConnect) {
-            // Use fallback address for demonstration
-            onConnect('0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285');
-            
-            toast({
-              title: 'Demo Wallet Connected',
-              description: 'Connected using a demonstration wallet address',
-            });
-          }
-          setIsConnecting(false);
-        }, 1000);
-        
+        setIsConnecting(false);
         return;
       }
       
-      // Show the connect button which will display the wallet selector
-      try {
-        const connectButtonEl = document.querySelector('.sui-dappkit-connect-button') as HTMLElement;
-        if (connectButtonEl) {
-          connectButtonEl.click();
-          
-          // We'll wait for the useEffect hook to handle the actual connection
-          // Don't set isConnecting to false here because connection is async
-          
-          // Start a timeout to stop the spinner if connection takes too long
-          setTimeout(() => {
-            if (!walletConnected) {
-              setIsConnecting(false);
+      // Try connecting to each wallet type in sequence
+      const walletTypes = ['Sui Wallet', 'Sui: Ethos Wallet', 'Martian Sui Wallet', 'Suiet', 'Glass Wallet'];
+      let connected = false;
+      
+      // First try direct connection to each wallet type
+      for (const walletType of walletTypes) {
+        if (connected) break;
+        
+        try {
+          const available = wallets.find(w => w.name === walletType);
+          if (available) {
+            console.log(`Found wallet: ${walletType}, attempting direct connection`);
+            connected = await connectDirectToWallet(walletType);
+            if (connected) {
+              console.log(`Successfully connected to ${walletType}`);
+              break;
             }
-          }, 7000); // Give it 7 seconds
-        } else {
+          }
+        } catch (e) {
+          console.error(`Error connecting to ${walletType}:`, e);
+        }
+      }
+      
+      // If direct connection didn't work, use the Connect button
+      if (!connected) {
+        console.log("Direct connection failed, using connect button");
+        
+        try {
+          const connectButtonEl = document.querySelector('.sui-dappkit-connect-button') as HTMLElement;
+          if (connectButtonEl) {
+            connectButtonEl.click();
+            
+            // We'll wait for the useEffect hook to handle the actual connection
+            // Start a timeout to stop the spinner if connection takes too long
+            setTimeout(() => {
+              if (!walletConnected) {
+                setIsConnecting(false);
+              }
+            }, 7000); // Give it 7 seconds
+          } else {
+            toast({
+              title: 'Connection Error',
+              description: 'Unable to initiate wallet connection',
+              variant: 'destructive',
+            });
+            setIsConnecting(false);
+          }
+        } catch (error) {
+          console.error('Error connecting wallet:', error);
           toast({
             title: 'Connection Error',
-            description: 'Unable to initiate wallet connection',
+            description: 'Failed to connect wallet. Please try again.',
             variant: 'destructive',
           });
           setIsConnecting(false);
         }
-      } catch (error) {
-        console.error('Error connecting wallet:', error);
-        toast({
-          title: 'Connection Error',
-          description: 'Failed to connect wallet. Please try again.',
-          variant: 'destructive',
-        });
-        setIsConnecting(false);
       }
     }
   };

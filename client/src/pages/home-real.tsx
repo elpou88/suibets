@@ -194,8 +194,8 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Betting options with better visibility and consistent sizing */}
-                      <div className="p-0 bg-[#112225]">
-                        <div className="flex w-full">
+                      <div className="pt-0 pb-0 bg-[#112225]">
+                        <div className="flex w-full my-0">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
                             <BettingButton
@@ -301,8 +301,8 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Betting options with better visibility and sizing */}
-                              <div className="p-0 bg-[#112225]">
-                                <div className="flex w-full">
+                              <div className="pt-0 pb-0 bg-[#112225]">
+                                <div className="flex w-full my-0">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
                                     <BettingButton

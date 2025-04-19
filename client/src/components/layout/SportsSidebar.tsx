@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -115,35 +115,45 @@ export default function SportsSidebar() {
   });
 
   // Calculate event counts by sport
+  // Use a simpler method to update counts only when the data has changed significantly
+  // to prevent render loops
   useEffect(() => {
-    // Only update if all data is available to prevent unnecessary renders
-    if (!sports || !liveEvents || !upcomingEvents) return;
+    // Skip if there's no data yet
+    if (!sports.length || (!liveEvents.length && !upcomingEvents.length)) return;
     
+    // Use the current lengths to see if we need to update
+    const sportCount = sports.length;
+    const liveCount = liveEvents.length;
+    const upcomingCount = upcomingEvents.length;
+    
+    // Build the counts dictionary
     const counts: Record<number, { live: number, upcoming: number }> = {};
-
-    // Initialize counts for all sports
+    
+    // Initialize all sports with zero counts
     sports.forEach((sport: any) => {
       counts[sport.id] = { live: 0, upcoming: 0 };
     });
-
-    // Count live events
+    
+    // Count live events by sport ID
     liveEvents.forEach((event: any) => {
       if (event.sportId && counts[event.sportId]) {
-        counts[event.sportId].live++;
+        counts[event.sportId].live += 1;
       }
     });
-
-    // Count upcoming events
+    
+    // Count upcoming events by sport ID
     upcomingEvents.forEach((event: any) => {
       if (event.sportId && counts[event.sportId]) {
-        counts[event.sportId].upcoming++;
+        counts[event.sportId].upcoming += 1;
       }
     });
-
+    
+    // Update the state with the new counts
     setSportEventCounts(counts);
-  }, [sports, liveEvents, upcomingEvents]);
+    
+  }, [sports.length, liveEvents.length, upcomingEvents.length]);
 
-  // Remove the useEffect completely to prevent any infinite loops or update issues
+  // Now we've fixed the update loop by using array lengths as dependencies
   
   // Map correct sportId to slug - fixed mapping to match sports-live/[sport].tsx
   const getSportIdForSlug = (slug: string): number => {

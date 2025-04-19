@@ -64,11 +64,39 @@ import Layout from "@/components/layout/Layout";
 function App() {
   console.log("Starting React application");
   
+  // Log wallet detection on app start
+  useEffect(() => {
+    console.log("Checking for installed wallets...");
+    
+    // Check for wallet-standard support
+    // @ts-ignore - Checking global object
+    const hasWalletStandard = typeof window.walletStandard !== 'undefined';
+    // @ts-ignore - Checking global object
+    const hasSuiWallet = typeof window.suiWallet !== 'undefined';
+    // @ts-ignore - Checking global object
+    const hasEthosWallet = typeof window.ethos !== 'undefined';
+    // @ts-ignore - Checking global object
+    const hasSuietWallet = typeof window.suiet !== 'undefined';
+    // @ts-ignore - Checking global object
+    const hasMartianWallet = typeof window.martian !== 'undefined';
+    
+    console.log("Wallet detection:", {
+      walletStandard: hasWalletStandard,
+      suiWallet: hasSuiWallet,
+      ethosWallet: hasEthosWallet,
+      suietWallet: hasSuietWallet,
+      martianWallet: hasMartianWallet
+    });
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
+        {/* Order matters - SuiDappKitProvider must be the outermost wallet provider */}
         <SuiDappKitProvider>
+          {/* SuietWalletProvider as a fallback for Suiet wallet compatibility */}
           <SuietWalletProvider>
+            {/* Other application providers */}
             <WalProvider>
               <WalrusProtocolProvider>
                 <BlockchainAuthProvider>

@@ -110,37 +110,135 @@ export const SuiDappKitConnect: React.FC<SuiDappKitConnectProps> = ({ onConnect 
   const connectDirectToWallet = async (walletName: string) => {
     try {
       setIsConnecting(true);
+      console.log(`Attempting to connect directly to ${walletName}`);
       
-      // Attempt to connect using dapp-kit's connectWallet function
+      // First try direct connection to the wallet
       try {
-        // Using mutateAsync without parameters first
-        const result = await connectWallet.mutateAsync();
+        console.log('Attempting to connect using dapp-kit...');
         
-        if (result) {
-          console.log(`Connected to wallet directly`);
-          setIsConnecting(false);
-          return true;
+        // Check if we have any wallets in the list
+        if (wallets && wallets.length > 0) {
+          // See if we can find a matching wallet by name
+          const matchingWallets = wallets.filter(w => 
+            w.name.toLowerCase().includes(walletName.toLowerCase())
+          );
+          
+          if (matchingWallets.length > 0) {
+            console.log(`Found ${matchingWallets.length} matching wallet adapters`);
+            
+            // Try to connect to the first matching wallet
+            try {
+              // Using the proper wallet argument format
+              await connectWallet.mutateAsync({ 
+                wallet: matchingWallets[0]
+              });
+              console.log(`Connection to ${matchingWallets[0].name} successful`);
+              return true;
+            } catch (connErr) {
+              console.error(`Error connecting to ${matchingWallets[0].name}:`, connErr);
+            }
+          } else {
+            console.log('No exact matching wallet found, trying first available wallet');
+            
+            // Try to connect to any available wallet as fallback
+            try {
+              await connectWallet.mutateAsync({
+                wallet: wallets[0]
+              });
+              console.log(`Connection to ${wallets[0].name} successful`);
+              return true;
+            } catch (connErr) {
+              console.error(`Error connecting to ${wallets[0].name}:`, connErr);
+            }
+          }
+        } else {
+          console.log('No wallet adapters found via wallet standard');
         }
+        
+        // If we get here, standard dapp-kit connection failed
+        console.log('Standard dapp-kit connection methods failed, trying alternatives');
       } catch (e) {
-        console.log("Default connection attempt failed, trying with wallet selection");
+        console.log(`Standard connection method failed: ${e}`);
         
-        // This version might work depending on the dapp-kit version
-        // Note: Ignoring TypeScript error since we know this might work
-        // @ts-ignore - API might have changed
-        await connectWallet.mutateAsync({
-          wallet: walletName,
-        });
-        
-        // If we got here without error, assume success
-        console.log(`Connected to ${walletName} directly (second method)`);
-        setIsConnecting(false);
-        return true;
+        // Try alternative connection methods based on wallet type
+        if (walletName.toLowerCase().includes('sui wallet')) {
+          try {
+            // @ts-ignore - Accessing window.suiWallet
+            if (typeof window.suiWallet !== 'undefined') {
+              // @ts-ignore - Using Sui Wallet API
+              const accounts = await window.suiWallet.requestPermissions();
+              console.log('Legacy Sui wallet connection result:', accounts);
+              
+              if (accounts && accounts.length > 0) {
+                console.log('Connected via legacy Sui wallet API');
+                return true;
+              }
+            }
+          } catch (err) {
+            console.error('Error using legacy Sui wallet method:', err);
+          }
+        } else if (walletName.toLowerCase().includes('ethos')) {
+          try {
+            // @ts-ignore - Accessing window.ethos
+            if (typeof window.ethos !== 'undefined') {
+              // @ts-ignore - Using Ethos API
+              const response = await window.ethos.connect();
+              console.log('Ethos wallet connection result:', response);
+              
+              if (response && response.address) {
+                // Update app connection state manually
+                await updateConnectionState(response.address, 'sui');
+                console.log('Connected via direct Ethos API');
+                return true;
+              }
+            }
+          } catch (err) {
+            console.error('Error using Ethos wallet method:', err);
+          }
+        } else if (walletName.toLowerCase().includes('suiet')) {
+          try {
+            // @ts-ignore - Accessing window.suiet 
+            if (typeof window.suiet !== 'undefined') {
+              // @ts-ignore - Using Suiet API
+              const response = await window.suiet.connect();
+              console.log('Suiet wallet connection result:', response);
+              
+              if (response && response.accounts && response.accounts.length > 0) {
+                // Update app connection state manually
+                await updateConnectionState(response.accounts[0].address, 'sui');
+                console.log('Connected via direct Suiet API');
+                return true;
+              }
+            }
+          } catch (err) {
+            console.error('Error using Suiet wallet method:', err);
+          }
+        } else if (walletName.toLowerCase().includes('martian')) {
+          try {
+            // @ts-ignore - Accessing window.martian
+            if (typeof window.martian !== 'undefined') {
+              // @ts-ignore - Using Martian API
+              const response = await window.martian.sui.connect();
+              console.log('Martian wallet connection result:', response);
+              
+              if (response && response.address) {
+                // Update app connection state manually
+                await updateConnectionState(response.address, 'sui');
+                console.log('Connected via direct Martian API');
+                return true;
+              }
+            }
+          } catch (err) {
+            console.error('Error using Martian wallet method:', err);
+          }
+        }
       }
       
+      console.log(`Direct connection to ${walletName} failed, will try using the connect button`);
       setIsConnecting(false);
       return false;
     } catch (error) {
-      console.error(`Error directly connecting to ${walletName}:`, error);
+      console.error(`Error during wallet connection process:`, error);
       setIsConnecting(false);
       return false;
     }

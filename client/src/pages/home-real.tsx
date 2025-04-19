@@ -11,6 +11,7 @@ import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import { WalletCard } from '@/components/wallet/WalletCard';
 import { Clock, Calendar, Plus, Minus } from 'lucide-react';
+import { BettingButton } from '@/components/betting/BettingButton';
 
 /**
  * Home page that displays featured events across various sports using HTML/CSS components
@@ -197,59 +198,39 @@ export default function HomeReal() {
                         <div className="grid grid-cols-3 gap-3">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
-                            <Button
+                            <BettingButton
                               key={outcome.id || idx}
-                              variant="outline"
-                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                              name={outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}
+                              odds={outcome.odds}
                               onClick={() => handleBetSelection(event, event.markets[0], outcome)}
-                            >
-                              <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis whitespace-nowrap" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
-                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">{outcome.odds.toFixed(2)}</span>
-                              </div>
-                            </Button>
+                            />
                           ))
                         ) : (
                           <>
-                            <Button
-                              variant="outline"
-                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                            <BettingButton
+                              name="1"
+                              odds={2.10}
                               onClick={() => {
                                 const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
-                            >
-                              <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">1</span>
-                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">2.10</span>
-                              </div>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                            />
+                            <BettingButton
+                              name="X"
+                              odds={3.25}
                               onClick={() => {
                                 const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
-                            >
-                              <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">X</span>
-                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.25</span>
-                              </div>
-                            </Button>
-                            <Button
-                              variant="outline"
-                              className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                            />
+                            <BettingButton
+                              name="2"
+                              odds={3.40}
                               onClick={() => {
                                 const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
                                 handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                               }}
-                            >
-                              <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">2</span>
-                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.40</span>
-                              </div>
-                            </Button>
+                            />
                           </>
                         )}
                         </div>
@@ -324,59 +305,39 @@ export default function HomeReal() {
                                 <div className="grid grid-cols-3 gap-3">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
-                                    <Button
+                                    <BettingButton
                                       key={outcome.id || idx}
-                                      variant="outline"
-                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                      name={outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}
+                                      odds={outcome.odds}
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
-                                    >
-                                      <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis whitespace-nowrap" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
-                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">{outcome.odds.toFixed(2)}</span>
-                                      </div>
-                                    </Button>
+                                    />
                                   ))
                                 ) : (
                                   <>
-                                    <Button
-                                      variant="outline"
-                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                    <BettingButton
+                                      name="1"
+                                      odds={2.10}
                                       onClick={() => {
                                         const fakeOutcome = {id: `home-${event.id}`, name: "1", odds: 2.10};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
-                                    >
-                                      <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">1</span>
-                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">2.10</span>
-                                      </div>
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                    />
+                                    <BettingButton
+                                      name="X"
+                                      odds={3.25}
                                       onClick={() => {
                                         const fakeOutcome = {id: `draw-${event.id}`, name: "X", odds: 3.25};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
-                                    >
-                                      <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">X</span>
-                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.25</span>
-                                      </div>
-                                    </Button>
-                                    <Button
-                                      variant="outline"
-                                      className="py-3 px-4 h-auto min-h-[70px] bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300"
+                                    />
+                                    <BettingButton
+                                      name="2"
+                                      odds={3.40}
                                       onClick={() => {
                                         const fakeOutcome = {id: `away-${event.id}`, name: "2", odds: 3.40};
                                         handleBetSelection(event, {id: event.id, name: "Match Result"}, fakeOutcome);
                                       }}
-                                    >
-                                      <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">2</span>
-                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.40</span>
-                                      </div>
-                                    </Button>
+                                    />
                                   </>
                                 )}
                                 </div>

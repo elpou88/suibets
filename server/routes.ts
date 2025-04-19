@@ -57,6 +57,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerWalrusRoutes(app);
   console.log("[Routes] Registered Walrus protocol routes for blockchain betting");
   
+  // Download page route
+  app.get("/download", (_req: Request, res: Response) => {
+    res.sendFile("download.html", { root: "./public" });
+  });
+  
   // Home route
   app.get("/api", (_req: Request, res: Response) => {
     return res.json({ message: "Welcome to the WAL.app Crypto Betting API" });

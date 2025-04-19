@@ -11,10 +11,10 @@ export function BettingButton({ name, odds, onClick, isActive = false }: Betting
   return (
     <Button
       variant="outline"
-      className={`py-0 px-1 h-auto min-h-[32px] w-[38px] ${
+      className={`py-0 px-0 h-auto min-h-[32px] flex-1 border-0 ${
         isActive 
-          ? 'bg-cyan-700 border-cyan-500 text-white' 
-          : 'bg-[#1e3a3f] border-cyan-900 hover:bg-cyan-700 hover:border-cyan-500 text-cyan-300'
+          ? 'bg-cyan-700 text-white' 
+          : 'bg-[#1e3a3f] hover:bg-cyan-700 text-cyan-300'
       }`}
       onClick={onClick}
     >

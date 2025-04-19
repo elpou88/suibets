@@ -120,13 +120,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Events routes
   app.get("/api/events", async (req: Request, res: Response) => {
-    // Set response timeout to avoid hanging connections
-    res.setTimeout(30000, () => {
+    // Configure response for handling large data and timeouts
+    res.setHeader('Content-Type', 'application/json');
+    
+    // Increase maximum allowed timeout for large responses
+    res.setTimeout(60000, () => {
       if (!res.headersSent) {
-        console.log('[Routes] Response timeout reached, sending empty response');
+        console.log('[Routes] Response timeout reached after 60s, sending empty response');
         return res.json([]);
       }
     });
+    
+    // Disable Node.js response compression for large payloads
+    res.setHeader('X-No-Compression', 'true');
+    
+    // Set longer keep-alive timeout to prevent connection drop
+    if (req.socket) {
+      req.socket.setKeepAlive(true);
+      req.socket.setTimeout(65000); // 65 seconds socket timeout
+    }
     
     // Create a timeout to ensure the request doesn't hang
     const requestTimeout = setTimeout(() => {
@@ -136,7 +148,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return empty array rather than error for frontend compatibility
         return res.json([]);
       }
-    }, 20000); // 20 second timeout - increased from 10 seconds
+    }, 35000); // 35 second timeout - increased from 20 seconds
     
     try {
       const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;
@@ -1545,6 +1557,69 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // New lite API endpoint for live events that returns minimal data
+  app.get("/api/events/live-lite", async (req: Request, res: Response) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    
+    try {
+      const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
+      const limit = req.query.limit ? Math.min(Number(req.query.limit), 1000) : 200;
+      
+      console.log(`[Routes] Fetching lite live events for sportId: ${sportId || 'all'}`);
+      
+      // Create a tracking promise with shorter timeout for lite endpoint
+      const eventsPromise = new Promise<any[]>(async (resolve) => {
+        try {
+          const events = await eventTrackingService.getLiveEvents(sportId);
+          resolve(events || []);
+        } catch (error) {
+          console.error('[Routes] Error in tracking service for lite events:', error);
+          resolve([]);
+        }
+      });
+      
+      // Create a shorter timeout promise
+      const timeoutPromise = new Promise<any[]>((resolve) => {
+        setTimeout(() => {
+          console.log('[Routes] Live lite events request timed out');
+          resolve([]);
+        }, 5000); // 5 second timeout
+      });
+      
+      // Race the promises
+      let liveEvents = await Promise.race([eventsPromise, timeoutPromise]);
+      
+      // If we have events, create a lite version (only essential fields)
+      if (liveEvents && liveEvents.length > 0) {
+        // Create a lite version of events with only essential fields
+        const liteEvents = liveEvents.slice(0, limit).map((event: any) => ({
+          id: event.id,
+          sportId: event.sportId,
+          homeTeam: event.homeTeam,
+          awayTeam: event.awayTeam,
+          leagueName: event.leagueName,
+          eventDate: event.eventDate,
+          isLive: true,
+          score: event.score || { home: 0, away: 0 },
+          status: event.status || 'live'
+        }));
+        
+        console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
+        return res.json(liteEvents);
+      }
+      
+      // If no events found, return empty array
+      console.log('[Routes] No lite events found, returning empty array');
+      return res.json([]);
+    } catch (error) {
+      console.error('Error in lite live events endpoint:', error);
+      if (!res.headersSent) {
+        return res.json([]);
+      }
+    }
+  });
+  
   const httpServer = createServer(app);
   
   // Initialize WebSocket service for live score updates

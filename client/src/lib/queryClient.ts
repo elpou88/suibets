@@ -37,9 +37,15 @@ export async function apiRequest(
   options?: { timeout?: number, retries?: number },
 ): Promise<Response> {
   try {
-    // Set up retry mechanism
-    const maxRetries = options?.retries ?? 2; // Default to 2 retries
+    // Set up retry mechanism with larger limit for live events
+    const maxRetries = options?.retries ?? 
+      (url.includes('/api/events') && url.includes('isLive=true') ? 3 : 2);
     let currentRetry = 0;
+    
+    // Determine if this is a critical endpoint
+    const isCriticalEndpoint = url.includes('/api/events') || 
+                              url.includes('/api/sports') ||
+                              url.includes('/api/promotions');
     
     // Create attemptFetch as an async arrow function to avoid strict mode issues
     const attemptFetch = async (): Promise<Response> => {
@@ -49,14 +55,14 @@ export async function apiRequest(
       
       try {
         // Increase default timeout for API calls with tiered approach
-        let effectiveTimeout = 15000; // Base timeout 15s
+        let effectiveTimeout = 20000; // Base timeout 20s - increased from 15s
         
         // Adjust timeout based on endpoint and data size
         if (url.includes('/api/events')) {
           if (url.includes('isLive=true')) {
-            effectiveTimeout = 30000; // 30s for live events (large data)
+            effectiveTimeout = 40000; // 40s for live events (large data) - increased from 30s
           } else {
-            effectiveTimeout = 25000; // 25s for other events
+            effectiveTimeout = 30000; // 30s for other events - increased from 25s
           }
         }
         
@@ -65,8 +71,8 @@ export async function apiRequest(
         
         // Add jitter for retries to avoid thundering herd
         if (currentRetry > 0) {
-          const jitter = Math.random() * 1000;
-          effectiveTimeout += (currentRetry * 5000) + jitter;
+          const jitter = Math.random() * 2000;
+          effectiveTimeout += (currentRetry * 7000) + jitter; // Increased delay between retries
         }
         
         // Always use an AbortController with timeout to avoid hanging requests
@@ -75,11 +81,33 @@ export async function apiRequest(
           abortController?.abort(`Request timeout after ${effectiveTimeout}ms`);
         }, effectiveTimeout);
         
-        console.log(`API Request to ${url} with ${effectiveTimeout}ms timeout${currentRetry > 0 ? ` (retry ${currentRetry}/${maxRetries})` : ''}`);
+        // Only log if not a recurring system check
+        if (!url.includes('/api/auth/wallet-status')) {
+          console.log(`API Request to ${url} with ${effectiveTimeout}ms timeout${currentRetry > 0 ? ` (retry ${currentRetry}/${maxRetries})` : ''}`);
+        }
         
+        // Prepare headers with additional metadata
+        const headers: Record<string, string> = {};
+        
+        // Add content-type for data payloads
+        if (data) {
+          headers["Content-Type"] = "application/json";
+        }
+        
+        // Add retry count in header for debugging
+        if (currentRetry > 0) {
+          headers["X-Retry-Count"] = currentRetry.toString();
+        }
+        
+        // Add cache control for live endpoints
+        if (url.includes('isLive=true')) {
+          headers["Cache-Control"] = "no-cache, no-store";
+        }
+        
+        // Make the fetch request with proper options
         const res = await fetch(url, {
           method,
-          headers: data ? { "Content-Type": "application/json" } : {},
+          headers,
           body: data ? JSON.stringify(data) : undefined,
           credentials: "include",
           signal: abortController.signal,
@@ -104,8 +132,16 @@ export async function apiRequest(
         // Check if we can retry
         if (currentRetry < maxRetries && shouldRetryError(error)) {
           currentRetry++;
-          console.log(`Retrying API request to ${url} (attempt ${currentRetry}/${maxRetries})`);
-          return attemptFetch(); // Recursive retry
+          // Only log if not a recurring system check
+          if (!url.includes('/api/auth/wallet-status')) {
+            console.log(`Retrying API request to ${url} (attempt ${currentRetry}/${maxRetries})`);
+          }
+          
+          // Add exponential backoff delay to avoid hammering the server
+          const backoffMs = Math.min(1000 * Math.pow(1.5, currentRetry) + (Math.random() * 1000), 8000);
+          await new Promise(resolve => setTimeout(resolve, backoffMs));
+          
+          return attemptFetch(); // Recursive retry after backoff
         }
         
         // If we can't retry, rethrow the error
@@ -113,17 +149,32 @@ export async function apiRequest(
       }
     };
     
-    // Helper to determine if error is retryable - using arrow function
+    // Helper to determine if error is retryable
     const shouldRetryError = (error: any): boolean => {
-      // Retry timeouts and network errors
-      if (error instanceof DOMException && error.name === 'AbortError') {
-        return true; // Retry timeouts
+      // Always retry critical endpoints on timeout
+      if (error instanceof DOMException && error.name === 'AbortError' && isCriticalEndpoint) {
+        return true;
       }
       
-      if (error instanceof TypeError && 
+      // Always retry network errors on critical endpoints
+      if (error instanceof TypeError && isCriticalEndpoint && 
           (error.message.includes('NetworkError') || 
            error.message.includes('Failed to fetch'))) {
-        return true; // Retry network errors
+        return true;
+      }
+      
+      // For non-critical endpoints, be more selective
+      if (!isCriticalEndpoint) {
+        // Only retry specific errors for non-critical endpoints
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          return true;
+        }
+        
+        if (error instanceof TypeError && 
+            (error.message.includes('NetworkError') || 
+             error.message.includes('Failed to fetch'))) {
+          return true;
+        }
       }
       
       // Default to not retrying

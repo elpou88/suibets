@@ -254,7 +254,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
               break;
             case 13: // Formula 1
-              specialEvents = await formula1Service.getEvents(isLive === true);
+              specialEvents = await formula1Service.getFormula1Races(isLive === true);
               console.log(`[Routes] Formula 1 service returned ${specialEvents?.length || 0} events`);
               break;
           }

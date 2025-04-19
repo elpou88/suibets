@@ -415,8 +415,35 @@ export class EventTrackingService {
   /**
    * Get all events that are currently being tracked
    */
+  /**
+   * Get all tracked events with validation to prevent runtime errors
+   * Returns an array of events that have transitioned from upcoming to live
+   */
   public getTrackedEvents(): any[] {
-    return Array.from(this.trackedEvents.values());
+    try {
+      if (!this.trackedEvents || !(this.trackedEvents instanceof Map)) {
+        console.error('[EventTrackingService] trackedEvents is not a valid Map');
+        return [];
+      }
+      
+      // Convert Map values to array
+      const eventsArray = Array.from(this.trackedEvents.values());
+      
+      // Validate each event to ensure it has minimum required fields
+      const validatedEvents = eventsArray.filter(event => {
+        return event && 
+               typeof event === 'object' && 
+               (event.id || event.eventId) && // Must have some form of ID 
+               (event.homeTeam || event.home || event.team1); // Must have at least one team
+      });
+      
+      console.log(`[EventTrackingService] Returning ${validatedEvents.length} validated tracked events out of ${eventsArray.length} total`);
+      
+      return validatedEvents;
+    } catch (error) {
+      console.error('[EventTrackingService] Error getting tracked events:', error);
+      return []; // Return empty array on error
+    }
   }
   
   /**

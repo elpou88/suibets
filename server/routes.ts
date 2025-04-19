@@ -1187,15 +1187,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint to track events that have gone live - MUST be before :id endpoint
   app.get("/api/events/tracked", async (_req: Request, res: Response) => {
     try {
-      const trackedEvents = eventTrackingService.getTrackedEvents();
+      // Get tracked events safely
+      let trackedEvents = [];
+      
+      try {
+        trackedEvents = eventTrackingService.getTrackedEvents() || [];
+        
+        // Ensure tracked events is an array
+        if (!Array.isArray(trackedEvents)) {
+          console.error("Tracked events is not an array:", typeof trackedEvents);
+          trackedEvents = [];
+        }
+        
+        // Validate each event object to ensure it's properly formatted
+        trackedEvents = trackedEvents.filter(event => 
+          event && 
+          typeof event === 'object' && 
+          (event.id || event.eventId) && 
+          (event.homeTeam || event.home || event.team1)
+        );
+        
+        console.log(`[Routes] Returning ${trackedEvents.length} validated tracked events`);
+      } catch (trackingServiceError) {
+        console.error("Error from tracking service:", trackingServiceError);
+        // Keep trackedEvents as empty array
+      }
+      
+      // Even if there's an error, always return a valid response with empty array if needed
       return res.json({
         tracked: trackedEvents,
         count: trackedEvents.length,
         message: "Events that have transitioned from upcoming to live"
       });
     } catch (error) {
-      console.error("Error fetching tracked events:", error);
-      return res.status(500).json({ message: "Failed to fetch tracked events" });
+      console.error("Error in tracked events endpoint:", error);
+      // Always return a valid response structure with an empty array on error
+      return res.json({
+        tracked: [],
+        count: 0,
+        message: "Error fetching tracked events, returning empty array"
+      });
     }
   });
   

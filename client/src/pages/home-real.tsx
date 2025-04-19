@@ -220,8 +220,8 @@ export default function HomeReal() {
                               }}
                             >
                               <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2">1</span>
-                                <span className="text-xl font-bold text-cyan-300">2.10</span>
+                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">1</span>
+                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">2.10</span>
                               </div>
                             </Button>
                             <Button
@@ -233,8 +233,8 @@ export default function HomeReal() {
                               }}
                             >
                               <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2">X</span>
-                                <span className="text-xl font-bold text-cyan-300">3.25</span>
+                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">X</span>
+                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.25</span>
                               </div>
                             </Button>
                             <Button
@@ -246,8 +246,8 @@ export default function HomeReal() {
                               }}
                             >
                               <div className="flex flex-col items-center w-full">
-                                <span className="text-sm font-medium text-white mb-2">2</span>
-                                <span className="text-xl font-bold text-cyan-300">3.40</span>
+                                <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">2</span>
+                                <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.40</span>
                               </div>
                             </Button>
                           </>
@@ -331,8 +331,8 @@ export default function HomeReal() {
                                       onClick={() => handleBetSelection(event, event.markets[0], outcome)}
                                     >
                                       <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
-                                        <span className="text-xl font-bold text-cyan-300">{outcome.odds.toFixed(2)}</span>
+                                        <span className="text-sm font-medium text-white mb-3 overflow-hidden text-ellipsis whitespace-nowrap" style={{maxWidth: '100%'}}>{outcome.name.length > 8 ? outcome.name.substring(0, 8) + '.' : outcome.name}</span>
+                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">{outcome.odds.toFixed(2)}</span>
                                       </div>
                                     </Button>
                                   ))
@@ -347,8 +347,8 @@ export default function HomeReal() {
                                       }}
                                     >
                                       <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2">1</span>
-                                        <span className="text-xl font-bold text-cyan-300">2.10</span>
+                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">1</span>
+                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">2.10</span>
                                       </div>
                                     </Button>
                                     <Button
@@ -360,8 +360,8 @@ export default function HomeReal() {
                                       }}
                                     >
                                       <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2">X</span>
-                                        <span className="text-xl font-bold text-cyan-300">3.25</span>
+                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">X</span>
+                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.25</span>
                                       </div>
                                     </Button>
                                     <Button
@@ -373,8 +373,8 @@ export default function HomeReal() {
                                       }}
                                     >
                                       <div className="flex flex-col items-center w-full">
-                                        <span className="text-sm font-medium text-white mb-2">2</span>
-                                        <span className="text-xl font-bold text-cyan-300">3.40</span>
+                                        <span className="text-sm font-medium text-white mb-2 whitespace-nowrap">2</span>
+                                        <span className="text-xl font-bold text-cyan-300 min-w-[60px] text-center">3.40</span>
                                       </div>
                                     </Button>
                                   </>

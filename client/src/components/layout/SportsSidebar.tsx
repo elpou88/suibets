@@ -143,11 +143,7 @@ export default function SportsSidebar() {
     setSportEventCounts(counts);
   }, [sports, liveEvents, upcomingEvents]);
 
-  // Move these logs outside useEffect to prevent multiple renders
-  useEffect(() => {
-    console.log("Loaded events for betting", upcomingEvents.length + liveEvents.length);
-    console.log("Loaded sports for betting", sports.length);
-  }, [upcomingEvents.length, liveEvents.length, sports.length]);
+  // Remove the useEffect completely to prevent any infinite loops or update issues
   
   // Map correct sportId to slug - fixed mapping to match sports-live/[sport].tsx
   const getSportIdForSlug = (slug: string): number => {

@@ -1,52 +1,63 @@
-import React, { useState } from 'react';
-import { Button } from './button';
-import { Copy, Check } from 'lucide-react';
+import { useState } from 'react';
+import { Check, Copy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface CopyButtonProps {
-  text: string;
+  value: string;
+  onCopy?: () => void;
   className?: string;
-  iconOnly?: boolean;
-  label?: string;
   size?: 'default' | 'sm' | 'lg' | 'icon';
   variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
+  truncateText?: boolean;
+  truncateLength?: number;
+  children?: React.ReactNode;
 }
 
-export const CopyButton = ({
-  text,
+export function CopyButton({
+  value,
+  onCopy,
   className,
-  iconOnly = false,
-  label = 'Copy',
-  size = 'default',
-  variant = 'outline',
-}: CopyButtonProps) => {
+  size = 'sm',
+  variant = 'ghost',
+  truncateText = false,
+  truncateLength = 10,
+  children,
+}: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
+  const displayText = truncateText 
+    ? value.length > truncateLength * 2 
+      ? `${value.substring(0, truncateLength)}...${value.substring(value.length - truncateLength)}` 
+      : value
+    : value;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(value).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error('Failed to copy text: ', err);
-    }
+      onCopy?.();
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    });
   };
 
   return (
     <Button
-      size={size}
       variant={variant}
+      size={size}
       onClick={handleCopy}
-      className={cn('flex items-center gap-2', className)}
-      type="button"
-      disabled={copied}
+      className={cn("flex items-center gap-1", className)}
     >
+      {children || displayText}
       {copied ? (
-        <Check className="h-4 w-4 text-green-500" />
+        <Check className="h-3.5 w-3.5 text-green-500" />
       ) : (
-        <Copy className="h-4 w-4" />
+        <Copy className="h-3.5 w-3.5" />
       )}
-      {!iconOnly && (copied ? 'Copied!' : label)}
     </Button>
   );
-};
+}
+
+export default CopyButton;

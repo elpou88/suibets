@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import { createServer, Server } from 'http';
 import { setupAuth } from './auth';
 import { setupBlockchainAuth } from './blockchain-auth';
+import { SportEvent } from './types/betting';
 
 // Import sport-specific services
 import { footballService } from './services/football-service';
@@ -10,9 +11,12 @@ import { tennisService } from './services/tennis-service';
 import { baseballService } from './services/baseball-service';
 import { hockeyService } from './services/hockey-service';
 import { rugbyService } from './services/rugby-service';
+import { golfService } from './services/golf-service';
+import { boxingService } from './services/boxing-service';
 import { cricketService } from './services/cricket-service';
 import { mmaService } from './services/mma-service';
 import { formula1Service } from './services/formula1-service';
+import { cyclingService } from './services/cycling-service';
 import { americanFootballService } from './services/american-football-service';
 
 /**
@@ -177,6 +181,16 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           ? await rugbyService.getLiveEvents()
           : await rugbyService.getUpcomingEvents(limit);
           
+      case 7: // Golf
+        return isLive 
+          ? await golfService.getLiveEvents()
+          : await golfService.getUpcomingEvents(limit);
+          
+      case 8: // Boxing
+        return isLive 
+          ? await boxingService.getLiveEvents()
+          : await boxingService.getUpcomingEvents(limit);
+          
       case 9: // Cricket
         return isLive 
           ? await cricketService.getLiveEvents()
@@ -191,6 +205,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return isLive 
           ? await formula1Service.getLiveEvents()
           : await formula1Service.getUpcomingEvents(limit);
+          
+      case 14: // Cycling
+        return isLive 
+          ? await cyclingService.getLiveEvents()
+          : await cyclingService.getUpcomingEvents(limit);
           
       case 15: // American Football
         return isLive 
@@ -214,15 +233,28 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Get live events in a lite format (minimal data for faster loading)
   app.get('/api/events/live-lite', async (_req: Request, res: Response) => {
     try {
-      // Get live events from football, basketball and tennis
-      const [footballEvents, basketballEvents, tennisEvents] = await Promise.all([
-        footballService.getLiveEvents(),
-        basketballService.getLiveEvents(),
-        tennisService.getLiveEvents()
+      // Get live events from all implemented sports services
+      // Use a limited timeout to ensure we don't wait too long
+      const timeout = 5000; // 5 seconds timeout for lite data
+      
+      const results = await Promise.allSettled([
+        Promise.race([footballService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([basketballService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([tennisService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([baseballService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([hockeyService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([rugbyService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([cricketService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
+        Promise.race([mmaService.getLiveEvents(), new Promise<SportEvent[]>(resolve => setTimeout(() => resolve([]), timeout))]),
       ]);
       
-      // Combine all events
-      const allEvents = [...footballEvents, ...basketballEvents, ...tennisEvents];
+      // Collect all successfully fetched events
+      const allEvents: SportEvent[] = [];
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          allEvents.push(...result.value);
+        }
+      }
       
       // Transform to lite format (minimal data)
       const liteEvents = allEvents.map(event => ({
@@ -247,18 +279,29 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   app.get('/api/events/:id', async (req: Request, res: Response) => {
     try {
       const eventId = req.params.id;
+      let event = null;
       
-      // Try to find the event in football service
-      let event = await footballService.getEventById(eventId);
+      // Try all sports services in sequence until we find the event
+      const services = [
+        footballService,
+        basketballService,
+        tennisService,
+        baseballService,
+        hockeyService,
+        rugbyService,
+        golfService,
+        boxingService,
+        cricketService,
+        mmaService,
+        formula1Service,
+        cyclingService,
+        americanFootballService
+      ];
       
-      // If not found, try basketball service
-      if (!event) {
-        event = await basketballService.getEventById(eventId);
-      }
-      
-      // If still not found, try tennis service
-      if (!event) {
-        event = await tennisService.getEventById(eventId);
+      // Try each service until we find the event
+      for (const service of services) {
+        event = await service.getEventById(eventId);
+        if (event) break;
       }
       
       if (!event) {

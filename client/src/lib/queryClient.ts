@@ -122,16 +122,20 @@ export async function apiRequest(
     await throwIfResNotOk(res);
     return res;
   } catch (error) {
-    // Check if this is a network error (unavailable server)
-    if (error instanceof TypeError && error.message.includes('NetworkError')) {
-      console.error('Network error during fetch:', error);
+    // Enhanced error handling with better recovery and reporting
+    console.error(`API request error for ${url}:`, error);
+    
+    // Check for various error types and handle appropriately
+    if (error instanceof TypeError) {
+      // Network errors, connection issues
+      console.warn(`Network error during fetch to ${url}:`, error.message);
       
-      // For critical API endpoints, create a synthetic response
+      // For critical API endpoints, provide recovery options
       if (url.includes('/api/events')) {
-        // Provide special handling for events API
-        console.warn('Creating fallback response for events API');
+        console.warn('Creating recovery response for events API');
         
-        const mockResponse = new Response(
+        // Empty array response - important to maintain expected data structure
+        const recoveryResponse = new Response(
           JSON.stringify([]), 
           { 
             status: 200, 
@@ -139,17 +143,42 @@ export async function apiRequest(
           }
         );
         
-        // Add metadata about error
-        Object.defineProperty(mockResponse, 'originalError', {
-          value: error,
+        // Add metadata for debugging
+        Object.defineProperty(recoveryResponse, 'recoveredFrom', {
+          value: error.message,
           writable: false
         });
         
-        return mockResponse;
+        return recoveryResponse;
+      }
+    } else if (error instanceof SyntaxError) {
+      // JSON parsing errors
+      console.warn(`Invalid JSON in response from ${url}`);
+      
+      // For JSON parse errors in events endpoint, return empty array
+      if (url.includes('/api/events')) {
+        return new Response(
+          JSON.stringify([]), 
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+    } else if (error instanceof DOMException && error.name === 'AbortError') {
+      // Timeout/abort errors
+      console.warn(`Request to ${url} was aborted (likely timeout)`);
+      
+      // For timeout errors in events endpoint, return empty array
+      if (url.includes('/api/events')) {
+        return new Response(
+          JSON.stringify([]), 
+          { status: 200, headers: { 'Content-Type': 'application/json' } }
+        );
       }
     }
     
-    // Re-throw other errors
+    // Re-throw other errors with enhanced context
+    if (error instanceof Error) {
+      error.message = `API request to ${url} failed: ${error.message}`;
+    }
     throw error;
   }
 }
@@ -179,7 +208,29 @@ export const queryClient = new QueryClient({
       refetchInterval: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
-      retry: false,
+      // Enable retry for specific endpoints with pattern matching
+      retry: (failureCount, error: any) => {
+        // Don't retry more than 2 times (3 total attempts)
+        if (failureCount >= 2) return false;
+        
+        // Check if this is a query for events or sports - critical data
+        const queryKey = error?.meta?.request?.url || '';
+        const isCriticalEndpoint = 
+          queryKey.includes('/api/events') || 
+          queryKey.includes('/api/sports');
+          
+        // Only retry for critical endpoints and specific error types
+        if (isCriticalEndpoint) {
+          const isNetworkError = error instanceof TypeError;
+          const isServerError = error?.message?.includes('500') || error?.status === 500;
+          const isTimeoutError = error instanceof DOMException && error.name === 'AbortError';
+          
+          return isNetworkError || isServerError || isTimeoutError;
+        }
+        
+        return false;
+      },
+      retryDelay: attemptIndex => Math.min(1000 * (2 ** attemptIndex), 10000),
     },
     mutations: {
       retry: false,

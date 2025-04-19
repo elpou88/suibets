@@ -385,6 +385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // If headers have already been sent, don't attempt to send a response
         if (res.headersSent) {
           console.warn('[Routes] Headers already sent, skipping error response');
+          // Make sure to clear the timeout to prevent further response attempts
+          clearTimeout(requestTimeout);
           return; // Exit early to prevent further response attempts
         }
         

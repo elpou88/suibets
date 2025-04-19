@@ -39,10 +39,21 @@ export class LiveScoreUpdateService {
     eventTrackingService: EventTrackingService
   ) {
     // Initialize WebSocket server on a distinct path to avoid conflicts with Vite
+    // Use noServer: true to avoid binding to a port directly
     this.wss = new WebSocketServer({ 
-      server, 
-      path: '/ws',
-      clientTracking: true
+      noServer: true,
+      clientTracking: true 
+    });
+    
+    // Handle the upgrade event manually to avoid port conflicts
+    server.on('upgrade', (request, socket, head) => {
+      const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
+      
+      if (pathname === '/ws') {
+        this.wss.handleUpgrade(request, socket, head, (ws) => {
+          this.wss.emit('connection', ws, request);
+        });
+      }
     });
     
     this.clients = new Map();

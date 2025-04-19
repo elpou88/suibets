@@ -34,38 +34,104 @@ export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
-  options?: { timeout?: number },
+  options?: { timeout?: number, retries?: number },
 ): Promise<Response> {
   try {
-    // If a timeout is specified, use AbortController to enforce it
-    let abortController: AbortController | undefined;
-    let timeoutId: NodeJS.Timeout | undefined;
+    // Set up retry mechanism
+    const maxRetries = options?.retries ?? 2; // Default to 2 retries
+    let currentRetry = 0;
     
-    // Increase default timeout for API calls to 20 seconds for events endpoints
-    const effectiveTimeout = url.includes('/api/events') ? 
-      (options?.timeout || 20000) : // Use 20 seconds for events endpoints if not specified
-      (options?.timeout || 15000);  // Use 15 seconds for other endpoints if not specified
+    // Create attemptFetch as an async arrow function to avoid strict mode issues
+    const attemptFetch = async (): Promise<Response> => {
+      // If a timeout is specified, use AbortController to enforce it
+      let abortController: AbortController | undefined;
+      let timeoutId: NodeJS.Timeout | undefined;
+      
+      try {
+        // Increase default timeout for API calls with tiered approach
+        let effectiveTimeout = 15000; // Base timeout 15s
+        
+        // Adjust timeout based on endpoint and data size
+        if (url.includes('/api/events')) {
+          if (url.includes('isLive=true')) {
+            effectiveTimeout = 30000; // 30s for live events (large data)
+          } else {
+            effectiveTimeout = 25000; // 25s for other events
+          }
+        }
+        
+        // Allow override from options
+        effectiveTimeout = options?.timeout || effectiveTimeout;
+        
+        // Add jitter for retries to avoid thundering herd
+        if (currentRetry > 0) {
+          const jitter = Math.random() * 1000;
+          effectiveTimeout += (currentRetry * 5000) + jitter;
+        }
+        
+        // Always use an AbortController with timeout to avoid hanging requests
+        abortController = new AbortController();
+        timeoutId = setTimeout(() => {
+          abortController?.abort(`Request timeout after ${effectiveTimeout}ms`);
+        }, effectiveTimeout);
+        
+        console.log(`API Request to ${url} with ${effectiveTimeout}ms timeout${currentRetry > 0 ? ` (retry ${currentRetry}/${maxRetries})` : ''}`);
+        
+        const res = await fetch(url, {
+          method,
+          headers: data ? { "Content-Type": "application/json" } : {},
+          body: data ? JSON.stringify(data) : undefined,
+          credentials: "include",
+          signal: abortController.signal,
+          // Add cache-busting for retries
+          cache: currentRetry > 0 ? 'no-cache' : 'default'
+        });
+        
+        // Clear the timeout if the request completed successfully
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
+        
+        return res;
+      } catch (error) {
+        // Clear any pending timeouts
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = undefined;
+        }
+        
+        // Check if we can retry
+        if (currentRetry < maxRetries && shouldRetryError(error)) {
+          currentRetry++;
+          console.log(`Retrying API request to ${url} (attempt ${currentRetry}/${maxRetries})`);
+          return attemptFetch(); // Recursive retry
+        }
+        
+        // If we can't retry, rethrow the error
+        throw error;
+      }
+    };
     
-    // Always use an AbortController with timeout to avoid hanging requests
-    abortController = new AbortController();
-    timeoutId = setTimeout(() => {
-      abortController?.abort(`Request timeout after ${effectiveTimeout}ms`);
-    }, effectiveTimeout);
+    // Helper to determine if error is retryable - using arrow function
+    const shouldRetryError = (error: any): boolean => {
+      // Retry timeouts and network errors
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        return true; // Retry timeouts
+      }
+      
+      if (error instanceof TypeError && 
+          (error.message.includes('NetworkError') || 
+           error.message.includes('Failed to fetch'))) {
+        return true; // Retry network errors
+      }
+      
+      // Default to not retrying
+      return false;
+    };
     
-    console.log(`API Request to ${url} with ${effectiveTimeout}ms timeout`);
-    
-    const res = await fetch(url, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
-      signal: abortController.signal,
-    });
-    
-    // Clear the timeout if the request completed successfully
-    if (timeoutId) {
-      clearTimeout(timeoutId);
-    }
+    // Start the fetch process with retry support
+    const res = await attemptFetch();
 
     // Enhanced handling for network errors and sports data API issues
     if (res.status >= 500 || res.status === 0) {
@@ -189,16 +255,50 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey[0] as string, {
-      credentials: "include",
-    });
-
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
-      return null;
+    try {
+      // Use our enhanced API request function for all queries
+      // This gives us retry, timeout, and error recovery for free
+      const res = await apiRequest('GET', queryKey[0] as string);
+      
+      // Handle 401 based on the specified behavior
+      if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+        return null;
+      }
+      
+      await throwIfResNotOk(res);
+      
+      // Handle different content types
+      const contentType = res.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        try {
+          return await res.json();
+        } catch (jsonError) {
+          console.error('Error parsing JSON from response:', jsonError);
+          // For critical endpoints, return appropriate fallback value
+          if ((queryKey[0] as string).includes('/api/events')) {
+            console.warn('Returning empty array for events endpoint due to JSON parse error');
+            return [];
+          }
+          throw jsonError;
+        }
+      } else {
+        // For non-JSON responses, just return the text
+        return await res.text();
+      }
+    } catch (error) {
+      // Add query key information to the error for better debugging
+      if (error instanceof Error) {
+        error.message = `Query failed for ${queryKey[0]}: ${error.message}`;
+      }
+      
+      // For critical endpoints, return empty arrays instead of failing completely
+      if ((queryKey[0] as string).includes('/api/events')) {
+        console.warn('Returning empty array for events endpoint due to error:', error);
+        return [];
+      }
+      
+      throw error;
     }
-
-    await throwIfResNotOk(res);
-    return await res.json();
   };
 
 export const queryClient = new QueryClient({

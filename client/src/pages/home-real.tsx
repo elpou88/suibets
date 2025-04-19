@@ -61,23 +61,45 @@ export default function HomeReal() {
     retryDelay: 2000 // Wait 2 seconds between retries
   });
   
-  // Fetch live events using the isLive parameter
+  // Fetch live events using the optimized lite endpoint
   const { data: liveEvents = [], isLoading: liveEventsLoading, error: liveEventsError } = useQuery({
-    queryKey: ['/api/events', { isLive: true }],
+    queryKey: ['/api/events/live-lite'],
     queryFn: async () => {
-      console.log('Fetching live events from API');
+      console.log('Fetching live events from lite API for homepage');
       try {
-        const response = await apiRequest('GET', '/api/events?isLive=true', undefined, { timeout: 15000 });
+        // Use the new lite endpoint with shorter timeout for better performance
+        const response = await apiRequest('GET', '/api/events/live-lite', undefined, { 
+          timeout: 8000,  // Shorter timeout for lite endpoint
+          retries: 2      // Fewer retries for faster recovery
+        });
+        
         if (!response.ok) {
-          console.warn(`Server error ${response.status} from ${response.url}`);
-          return []; // Return empty array on error
+          console.warn(`Live events lite API returned status ${response.status}`);
+          // Try fallback to regular endpoint if lite endpoint fails
+          try {
+            const fallbackResponse = await apiRequest('GET', '/api/events?isLive=true', undefined, { 
+              timeout: 10000  // Slightly shorter timeout for fallback
+            });
+            
+            if (!fallbackResponse.ok) {
+              throw new Error(`Failed to fetch live events from both endpoints`);
+            }
+            
+            const fallbackData = await fallbackResponse.json();
+            console.log(`Fallback: Received ${fallbackData.length} live events`);
+            return fallbackData;
+          } catch (fallbackError) {
+            console.error("Fallback request also failed:", fallbackError);
+            return []; // Return empty array if both endpoints fail
+          }
         }
+        
         const data = await response.json();
-        console.log(`Received ${data.length} live events`);
+        console.log(`Received ${data.length} lite live events for homepage`);
         
         // Make sure the data is valid
         if (!Array.isArray(data)) {
-          console.warn('Received non-array data for live events');
+          console.warn('Received non-array data for live events from lite API');
           return [];
         }
         
@@ -96,9 +118,9 @@ export default function HomeReal() {
         return [];
       }
     },
-    refetchInterval: 15000, // Refetch every 15 seconds
-    retry: 3, // Retry up to 3 times if there's an error
-    retryDelay: 2000 // Wait 2 seconds between retries
+    refetchInterval: 20000, // Slightly longer interval to reduce server load (20s)
+    retry: 2,       // Fewer retries for faster recovery
+    retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });
   
   // Fetch sports for the sidebar

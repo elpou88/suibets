@@ -10,15 +10,59 @@ import { useState, useEffect } from "react";
 
 export function LiveEventsSection() {
   const { data: liveEvents = [], isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', { isLive: true }],
+    queryKey: ['/api/events/live-lite'],
     queryFn: async () => {
-      const response = await fetch('/api/events?isLive=true');
-      if (!response.ok) {
-        throw new Error('Failed to fetch live events');
+      console.log("Fetching live events from lite API for LiveEventsSection");
+      try {
+        // Use the optimized lite endpoint for better performance
+        const response = await fetch('/api/events/live-lite');
+        
+        if (!response.ok) {
+          console.warn(`LiveEventsSection: Lite API returned status ${response.status}, trying fallback`);
+          // Fallback to the regular endpoint if lite fails
+          const fallbackResponse = await fetch('/api/events?isLive=true');
+          if (!fallbackResponse.ok) {
+            throw new Error('Failed to fetch live events from both endpoints');
+          }
+          
+          const fallbackData = await fallbackResponse.json();
+          // Validate fallback response
+          if (!Array.isArray(fallbackData)) {
+            console.warn('LiveEventsSection: Fallback API did not return an array:', typeof fallbackData);
+            return [];
+          }
+          
+          console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
+          return fallbackData;
+        }
+        
+        const data = await response.json();
+        
+        // Validate response
+        if (!Array.isArray(data)) {
+          console.warn('LiveEventsSection: Lite API did not return an array:', typeof data);
+          // Try fallback
+          const fallbackResponse = await fetch('/api/events?isLive=true');
+          const fallbackData = await fallbackResponse.json();
+          
+          if (Array.isArray(fallbackData)) {
+            console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
+            return fallbackData;
+          }
+          
+          return []; // Return empty array if both fail
+        }
+        
+        console.log(`LiveEventsSection: Received ${data.length} events from lite API`);
+        return data;
+      } catch (error) {
+        console.error("Error fetching live events:", error);
+        return []; // Return empty array on error
       }
-      return response.json();
     },
-    refetchInterval: 15000 // Refresh every 15 seconds
+    refetchInterval: 20000, // Slightly longer interval to reduce load
+    retry: 2, // Fewer retries for faster recovery
+    retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });
 
   if (isLoading) {

@@ -1607,23 +1607,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // If we have events, create a lite version (only essential fields)
-      if (trackedEvents && trackedEvents.length > 0) {
-        // Create a lite version of events with only essential fields
-        const liteEvents = trackedEvents.slice(0, limit).map((event: any) => ({
-          id: event.id,
-          sportId: event.sportId,
-          homeTeam: event.homeTeam || event.home || event.team1 || "Team 1",
-          awayTeam: event.awayTeam || event.away || event.team2 || "Team 2",
-          leagueName: event.leagueName || "League",
-          eventDate: event.eventDate || new Date().toISOString(),
-          isLive: true,
-          score: event.score || { home: 0, away: 0 },
-          status: event.status || 'live'
-        }));
-        
-        clearTimeout(responseTimeout);
-        console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
-        return res.json(liteEvents);
+      if (Array.isArray(trackedEvents) && trackedEvents.length > 0) {
+        try {
+          // Create a lite version of events with only essential fields
+          const liteEvents = trackedEvents.slice(0, limit).map((event: any) => ({
+            id: event.id,
+            sportId: event.sportId,
+            homeTeam: event.homeTeam || event.home || event.team1 || "Team 1",
+            awayTeam: event.awayTeam || event.away || event.team2 || "Team 2",
+            leagueName: event.leagueName || "League",
+            eventDate: event.eventDate || new Date().toISOString(),
+            isLive: true,
+            score: event.score || { home: 0, away: 0 },
+            status: event.status || 'live'
+          }));
+          
+          clearTimeout(responseTimeout);
+          console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
+          
+          if (!Array.isArray(liteEvents)) {
+            console.error('[Routes] Lite events was not an array after mapping');
+            return res.json([]);
+          }
+          
+          return res.json(liteEvents);
+        } catch (mapError) {
+          console.error('[Routes] Error mapping lite events:', mapError);
+          clearTimeout(responseTimeout);
+          return res.json([]);
+        }
       }
       
       // If no events found, return empty array

@@ -1,55 +1,52 @@
-import * as React from 'react';
-import { CheckIcon, CopyIcon } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import React, { useState } from 'react';
+import { Button } from './button';
+import { Copy, Check } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-interface CopyButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  value: string;
+interface CopyButtonProps {
+  text: string;
   className?: string;
-  variant?: 'default' | 'outline' | 'ghost';
+  iconOnly?: boolean;
+  label?: string;
+  size?: 'default' | 'sm' | 'lg' | 'icon';
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link';
 }
 
-export function CopyButton({
-  value,
+export const CopyButton = ({
+  text,
   className,
-  variant = 'ghost',
-  ...props
-}: CopyButtonProps) {
-  const [hasCopied, setHasCopied] = React.useState(false);
+  iconOnly = false,
+  label = 'Copy',
+  size = 'default',
+  variant = 'outline',
+}: CopyButtonProps) => {
+  const [copied, setCopied] = useState(false);
 
-  React.useEffect(() => {
-    // Reset the copied state after 2 seconds
-    if (hasCopied) {
-      const timer = setTimeout(() => {
-        setHasCopied(false);
-      }, 2000);
-
-      return () => clearTimeout(timer);
-    }
-  }, [hasCopied]);
-
-  const handleCopy = React.useCallback(async () => {
+  const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(value);
-      setHasCopied(true);
-    } catch (error) {
-      console.error('Failed to copy:', error);
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
     }
-  }, [value]);
+  };
 
   return (
     <Button
-      size="sm"
+      size={size}
       variant={variant}
-      className={className}
       onClick={handleCopy}
-      {...props}
+      className={cn('flex items-center gap-2', className)}
+      type="button"
+      disabled={copied}
     >
-      {hasCopied ? (
-        <CheckIcon className="h-3 w-3" />
+      {copied ? (
+        <Check className="h-4 w-4 text-green-500" />
       ) : (
-        <CopyIcon className="h-3 w-3" />
+        <Copy className="h-4 w-4" />
       )}
-      <span className="sr-only">Copy</span>
+      {!iconOnly && (copied ? 'Copied!' : label)}
     </Button>
   );
-}
+};

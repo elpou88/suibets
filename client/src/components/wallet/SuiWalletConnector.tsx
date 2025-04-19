@@ -330,7 +330,7 @@ const SuiWalletConnector: React.FC = () => {
                 <span className="overflow-hidden text-ellipsis max-w-[100px]">
                   {walletStatus.address.substring(0, 6)}...{walletStatus.address.substring(walletStatus.address.length - 4)}
                 </span>
-                <CopyButton value={walletStatus.address} className="ml-1 h-3 w-3 text-[#00ffff]" />
+                <CopyButton text={walletStatus.address} className="ml-1 h-3 w-3 text-[#00ffff]" size="icon" iconOnly />
               </>
             )}
           </div>

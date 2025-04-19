@@ -289,14 +289,20 @@ export function LiveEventsSection() {
                 {/* Score display */}
                 {event.score && (
                   <div className="bg-[#0b1618] py-2 text-center font-bold border-b border-[#1e3a3f]">
-                    <span className="text-cyan-300 text-lg">{event.score}</span>
+                    <span className="text-cyan-300 text-lg">
+                      {typeof event.score === 'object' ? 
+                        `${event.score.home || 0} - ${event.score.away || 0}` : 
+                        event.score.toString()}
+                    </span>
                   </div>
                 )}
                 
                 {/* Betting options */}
                 <div className="p-3 bg-[#112225] flex-grow flex flex-col justify-between">
                   <div className="text-xs text-gray-400 text-center mb-3">
-                    {event.markets && event.markets[0]?.name || "Match Result"}
+                    {(event.markets && Array.isArray(event.markets) && event.markets.length > 0) ? 
+                      event.markets[0]?.name || "Match Result" : 
+                      "Match Result"}
                   </div>
                   
                   <div className="space-y-3">

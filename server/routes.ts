@@ -1625,27 +1625,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(responseTimeout);
           console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
           
-          if (!Array.isArray(liteEvents)) {
-            console.error('[Routes] Lite events was not an array after mapping');
-            return res.json([]);
-          }
+          // Force array format and make sure it's properly stringified as JSON array
+          const eventsArray = Array.isArray(liteEvents) ? liteEvents : [];
+          console.log(`[Routes] Returning ${eventsArray.length} lite events (confirmed array format)`);
           
-          return res.json(liteEvents);
+          // Use direct string response to ensure proper array format
+          res.setHeader('Content-Type', 'application/json');
+          return res.send(JSON.stringify(eventsArray));
         } catch (mapError) {
           console.error('[Routes] Error mapping lite events:', mapError);
           clearTimeout(responseTimeout);
-          return res.json([]);
+          // Ensure proper array format response
+          res.setHeader('Content-Type', 'application/json');
+          return res.send('[]');
         }
       }
       
-      // If no events found, return empty array
+      // If no events found, return empty array with consistent format
       clearTimeout(responseTimeout);
       console.log('[Routes] No lite events found, returning empty array');
-      return res.json([]);
+      res.setHeader('Content-Type', 'application/json');
+      return res.send('[]');
     } catch (error) {
       console.error('Error in lite live events endpoint:', error);
       if (!res.headersSent) {
-        return res.json([]);
+        res.setHeader('Content-Type', 'application/json');
+        return res.send('[]');
       }
     }
   });

@@ -15,46 +15,49 @@ export function LiveEventsSection() {
       console.log("Fetching live events from lite API for LiveEventsSection");
       try {
         // Use the optimized lite endpoint for better performance
-        const response = await fetch('/api/events/live-lite');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for lite API
         
-        if (!response.ok) {
-          console.warn(`LiveEventsSection: Lite API returned status ${response.status}, trying fallback`);
-          // Fallback to the regular endpoint if lite fails
-          const fallbackResponse = await fetch('/api/events?isLive=true');
-          if (!fallbackResponse.ok) {
-            throw new Error('Failed to fetch live events from both endpoints');
+        try {
+          const response = await fetch('/api/events/live-lite', {
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            console.warn(`LiveEventsSection: Lite API returned status ${response.status}, trying fallback`);
+            return await fetchFallbackEvents();
           }
           
-          const fallbackData = await fallbackResponse.json();
-          // Validate fallback response
-          if (!Array.isArray(fallbackData)) {
-            console.warn('LiveEventsSection: Fallback API did not return an array:', typeof fallbackData);
-            return [];
-          }
+          const responseText = await response.text();
           
-          console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
-          return fallbackData;
+          // Validate response is proper JSON
+          try {
+            // Try to parse the response manually
+            const data = JSON.parse(responseText);
+            
+            // Validate it's an array
+            if (!Array.isArray(data)) {
+              console.warn('LiveEventsSection: Lite API did not return an array:', typeof data);
+              return await fetchFallbackEvents();
+            }
+            
+            console.log(`LiveEventsSection: Received ${data.length} events from lite API`);
+            return data;
+          } catch (jsonError) {
+            console.warn('LiveEventsSection: Failed to parse JSON response:', jsonError);
+            return await fetchFallbackEvents();
+          }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          console.warn('LiveEventsSection: Error fetching from lite API:', fetchError);
+          return await fetchFallbackEvents();
         }
-        
-        const data = await response.json();
-        
-        // Validate response
-        if (!Array.isArray(data)) {
-          console.warn('LiveEventsSection: Lite API did not return an array:', typeof data);
-          // Try fallback
-          const fallbackResponse = await fetch('/api/events?isLive=true');
-          const fallbackData = await fallbackResponse.json();
-          
-          if (Array.isArray(fallbackData)) {
-            console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
-            return fallbackData;
-          }
-          
-          return []; // Return empty array if both fail
-        }
-        
-        console.log(`LiveEventsSection: Received ${data.length} events from lite API`);
-        return data;
       } catch (error) {
         console.error("Error fetching live events:", error);
         return []; // Return empty array on error
@@ -64,6 +67,44 @@ export function LiveEventsSection() {
     retry: 2, // Fewer retries for faster recovery
     retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });
+  
+  // Helper function to fetch fallback events
+  async function fetchFallbackEvents(): Promise<Event[]> {
+    try {
+      console.log('LiveEventsSection: Using fallback API endpoint');
+      const fallbackResponse = await fetch('/api/events?isLive=true', {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        signal: AbortSignal.timeout(15000) // 15s timeout for fallback
+      });
+      
+      if (!fallbackResponse.ok) {
+        console.warn(`LiveEventsSection: Fallback API also failed with status ${fallbackResponse.status}`);
+        return [];
+      }
+      
+      try {
+        const fallbackText = await fallbackResponse.text();
+        const fallbackData = JSON.parse(fallbackText);
+        
+        if (!Array.isArray(fallbackData)) {
+          console.warn('LiveEventsSection: Fallback API did not return an array:', typeof fallbackData);
+          return [];
+        }
+        
+        console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
+        return fallbackData;
+      } catch (parseError) {
+        console.warn('LiveEventsSection: Failed to parse fallback response:', parseError);
+        return [];
+      }
+    } catch (fallbackError) {
+      console.error("LiveEventsSection: Error fetching fallback events:", fallbackError);
+      return []; // Final fallback - empty array
+    }
+  }
 
   if (isLoading) {
     return <div className="p-12 text-center">Loading live events...</div>;
@@ -290,9 +331,9 @@ export function LiveEventsSection() {
                 {event.score && (
                   <div className="bg-[#0b1618] py-2 text-center font-bold border-b border-[#1e3a3f]">
                     <span className="text-cyan-300 text-lg">
-                      {typeof event.score === 'object' ? 
-                        `${event.score.home || 0} - ${event.score.away || 0}` : 
-                        event.score.toString()}
+                      {typeof event.score === 'object' && event.score !== null ? 
+                        `${typeof event.score === 'object' && 'home' in event.score ? event.score.home || 0 : 0} - ${typeof event.score === 'object' && 'away' in event.score ? event.score.away || 0 : 0}` : 
+                        (typeof event.score === 'string' ? event.score : '0 - 0')}
                     </span>
                   </div>
                 )}
@@ -322,7 +363,7 @@ export function LiveEventsSection() {
                               selectionName: outcome.name,
                               odds: outcome.odds,
                               stake: 10,
-                              market: event.markets[0].name,
+                              market: event.markets?.[0]?.name || "Match Result",
                               uniqueId: Math.random().toString(36).substring(2, 8)
                             };
                             // Add bet to betslip here

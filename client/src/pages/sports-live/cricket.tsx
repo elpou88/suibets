@@ -108,19 +108,35 @@ export default function CricketPage() {
         try {
           const trackedResponse = await fetch('/api/events/tracked');
           if (trackedResponse.ok) {
-            const trackedData = await trackedResponse.json();
-            if (Array.isArray(trackedData)) {
+            const responseData = await trackedResponse.json();
+            
+            // Extract the tracked array from the response - response is in format { tracked: [] }
+            const trackedData = responseData.tracked || [];
+            
+            console.log(`Tracked events response:`,
+              `Type: ${typeof trackedData},`,
+              `Is Array: ${Array.isArray(trackedData)},`,
+              `Length: ${Array.isArray(trackedData) ? trackedData.length : 'N/A'}`
+            );
+            
+            if (Array.isArray(trackedData) && trackedData.length > 0) {
               // Filter to cricket events only
               const cricketEvents = trackedData.filter((event: any) => Number(event.sportId) === 9);
+              
+              console.log(`Found ${cricketEvents.length} cricket events in tracked data`);
               
               // Then filter by live status if needed
               const filteredEvents = selectedTab === 'live'
                 ? cricketEvents.filter((event: any) => event.isLive || event.status === 'live' || event.status === 'in_play')
                 : cricketEvents.filter((event: any) => !event.isLive && event.status !== 'live' && event.status !== 'in_play');
               
-              console.log(`Tracked API fallback found ${filteredEvents.length} cricket events`);
+              console.log(`Tracked API fallback found ${filteredEvents.length} cricket events after status filtering`);
               return filteredEvents;
+            } else {
+              console.warn("No valid tracked events data found or empty array returned");
             }
+          } else {
+            console.warn(`Tracked API request failed with status: ${trackedResponse.status}`);
           }
         } catch (trackedError) {
           console.error(`Tracked API fallback failed: ${trackedError}`);

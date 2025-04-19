@@ -352,17 +352,21 @@ export function LiveEventsSection() {
                         return event.score;
                       }
                       
-                      if (typeof event.score === 'object' && event.score !== null) {
-                        // Handle object with home/away properties
-                        if ('home' in event.score && 'away' in event.score) {
-                          const homeScore = event.score.home !== undefined ? event.score.home : 0;
-                          const awayScore = event.score.away !== undefined ? event.score.away : 0;
-                          return `${homeScore} - ${awayScore}`;
+                      if (Array.isArray(event.score)) {
+                        return `${event.score[0] || 0} - ${event.score[1] || 0}`;
+                      }
+                      
+                      if (typeof event.score === 'object') {
+                        // Type guard for object with home/away properties
+                        interface ScoreObject {
+                          home: number | string;
+                          away: number | string;
                         }
                         
-                        // Handle array format [home, away]
-                        if (Array.isArray(event.score) && event.score.length >= 2) {
-                          return `${event.score[0] || 0} - ${event.score[1] || 0}`;
+                        // Check if object has home and away properties
+                        if ('home' in event.score && 'away' in event.score) {
+                          const typed = event.score as ScoreObject;
+                          return `${typed.home || 0} - ${typed.away || 0}`;
                         }
                       }
                       

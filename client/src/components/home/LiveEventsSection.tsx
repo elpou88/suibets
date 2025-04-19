@@ -36,19 +36,33 @@ export function LiveEventsSection() {
           
           const responseText = await response.text();
           
-          // Validate response is proper JSON
+          // Strict validation that it's a JSON array
+          if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
+            console.warn('LiveEventsSection: Lite API response is not in array format');
+            return await fetchFallbackEvents();
+          }
+          
           try {
             // Try to parse the response manually
             const data = JSON.parse(responseText);
             
             // Validate it's an array
             if (!Array.isArray(data)) {
-              console.warn('LiveEventsSection: Lite API did not return an array:', typeof data);
+              console.warn('LiveEventsSection: Lite API did not return an array after parsing:', typeof data);
               return await fetchFallbackEvents();
             }
             
             console.log(`LiveEventsSection: Received ${data.length} events from lite API`);
-            return data;
+            
+            // Validate and filter events to ensure minimal required properties
+            const validEvents = data.filter(event => 
+              event && 
+              typeof event === 'object' && 
+              (event.id || event.eventId) && 
+              (event.homeTeam || event.awayTeam || event.home || event.away || event.team1 || event.team2)
+            );
+            
+            return validEvents;
           } catch (jsonError) {
             console.warn('LiveEventsSection: Failed to parse JSON response:', jsonError);
             return await fetchFallbackEvents();

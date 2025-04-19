@@ -1563,6 +1563,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.setHeader('Content-Type', 'application/json');
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     
+    // CRITICAL: We're double-checking we're sending a pure array at all response points
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const limit = req.query.limit ? Math.min(Number(req.query.limit), 1000) : 200;
@@ -1573,8 +1574,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let responseTimeout = setTimeout(() => {
         if (!res.headersSent) {
           console.log('[Routes] Live lite events response timeout reached');
-          // Always send a pure string JSON representation of an array
-          res.send('[]');
+          // Always send a pure string JSON representation of an empty array
+          res.end('[]');
         }
       }, 8000); // 8 second max response time
       
@@ -1633,27 +1634,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
           clearTimeout(responseTimeout);
           console.log(`[Routes] Returning ${liteEvents.length} lite events (reduced payload)`);
           
-          // Force array format
+          // Guarantee we're working with a valid array
           const eventsArray = Array.isArray(liteEvents) ? liteEvents : [];
           
-          // CRITICAL: Use JSON.stringify explicitly to guarantee array string format
-          const jsonString = JSON.stringify(eventsArray);
-          
-          // Verify the string starts with '[' and ends with ']'
-          if (!jsonString.startsWith('[') || !jsonString.endsWith(']')) {
-            console.error('[Routes] JSON serialization created invalid array format, using fallback');
-            return res.send('[]');
+          try {
+            // CRITICAL: Use JSON.stringify explicitly to guarantee array string format
+            const jsonString = JSON.stringify(eventsArray);
+            
+            // Verify the string starts with '[' and ends with ']'
+            if (!jsonString.startsWith('[') || !jsonString.endsWith(']')) {
+              console.error('[Routes] JSON serialization created invalid array format, using fallback');
+              return res.end('[]');
+            }
+            
+            console.log(`[Routes] Returning ${eventsArray.length} lite events with valid JSON array format`);
+            
+            // Return the explicitly stringified array
+            return res.end(jsonString);
+          } catch (jsonError) {
+            console.error('[Routes] JSON stringify error:', jsonError);
+            return res.end('[]');
           }
-          
-          console.log(`[Routes] Returning ${eventsArray.length} lite events with valid JSON array format`);
-          
-          // Return the explicitly stringified array
-          return res.send(jsonString);
         } catch (mapError) {
           console.error('[Routes] Error mapping lite events:', mapError);
           clearTimeout(responseTimeout);
           // Always use direct string return to ensure array format
-          return res.send('[]');
+          return res.end('[]');
         }
       }
       
@@ -1661,12 +1667,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(responseTimeout);
       console.log('[Routes] No lite events found, returning empty array');
       // Always use direct string literal to ensure array format
-      return res.send('[]');
+      return res.end('[]');
     } catch (error) {
       console.error('Error in lite live events endpoint:', error);
       if (!res.headersSent) {
         // Always use direct string literal for array format
-        return res.send('[]');
+        return res.end('[]');
       }
     }
   });

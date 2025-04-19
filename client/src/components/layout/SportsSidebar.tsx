@@ -85,38 +85,93 @@ export default function SportsSidebar() {
       try {
         console.log("Fetching live events from lite API for sidebar");
         
-        // Use the new lite endpoint with a shorter timeout
-        const response = await apiRequest('GET', '/api/events/live-lite', undefined, { 
-          timeout: 8000, // Shorter timeout for lite endpoint
-          retries: 1     // Fewer retries for sidebar
-        });
-        
-        // Handle non-OK responses
-        if (!response.ok) {
-          console.warn(`Live events lite API returned status ${response.status}`);
-          return [];
+        // Try the lite endpoint first with text parsing to handle non-JSON responses
+        try {
+          // Use a direct fetch for more control over response parsing
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
+          
+          const response = await fetch('/api/events/live-lite', {
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          // Handle non-OK responses
+          if (!response.ok) {
+            console.warn(`Live events lite API returned status ${response.status}`);
+            throw new Error(`API status: ${response.status}`);
+          }
+          
+          // Get response as text first to validate
+          const responseText = await response.text();
+          
+          // Simple validation that response looks like a JSON array
+          if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
+            console.warn("Live events lite API did not return an array format");
+            throw new Error("Invalid array format");
+          }
+          
+          try {
+            // Parse the text as JSON
+            const data = JSON.parse(responseText);
+            
+            // Double-check it's an array
+            if (!Array.isArray(data)) {
+              console.warn("Live events lite API did not return an array after parsing:", typeof data);
+              throw new Error("Not an array after parsing");
+            }
+            
+            console.log(`Received ${data.length} lite events for sidebar`);
+            
+            // Filter out malformed events
+            const validEvents = data.filter(event => 
+              event && 
+              typeof event === 'object' && 
+              (event.id || event.eventId) && 
+              (event.homeTeam || event.awayTeam || event.home || event.team1)
+            );
+            
+            return validEvents;
+          } catch (jsonError) {
+            console.warn("Failed to parse lite API response:", jsonError);
+            throw jsonError;
+          }
+        } catch (liteError) {
+          // Fallback to main API endpoint
+          console.warn("Lite API failed, using fallback endpoint:", liteError);
+          
+          // Use the main API endpoint with longer timeout as fallback
+          const fallbackResponse = await apiRequest('GET', '/api/events?isLive=true', undefined, { 
+            timeout: 15000, // Longer timeout for main endpoint
+            retries: 2     
+          });
+          
+          if (!fallbackResponse.ok) {
+            console.warn(`Fallback API also failed with status ${fallbackResponse.status}`);
+            return [];
+          }
+          
+          const fallbackData = await fallbackResponse.json();
+          
+          if (!Array.isArray(fallbackData)) {
+            console.warn("Fallback API did not return an array:", typeof fallbackData);
+            return [];
+          }
+          
+          console.log(`Received ${fallbackData.length} live events from fallback API`);
+          
+          return fallbackData.filter(event => 
+            event && 
+            typeof event === 'object' && 
+            (event.id || event.eventId) && 
+            (event.homeTeam || event.awayTeam || event.home || event.team1)
+          );
         }
-        
-        // Handle various response formats
-        const data = await response.json();
-        
-        // Validate response is an array
-        if (!Array.isArray(data)) {
-          console.warn("Live events lite API did not return an array:", typeof data);
-          return [];
-        }
-        
-        console.log(`Received ${data.length} lite events for sidebar`);
-        
-        // Filter out malformed events
-        const validEvents = data.filter(event => 
-          event && 
-          typeof event === 'object' && 
-          (event.id || event.eventId) && 
-          (event.homeTeam || event.awayTeam || event.home || event.team1)
-        );
-        
-        return validEvents;
       } catch (error) {
         console.error("Error fetching live events for sidebar:", error);
         return [];

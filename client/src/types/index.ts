@@ -1,4 +1,31 @@
-import { WalletType, User, Sport, Event, Bet, Promotion, Notification } from "@shared/schema";
+import { WalletType, User, Sport, Bet, Promotion, Notification } from "@shared/schema";
+import type { Event as SchemaEvent } from "@shared/schema";
+
+// Enhanced Event type that properly handles score variations
+export interface Event extends Omit<SchemaEvent, 'score'> {
+  // Allow score to be string, object with home/away properties, or array of scores
+  score?: 
+    | string 
+    | { home: number | string; away: number | string } 
+    | [number | string, number | string] 
+    | null;
+  // Add other properties that might come from API but aren't in schema
+  markets?: Array<{
+    id?: string | number;
+    name: string;
+    outcomes?: Array<{
+      id?: string | number;
+      name: string;
+      odds: number;
+    }>;
+  }>;
+  eventDate?: string;
+  league?: { name: string; id: number | string };
+  home?: string;
+  away?: string;
+  team1?: string;
+  team2?: string;
+}
 
 export interface AuthContextType {
   user: User | null;
@@ -57,4 +84,4 @@ export interface SettingsModalProps {
   onClose: () => void;
 }
 
-export { WalletType, User, Sport, Event, Bet, Promotion, Notification };
+export { WalletType, User, Sport, Bet, Promotion, Notification };

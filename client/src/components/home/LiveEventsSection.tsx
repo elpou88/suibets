@@ -341,16 +341,36 @@ export function LiveEventsSection() {
                   </div>
                 </div>
                 
-                {/* Score display */}
-                {event.score && (
-                  <div className="bg-[#0b1618] py-2 text-center font-bold border-b border-[#1e3a3f]">
-                    <span className="text-cyan-300 text-lg">
-                      {typeof event.score === 'object' && event.score !== null ? 
-                        `${typeof event.score === 'object' && 'home' in event.score ? event.score.home || 0 : 0} - ${typeof event.score === 'object' && 'away' in event.score ? event.score.away || 0 : 0}` : 
-                        (typeof event.score === 'string' ? event.score : '0 - 0')}
-                    </span>
-                  </div>
-                )}
+                {/* Score display with robust type handling */}
+                <div className="bg-[#0b1618] py-2 text-center font-bold border-b border-[#1e3a3f]">
+                  <span className="text-cyan-300 text-lg">
+                    {(() => {
+                      // Handle all possible score formats
+                      if (!event.score) return '0 - 0';
+                      
+                      if (typeof event.score === 'string') {
+                        return event.score;
+                      }
+                      
+                      if (typeof event.score === 'object' && event.score !== null) {
+                        // Handle object with home/away properties
+                        if ('home' in event.score && 'away' in event.score) {
+                          const homeScore = event.score.home !== undefined ? event.score.home : 0;
+                          const awayScore = event.score.away !== undefined ? event.score.away : 0;
+                          return `${homeScore} - ${awayScore}`;
+                        }
+                        
+                        // Handle array format [home, away]
+                        if (Array.isArray(event.score) && event.score.length >= 2) {
+                          return `${event.score[0] || 0} - ${event.score[1] || 0}`;
+                        }
+                      }
+                      
+                      // Default fallback
+                      return '0 - 0';
+                    })()}
+                  </span>
+                </div>
                 
                 {/* Betting options */}
                 <div className="p-3 bg-[#112225] flex-grow flex flex-col justify-between">

@@ -291,7 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.json([]);
           } else {
             // For upcoming events, check if we have cached data from previous calls
-            const cachedEvents = global.cachedUpcomingEvents || [];
+            const cachedEvents = (global as any).cachedUpcomingEvents || [];
             return res.json(cachedEvents.length > 0 ? cachedEvents : []);
           }
         }
@@ -317,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               eventTrackingService.getLiveEvents(reqSportId),
               timeoutPromise
             ]);
-            events = liveEvents || [];
+            events = (liveEvents as any[]) || [];
           } catch (serviceError) {
             console.error('[Routes] Error fetching from tracking service:', serviceError);
             events = [];
@@ -344,7 +344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             events = await Promise.race([
               blockchainStorage.getEvents(reqSportId, isLive),
               blockchainTimeoutPromise
-            ]);
+            ]) as any[];
             console.log(`[Routes] Got ${events.length} events from blockchain storage`);
           } catch (blockchainError) {
             console.error("Error fetching events from blockchain storage:", blockchainError);
@@ -363,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             events = await Promise.race([
               storage.getEvents(reqSportId, isLive),
               storageTimeoutPromise
-            ]);
+            ]) as any[];
           }
         }
       } catch (fetchError) {
@@ -1289,6 +1289,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // If we get here, just return what's in the database
       console.log("No live events found from API, returning database events");
+      
+      // Make sure we haven't already sent a response
+      if (res.headersSent) {
+        console.warn(`[Routes] Headers already sent, skipping response`);
+        return;
+      }
+      
       // Return all events if we have them
       if (events && events.length > 0) {
         console.log(`[Routes] Successfully returning ${events.length} events`);
@@ -1301,6 +1308,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching events:", error);
       clearTimeout(requestTimeout); // Clear the request timeout
+      
+      // Make sure we haven't already sent a response
+      if (res.headersSent) {
+        console.warn(`[Routes] Headers already sent, skipping error response`);
+        return;
+      }
+      
       return res.status(500).json({ message: "Failed to fetch events" });
     }
   });

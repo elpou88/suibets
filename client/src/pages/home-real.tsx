@@ -61,61 +61,146 @@ export default function HomeReal() {
     retryDelay: 2000 // Wait 2 seconds between retries
   });
   
+  // Helper function to fetch fallback events when lite API fails
+  async function fetchFallbackEvents(): Promise<any[]> {
+    try {
+      console.log('Using fallback API endpoint for homepage');
+      const fallbackResponse = await fetch('/api/events?isLive=true', {
+        headers: {
+          'Accept': 'application/json',
+          'Cache-Control': 'no-cache'
+        },
+        signal: AbortSignal.timeout(15000) // 15s timeout for fallback
+      });
+      
+      if (!fallbackResponse.ok) {
+        console.warn(`Homepage: Fallback API also failed with status ${fallbackResponse.status}`);
+        return [];
+      }
+      
+      // Get response as text first
+      const fallbackText = await fallbackResponse.text();
+      
+      // Strict validation to ensure it's a JSON array format
+      if (!fallbackText.trim().startsWith('[') || !fallbackText.trim().endsWith(']')) {
+        console.warn('Homepage: Fallback API response is not in array format');
+        return [];
+      }
+      
+      try {
+        const fallbackData = JSON.parse(fallbackText);
+        
+        if (!Array.isArray(fallbackData)) {
+          console.warn('Homepage: Fallback API did not return an array:', typeof fallbackData);
+          return [];
+        }
+        
+        console.log(`Received ${fallbackData.length} live events from fallback API`);
+        
+        // Filter for valid events with required properties
+        return fallbackData
+          .filter((event) => 
+            event && 
+            typeof event === 'object' && 
+            (event.id || event.eventId) && 
+            (event.homeTeam || event.awayTeam || event.home || event.away || event.team1 || event.team2)
+          )
+          .map((event) => ({
+            ...event,
+            // Ensure minimum required properties
+            homeTeam: event.homeTeam || event.home || event.team1 || 'Team A',
+            awayTeam: event.awayTeam || event.away || event.team2 || 'Team B',
+            name: event.name || `${event.homeTeam || event.home || event.team1 || 'Team A'} vs ${event.awayTeam || event.away || event.team2 || 'Team B'}`,
+            markets: Array.isArray(event.markets) ? event.markets : []
+          }));
+      } catch (parseError) {
+        console.warn('Homepage: Failed to parse fallback JSON:', parseError);
+        return [];
+      }
+    } catch (fallbackError) {
+      console.error("Homepage: Error fetching fallback events:", fallbackError);
+      return []; // Final fallback - empty array
+    }
+  }
+
   // Fetch live events using the optimized lite endpoint
   const { data: liveEvents = [], isLoading: liveEventsLoading, error: liveEventsError } = useQuery({
     queryKey: ['/api/events/live-lite'],
     queryFn: async () => {
       console.log('Fetching live events from lite API for homepage');
       try {
-        // Use the new lite endpoint with shorter timeout for better performance
-        const response = await apiRequest('GET', '/api/events/live-lite', undefined, { 
-          timeout: 8000,  // Shorter timeout for lite endpoint
-          retries: 2      // Fewer retries for faster recovery
-        });
+        // Use direct fetch for more control over the response
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout
         
-        if (!response.ok) {
-          console.warn(`Live events lite API returned status ${response.status}`);
-          // Try fallback to regular endpoint if lite endpoint fails
+        try {
+          // Use direct fetch for better control
+          const response = await fetch('/api/events/live-lite', {
+            signal: controller.signal,
+            headers: {
+              'Accept': 'application/json',
+              'Cache-Control': 'no-cache'
+            }
+          });
+          
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            console.warn(`Live events lite API returned status ${response.status}`);
+            return await fetchFallbackEvents();
+          }
+          
+          // Get response as text first
+          const responseText = await response.text();
+          
+          // Strict validation to ensure it's a JSON array format
+          if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
+            console.warn('Live events lite API response is not in array format');
+            return await fetchFallbackEvents();
+          }
+          
           try {
-            const fallbackResponse = await apiRequest('GET', '/api/events?isLive=true', undefined, { 
-              timeout: 10000  // Slightly shorter timeout for fallback
-            });
+            // Parse the text response
+            const data = JSON.parse(responseText);
             
-            if (!fallbackResponse.ok) {
-              throw new Error(`Failed to fetch live events from both endpoints`);
+            // Double-check it's an array
+            if (!Array.isArray(data)) {
+              console.warn('Live events lite API did not return an array after parsing:', typeof data);
+              return await fetchFallbackEvents();
             }
             
-            const fallbackData = await fallbackResponse.json();
-            console.log(`Fallback: Received ${fallbackData.length} live events`);
-            return fallbackData;
-          } catch (fallbackError) {
-            console.error("Fallback request also failed:", fallbackError);
-            return []; // Return empty array if both endpoints fail
+            console.log(`Received ${data.length} lite live events for homepage`);
+            
+            // Filter for valid events with required properties
+            const validEvents = data
+              .filter((event: any) => 
+                event && 
+                typeof event === 'object' && 
+                (event.id || event.eventId) && 
+                (event.homeTeam || event.awayTeam || event.home || event.away || event.team1 || event.team2)
+              )
+              .map((event: any) => ({
+                ...event,
+                // Ensure minimum required properties
+                homeTeam: event.homeTeam || event.home || event.team1 || 'Team A',
+                awayTeam: event.awayTeam || event.away || event.team2 || 'Team B',
+                name: event.name || `${event.homeTeam || event.home || event.team1 || 'Team A'} vs ${event.awayTeam || event.away || event.team2 || 'Team B'}`,
+                markets: Array.isArray(event.markets) ? event.markets : []
+              }));
+            
+            return validEvents;
+          } catch (jsonError) {
+            console.warn('Failed to parse JSON from lite API:', jsonError);
+            return await fetchFallbackEvents();
           }
+        } catch (fetchError) {
+          clearTimeout(timeoutId);
+          console.warn('Error fetching from lite API:', fetchError);
+          return await fetchFallbackEvents();
         }
-        
-        const data = await response.json();
-        console.log(`Received ${data.length} lite live events for homepage`);
-        
-        // Make sure the data is valid
-        if (!Array.isArray(data)) {
-          console.warn('Received non-array data for live events from lite API');
-          return [];
-        }
-        
-        // Ensure each event has required properties
-        return data.map((event: any) => ({
-          ...event,
-          // Ensure minimum required properties
-          homeTeam: event.homeTeam || 'Team A',
-          awayTeam: event.awayTeam || 'Team B',
-          name: event.name || `${event.homeTeam || 'Team A'} vs ${event.awayTeam || 'Team B'}`,
-          markets: Array.isArray(event.markets) ? event.markets : []
-        }));
       } catch (error) {
-        console.warn(`Error fetching live events: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        // Return empty array on error to avoid breaking the UI
-        return [];
+        console.warn(`Error in lite events query: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return []; // Return empty array on error to avoid breaking the UI
       }
     },
     refetchInterval: 20000, // Slightly longer interval to reduce server load (20s)

@@ -180,22 +180,22 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Team names in full display - stacked to avoid squashing */}
-                      <div className="px-3 py-3 bg-[#112225]">
-                        <div className="grid grid-cols-1 gap-2">
+                      <div className="px-3 py-2 bg-[#112225]">
+                        <div className="grid grid-cols-1 gap-1">
                           <div className="flex items-center justify-between">
-                            <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right">{event.score?.split(' - ')[0] || "0"}</div>
+                            <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
-                            <div className="text-cyan-300 ml-2 font-bold text-right">{event.score?.split(' - ')[1] || "0"}</div>
+                            <div className="text-white text-xs font-semibold">{event.awayTeam}</div>
+                            <div className="text-cyan-300 ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[1] || "0"}</div>
                           </div>
                         </div>
                       </div>
                       
                       {/* Betting options with better visibility and consistent sizing */}
-                      <div className="p-3 bg-[#081214]">
-                        <div className="flex justify-between gap-0">
+                      <div className="p-2 bg-[#081214]">
+                        <div className="flex justify-between">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
                             <BettingButton
@@ -289,20 +289,20 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Team names with FULL visibility */}
-                              <div className="px-3 py-3 bg-[#112225]">
-                                <div className="grid grid-cols-1 gap-2">
+                              <div className="px-3 py-2 bg-[#112225]">
+                                <div className="grid grid-cols-1 gap-1">
                                   <div className="w-full">
-                                    <div className="text-white text-sm font-semibold">{event.homeTeam}</div>
+                                    <div className="text-white text-xs font-semibold">{event.homeTeam}</div>
                                   </div>
                                   <div className="w-full">
-                                    <div className="text-white text-sm font-semibold">{event.awayTeam}</div>
+                                    <div className="text-white text-xs font-semibold">{event.awayTeam}</div>
                                   </div>
                                 </div>
                               </div>
                               
                               {/* Betting options with better visibility and sizing */}
-                              <div className="p-3 bg-[#081214]">
-                                <div className="flex justify-between gap-0">
+                              <div className="p-2 bg-[#081214]">
+                                <div className="flex justify-between">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
                                     <BettingButton

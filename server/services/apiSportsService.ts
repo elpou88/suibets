@@ -19,6 +19,25 @@ export class ApiSportsService {
   // Cache version to force refresh when code changes
   private cacheVersionKey: string = "v4"; // Increment this when making changes to force cache refresh
   
+  /**
+   * Update the API key 
+   * @param apiKey New API key to use
+   */
+  public setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[ApiSportsService] API key updated');
+    // Clear cache when API key changes to ensure fresh data with new key
+    this.clearCache();
+  }
+  
+  /**
+   * Clear the API cache to ensure fresh data is fetched
+   */
+  public clearCache(): void {
+    this.cache.clear();
+    console.log('[ApiSportsService] Cache cleared');
+  }
+  
   // API endpoints for each sport - expanded to include all sports from the API
   // Aligned with sportMap in routes.ts for consistent identifiers
   private sportEndpoints: Record<string, string> = {
@@ -83,8 +102,8 @@ export class ApiSportsService {
   };
 
   constructor(apiKey?: string) {
-    // Override with the new key if available
-    this.apiKey = "3ec255b133882788e32f6349eff77b21";
+    // Use provided key, environment variables, or default to the known working key
+    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "3ec255b133882788e32f6349eff77b21";
     
     // Log key information
     console.log(`[ApiSportsService] API key set, length: ${this.apiKey.length}`);

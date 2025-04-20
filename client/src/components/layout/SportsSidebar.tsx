@@ -16,20 +16,25 @@ import {
   AreaChart
 } from 'lucide-react';
 
-// Sport icon mapping - using #00ffff color for all icons
+// Sport icon mapping - using #00ffff color for all icons - updated to match server routes.ts
 const SPORT_ICONS: Record<number, JSX.Element> = {
-  1: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Soccer/Football
+  1: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,  // Football (European)
   2: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Basketball
   3: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Tennis
   4: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Baseball
   5: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Hockey
-  6: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
-  7: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Golf
-  8: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Boxing
+  6: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Handball
+  7: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Volleyball
+  8: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
   9: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Cricket
+  10: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Golf
+  11: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Boxing
+  12: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // MMA/UFC
   13: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Formula 1
-  16: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // American Football
-  17: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
+  14: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Cycling
+  15: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // American Football
+  16: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // AFL
+  26: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Soccer
 };
 
 export default function SportsSidebar() {
@@ -270,11 +275,11 @@ export default function SportsSidebar() {
 
   // Now we've fixed the update loop by using array lengths as dependencies
   
-  // Map correct sportId to slug - fixed mapping to match sports-live/[sport].tsx
+  // Map correct sportId to slug - fixed mapping to match server/routes.ts
   const getSportIdForSlug = (slug: string): number => {
     const mappings: Record<string, number> = {
-      'soccer': 1,
-      'football': 1,
+      'soccer': 26,         // ID 26 for soccer 
+      'football': 1,        // ID 1 for football (European football)
       'basketball': 2,
       'tennis': 3,
       'baseball': 4,
@@ -292,7 +297,7 @@ export default function SportsSidebar() {
       'cycling': 14,
       'american_football': 15,
       'american-football': 15,
-      'afl': 16,
+      'afl': 16,           // Australian Football League
       'snooker': 17,
       'darts': 18,
       'table-tennis': 19,
@@ -307,7 +312,7 @@ export default function SportsSidebar() {
       'nfl': 29,
       'mlb': 30
     };
-    return mappings[slug] || 1; // Default to soccer if not found
+    return mappings[slug] || 26; // Default to soccer (ID 26) if not found
   };
 
   // Handle sport click to ensure correct sport ID is used

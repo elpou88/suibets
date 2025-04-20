@@ -7,7 +7,7 @@ import { SportEvent, MarketData, OutcomeData } from '../types/betting';
  */
 export class CricketService {
   private apiKey: string;
-  private apiUrl: string = 'https://v3.cricket.api-sports.io/fixtures';
+  private apiUrl: string = 'https://v1.cricket.api-sports.io/fixtures';
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache settings

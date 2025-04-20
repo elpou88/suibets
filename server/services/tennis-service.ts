@@ -7,7 +7,7 @@ import { SportEvent, MarketData, OutcomeData } from '../types/betting';
  */
 export class TennisService {
   private apiKey: string;
-  private apiUrl: string = 'https://v3.tennis.api-sports.io/matches';
+  private apiUrl: string = 'https://v1.tennis.api-sports.io/matches';
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache settings

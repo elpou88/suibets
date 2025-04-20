@@ -7,7 +7,7 @@ import { SportEvent, MarketData, OutcomeData } from '../types/betting';
  */
 export class MmaService {
   private apiKey: string;
-  private apiUrl: string = 'https://v3.mma.api-sports.io/matches';
+  private apiUrl: string = 'https://v1.mma.api-sports.io/fights';
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache settings

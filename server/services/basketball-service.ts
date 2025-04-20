@@ -7,7 +7,7 @@ import { SportEvent, MarketData, OutcomeData } from '../types/betting';
  */
 export class BasketballService {
   private apiKey: string;
-  private apiUrl: string = 'https://v3.basketball.api-sports.io/games';
+  private apiUrl: string = 'https://v1.basketball.api-sports.io/games';
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache settings

@@ -3,6 +3,8 @@ import { Server } from 'http';
 import { EventTrackingService } from './eventTrackingService';
 import { ApiSportsService } from './apiSportsService';
 import { SportEvent } from '../types/betting';
+import { apiResilienceService } from './apiResilienceService';
+import axios from 'axios';
 
 /**
  * Service for handling live score updates via WebSocket connections

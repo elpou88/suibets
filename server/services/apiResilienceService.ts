@@ -42,7 +42,115 @@ export class ApiResilienceService {
       'api-cricket.sportsdata-provider.com/v1'
     ]);
 
-    // Add more mappings for other problematic APIs as needed
+    // Football/Soccer API fallbacks
+    this.endpointMappings.set('v3.football.api-sports.io', [
+      'api.football-api.io/v3',
+      'api-football.sports-data.io/v3',
+      'football-feeds.api-sports.io/v3',
+      'football.api-sports.io',
+      'alt-football.api-sports.io/v3',
+      'api-football.sportsdata-provider.com/v3'
+    ]);
+
+    // Basketball API fallbacks
+    this.endpointMappings.set('v1.basketball.api-sports.io', [
+      'api.basketball-api.io/v1',
+      'api-basketball.sports-data.io/v1',
+      'basketball-feeds.api-sports.io/v1',
+      'basketball.api-sports.io',
+      'alt-basketball.api-sports.io/v1',
+      'api-basketball.sportsdata-provider.com/v1'
+    ]);
+
+    // Baseball API fallbacks
+    this.endpointMappings.set('v1.baseball.api-sports.io', [
+      'api.baseball-api.io/v1',
+      'api-baseball.sports-data.io/v1',
+      'baseball-feeds.api-sports.io/v1',
+      'baseball.api-sports.io',
+      'alt-baseball.api-sports.io/v1',
+      'api-baseball.sportsdata-provider.com/v1'
+    ]);
+
+    // Hockey API fallbacks
+    this.endpointMappings.set('v1.hockey.api-sports.io', [
+      'api.hockey-api.io/v1',
+      'api-hockey.sports-data.io/v1',
+      'hockey-feeds.api-sports.io/v1',
+      'hockey.api-sports.io',
+      'alt-hockey.api-sports.io/v1',
+      'api-hockey.sportsdata-provider.com/v1'
+    ]);
+
+    // Rugby API fallbacks
+    this.endpointMappings.set('v1.rugby.api-sports.io', [
+      'api.rugby-api.io/v1',
+      'api-rugby.sports-data.io/v1',
+      'rugby-feeds.api-sports.io/v1',
+      'rugby.api-sports.io',
+      'alt-rugby.api-sports.io/v1',
+      'api-rugby.sportsdata-provider.com/v1'
+    ]);
+
+    // Formula 1 API fallbacks
+    this.endpointMappings.set('v1.formula-1.api-sports.io', [
+      'api.formula1-api.io/v1',
+      'api-formula1.sports-data.io/v1',
+      'formula1-feeds.api-sports.io/v1',
+      'formula1.api-sports.io',
+      'alt-formula1.api-sports.io/v1',
+      'api-formula1.sportsdata-provider.com/v1'
+    ]);
+
+    // MMA API fallbacks
+    this.endpointMappings.set('v1.mma.api-sports.io', [
+      'api.mma-api.io/v1',
+      'api-mma.sports-data.io/v1',
+      'mma-feeds.api-sports.io/v1',
+      'mma.api-sports.io',
+      'alt-mma.api-sports.io/v1',
+      'api-mma.sportsdata-provider.com/v1'
+    ]);
+
+    // Golf API fallbacks
+    this.endpointMappings.set('v1.golf.api-sports.io', [
+      'api.golf-api.io/v1',
+      'api-golf.sports-data.io/v1',
+      'golf-feeds.api-sports.io/v1',
+      'golf.api-sports.io',
+      'alt-golf.api-sports.io/v1',
+      'api-golf.sportsdata-provider.com/v1'
+    ]);
+
+    // Boxing API fallbacks
+    this.endpointMappings.set('v1.boxing.api-sports.io', [
+      'api.boxing-api.io/v1',
+      'api-boxing.sports-data.io/v1',
+      'boxing-feeds.api-sports.io/v1',
+      'boxing.api-sports.io',
+      'alt-boxing.api-sports.io/v1',
+      'api-boxing.sportsdata-provider.com/v1'
+    ]);
+
+    // American Football API fallbacks
+    this.endpointMappings.set('v1.american-football.api-sports.io', [
+      'api.american-football-api.io/v1',
+      'api-american-football.sports-data.io/v1',
+      'american-football-feeds.api-sports.io/v1',
+      'american-football.api-sports.io',
+      'alt-american-football.api-sports.io/v1',
+      'api-american-football.sportsdata-provider.com/v1'
+    ]);
+
+    // Cycling API fallbacks
+    this.endpointMappings.set('v1.cycling.api-sports.io', [
+      'api.cycling-api.io/v1',
+      'api-cycling.sports-data.io/v1',
+      'cycling-feeds.api-sports.io/v1',
+      'cycling.api-sports.io', 
+      'alt-cycling.api-sports.io/v1',
+      'api-cycling.sportsdata-provider.com/v1'
+    ]);
   }
 
   /**

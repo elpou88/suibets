@@ -12,15 +12,13 @@ import { LiveScoreUpdateService } from "./services/liveScoreUpdateService";
 import { registerDebugRoutes } from "./debug-routes";
 import { registerWalrusRoutes } from "./routes-walrus";
 import { walrusService } from "./services/walrusService";
+import { apiResilienceService } from "./services/apiResilienceService";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
-const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "";
+// Now using a fixed API key which is shared among all services
+const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "3ec255b133882788e32f6349eff77b21";
 
-if (!sportsApiKey) {
-  console.warn("⚠️ WARNING: No sports data API key found in environment variables!");
-  console.warn("Please set SPORTSDATA_API_KEY for full API functionality.");
-  console.warn("Without an API key, sports data will be limited to what's in the database.");
-}
+console.log(`[Routes] Using sports API key: ${sportsApiKey}`);
 
 // Create instance of ApiSportsService with the API key
 const apiSportsService = new ApiSportsService(sportsApiKey);
@@ -28,35 +26,102 @@ const apiSportsService = new ApiSportsService(sportsApiKey);
 // Initialize basketball service
 const basketballService = initBasketballService(sportsApiKey);
 
-// Initialize Formula 1 service
+// Import all sport-specific services
 import { formula1Service } from './services/formula1Service';
-
-// Initialize Baseball service
 import { baseballService } from './services/baseballService';
-
-// Initialize Boxing service
 import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
-
-// Initialize Cricket service
 import { cricketService } from './services/cricketService';
-
-// Import Soccer service for ID 26
 import { soccerService } from './services/soccerService';
-// Import tennis service
 import { tennisService } from './services/tennis-service';
-// Import MMA service
 import { mmaService } from './services/mma-service';
+// Import any additional "-service" files
+import { hockeyService } from './services/hockey-service';
+import { golfService } from './services/golf-service';
+import { cyclingService } from './services/cycling-service';
+import { americanFootballService } from './services/american-football-service';
 
-// Update services with the API key
-soccerService.updateApiKey(sportsApiKey);
-tennisService.updateApiKey(sportsApiKey);
-mmaService.updateApiKey(sportsApiKey);
+// Update all services with the consistent API key
+console.log("[Routes] Updating all sport services with consistent API key");
+const updateSportServices = () => {
+  try {
+    // Soccer service
+    if (soccerService && typeof soccerService.updateApiKey === 'function') {
+      soccerService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated soccer service with API key");
+    }
+    
+    // Tennis service
+    if (tennisService && typeof tennisService.updateApiKey === 'function') {
+      tennisService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated tennis service with API key");
+    }
+    
+    // MMA service
+    if (mmaService && typeof mmaService.updateApiKey === 'function') {
+      mmaService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated MMA service with API key");
+    }
+    
+    // Cricket service
+    if (cricketService && typeof cricketService.updateApiKey === 'function') {
+      cricketService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated cricket service with API key");
+    }
+    
+    // Hockey service
+    if (hockeyService && typeof hockeyService.updateApiKey === 'function') {
+      hockeyService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated hockey service with API key");
+    }
+    
+    // Golf service
+    if (golfService && typeof golfService.updateApiKey === 'function') {
+      golfService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated golf service with API key");
+    }
+    
+    // Cycling service
+    if (cyclingService && typeof cyclingService.updateApiKey === 'function') {
+      cyclingService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated cycling service with API key");
+    }
+    
+    // American Football service
+    if (americanFootballService && typeof americanFootballService.updateApiKey === 'function') {
+      americanFootballService.updateApiKey(sportsApiKey);
+      console.log("[Routes] Updated American Football service with API key");
+    }
+    
+    // Also update any other services that don't follow the standard pattern
+    if (baseballService && typeof baseballService.setApiKey === 'function') {
+      baseballService.setApiKey(sportsApiKey);
+      console.log("[Routes] Updated baseball service with API key");
+    }
+    
+    if (formula1Service && typeof formula1Service.setApiKey === 'function') {
+      formula1Service.setApiKey(sportsApiKey);
+      console.log("[Routes] Updated formula1 service with API key");
+    }
+    
+    if (boxingService && typeof boxingService.setApiKey === 'function') {
+      boxingService.setApiKey(sportsApiKey);
+      console.log("[Routes] Updated boxing service with API key");
+    }
+    
+    if (rugbyService && typeof rugbyService.setApiKey === 'function') {
+      rugbyService.setApiKey(sportsApiKey);
+      console.log("[Routes] Updated rugby service with API key");
+    }
+    
+    console.log("[Routes] All sport services updated with consistent API key");
+  } catch (error) {
+    console.error("[Routes] Error updating sport services with API key:", error);
+  }
+};
 
-// Don't use basketballService or cricketService from '-service' files since
-// we already have imports for these from their original files
-
-// LiveScoreUpdateService already imported at the top
+// Update all services with the API key
+updateSportServices();
 
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);

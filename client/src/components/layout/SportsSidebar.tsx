@@ -406,10 +406,43 @@ export default function SportsSidebar() {
       <div className="mb-8">
         <h2 className="text-lg font-semibold text-cyan-400 mb-4 border-b border-[#1e3a3f] pb-2">Sports</h2>
         <div className="space-y-1 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+          {/* Ensure we only display the primary 14 sports without duplicates */}
           {sports
-            .filter((sport: any) => sport.isActive)
+            // Filter to only include active sports and handle duplicate sport removal
+            .filter((sport: any) => {
+              // Skip inactive sports
+              if (!sport.isActive) return false;
+              
+              // Skip Soccer (26) if Football (1) is also present to avoid duplicates
+              if (sport.id === 26) {
+                return !sports.some((s: any) => s.id === 1 && s.isActive);
+              }
+              
+              // Skip league-specific entries if we have the main sport
+              if ([27, 28, 29, 30].includes(sport.id)) {
+                // Skip NBA (27) if Basketball (2) exists
+                if (sport.id === 27) return !sports.some((s: any) => s.id === 2 && s.isActive);
+                // Skip NHL (28) if Hockey (5) exists
+                if (sport.id === 28) return !sports.some((s: any) => s.id === 5 && s.isActive);
+                // Skip NFL (29) if American Football (15) exists
+                if (sport.id === 29) return !sports.some((s: any) => s.id === 15 && s.isActive);
+                // Skip MLB (30) if Baseball (4) exists
+                if (sport.id === 30) return !sports.some((s: any) => s.id === 4 && s.isActive);
+              }
+              
+              // Include all other sports
+              return true;
+            })
             .sort((a: any, b: any) => {
-              // Sort by live event count first (descending)
+              // First, prioritize the 14 main sports
+              // We want to show the main 14 sports first, then any additional sports
+              const isMainSportA = a.id >= 1 && a.id <= 14;
+              const isMainSportB = b.id >= 1 && b.id <= 14;
+              
+              if (isMainSportA && !isMainSportB) return -1;
+              if (!isMainSportA && isMainSportB) return 1;
+              
+              // Sort by live event count (descending)
               const liveDiff = (sportEventCounts[b.id]?.live || 0) - (sportEventCounts[a.id]?.live || 0);
               if (liveDiff !== 0) return liveDiff;
               
@@ -417,12 +450,20 @@ export default function SportsSidebar() {
               const upcomingDiff = (sportEventCounts[b.id]?.upcoming || 0) - (sportEventCounts[a.id]?.upcoming || 0);
               if (upcomingDiff !== 0) return upcomingDiff;
               
+              // For the 14 main sports, sort by ID to maintain a consistent order
+              if (isMainSportA && isMainSportB) {
+                return a.id - b.id;
+              }
+              
               // Finally alphabetically by name
               return a.name.localeCompare(b.name);
             })
             .map((sport: any) => {
               const liveCount = sportEventCounts[sport.id]?.live || 0;
               const upcomingCount = sportEventCounts[sport.id]?.upcoming || 0;
+              
+              // Get the appropriate sport icon
+              const sportIcon = SPORT_ICONS[sport.id] || <span className="mr-2 h-4 w-4">🎮</span>;
               
               return (
                 <div key={sport.id} className="mb-1">
@@ -432,7 +473,8 @@ export default function SportsSidebar() {
                     onClick={() => handleSportClick(sport)}
                   >
                     <div className="flex items-center">
-                      {sport.icon && <span className="mr-2">{sport.icon}</span>}
+                      {/* Use the icon from our predefined set or the sport's icon if available */}
+                      {sportIcon || (sport.icon && <span className="mr-2">{sport.icon}</span>)}
                       <span>{sport.name}</span>
                     </div>
                     

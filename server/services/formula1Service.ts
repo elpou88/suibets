@@ -10,14 +10,23 @@ export class Formula1Service {
   private baseUrl = 'https://v1.formula-1.api-sports.io';
 
   constructor() {
-    // Get API key from environment
-    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
+    // Get API key from environment or use default
+    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
     
     if (!this.apiKey) {
       console.warn('[Formula1Service] No API key provided. Formula 1 API functionality will be limited.');
     } else {
       console.log(`[Formula1Service] API key found, length: ${this.apiKey.length}`);
     }
+  }
+  
+  /**
+   * Update the API key 
+   * @param apiKey New API key to use
+   */
+  public setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[Formula1Service] API key updated');
   }
   
   /**

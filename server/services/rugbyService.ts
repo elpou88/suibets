@@ -15,12 +15,26 @@ export class RugbyService {
   private CACHE_TTL = 30 * 1000;
 
   constructor(apiKey?: string) {
-    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || '';
+    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
     this.apiSportsService = new ApiSportsService(this.apiKey);
     
     // Setup the autorefresh after all methods are defined
     this.refreshLiveGames();
     setInterval(() => this.refreshLiveGames(), 60 * 1000); // Every minute
+  }
+  
+  /**
+   * Update the API key 
+   * @param apiKey New API key to use
+   */
+  public setApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[RugbyService] API key updated');
+    
+    // Also update the internal apiSportsService reference
+    if (this.apiSportsService && typeof this.apiSportsService.setApiKey === 'function') {
+      this.apiSportsService.setApiKey(apiKey);
+    }
   }
   
   /**

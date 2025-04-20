@@ -59,22 +59,97 @@ export class LiveScoreUpdateService {
   }
   
   /**
-   * Set up WebSocket server event handling
+   * Set up WebSocket server event handling with enhanced connection stability
    */
   private setupWebSocketServer(): void {
     this.wss.on('connection', (ws: WebSocket, request) => {
       console.log('[LiveScoreUpdateService] New client connected');
       
-      // Set up ping interval to keep connection alive
-      const pingInterval = setInterval(() => {
-        if (ws.readyState === WebSocket.OPEN) {
-          // Send a ping message to keep connection alive
-          ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
-        } else {
-          // Clear interval if connection is no longer open
-          clearInterval(pingInterval);
+      // Set last activity timestamp
+      const clientState = {
+        lastActivity: Date.now(),
+        pingInterval: null as NodeJS.Timeout | null,
+        pongTimeout: null as NodeJS.Timeout | null,
+        disconnectTimeout: null as NodeJS.Timeout | null
+      };
+      
+      // Function to reset timers when activity is detected
+      const resetActivityTimers = () => {
+        clientState.lastActivity = Date.now();
+        
+        // Clear any existing pong timeout
+        if (clientState.pongTimeout) {
+          clearTimeout(clientState.pongTimeout);
+          clientState.pongTimeout = null;
         }
-      }, 30000); // Send ping every 30 seconds
+        
+        // Clear any existing disconnect timeout
+        if (clientState.disconnectTimeout) {
+          clearTimeout(clientState.disconnectTimeout);
+          clientState.disconnectTimeout = null;
+        }
+      };
+      
+      // Function to send a ping and expect a pong response
+      const sendPing = () => {
+        if (ws.readyState !== WebSocket.OPEN) {
+          // Clean up all intervals/timeouts if socket is no longer open
+          cleanupClient();
+          return;
+        }
+        
+        try {
+          // Send ping with timestamp
+          const pingTimestamp = Date.now();
+          ws.send(JSON.stringify({ 
+            type: 'ping', 
+            timestamp: pingTimestamp 
+          }));
+          
+          // Set timeout for pong response (expect response within 10 seconds)
+          clientState.pongTimeout = setTimeout(() => {
+            if (Date.now() - clientState.lastActivity > 15000) {
+              console.warn('[LiveScoreUpdateService] No pong received, connection may be dead');
+              
+              // Set a final timeout before force-closing the connection
+              clientState.disconnectTimeout = setTimeout(() => {
+                console.error('[LiveScoreUpdateService] Connection timeout, terminating');
+                cleanupClient();
+                try {
+                  ws.terminate(); // Force-close the connection
+                } catch (err) {
+                  console.error('[LiveScoreUpdateService] Error terminating connection:', err);
+                }
+              }, 5000); // Wait 5 more seconds before terminating
+            }
+          }, 10000); // 10 second pong timeout
+        } catch (err) {
+          console.error('[LiveScoreUpdateService] Error sending ping:', err);
+        }
+      };
+      
+      // Function to clean up all timers and remove client
+      const cleanupClient = () => {
+        if (clientState.pingInterval) {
+          clearInterval(clientState.pingInterval);
+          clientState.pingInterval = null;
+        }
+        
+        if (clientState.pongTimeout) {
+          clearTimeout(clientState.pongTimeout);
+          clientState.pongTimeout = null;
+        }
+        
+        if (clientState.disconnectTimeout) {
+          clearTimeout(clientState.disconnectTimeout);
+          clientState.disconnectTimeout = null;
+        }
+        
+        this.clients.delete(ws);
+      };
+      
+      // Start ping interval
+      clientState.pingInterval = setInterval(sendPing, 20000); // Send ping every 20 seconds
       
       // Initialize client data
       this.clients.set(ws, { 
@@ -83,51 +158,90 @@ export class LiveScoreUpdateService {
       });
       
       // Send initial welcome message with subscription info
-      ws.send(JSON.stringify({
-        type: 'connection',
-        status: 'connected',
-        message: 'Connected to SuiBets live score update service',
-        subscription: ['all']
-      }));
+      try {
+        ws.send(JSON.stringify({
+          type: 'connection',
+          status: 'connected',
+          message: 'Connected to SuiBets live score update service',
+          subscription: ['all'],
+          serverTime: Date.now()
+        }));
+      } catch (err) {
+        console.error('[LiveScoreUpdateService] Error sending welcome message:', err);
+      }
       
       // Handle messages from the client
       ws.on('message', (message: string) => {
         try {
+          // Update activity timestamp on any message
+          resetActivityTimers();
+          
           const data = JSON.parse(message.toString());
           
           // Handle pong response from client
           if (data.type === 'pong') {
-            // Connection is still alive, do nothing
+            // Update last activity time and continue
+            // No need to do anything else for pong messages
             return;
           }
           
+          // Handle ping message from client (respond with pong)
+          if (data.type === 'ping') {
+            if (ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: 'pong',
+                timestamp: Date.now(),
+                echo: data.timestamp
+              }));
+            }
+            return;
+          }
+          
+          // Handle disconnect message from client
+          if (data.type === 'disconnect') {
+            console.log('[LiveScoreUpdateService] Client requested disconnect:', data.reason || 'No reason provided');
+            cleanupClient();
+            try {
+              ws.close(1000, 'Client requested disconnect');
+            } catch (err) {
+              console.error('[LiveScoreUpdateService] Error closing connection:', err);
+            }
+            return;
+          }
+          
+          // Handle all other message types
           this.handleClientMessage(ws, data);
         } catch (error) {
           console.error('[LiveScoreUpdateService] Error parsing client message:', error);
           
           // Send error message back to client
           if (ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Invalid message format. Message must be valid JSON.'
-            }));
+            try {
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Invalid message format. Message must be valid JSON.'
+              }));
+            } catch (err) {
+              console.error('[LiveScoreUpdateService] Error sending error message:', err);
+            }
           }
         }
       });
       
       // Handle client disconnection
-      ws.on('close', () => {
-        console.log('[LiveScoreUpdateService] Client disconnected');
-        clearInterval(pingInterval);
-        this.clients.delete(ws);
+      ws.on('close', (code, reason) => {
+        console.log(`[LiveScoreUpdateService] Client disconnected: Code ${code}, Reason: ${reason || 'No reason provided'}`);
+        cleanupClient();
       });
       
       // Handle errors
       ws.on('error', (error) => {
         console.error('[LiveScoreUpdateService] WebSocket error:', error);
-        clearInterval(pingInterval);
-        this.clients.delete(ws);
+        cleanupClient();
       });
+      
+      // Send an immediate ping to verify connection
+      sendPing();
     });
   }
   

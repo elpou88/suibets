@@ -3,11 +3,11 @@ import { apiResilienceService } from './apiResilienceService';
 import { SportEvent } from '../types/betting';
 
 /**
- * Cricket-specific service with enhanced reliability and fallbacks
+ * Tennis-specific service with enhanced reliability and fallbacks
  */
-export class CricketService {
+export class TennisService {
   private apiKey: string;
-  private baseUrl = 'https://v1.cricket.api-sports.io';
+  private baseUrl = 'https://v1.tennis.api-sports.io';
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache durations
@@ -17,18 +17,18 @@ export class CricketService {
   
   constructor(apiKey: string) {
     this.apiKey = apiKey;
-    console.log('[CricketService] Initialized with API key');
+    console.log('[TennisService] Initialized with API key');
   }
   
   /**
-   * Get live cricket matches with enhanced reliability
+   * Get live tennis matches with enhanced reliability
    */
   public async getLiveEvents(): Promise<SportEvent[]> {
     try {
-      console.log('[CricketService] Fetching live cricket matches');
+      console.log('[TennisService] Fetching live tennis matches');
       
-      const cacheKey = 'cricket_live_matches';
-      const endpoint = `${this.baseUrl}/fixtures`;
+      const cacheKey = 'tennis_live_matches';
+      const endpoint = `${this.baseUrl}/matches`;
       
       const response = await apiResilienceService.makeRequest(
         `${endpoint}?live=all`,
@@ -43,41 +43,33 @@ export class CricketService {
       );
       
       if (!response || !response.response) {
-        console.warn('[CricketService] API returned unexpected format for live events');
+        console.warn('[TennisService] API returned unexpected format for live events');
         return [];
       }
       
       // Extract and map the events to our standard format
       const events: SportEvent[] = this.mapApiResponseToEvents(response.response, true);
-      console.log(`[CricketService] Found ${events.length} live cricket matches`);
+      console.log(`[TennisService] Found ${events.length} live tennis matches`);
       
       return events;
     } catch (error) {
-      console.error('[CricketService] Error fetching live cricket matches:', error);
+      console.error('[TennisService] Error fetching live tennis matches:', error);
       return [];
     }
   }
   
   /**
-   * Get upcoming cricket matches with enhanced reliability
+   * Get upcoming tennis matches with enhanced reliability
    */
   public async getUpcomingEvents(limit: number = 20): Promise<SportEvent[]> {
     try {
-      console.log(`[CricketService] Fetching upcoming cricket matches (limit: ${limit})`);
+      console.log(`[TennisService] Fetching upcoming tennis matches (limit: ${limit})`);
       
-      const cacheKey = `cricket_upcoming_matches_${limit}`;
-      const endpoint = `${this.baseUrl}/fixtures`;
-      
-      // Create date range for upcoming matches (today to +7 days)
-      const today = new Date();
-      const nextWeek = new Date();
-      nextWeek.setDate(today.getDate() + 7);
-      
-      const fromDate = today.toISOString().split('T')[0];
-      const toDate = nextWeek.toISOString().split('T')[0];
+      const cacheKey = `tennis_upcoming_matches_${limit}`;
+      const endpoint = `${this.baseUrl}/matches`;
       
       const response = await apiResilienceService.makeRequest(
-        `${endpoint}?date_from=${fromDate}&date_to=${toDate}&timezone=UTC`,
+        `${endpoint}?next=${limit}&timezone=UTC`,
         {
           headers: {
             'x-apisports-key': this.apiKey,
@@ -89,23 +81,17 @@ export class CricketService {
       );
       
       if (!response || !response.response) {
-        console.warn('[CricketService] API returned unexpected format for upcoming events');
+        console.warn('[TennisService] API returned unexpected format for upcoming events');
         return [];
       }
       
       // Extract and map the events to our standard format
-      let events: SportEvent[] = this.mapApiResponseToEvents(response.response, false);
-      
-      // Sort by start time and limit
-      events = events
-        .sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())
-        .slice(0, limit);
-      
-      console.log(`[CricketService] Found ${events.length} upcoming cricket matches`);
+      const events: SportEvent[] = this.mapApiResponseToEvents(response.response, false);
+      console.log(`[TennisService] Found ${events.length} upcoming tennis matches`);
       
       return events;
     } catch (error) {
-      console.error('[CricketService] Error fetching upcoming cricket matches:', error);
+      console.error('[TennisService] Error fetching upcoming tennis matches:', error);
       return [];
     }
   }
@@ -115,10 +101,10 @@ export class CricketService {
    */
   public async getMatchById(matchId: string): Promise<SportEvent | null> {
     try {
-      console.log(`[CricketService] Fetching cricket match details for ID: ${matchId}`);
+      console.log(`[TennisService] Fetching tennis match details for ID: ${matchId}`);
       
-      const cacheKey = `cricket_match_${matchId}`;
-      const endpoint = `${this.baseUrl}/fixtures`;
+      const cacheKey = `tennis_match_${matchId}`;
+      const endpoint = `${this.baseUrl}/matches`;
       
       const response = await apiResilienceService.makeRequest(
         `${endpoint}?id=${matchId}`,
@@ -133,7 +119,7 @@ export class CricketService {
       );
       
       if (!response || !response.response || !response.response[0]) {
-        console.warn(`[CricketService] API returned unexpected format for match ID: ${matchId}`);
+        console.warn(`[TennisService] API returned unexpected format for match ID: ${matchId}`);
         return null;
       }
       
@@ -141,7 +127,7 @@ export class CricketService {
       const events = this.mapApiResponseToEvents(response.response, false);
       return events.length > 0 ? events[0] : null;
     } catch (error) {
-      console.error(`[CricketService] Error fetching cricket match ID: ${matchId}`, error);
+      console.error(`[TennisService] Error fetching tennis match ID: ${matchId}`, error);
       return null;
     }
   }
@@ -151,14 +137,14 @@ export class CricketService {
    */
   private mapApiResponseToEvents(matches: any[], isLive: boolean = false): SportEvent[] {
     if (!Array.isArray(matches)) {
-      console.warn('[CricketService] Expected array of matches but got:', typeof matches);
+      console.warn('[TennisService] Expected array of matches but got:', typeof matches);
       return [];
     }
     
     return matches.map(match => {
       try {
         // Extract common data from the match
-        const { id, date, status, league, teams, score } = match;
+        const { id, date, status, tournament, teams, scores } = match;
         
         // Map status to our standard format
         let matchStatus = this.mapStatus(status?.short || '');
@@ -166,26 +152,26 @@ export class CricketService {
         
         const sportEvent: SportEvent = {
           id: id?.toString() || '',
-          sportId: 9, // Cricket is sportId 9 
-          leagueId: league?.id?.toString() || '',
-          leagueName: league?.name || 'Cricket Tournament',
+          sportId: 3, // Tennis is sportId 3 
+          leagueId: tournament?.id?.toString() || '',
+          leagueName: tournament?.name || 'Tennis Tournament',
           homeTeam: teams?.home?.name || '',
           awayTeam: teams?.away?.name || '',
           startTime: date || new Date().toISOString(),
           status: matchStatus,
-          score: this.formatScore(score),
+          score: this.formatScore(scores),
           odds: [],
           markets: [],
           isLive: isLive || isMatchLive,
           lastUpdated: new Date().toISOString(),
-          countryCode: league?.country?.code || '',
-          countryName: league?.country?.name || '',
-          sportName: 'Cricket'
+          countryCode: tournament?.country?.code || '',
+          countryName: tournament?.country?.name || '',
+          sportName: 'Tennis'
         };
         
         return sportEvent;
       } catch (err) {
-        console.error('[CricketService] Error mapping match data:', err);
+        console.error('[TennisService] Error mapping match data:', err);
         return null;
       }
     }).filter(match => match !== null) as SportEvent[];
@@ -197,13 +183,13 @@ export class CricketService {
   private mapStatus(status: string): 'scheduled' | 'live' | 'finished' | 'upcoming' {
     const statusMap: Record<string, 'scheduled' | 'live' | 'finished' | 'upcoming'> = {
       'NS': 'upcoming',
-      'TBA': 'upcoming',
       'CANC': 'scheduled',
       'PST': 'scheduled',
       'INTR': 'live',
       'ABD': 'finished',
-      'AWD': 'finished',
+      'AWO': 'finished',
       'WO': 'finished',
+      'WA': 'finished',
       'FIN': 'finished',
       'AET': 'finished',
       'PEN': 'finished',
@@ -211,12 +197,13 @@ export class CricketService {
       'INT': 'live',
       'LIVE': 'live',
       'IP': 'live',
-      '1I': 'live',
-      '2I': 'live',
-      'BRK': 'live',
-      'LB': 'live',
-      'IN': 'live',
-      'OT': 'live',
+      '1S': 'live',
+      '2S': 'live',
+      '3S': 'live',
+      'FS': 'live',
+      'SS': 'live',
+      'TS': 'live',
+      'TB': 'live'
     };
     
     return statusMap[status] || 'scheduled';
@@ -225,25 +212,28 @@ export class CricketService {
   /**
    * Format the score from the API data
    */
-  private formatScore(score: any): string {
-    if (!score) return '';
+  private formatScore(scores: any): string {
+    if (!scores) return '';
     
-    // Try to extract and format innings scores
+    // Try to extract and format set scores
     try {
-      // Format based on cricket scoring format (runs/wickets)
-      const homeInnings1 = score?.innings?.home_1st ? `${score.innings.home_1st?.runs || 0}/${score.innings.home_1st?.wickets || 0}` : '';
-      const awayInnings1 = score?.innings?.away_1st ? `${score.innings.away_1st?.runs || 0}/${score.innings.away_1st?.wickets || 0}` : '';
-      const homeInnings2 = score?.innings?.home_2nd ? ` & ${score.innings.home_2nd?.runs || 0}/${score.innings.home_2nd?.wickets || 0}` : '';
-      const awayInnings2 = score?.innings?.away_2nd ? ` & ${score.innings.away_2nd?.runs || 0}/${score.innings.away_2nd?.wickets || 0}` : '';
+      const sets = [];
+      if (scores?.sets?.set_1) sets.push(scores.sets.set_1);
+      if (scores?.sets?.set_2) sets.push(scores.sets.set_2);
+      if (scores?.sets?.set_3) sets.push(scores.sets.set_3);
+      if (scores?.sets?.set_4) sets.push(scores.sets.set_4);
+      if (scores?.sets?.set_5) sets.push(scores.sets.set_5);
       
-      let result = '';
-      if (homeInnings1) result += `${homeInnings1}${homeInnings2}`;
-      if (homeInnings1 && awayInnings1) result += ' vs ';
-      if (awayInnings1) result += `${awayInnings1}${awayInnings2}`;
+      // Format each set as "homeScore-awayScore"
+      const formattedSets = sets.map(set => {
+        const home = set?.home !== undefined ? set.home : 0;
+        const away = set?.away !== undefined ? set.away : 0;
+        return `${home}-${away}`;
+      });
       
-      return result;
+      return formattedSets.join(', ');
     } catch (error) {
-      console.error('[CricketService] Error formatting score:', error);
+      console.error('[TennisService] Error formatting score:', error);
       return '';
     }
   }
@@ -253,4 +243,4 @@ export class CricketService {
 import config from '../config';
 const API_KEY = process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
 
-export const cricketService = new CricketService(API_KEY);
+export const tennisService = new TennisService(API_KEY);

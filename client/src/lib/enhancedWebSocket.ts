@@ -180,7 +180,9 @@ export class EnhancedWebSocket extends EventEmitter {
    * Subscribe to specific sports or topics
    */
   public subscribe(sports: string[]): void {
-    this.subscriptions = [...new Set([...this.subscriptions, ...sports])];
+    // Create a new array with unique values
+    const uniqueSubscriptions = Array.from(new Set([...this.subscriptions, ...sports]));
+    this.subscriptions = uniqueSubscriptions;
     
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       try {
@@ -363,7 +365,7 @@ export class EnhancedWebSocket extends EventEmitter {
    */
   private _resubscribe(): void {
     if (this.subscriptions.length > 0) {
-      this.subscribe(this.subscriptions);
+      this.subscribe([...this.subscriptions]);
     }
   }
 

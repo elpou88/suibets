@@ -519,7 +519,7 @@ export class LiveScoreUpdateService {
    * @returns Sport slug
    */
   private getSportSlugById(sportId: number): string {
-    // Map sport IDs to sport slugs
+    // Map sport IDs to sport slugs - updated to match main routes.ts mappings
     const sportMap: { [id: number]: string } = {
       1: 'football',
       2: 'basketball',
@@ -528,27 +528,29 @@ export class LiveScoreUpdateService {
       5: 'hockey',
       6: 'handball',
       7: 'volleyball',
-      8: 'badminton',
-      9: 'darts',
-      10: 'snooker',
+      8: 'rugby',
+      9: 'cricket',
+      10: 'golf',
       11: 'boxing',
-      12: 'rugby-league',
-      13: 'rugby-union',
-      14: 'american-football',
-      15: 'golf',
-      16: 'cricket',
-      17: 'table-tennis',
-      18: 'beach-volleyball',
-      19: 'formula-1',
-      20: 'motogp',
-      21: 'cycling',
-      22: 'horse-racing',
-      23: 'greyhounds',
+      12: 'mma-ufc',
+      13: 'formula_1',
+      14: 'cycling',
+      15: 'american_football',
+      16: 'afl',
+      17: 'snooker',
+      18: 'darts',
+      19: 'table-tennis',
+      20: 'badminton',
+      21: 'beach-volleyball',
+      22: 'winter-sports',
+      23: 'motorsport',
       24: 'esports',
-      25: 'mma-ufc',
-      26: 'netball',
-      27: 'winter-sports',
-      28: 'afl'
+      25: 'netball',
+      26: 'soccer',
+      27: 'nba',
+      28: 'nhl',
+      29: 'nfl',
+      30: 'mlb'
     };
     
     return sportMap[sportId] || 'unknown';

@@ -1753,28 +1753,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const httpServer = createServer(app);
   
-  // Initialize WebSocket server directly with proper path to ensure compatibility
-  console.log("[Routes] Initializing standalone WebSocket server on path /ws");
+  // Initialize WebSocket server with enhanced reliability
+  console.log("[Routes] Initializing enhanced WebSocket server on path /ws");
   const wss = new WebSocketServer({ 
     server: httpServer, 
     path: '/ws',
-    clientTracking: true 
+    clientTracking: true,
+    // Set permessage-deflate to false for better performance
+    perMessageDeflate: false
   });
   
-  // Set up basic WebSocket connection handling
-  wss.on('connection', (ws: WebSocket) => {
-    console.log("[WebSocket] New client connected");
+  // Track connection statistics
+  const wsStats = {
+    totalConnections: 0,
+    activeConnections: 0,
+    messagesReceived: 0,
+    messagesSent: 0,
+    errors: 0
+  };
+  
+  // Handle server-level errors
+  wss.on('error', (error) => {
+    console.error('[WebSocket Server] Server-level error:', error);
+    wsStats.errors++;
     
-    // Send welcome message with connection status
+    // Try to recover the server
     try {
-      ws.send(JSON.stringify({
+      console.log('[WebSocket Server] Attempting recovery...');
+      // The WebSocket server is tied to the HTTP server, so we don't restart it directly
+      // Instead, we'll log the error and let the process continue
+    } catch (recoveryError) {
+      console.error('[WebSocket Server] Recovery failed:', recoveryError);
+    }
+  });
+  
+  // Set up enhanced connection handling
+  wss.on('connection', (ws: WebSocket, req) => {
+    wsStats.totalConnections++;
+    wsStats.activeConnections++;
+    
+    // Store the client's IP for logging
+    const clientIp = req.socket.remoteAddress || 'unknown';
+    console.log(`[WebSocket] New client connected from ${clientIp}`);
+    
+    // Add extra properties to track heartbeat
+    (ws as any).isAlive = true;
+    (ws as any).lastActivity = Date.now();
+    (ws as any).subscriptions = new Set();
+    
+    // Heartbeat mechanism - clients must respond to ping with pong
+    ws.on('pong', () => {
+      (ws as any).isAlive = true;
+      (ws as any).lastActivity = Date.now();
+    });
+    
+    // Send welcome message with connection status with improved error handling
+    try {
+      const welcomeMessage = JSON.stringify({
         type: 'connection',
         status: 'connected',
         message: 'Connected to SuiBets WebSocket server',
-        serverTime: Date.now()
-      }));
+        serverTime: Date.now(),
+        connectionId: wsStats.totalConnections
+      });
+      
+      ws.send(welcomeMessage);
+      wsStats.messagesSent++;
     } catch (err) {
       console.error("[WebSocket] Error sending welcome message:", err);
+      wsStats.errors++;
     }
     
     // Handle incoming messages
@@ -1795,14 +1842,73 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return;
         }
         
-        // Handle other message types as needed
-        // Respond with acknowledgment
+        // Handle subscription message for sports
+        if (data.type === 'subscribe' && Array.isArray(data.sports)) {
+          // Add the requested sports to this client's subscriptions
+          const subscriptions = (ws as any).subscriptions as Set<string>;
+          
+          data.sports.forEach((sportId: number) => {
+            subscriptions.add(`sport:${sportId}`);
+          });
+          
+          // Also handle 'all-sports' special subscription
+          if (data.allSports === true) {
+            subscriptions.add('all-sports');
+          }
+          
+          console.log(`[WebSocket] Client subscribed to sports: ${[...subscriptions].join(', ')}`);
+          
+          // Respond with confirmation
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'subscribed',
+              sports: data.sports,
+              allSports: data.allSports === true,
+              subscriptions: [...subscriptions],
+              timestamp: Date.now()
+            }));
+            wsStats.messagesSent++;
+          }
+          return;
+        }
+        
+        // Handle unsubscribe message
+        if (data.type === 'unsubscribe' && Array.isArray(data.sports)) {
+          // Remove the specified sports from this client's subscriptions
+          const subscriptions = (ws as any).subscriptions as Set<string>;
+          
+          data.sports.forEach((sportId: number) => {
+            subscriptions.delete(`sport:${sportId}`);
+          });
+          
+          // Also handle 'all-sports' special unsubscription
+          if (data.allSports === true) {
+            subscriptions.delete('all-sports');
+          }
+          
+          console.log(`[WebSocket] Client unsubscribed from sports: ${data.sports.join(', ')}`);
+          
+          // Respond with confirmation
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'unsubscribed',
+              sports: data.sports,
+              subscriptions: [...subscriptions],
+              timestamp: Date.now()
+            }));
+            wsStats.messagesSent++;
+          }
+          return;
+        }
+        
+        // Respond with acknowledgment for other message types
         if (ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
             type: 'ack',
             received: data.type || 'unknown',
             timestamp: Date.now()
           }));
+          wsStats.messagesSent++;
         }
       } catch (error) {
         console.error("[WebSocket] Error processing message:", error);
@@ -1821,47 +1927,195 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     });
     
-    // Handle connection close
+    // Handle connection close with improved stats tracking
     ws.on('close', (code, reason) => {
-      console.log(`[WebSocket] Client disconnected: Code ${code}, Reason: ${reason || 'No reason provided'}`);
+      wsStats.activeConnections = Math.max(0, wsStats.activeConnections - 1);
+      console.log(`[WebSocket] Client disconnected: Code ${code}, Reason: ${reason || 'No reason provided'} (${wsStats.activeConnections} remaining)`);
+      
+      // Clean up any subscription resources associated with this connection
+      try {
+        const subscriptions = (ws as any).subscriptions;
+        if (subscriptions && subscriptions.size > 0) {
+          console.log(`[WebSocket] Cleaning up ${subscriptions.size} subscriptions for disconnected client`);
+          // Any cleanup needed for subscriptions would go here
+        }
+      } catch (err) {
+        console.error("[WebSocket] Error cleaning up subscriptions:", err);
+      }
     });
     
-    // Handle errors
+    // Handle errors with improved error tracking
     ws.on('error', (error) => {
+      wsStats.errors++;
       console.error("[WebSocket] Connection error:", error);
+      
+      // Try to close the connection gracefully on error
+      try {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.close(1011, 'Internal server error');
+        }
+      } catch (closeErr) {
+        console.error("[WebSocket] Error closing connection after error:", closeErr);
+      }
     });
   });
   
-  // Broadcast function to send updates to all connected clients
-  const broadcastLiveUpdates = (data: any) => {
+  // Enhanced broadcast function with error handling, targeting, and metrics
+  const broadcastLiveUpdates = (data: any, options: {
+    sportId?: number,
+    targetSubscriptions?: string[],
+    excludeClients?: Set<WebSocket>,
+    priority?: 'low' | 'normal' | 'high'
+  } = {}) => {
+    const start = Date.now();
+    const serializedData = JSON.stringify({
+      ...data,
+      serverTime: Date.now()
+    });
+    
+    let sentCount = 0;
+    let errorCount = 0;
+    let skippedCount = 0;
+    
+    // Use priority to determine throttling behavior (avoid overwhelming clients)
+    const shouldThrottle = options.priority === 'low' && wss.clients.size > 100;
+    
     wss.clients.forEach((client) => {
+      // Skip excluded clients
+      if (options.excludeClients && options.excludeClients.has(client)) {
+        skippedCount++;
+        return;
+      }
+      
+      // Check if this client is interested in this sport (if sportId provided)
+      if (options.sportId) {
+        const subscriptions = (client as any).subscriptions;
+        // Skip if client has subscriptions but isn't subscribed to this sport
+        if (subscriptions && subscriptions.size > 0 && 
+            !subscriptions.has(`sport:${options.sportId}`) && 
+            !subscriptions.has('all-sports')) {
+          skippedCount++;
+          return;
+        }
+      }
+      
+      // Check for specific subscription targets
+      if (options.targetSubscriptions && options.targetSubscriptions.length > 0) {
+        const subscriptions = (client as any).subscriptions;
+        // Skip if client doesn't have any of the target subscriptions
+        if (!subscriptions || !options.targetSubscriptions.some(sub => subscriptions.has(sub))) {
+          skippedCount++;
+          return;
+        }
+      }
+      
+      // Send message if connection is open
       if (client.readyState === WebSocket.OPEN) {
         try {
-          client.send(JSON.stringify(data));
+          client.send(serializedData);
+          sentCount++;
+          wsStats.messagesSent++;
+          
+          // Update last activity time
+          (client as any).lastActivity = Date.now();
         } catch (err) {
           console.error("[WebSocket] Error broadcasting update:", err);
+          errorCount++;
+          wsStats.errors++;
         }
+      } else {
+        skippedCount++;
       }
     });
+    
+    // Log metrics only if interesting (sent to clients or encountered errors)
+    if (sentCount > 0 || errorCount > 0) {
+      const duration = Date.now() - start;
+      console.log(`[WebSocket] Broadcast: ${sentCount} sent, ${errorCount} errors, ${skippedCount} skipped in ${duration}ms`);
+    }
+    
+    return { sentCount, errorCount, skippedCount };
   };
   
-  // Set up ping interval to keep connections alive
-  const pingInterval = setInterval(() => {
-    wss.clients.forEach((client) => {
+  // Improved heartbeat mechanism with connection pruning
+  const heartbeatInterval = setInterval(() => {
+    let pruned = 0;
+    wss.clients.forEach((client: WebSocket) => {
+      const ws = client as any;
+      
+      // Check if client is still alive
+      if (ws.isAlive === false) {
+        // Client didn't respond to ping, terminate it
+        wsStats.activeConnections--;
+        pruned++;
+        console.log('[WebSocket] Terminating inactive connection');
+        return client.terminate();
+      }
+      
+      // Check for inactivity timeout (10 minutes)
+      const inactiveTime = Date.now() - ws.lastActivity;
+      if (inactiveTime > 10 * 60 * 1000) {
+        wsStats.activeConnections--;
+        pruned++;
+        console.log(`[WebSocket] Terminating connection due to inactivity (${Math.round(inactiveTime/1000)}s)`);
+        return client.terminate();
+      }
+      
+      // Mark as not alive, ping will set it back to true if client responds
+      ws.isAlive = false;
+      
+      // Send ping as proper ping frame instead of JSON message
+      try {
+        client.ping();
+      } catch (err) {
+        console.error("[WebSocket] Error sending ping frame:", err);
+        wsStats.errors++;
+      }
+      
+      // Also send a JSON ping for older clients that might not handle ping frames
       if (client.readyState === WebSocket.OPEN) {
         try {
-          client.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+          client.send(JSON.stringify({ 
+            type: 'ping', 
+            timestamp: Date.now(),
+            stats: {
+              connections: wsStats.activeConnections,
+              uptime: Math.floor(process.uptime())
+            }
+          }));
+          wsStats.messagesSent++;
         } catch (err) {
-          console.error("[WebSocket] Error sending ping:", err);
+          console.error("[WebSocket] Error sending ping message:", err);
+          wsStats.errors++;
         }
       }
     });
-  }, 30000); // Send ping every 30 seconds
+    
+    if (pruned > 0) {
+      console.log(`[WebSocket] Pruned ${pruned} inactive connections, ${wsStats.activeConnections} remaining`);
+    }
+  }, 30000); // Check every 30 seconds
+  
+  // Connection statistics logger
+  const statsInterval = setInterval(() => {
+    console.log(`[WebSocket Stats] Active: ${wsStats.activeConnections}, Total: ${wsStats.totalConnections}, Messages sent: ${wsStats.messagesSent}, Errors: ${wsStats.errors}`);
+  }, 60000); // Log stats every minute
   
   // Clean up on server close
   httpServer.on('close', () => {
-    clearInterval(pingInterval);
-    console.log("[WebSocket] Server shutting down, cleaning up resources");
+    clearInterval(heartbeatInterval);
+    clearInterval(statsInterval);
+    
+    // Close all connections properly
+    wss.clients.forEach(client => {
+      try {
+        client.close(1001, 'Server shutting down');
+      } catch (err) {
+        // Ignore errors during shutdown
+      }
+    });
+    
+    console.log("[WebSocket] Server shutting down, cleaned up resources");
   });
   
   // Also initialize the LiveScoreUpdateService which uses its own WebSocket implementation

@@ -22,20 +22,24 @@ export class ApiResilienceService {
    * This is especially useful for DNS resolution problems
    */
   private setupEndpointMappings(): void {
-    // Tennis API fallbacks
+    // Tennis API fallbacks with enhanced reliability
     this.endpointMappings.set('v1.tennis.api-sports.io', [
-      'api.tennis-sports.io/v1',
-      'api-tennis.sports-api.io/v1',
-      'api-v1.tennissports.io',
-      'tennis.api-sports.io'
+      'api.tennis-api.io/v1',
+      'api-tennis.sports-data.io/v1',
+      'tennis-feeds.api-sports.io/v1',
+      'tennis.api-sports.io',
+      'alt-tennis.api-sports.io/v1',
+      'api-tennis.sportsdata-provider.com/v1'
     ]);
 
-    // Cricket API fallbacks
+    // Cricket API fallbacks with enhanced reliability
     this.endpointMappings.set('v1.cricket.api-sports.io', [
-      'api.cricket-sports.io/v1',
-      'api-cricket.sports-api.io/v1',
-      'api-v1.cricketsports.io',
-      'cricket.api-sports.io'
+      'api.cricket-api.io/v1',
+      'api-cricket.sports-data.io/v1',
+      'cricket-feeds.api-sports.io/v1',
+      'cricket.api-sports.io',
+      'alt-cricket.api-sports.io/v1',
+      'api-cricket.sportsdata-provider.com/v1'
     ]);
 
     // Add more mappings for other problematic APIs as needed

@@ -15,12 +15,10 @@ export class TennisService {
   private upcomingCacheExpiry: number = 15 * 60 * 1000; // 15 minutes for upcoming events
   
   constructor() {
-    // Get API key from environment variable
-    this.apiKey = process.env.API_SPORTS_KEY || '';
+    // Use the provided API key
+    this.apiKey = '3ec255b133882788e32f6349eff77b21';
     
-    if (!this.apiKey) {
-      console.warn('[TennisService] No API key provided. API requests will likely fail.');
-    }
+    console.log('[TennisService] API key configured');
   }
   
   /**

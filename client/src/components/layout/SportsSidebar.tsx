@@ -81,15 +81,17 @@ export default function SportsSidebar() {
           { id: 2, name: 'Basketball', slug: 'basketball', icon: '🏀', isActive: true },
           { id: 3, name: 'Tennis', slug: 'tennis', icon: '🎾', isActive: true },
           { id: 4, name: 'Baseball', slug: 'baseball', icon: '⚾', isActive: true },
-          { id: 5, name: 'Hockey', slug: 'hockey', icon: '🏒', isActive: true },
+          { id: 5, name: 'Ice Hockey', slug: 'ice-hockey', icon: '🏒', isActive: true },
+          { id: 6, name: 'Handball', slug: 'handball', icon: '🤾', isActive: true },
+          { id: 7, name: 'Volleyball', slug: 'volleyball', icon: '🏐', isActive: true },
           { id: 8, name: 'Rugby', slug: 'rugby', icon: '🏉', isActive: true },
           { id: 9, name: 'Cricket', slug: 'cricket', icon: '🏏', isActive: true },
           { id: 10, name: 'Golf', slug: 'golf', icon: '⛳', isActive: true },
           { id: 11, name: 'Boxing', slug: 'boxing', icon: '🥊', isActive: true },
           { id: 12, name: 'MMA/UFC', slug: 'mma-ufc', icon: '🥋', isActive: true },
-          { id: 13, name: 'Formula 1', slug: 'formula_1', icon: '🏎️', isActive: true },
+          { id: 13, name: 'Formula 1', slug: 'formula-1', icon: '🏎️', isActive: true },
           { id: 14, name: 'Cycling', slug: 'cycling', icon: '🚴', isActive: true },
-          { id: 15, name: 'American Football', slug: 'american_football', icon: '🏈', isActive: true }
+          { id: 15, name: 'American Football', slug: 'american-football', icon: '🏈', isActive: true }
         ];
       }
     },
@@ -309,39 +311,45 @@ export default function SportsSidebar() {
   // Map correct sportId to slug - fixed mapping to match server/routes.ts
   const getSportIdForSlug = (slug: string): number => {
     const mappings: Record<string, number> = {
-      'soccer': 26,         // ID 26 for soccer 
-      'football': 1,        // ID 1 for football (European football)
-      'basketball': 2,
-      'tennis': 3,
-      'baseball': 4,
-      'hockey': 5,
-      'handball': 6,
-      'volleyball': 7,
-      'rugby': 8,
-      'cricket': 9,
-      'golf': 10,
-      'boxing': 11,
-      'mma-ufc': 12,
-      'mma': 12,
-      'formula_1': 13,
-      'formula-1': 13,
-      'cycling': 14,
-      'american_football': 15,
-      'american-football': 15,
-      'afl': 16,           // Australian Football League
-      'snooker': 17,
-      'darts': 18,
-      'table-tennis': 19,
-      'badminton': 20,
-      'beach-volleyball': 21,
-      'winter-sports': 22,
-      'motorsport': 23,
-      'esports': 24,
-      'netball': 25,
-      'nba': 27,
-      'nhl': 28,
-      'nfl': 29,
-      'mlb': 30
+      // Main sports with direct mapping
+      'soccer': 26,             // ID 26 for soccer (Alternative name for football)
+      'football': 1,            // ID 1 for football (European football)
+      'basketball': 2,          // ID 2 for basketball
+      'tennis': 3,              // ID 3 for tennis
+      'baseball': 4,            // ID 4 for baseball
+      'ice-hockey': 5,          // ID 5 for ice hockey (preferred)
+      'hockey': 5,              // ID 5 for hockey (legacy support)
+      'handball': 6,            // ID 6 for handball
+      'volleyball': 7,          // ID 7 for volleyball
+      'rugby': 8,               // ID 8 for rugby
+      'cricket': 9,             // ID 9 for cricket
+      'golf': 10,               // ID 10 for golf
+      'boxing': 11,             // ID 11 for boxing
+      'mma-ufc': 12,            // ID 12 for MMA/UFC (preferred)
+      'mma': 12,                // ID 12 for MMA (legacy support)
+      'formula-1': 13,          // ID 13 for Formula 1 (preferred)
+      'formula_1': 13,          // ID 13 for Formula 1 (legacy support)
+      'cycling': 14,            // ID 14 for cycling
+      'american-football': 15,  // ID 15 for American Football (preferred)
+      'american_football': 15,  // ID 15 for American Football (legacy support)
+      'aussie-rules': 16,       // ID 16 for Australian Football League (preferred)
+      'afl': 16,                // ID 16 for AFL (legacy support)
+      'snooker': 17,            // ID 17 for snooker
+      'darts': 18,              // ID 18 for darts
+      'table-tennis': 19,       // ID 19 for table tennis (preferred)
+      'tabletennis': 19,        // ID 19 for table tennis (legacy support)
+      'badminton': 20,          // ID 20 for badminton
+      'beach-volleyball': 21,   // ID 21 for beach volleyball
+      'winter-sports': 22,      // ID 22 for winter sports
+      'motorsport': 23,         // ID 23 for motorsport
+      'esports': 24,            // ID 24 for esports
+      'netball': 25,            // ID 25 for netball
+      
+      // League-specific mappings (which use the main sport APIs)
+      'nba': 27,                // ID 27 for NBA (basketball league)
+      'nhl': 28,                // ID 28 for NHL (hockey league)
+      'nfl': 29,                // ID 29 for NFL (American football league)
+      'mlb': 30                 // ID 30 for MLB (baseball league)
     };
     return mappings[slug] || 26; // Default to soccer (ID 26) if not found
   };

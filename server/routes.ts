@@ -36,6 +36,9 @@ import { baseballService } from './services/baseballService';
 import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 
+// Initialize Cricket service
+import { cricketService } from './services/cricketService';
+
 // Import Soccer service for ID 26
 import { soccerService } from './services/soccerService';
 // Import tennis service
@@ -461,8 +464,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (reqSportId === 9) {
         console.log('[Routes] CRICKET REQUEST DETECTED - Using special cricket handling');
         try {
-          // Use the dedicated cricket service
-          const cricketEvents = await cricketService.getEvents(isLive);
+          // Use the dynamic import for cricket service in case it's not available
+          let cricketEvents = [];
+          try {
+            cricketEvents = await cricketService.getEvents(isLive);
+          } catch (cricketErr) {
+            console.error('[Routes] Error using cricket service, falling back to apiSportsService:', cricketErr);
+            // Fall back to apiSportsService if cricket service fails
+            cricketEvents = isLive 
+              ? await apiSportsService.getLiveEvents('cricket')
+              : await apiSportsService.getUpcomingEvents('cricket', 20);
+          }
             
           console.log(`[Routes] Cricket service returned ${cricketEvents.length} ${isLive ? 'live' : 'upcoming'} cricket events`);
           

@@ -39,6 +39,9 @@ import { rugbyService } from './services/rugbyService';
 // Import Cricket service
 import { cricketService } from './services/cricketService';
 
+// Import Soccer service for ID 26
+import { soccerService } from './services/soccerService';
+
 // Import WebSocket service
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
 
@@ -276,6 +279,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             case 13: // Formula 1
               specialEvents = await formula1Service.getFormula1Races(isLive === true);
               console.log(`[Routes] Formula 1 service returned ${specialEvents?.length || 0} events`);
+              break;
+            case 26: // Soccer
+              specialEvents = isLive 
+                ? await soccerService.getLiveMatches()
+                : await soccerService.getUpcomingMatches(20);
+              console.log(`[Routes] Soccer service returned ${specialEvents?.length || 0} events`);
               break;
           }
           

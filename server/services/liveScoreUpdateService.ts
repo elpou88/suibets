@@ -38,22 +38,11 @@ export class LiveScoreUpdateService {
     apiSportsService: ApiSportsService, 
     eventTrackingService: EventTrackingService
   ) {
-    // Initialize WebSocket server on a distinct path to avoid conflicts with Vite
-    // Use noServer: true to avoid binding to a port directly
+    // Initialize WebSocket server with the server directly to handle the path properly
     this.wss = new WebSocketServer({ 
-      noServer: true,
+      server: server,
+      path: '/ws',
       clientTracking: true 
-    });
-    
-    // Handle the upgrade event manually to avoid port conflicts
-    server.on('upgrade', (request, socket, head) => {
-      const pathname = new URL(request.url || '', `http://${request.headers.host}`).pathname;
-      
-      if (pathname === '/ws') {
-        this.wss.handleUpgrade(request, socket, head, (ws) => {
-          this.wss.emit('connection', ws, request);
-        });
-      }
     });
     
     this.clients = new Map();
@@ -172,8 +161,9 @@ export class LiveScoreUpdateService {
       if (clientData.subscription.includes('all')) {
         clientData.subscription = data.sports;
       } else {
-        // Add new sports to subscription
-        const uniqueSports = [...new Set([...clientData.subscription, ...data.sports])];
+        // Add new sports to subscription - use a different approach to avoid Set iteration issues
+        const allSports = [...clientData.subscription, ...data.sports];
+        const uniqueSports = allSports.filter((sport, index) => allSports.indexOf(sport) === index);
         clientData.subscription = uniqueSports;
       }
     }

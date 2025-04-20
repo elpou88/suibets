@@ -1849,7 +1849,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     path: '/ws',
     clientTracking: true,
     // Set permessage-deflate to false for better performance
-    perMessageDeflate: false
+    perMessageDeflate: false,
+    // Increase maxPayload for larger message support
+    maxPayload: 5 * 1024 * 1024 // 5MB max payload size
+    // Note: We'll handle ping/pong with manual implementation since
+    // the ws library's built-in ping/pong is not configurable through options
   });
   
   // Track connection statistics

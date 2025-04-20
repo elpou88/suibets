@@ -436,5 +436,12 @@ export interface WebSocketOptions {
   debug?: boolean;
 }
 
-// Create a singleton instance for global usage
-export const globalWebSocket = new EnhancedWebSocket({ debug: true });
+// Define a more resilient singleton instance for global usage
+// With better reconnection handling and error tolerance
+export const globalWebSocket = new EnhancedWebSocket({ 
+  debug: true,
+  maxReconnectAttempts: 100, // More reconnection attempts before giving up
+  reconnectBaseDelay: 1000,  // Start with 1s delay between reconnection attempts
+  pingIntervalTime: 20000,   // Send ping every 20s to check connection
+  autoConnect: true          // Auto-connect on initialization
+});

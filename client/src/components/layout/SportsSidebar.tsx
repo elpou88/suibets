@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { apiRequest } from '@/lib/queryClient';
+import { useWebSocketLiveUpdates } from '@/lib/useWebSocketLiveUpdates';
 import { 
   Trophy, 
   Grid, 
@@ -13,7 +14,9 @@ import {
   Clock,
   Zap,
   Radio,
-  AreaChart
+  AreaChart,
+  Wifi,
+  WifiOff
 } from 'lucide-react';
 
 // Sport icon mapping - using #00ffff color for all icons - updated to match server routes.ts
@@ -40,6 +43,7 @@ const SPORT_ICONS: Record<number, JSX.Element> = {
 export default function SportsSidebar() {
   const [, setLocation] = useLocation();
   const [sportEventCounts, setSportEventCounts] = useState<Record<number, { live: number, upcoming: number }>>({});
+  const [wsStatus, setWsStatus] = useState<'connected' | 'disconnected' | 'error'>('disconnected');
   
   // Fetch sports for the sidebar directly from the API with error handling
   const { data: sports = [] } = useQuery({
@@ -57,22 +61,22 @@ export default function SportsSidebar() {
       } catch (error) {
         console.error("Error fetching sports:", error);
         // Return hardcoded default sports as fallback to ensure sidebar always shows something
+        // IDs MUST match server/routes.ts sportId mappings
         return [
-          { id: 1, name: 'Soccer', slug: 'soccer', icon: '⚽', isActive: true },
+          { id: 26, name: 'Soccer', slug: 'soccer', icon: '⚽', isActive: true },
+          { id: 1, name: 'Football', slug: 'football', icon: '⚽', isActive: true }, 
           { id: 2, name: 'Basketball', slug: 'basketball', icon: '🏀', isActive: true },
           { id: 3, name: 'Tennis', slug: 'tennis', icon: '🎾', isActive: true },
           { id: 4, name: 'Baseball', slug: 'baseball', icon: '⚾', isActive: true },
           { id: 5, name: 'Hockey', slug: 'hockey', icon: '🏒', isActive: true },
+          { id: 8, name: 'Rugby', slug: 'rugby', icon: '🏉', isActive: true },
           { id: 9, name: 'Cricket', slug: 'cricket', icon: '🏏', isActive: true },
           { id: 10, name: 'Golf', slug: 'golf', icon: '⛳', isActive: true },
+          { id: 11, name: 'Boxing', slug: 'boxing', icon: '🥊', isActive: true },
+          { id: 12, name: 'MMA/UFC', slug: 'mma-ufc', icon: '🥋', isActive: true },
           { id: 13, name: 'Formula 1', slug: 'formula_1', icon: '🏎️', isActive: true },
           { id: 14, name: 'Cycling', slug: 'cycling', icon: '🚴', isActive: true },
-          { id: 16, name: 'American Football', slug: 'american_football', icon: '🏈', isActive: true },
-          { id: 17, name: 'Rugby', slug: 'rugby', icon: '🏉', isActive: true },
-          { id: 19, name: 'Volleyball', slug: 'volleyball', icon: '🏐', isActive: true },
-          { id: 20, name: 'Snooker', slug: 'snooker', icon: '🎱', isActive: true },
-          { id: 22, name: 'Darts', slug: 'darts', icon: '🎯', isActive: true },
-          { id: 23, name: 'MMA', slug: 'mma', icon: '🥊', isActive: true }
+          { id: 15, name: 'American Football', slug: 'american_football', icon: '🏈', isActive: true }
         ];
       }
     },

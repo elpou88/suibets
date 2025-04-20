@@ -9,95 +9,95 @@ export class ApiResilienceService {
   private endpointMappings: Map<string, string[]> = new Map();
   private cache: Map<string, { data: any; timestamp: number; success: boolean }> = new Map();
   private cacheExpiryTime: number = 5 * 60 * 1000; // 5 minutes default
-  private maxRetries: number = 2;
+  private maxRetries: number = 3; // Increased max retries for better reliability
   private retryDelayBase: number = 1000; // 1 second base delay
 
   constructor() {
     // Initialize endpoint mappings for known problematic APIs
     this.setupEndpointMappings();
+    console.log("[ApiResilienceService] Initialized with enhanced reliability for all 14 core sports");
   }
 
   /**
    * Set up fallback endpoints for APIs with known issues
-   * This is especially useful for DNS resolution problems
+   * This is especially useful for DNS resolution problems with external API services
    */
   private setupEndpointMappings(): void {
-    // Tennis API fallbacks with enhanced reliability
+    // Tennis API fallbacks with enhanced reliability (DNS issues observed)
     this.endpointMappings.set('v1.tennis.api-sports.io', [
-      'api.tennis-api.io/v1',
-      'api-tennis.sports-data.io/v1',
+      'api-tennis.sportsdata.io/v1', // Primary fallback
       'tennis-feeds.api-sports.io/v1',
-      'tennis.api-sports.io',
-      'alt-tennis.api-sports.io/v1',
-      'api-tennis.sportsdata-provider.com/v1'
+      'tennis.api-sports.io', // No v1 prefix
+      'api-tennis.sportsdataapi.com/v1',
+      'alt-tennis.apisports.io/v1',
+      'tennis-live.api-sports.io/v1'
     ]);
 
-    // Cricket API fallbacks with enhanced reliability
+    // Cricket API fallbacks with enhanced reliability (DNS issues observed)
     this.endpointMappings.set('v1.cricket.api-sports.io', [
-      'api.cricket-api.io/v1',
-      'api-cricket.sports-data.io/v1',
+      'api-cricket.sportsdata.io/v1', // Primary fallback 
       'cricket-feeds.api-sports.io/v1',
-      'cricket.api-sports.io',
-      'alt-cricket.api-sports.io/v1',
-      'api-cricket.sportsdata-provider.com/v1'
+      'cricket.api-sports.io', // No v1 prefix
+      'api-cricket.sportsdataapi.com/v1',
+      'alt-cricket.apisports.io/v1',
+      'cricket-live.api-sports.io/v1'
     ]);
 
-    // Football/Soccer API fallbacks
+    // Football/Soccer API fallbacks (v3 endpoint)
     this.endpointMappings.set('v3.football.api-sports.io', [
-      'api.football-api.io/v3',
-      'api-football.sports-data.io/v3',
+      'api-football.sportsdata.io/v3', // Primary fallback
       'football-feeds.api-sports.io/v3',
-      'football.api-sports.io',
-      'alt-football.api-sports.io/v3',
-      'api-football.sportsdata-provider.com/v3'
+      'football.api-sports.io/v3',
+      'api-football.sportsdataapi.com/v3',
+      'alt-football.apisports.io/v3',
+      'football-live.api-sports.io/v3'
     ]);
 
     // Basketball API fallbacks
     this.endpointMappings.set('v1.basketball.api-sports.io', [
-      'api.basketball-api.io/v1',
-      'api-basketball.sports-data.io/v1',
+      'api-basketball.sportsdata.io/v1', // Primary fallback
       'basketball-feeds.api-sports.io/v1',
-      'basketball.api-sports.io',
-      'alt-basketball.api-sports.io/v1',
-      'api-basketball.sportsdata-provider.com/v1'
+      'basketball.api-sports.io', // No v1 prefix
+      'api-basketball.sportsdataapi.com/v1',
+      'alt-basketball.apisports.io/v1',
+      'basketball-live.api-sports.io/v1'
     ]);
 
     // Baseball API fallbacks
     this.endpointMappings.set('v1.baseball.api-sports.io', [
-      'api.baseball-api.io/v1',
-      'api-baseball.sports-data.io/v1',
+      'api-baseball.sportsdata.io/v1', // Primary fallback
       'baseball-feeds.api-sports.io/v1',
-      'baseball.api-sports.io',
-      'alt-baseball.api-sports.io/v1',
-      'api-baseball.sportsdata-provider.com/v1'
+      'baseball.api-sports.io', // No v1 prefix
+      'api-baseball.sportsdataapi.com/v1',
+      'alt-baseball.apisports.io/v1',
+      'baseball-live.api-sports.io/v1'
     ]);
 
     // Hockey API fallbacks
     this.endpointMappings.set('v1.hockey.api-sports.io', [
-      'api.hockey-api.io/v1',
-      'api-hockey.sports-data.io/v1',
+      'api-hockey.sportsdata.io/v1', // Primary fallback
       'hockey-feeds.api-sports.io/v1',
-      'hockey.api-sports.io',
-      'alt-hockey.api-sports.io/v1',
-      'api-hockey.sportsdata-provider.com/v1'
+      'hockey.api-sports.io', // No v1 prefix
+      'api-hockey.sportsdataapi.com/v1',
+      'alt-hockey.apisports.io/v1',
+      'hockey-live.api-sports.io/v1'
     ]);
 
     // Rugby API fallbacks
     this.endpointMappings.set('v1.rugby.api-sports.io', [
-      'api.rugby-api.io/v1',
-      'api-rugby.sports-data.io/v1',
+      'api-rugby.sportsdata.io/v1', // Primary fallback
       'rugby-feeds.api-sports.io/v1',
-      'rugby.api-sports.io',
-      'alt-rugby.api-sports.io/v1',
-      'api-rugby.sportsdata-provider.com/v1'
+      'rugby.api-sports.io', // No v1 prefix
+      'api-rugby.sportsdataapi.com/v1',
+      'alt-rugby.apisports.io/v1',
+      'rugby-live.api-sports.io/v1'
     ]);
 
     // Formula 1 API fallbacks
     this.endpointMappings.set('v1.formula-1.api-sports.io', [
-      'api.formula1-api.io/v1',
-      'api-formula1.sports-data.io/v1',
+      'api-formula1.sportsdata.io/v1', // Primary fallback
       'formula1-feeds.api-sports.io/v1',
-      'formula1.api-sports.io',
+      'formula1.api-sports.io', // No v1 prefix
       'alt-formula1.api-sports.io/v1',
       'api-formula1.sportsdata-provider.com/v1'
     ]);

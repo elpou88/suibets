@@ -329,6 +329,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Use dedicated service based on sport ID
           switch(reqSportId) {
+            case 1: // Football (European/International)
+            case 26: // Soccer (Same as Football, alternative name)
+              try {
+                console.log(`[Routes] Using Soccer/Football service for ID ${reqSportId}`);
+                // Use the soccer service for both sport ID 1 and ID 26 to unify football/soccer handling
+                specialEvents = isLive 
+                  ? await soccerService.getLiveMatches()
+                  : await soccerService.getUpcomingMatches(20);
+                console.log(`[Routes] Soccer/Football service returned ${specialEvents?.length || 0} events for ID ${reqSportId}`);
+                
+                // If we have events, ensure they have the correct requested sportId
+                if (specialEvents && specialEvents.length > 0) {
+                  specialEvents = specialEvents.map(event => ({
+                    ...event,
+                    sportId: reqSportId // Preserve the requested sportId (1 or 26)
+                  }));
+                }
+              } catch (err) {
+                console.error(`[Routes] Error using Soccer/Football service for ID ${reqSportId}:`, err);
+                // Try fallback through API Sports service
+                try {
+                  console.log(`[Routes] Trying fallback via apiSportsService for Football/Soccer ID ${reqSportId}`);
+                  specialEvents = isLive 
+                    ? await apiSportsService.getLiveEvents('football')
+                    : await apiSportsService.getUpcomingEvents('football', 20);
+                } catch (fallbackErr) {
+                  console.error(`[Routes] Fallback for Football/Soccer also failed:`, fallbackErr);
+                }
+              }
+              break;
             case 9: // Cricket
               try {
                 // Import cricket service here to avoid circular dependencies
@@ -413,12 +443,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             case 13: // Formula 1
               specialEvents = await formula1Service.getFormula1Races(isLive === true);
               console.log(`[Routes] Formula 1 service returned ${specialEvents?.length || 0} events`);
-              break;
-            case 26: // Soccer
-              specialEvents = isLive 
-                ? await soccerService.getLiveMatches()
-                : await soccerService.getUpcomingMatches(20);
-              console.log(`[Routes] Soccer service returned ${specialEvents?.length || 0} events`);
               break;
           }
           
@@ -1921,7 +1945,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             subscriptions.add('all-sports');
           }
           
-          console.log(`[WebSocket] Client subscribed to sports: ${[...subscriptions].join(', ')}`);
+          console.log(`[WebSocket] Client subscribed to sports: ${Array.from(subscriptions).join(', ')}`);
           
           // Respond with confirmation
           if (ws.readyState === WebSocket.OPEN) {
@@ -1929,7 +1953,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               type: 'subscribed',
               sports: data.sports,
               allSports: data.allSports === true,
-              subscriptions: [...subscriptions],
+              subscriptions: Array.from(subscriptions),
               timestamp: Date.now()
             }));
             wsStats.messagesSent++;
@@ -1958,7 +1982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             ws.send(JSON.stringify({
               type: 'unsubscribed',
               sports: data.sports,
-              subscriptions: [...subscriptions],
+              subscriptions: Array.from(subscriptions),
               timestamp: Date.now()
             }));
             wsStats.messagesSent++;

@@ -17,6 +17,17 @@ class SoccerService {
   }
   
   /**
+   * Update the API key
+   * @param apiKey New API key to use
+   */
+  updateApiKey(apiKey: string): void {
+    if (apiKey && this.apiKey !== apiKey) {
+      this.apiKey = apiKey;
+      console.log('[SoccerService] API key updated');
+    }
+  }
+  
+  /**
    * Get live soccer matches
    */
   async getLiveMatches(): Promise<SportEvent[]> {

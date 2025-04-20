@@ -509,7 +509,7 @@ export class LiveScoreUpdateService {
    * @returns Sport slug
    */
   private getSportSlugById(sportId: number): string {
-    // Map sport IDs to sport slugs - updated to match main routes.ts mappings
+    // Map sport IDs to sport slugs - completely aligned with main routes.ts mappings
     const sportMap: { [id: number]: string } = {
       1: 'football',
       2: 'basketball',

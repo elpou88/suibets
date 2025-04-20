@@ -41,6 +41,8 @@ import { cricketService } from './services/cricketService';
 
 // Import Soccer service for ID 26
 import { soccerService } from './services/soccerService';
+// Update soccer service with the API key
+soccerService.updateApiKey(sportsApiKey);
 
 // Import WebSocket service
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';

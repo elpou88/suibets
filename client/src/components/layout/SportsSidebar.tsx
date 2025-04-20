@@ -19,25 +19,38 @@ import {
   WifiOff
 } from 'lucide-react';
 
-// Sport icon mapping - using #00ffff color for all icons - updated to match server routes.ts
+// Sport icon mapping - completely aligned with main routes.ts sportId mappings
 const SPORT_ICONS: Record<number, JSX.Element> = {
-  1: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,  // Football (European)
-  2: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Basketball
+  1: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,      // Football (European)
+  2: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,    // Basketball
   3: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Tennis
   4: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Baseball
-  5: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Hockey
-  6: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Handball
+  5: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,    // Hockey
+  6: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,      // Handball
   7: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Volleyball
-  8: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Rugby
-  9: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />, // Cricket
+  8: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,      // Rugby
+  9: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,    // Cricket
   10: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Golf
-  11: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Boxing
-  12: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // MMA/UFC
+  11: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // Boxing
+  12: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // MMA/UFC
   13: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Formula 1
   14: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Cycling
-  15: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // American Football
-  16: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // AFL
-  26: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />, // Soccer
+  15: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // American Football
+  16: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // AFL
+  17: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,   // Snooker
+  18: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // Darts
+  19: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Table Tennis
+  20: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Badminton
+  21: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // Beach Volleyball
+  22: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,   // Winter Sports
+  23: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />, // Motorsport
+  24: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // Esports
+  25: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,   // Netball
+  26: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // Soccer
+  27: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,   // NBA
+  28: <Radio className="mr-2 h-4 w-4 text-[#00ffff]" />,   // NHL
+  29: <Zap className="mr-2 h-4 w-4 text-[#00ffff]" />,     // NFL
+  30: <AreaChart className="mr-2 h-4 w-4 text-[#00ffff]" />  // MLB
 };
 
 export default function SportsSidebar() {

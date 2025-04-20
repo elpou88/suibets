@@ -168,38 +168,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
-      // Map sport IDs to names for special handling cases
+      // Map sport IDs to names for special handling cases - aligned with Hugewin standards
       const sportMap: Record<number, string> = {
-        1: 'football',
-        2: 'basketball',
-        3: 'tennis',
-        4: 'baseball',
-        5: 'hockey',
-        6: 'handball',
-        7: 'volleyball',
-        8: 'rugby',
-        9: 'cricket',
-        10: 'golf',
-        11: 'boxing',
-        12: 'mma-ufc',
-        13: 'formula_1', 
-        14: 'cycling',
-        15: 'american_football',
-        16: 'afl',
-        17: 'snooker',
-        18: 'darts',
-        19: 'table-tennis',
-        20: 'badminton',
-        21: 'beach-volleyball',
-        22: 'winter-sports',
-        23: 'motorsport', 
-        24: 'esports',
-        25: 'netball',
-        26: 'soccer',
-        27: 'nba',
-        28: 'nhl',
-        29: 'nfl',
-        30: 'mlb'
+        1: 'football',        // Football/Soccer (European style)
+        2: 'basketball',      // Basketball
+        3: 'tennis',          // Tennis
+        4: 'baseball',        // Baseball
+        5: 'ice-hockey',      // Ice Hockey (was 'hockey')
+        6: 'handball',        // Handball
+        7: 'volleyball',      // Volleyball
+        8: 'rugby',           // Rugby
+        9: 'cricket',         // Cricket
+        10: 'golf',           // Golf
+        11: 'boxing',         // Boxing
+        12: 'mma-ufc',        // MMA/UFC
+        13: 'formula-1',      // Formula 1 (standardized hyphen)
+        14: 'cycling',        // Cycling
+        15: 'american-football', // American Football (standardized hyphen)
+        16: 'aussie-rules',   // Australian Football League (was 'afl')
+        17: 'snooker',        // Snooker
+        18: 'darts',          // Darts
+        19: 'table-tennis',   // Table Tennis
+        20: 'badminton',      // Badminton
+        21: 'beach-volleyball', // Beach Volleyball
+        22: 'winter-sports',  // Winter Sports
+        23: 'motorsport',     // Motorsport
+        24: 'esports',        // Esports
+        25: 'netball',        // Netball
+        26: 'soccer',         // Soccer (Alternative name for Football)
+        27: 'nba',            // NBA (Basketball league)
+        28: 'nhl',            // NHL (Hockey league)
+        29: 'nfl',            // NFL (American Football league)
+        30: 'mlb'             // MLB (Baseball league)
       };
       
       // Try special sport-specific services first if relevant

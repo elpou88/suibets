@@ -20,42 +20,47 @@ export class ApiSportsService {
   private cacheVersionKey: string = "v4"; // Increment this when making changes to force cache refresh
   
   // API endpoints for each sport - expanded to include all sports from the API
+  // Aligned with sportMap in routes.ts for consistent identifiers
   private sportEndpoints: Record<string, string> = {
-    football: 'https://v3.football.api-sports.io/fixtures',
-    soccer: 'https://v3.football.api-sports.io/fixtures',
-    basketball: 'https://v1.basketball.api-sports.io/games',
-    baseball: 'https://v1.baseball.api-sports.io/games',
-    hockey: 'https://v1.hockey.api-sports.io/games',
-    rugby: 'https://v1.rugby.api-sports.io/games',
-    american_football: 'https://v1.american-football.api-sports.io/games',
-    nfl: 'https://v1.american-football.api-sports.io/games', // NFL uses american football endpoint
-    nba: 'https://v1.basketball.api-sports.io/games', // NBA uses basketball endpoint
-    nhl: 'https://v1.hockey.api-sports.io/games', // NHL uses hockey endpoint
-    mlb: 'https://v1.baseball.api-sports.io/games', // MLB uses baseball endpoint
-    tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - matches is correct
-    cricket: 'https://v1.cricket.api-sports.io/fixtures',
-    handball: 'https://v1.handball.api-sports.io/games',
-    volleyball: 'https://v1.volleyball.api-sports.io/games',
-    mma: 'https://v1.mma.api-sports.io/fights',
-    'mma-ufc': 'https://v1.mma.api-sports.io/fights',
-    boxing: 'https://v1.boxing.api-sports.io/fights',
-    golf: 'https://v1.golf.api-sports.io/tournaments',
-    formula_1: 'https://v1.formula-1.api-sports.io/races',
-    'formula-1': 'https://v1.formula-1.api-sports.io/races', // Support either format
-    cycling: 'https://v1.cycling.api-sports.io/races',
-    afl: 'https://v1.aussie-rules.api-sports.io/games', // AFL uses aussie rules API
-    snooker: 'https://v1.snooker.api-sports.io/fixtures',
-    darts: 'https://v1.darts.api-sports.io/fixtures',
-    badminton: 'https://v1.badminton.api-sports.io/fixtures',
-    tabletennis: 'https://v1.table-tennis.api-sports.io/fixtures',
-    'table-tennis': 'https://v1.table-tennis.api-sports.io/fixtures',
-    netball: 'https://v1.netball.api-sports.io/games',
-    beach_volleyball: 'https://v1.beach-volleyball.api-sports.io/games',
-    'beach-volleyball': 'https://v1.beach-volleyball.api-sports.io/games',
-    esports: 'https://v1.esports.api-sports.io/matches',
-    motorsport: 'https://v1.motorsport.api-sports.io/events',
-    motogp: 'https://v1.motogp.api-sports.io/races',
-    'winter-sports': 'https://v1.winter-sports.api-sports.io/events'
+    // Main sports with direct API endpoints
+    football: 'https://v3.football.api-sports.io/fixtures',       // ID: 1
+    soccer: 'https://v3.football.api-sports.io/fixtures',         // ID: 26 (alt name for football)
+    basketball: 'https://v1.basketball.api-sports.io/games',      // ID: 2
+    tennis: 'https://v1.tennis.api-sports.io/matches',            // ID: 3
+    baseball: 'https://v1.baseball.api-sports.io/games',          // ID: 4
+    'ice-hockey': 'https://v1.hockey.api-sports.io/games',        // ID: 5
+    hockey: 'https://v1.hockey.api-sports.io/games',              // Legacy support
+    handball: 'https://v1.handball.api-sports.io/games',          // ID: 6
+    volleyball: 'https://v1.volleyball.api-sports.io/games',      // ID: 7
+    rugby: 'https://v1.rugby.api-sports.io/games',                // ID: 8
+    cricket: 'https://v1.cricket.api-sports.io/fixtures',         // ID: 9
+    golf: 'https://v1.golf.api-sports.io/tournaments',            // ID: 10
+    boxing: 'https://v1.boxing.api-sports.io/fights',             // ID: 11
+    'mma-ufc': 'https://v1.mma.api-sports.io/fights',             // ID: 12
+    mma: 'https://v1.mma.api-sports.io/fights',                   // Legacy support
+    'formula-1': 'https://v1.formula-1.api-sports.io/races',      // ID: 13
+    formula_1: 'https://v1.formula-1.api-sports.io/races',        // Legacy support
+    cycling: 'https://v1.cycling.api-sports.io/races',            // ID: 14
+    'american-football': 'https://v1.american-football.api-sports.io/games', // ID: 15
+    american_football: 'https://v1.american-football.api-sports.io/games',   // Legacy support
+    'aussie-rules': 'https://v1.aussie-rules.api-sports.io/games', // ID: 16 (was afl)
+    afl: 'https://v1.aussie-rules.api-sports.io/games',            // Legacy support
+    snooker: 'https://v1.snooker.api-sports.io/fixtures',          // ID: 17
+    darts: 'https://v1.darts.api-sports.io/fixtures',              // ID: 18
+    'table-tennis': 'https://v1.table-tennis.api-sports.io/fixtures', // ID: 19
+    tabletennis: 'https://v1.table-tennis.api-sports.io/fixtures',     // Legacy support
+    badminton: 'https://v1.badminton.api-sports.io/fixtures',          // ID: 20
+    'beach-volleyball': 'https://v1.volleyball.api-sports.io/games',    // ID: 21 (using volleyball API)
+    'winter-sports': 'https://v1.ski.api-sports.io/races',              // ID: 22
+    motorsport: 'https://v1.motorsport.api-sports.io/races',            // ID: 23
+    esports: 'https://v1.esports.api-sports.io/games',                 // ID: 24
+    netball: 'https://v1.netball.api-sports.io/games',                 // ID: 25
+    
+    // League-specific endpoints (which use the main sport APIs)
+    nba: 'https://v1.basketball.api-sports.io/games',    // ID: 27 (uses basketball API)
+    nhl: 'https://v1.hockey.api-sports.io/games',        // ID: 28 (uses hockey API)
+    nfl: 'https://v1.american-football.api-sports.io/games', // ID: 29 (uses american football API)
+    mlb: 'https://v1.baseball.api-sports.io/games',      // ID: 30 (uses baseball API)
   };
   
   // Status check endpoint for each API

@@ -14,20 +14,50 @@ export class LiveScoreUpdateService {
   private eventTrackingService: EventTrackingService;
   private updateInterval: NodeJS.Timeout | null = null;
   private sportUpdateIntervals: { [sport: string]: number } = {
-    // Different update frequencies for different sports
-    football: 15000,        // 15 seconds
-    basketball: 10000,      // 10 seconds
-    baseball: 20000,        // 20 seconds
-    hockey: 10000,          // 10 seconds
-    tennis: 15000,          // 15 seconds
-    cricket: 30000,         // 30 seconds
-    'rugby-league': 20000,  // 20 seconds
-    'rugby-union': 20000,   // 20 seconds
-    boxing: 10000,          // 10 seconds
-    'mma-ufc': 10000,       // 10 seconds
-    golf: 60000,            // 1 minute
-    'formula-1': 10000,     // 10 seconds
-    default: 30000          // 30 seconds for all other sports
+    // Update frequencies for all 14 core sports - using full mapping to ensure consistency
+    // Higher frequency (lower time) for fast-paced sports, lower frequency for slower sports
+    football: 10000,        // 10 seconds - Football/Soccer (ID: 1)
+    soccer: 10000,          // 10 seconds - Soccer alternative name (ID: 26)
+    basketball: 5000,       // 5 seconds - Basketball (ID: 2)
+    tennis: 15000,          // 15 seconds - Tennis (ID: 3)
+    baseball: 20000,        // 20 seconds - Baseball (ID: 4)
+    'ice-hockey': 10000,    // 10 seconds - Ice Hockey (ID: 5)
+    hockey: 10000,          // 10 seconds - legacy name support
+    handball: 15000,        // 15 seconds - Handball (ID: 6)
+    volleyball: 10000,      // 10 seconds - Volleyball (ID: 7)
+    rugby: 15000,           // 15 seconds - Rugby (ID: 8)
+    'rugby-league': 15000,  // 15 seconds - legacy support 
+    'rugby-union': 15000,   // 15 seconds - legacy support
+    cricket: 30000,         // 30 seconds - Cricket (ID: 9)
+    golf: 60000,            // 60 seconds - Golf (ID: 10)
+    boxing: 5000,           // 5 seconds - Boxing (ID: 11)
+    'mma-ufc': 5000,        // 5 seconds - MMA/UFC (ID: 12)
+    mma: 5000,              // 5 seconds - legacy support
+    'formula-1': 10000,     // 10 seconds - Formula 1 (ID: 13)
+    'formula1': 10000,      // 10 seconds - legacy support
+    cycling: 30000,         // 30 seconds - Cycling (ID: 14)
+    
+    // Additional sports beyond the core 14
+    'american-football': 15000, // 15 seconds - American Football (ID: 15)
+    'aussie-rules': 15000,      // 15 seconds - Australian Rules Football (ID: 16)
+    snooker: 20000,             // 20 seconds - Snooker (ID: 17)
+    darts: 10000,               // 10 seconds - Darts (ID: 18)
+    'table-tennis': 10000,      // 10 seconds - Table Tennis (ID: 19)
+    badminton: 10000,           // 10 seconds - Badminton (ID: 20)
+    'beach-volleyball': 10000,  // 10 seconds - Beach Volleyball (ID: 21)
+    'winter-sports': 20000,     // 20 seconds - Winter Sports (ID: 22)
+    motorsport: 10000,          // 10 seconds - Motorsport (ID: 23)
+    esports: 10000,             // 10 seconds - Esports (ID: 24)
+    netball: 15000,             // 15 seconds - Netball (ID: 25)
+    
+    // League-specific mappings
+    nba: 5000,                  // 5 seconds - NBA (ID: 27)
+    nhl: 10000,                 // 10 seconds - NHL (ID: 28)
+    nfl: 15000,                 // 15 seconds - NFL (ID: 29)
+    mlb: 20000,                 // 20 seconds - MLB (ID: 30)
+    
+    // Default fallback for any unmapped sport
+    default: 20000              // 20 seconds for all other sports
   };
   
   private liveScores: { [eventId: string]: { score: string, status: string, timestamp: number } } = {};

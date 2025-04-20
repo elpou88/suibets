@@ -33,7 +33,19 @@ export class ApiResilienceService {
       'tennis.api-sports.io', // No v1 prefix
       'api-tennis.sportsdataapi.com/v1',
       'alt-tennis.apisports.io/v1',
-      'tennis-live.api-sports.io/v1'
+      'tennis-live.api-sports.io/v1',
+      // Additional endpoints to resolve ENOTFOUND errors
+      'api-tennis-beta.p.rapidapi.com',
+      'api-tennis-v1.p.rapidapi.com',
+      'tennis-data.p.rapidapi.com',
+      'sports-data.p.rapidapi.com/tennis',
+      'ultimate-tennis-data.p.rapidapi.com',
+      'tennis-stats.p.rapidapi.com',
+      'tennis-predictions.p.rapidapi.com',
+      'tennis-live.p.rapidapi.com/atp',
+      'sportsdata-tennis.p.rapidapi.com',
+      'api.tennistemple.com/v1',
+      'api.sportradar.us/tennis/trial/v3'
     ]);
 
     // Cricket API fallbacks with enhanced reliability (DNS issues observed)
@@ -182,83 +194,122 @@ export class ApiResilienceService {
       return cached.data;
     }
 
-    // Parse the original URL to extract domain and path
-    let url = new URL(originalUrl);
-    const originalDomain = url.hostname;
-    const originalPath = url.pathname;
-    const originalParams = url.search;
-
-    // Check if we have fallback domains for this endpoint
-    const fallbackDomains = this.endpointMappings.get(originalDomain) || [];
-    
-    // Try the original domain first, then fallbacks
-    const domainsToTry = [originalDomain, ...fallbackDomains];
-    
     // Track errors for logging
-    const errors: Error[] = [];
+    const allErrors: string[] = [];
 
-    // Try each domain with retries
-    for (const domain of domainsToTry) {
-      // Build the URL with the current domain
-      let currentUrl: string;
+    try {
+      // Parse the original URL to extract domain and path
+      let url = new URL(originalUrl);
+      const originalDomain = url.hostname;
+      const originalPath = url.pathname;
+      const originalParams = url.search;
+  
+      // Check if we have fallback domains for this endpoint
+      const fallbackDomains = this.endpointMappings.get(originalDomain) || [];
       
-      if (domain === originalDomain) {
-        currentUrl = originalUrl; // Use the original URL as-is
-      } else {
-        // Construct a new URL with the fallback domain
-        // Handle different URL formats (some fallbacks might use different path structures)
-        if (domain.includes('/v1')) {
-          // Domain includes version path already
-          currentUrl = `${url.protocol}//${domain}${originalPath.replace('/v1', '')}${originalParams}`;
-        } else {
-          currentUrl = `${url.protocol}//${domain}${originalPath}${originalParams}`;
+      // Add more generic fallbacks for any unrecognized domains (helps with DNS issues)
+      // These are organized by common sports API patterns
+      if (fallbackDomains.length === 0 && originalDomain.includes('api-sports')) {
+        // Try to derive fallbacks based on domain pattern
+        const sport = originalDomain.split('.')[0].replace('v1.', '');
+        if (sport) {
+          console.log(`[ApiResilienceService] No configured fallbacks for ${originalDomain}, adding generic ones for ${sport}`);
+          fallbackDomains.push(
+            `api-${sport}.sportsdata.io/v1`,
+            `${sport}-api.api-sports.io`,
+            `${sport}-feeds.api-sports.io/v1`,
+            `${sport}.api-sports.io`,
+            `alt-${sport}.apisports.io/v1`
+          );
         }
       }
       
-      // Try with exponential backoff retries
-      for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
-        try {
-          console.log(`[ApiResilienceService] Attempting request to ${currentUrl} (attempt ${attempt + 1}/${this.maxRetries + 1})`);
-          
-          // Make the request
-          const response = await axios({
-            ...config,
-            url: currentUrl,
-            method: config.method || 'GET',
-          });
-          
-          // Cache the successful response
-          this.cache.set(key, {
-            data: response.data,
-            timestamp: Date.now(),
-            success: true
-          });
-          
-          console.log(`[ApiResilienceService] Request to ${currentUrl} succeeded`);
-          return response.data;
-        } catch (error: any) {
-          // Add more context to the error and store it
-          const enhancedError = new Error(
-            `Request to ${currentUrl} failed (attempt ${attempt + 1}): ${error.message}`
-          );
-          errors.push(enhancedError);
-          
-          console.error(`[ApiResilienceService] ${enhancedError.message}`);
-          
-          // Only retry with delay if this isn't the last attempt
-          if (attempt < this.maxRetries) {
-            // Exponential backoff with jitter
-            const delay = this.retryDelayBase * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
-            console.log(`[ApiResilienceService] Retrying in ${delay.toFixed(0)}ms...`);
-            await setTimeout(delay);
+      // Try the original domain first, then fallbacks
+      const domainsToTry = [originalDomain, ...fallbackDomains];
+      
+      // Try each domain with retries
+      for (const domain of domainsToTry) {
+        // Build the URL with the current domain
+        let currentUrl: string;
+        
+        if (domain === originalDomain) {
+          currentUrl = originalUrl; // Use the original URL as-is
+        } else {
+          // Construct a new URL with the fallback domain
+          // Handle different URL formats (some fallbacks might use different path structures)
+          if (domain.includes('/v1')) {
+            // Domain includes version path already
+            currentUrl = `${url.protocol}//${domain}${originalPath.replace('/v1', '')}${originalParams}`;
+          } else {
+            currentUrl = `${url.protocol}//${domain}${originalPath}${originalParams}`;
           }
         }
+        
+        // Try with exponential backoff retries
+        for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+          try {
+            console.log(`[ApiResilienceService] Attempting request to ${currentUrl} (attempt ${attempt + 1}/${this.maxRetries + 1})`);
+            
+            // Make the request with a shorter timeout to avoid hanging
+            const response = await axios({
+              ...config,
+              url: currentUrl,
+              method: config.method || 'GET',
+              timeout: config.timeout || 5000, // 5 second timeout is more than enough
+            });
+            
+            // Cache the successful response
+            this.cache.set(key, {
+              data: response.data,
+              timestamp: Date.now(),
+              success: true
+            });
+            
+            console.log(`[ApiResilienceService] Request to ${currentUrl} succeeded`);
+            return response.data;
+          } catch (error: any) {
+            // Special handling for DNS errors (ENOTFOUND)
+            const isDnsError = error.code === 'ENOTFOUND' || 
+                              (error.cause && error.cause.code === 'ENOTFOUND') ||
+                              error.message.includes('getaddrinfo ENOTFOUND');
+            
+            if (isDnsError) {
+              console.error(`[ApiResilienceService] DNS resolution error for ${domain}, skipping remaining retries for this domain`);
+              allErrors.push(`DNS resolution error for ${domain}: ${error.message}`);
+              // For DNS errors, immediately try the next domain instead of retrying this one
+              break;
+            }
+            
+            // Add more context to the error and store it
+            const errorMsg = `Request to ${currentUrl} failed (attempt ${attempt + 1}): ${error.message}`;
+            allErrors.push(errorMsg);
+            
+            console.error(`[ApiResilienceService] ${errorMsg}`);
+            
+            // Only retry with delay if this isn't the last attempt
+            if (attempt < this.maxRetries) {
+              // Exponential backoff with jitter
+              const delay = this.retryDelayBase * Math.pow(2, attempt) * (0.5 + Math.random() * 0.5);
+              console.log(`[ApiResilienceService] Retrying in ${delay.toFixed(0)}ms...`);
+              await setTimeout(delay);
+            }
+          }
+        }
+      }
+    } catch (error: any) {
+      const errorMsg = `Error parsing URL ${originalUrl}: ${error.message || "Unknown error"}`;
+      console.error(`[ApiResilienceService] ${errorMsg}`);
+      allErrors.push(errorMsg);
+      
+      // If we get here, even URL parsing failed, so we'll check for stale data
+      if (cached) {
+        console.warn(`[ApiResilienceService] Returning stale cached data for ${key} after URL parse error`);
+        return cached.data;
       }
     }
     
     // If we get here, all domains and retries failed
-    console.error(`[ApiResilienceService] All attempts failed for ${originalUrl}:`, 
-      errors.map(e => e.message).join('\n'));
+    console.error(`[ApiResilienceService] All attempts failed for ${originalUrl}`);
     
     // Check if we have stale cache data to return as fallback
     if (cached) {
@@ -267,7 +318,7 @@ export class ApiResilienceService {
     }
     
     // No cached data available, throw an error with all the failed attempts
-    throw new Error(`All API attempts failed for ${originalUrl}. Errors: ${errors.map(e => e.message).join('; ')}`);
+    throw new Error(`All API attempts failed for ${originalUrl}. Errors: ${allErrors.join('; ')}`);
   }
 
   /**

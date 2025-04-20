@@ -326,12 +326,23 @@ const SuiWalletConnector: React.FC = () => {
         <div className="flex items-center gap-2">
           <div className="hidden md:flex text-xs bg-[#1e3a3f] text-[#00ffff] px-2 py-1 rounded-md">
             {walletStatus.address && (
-              <>
+              <div className="flex items-center">
                 <span className="overflow-hidden text-ellipsis max-w-[100px]">
                   {walletStatus.address.substring(0, 6)}...{walletStatus.address.substring(walletStatus.address.length - 4)}
                 </span>
-                <CopyButton text={walletStatus.address} className="ml-1 h-3 w-3 text-[#00ffff]" size="icon" iconOnly />
-              </>
+                <CopyButton 
+                  value={walletStatus.address} 
+                  className="ml-1" 
+                  size="icon" 
+                  variant="ghost"
+                  onCopy={() => {
+                    toast({
+                      title: "Address Copied",
+                      description: "Wallet address copied to clipboard",
+                    });
+                  }}
+                />
+              </div>
             )}
           </div>
           <Button 

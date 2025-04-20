@@ -166,21 +166,42 @@ export class CricketService {
         
         const sportEvent: SportEvent = {
           id: id?.toString() || '',
-          sportId: 9, // Cricket is sportId 9 
-          leagueId: league?.id?.toString() || '',
+          sportId: 9, // Cricket is sportId 9
           leagueName: league?.name || 'Cricket Tournament',
+          leagueSlug: league?.slug || 'cricket-tournament',
           homeTeam: teams?.home?.name || '',
           awayTeam: teams?.away?.name || '',
           startTime: date || new Date().toISOString(),
           status: matchStatus,
           score: this.formatScore(score),
-          odds: [],
-          markets: [],
+          markets: [{
+            id: `${id}-match-winner`,
+            name: 'Match Winner',
+            outcomes: [
+              {
+                id: `${id}-home-win`,
+                name: `${teams?.home?.name || 'Home'} Win`,
+                odds: 1.8 + (Math.random() * 0.5),
+                probability: 0.45
+              },
+              {
+                id: `${id}-away-win`,
+                name: `${teams?.away?.name || 'Away'} Win`,
+                odds: 1.95 + (Math.random() * 0.5),
+                probability: 0.45
+              },
+              {
+                id: `${id}-draw`,
+                name: 'Draw',
+                odds: 4.5 + (Math.random() * 1.0),
+                probability: 0.1
+              }
+            ]
+          }],
           isLive: isLive || isMatchLive,
-          lastUpdated: new Date().toISOString(),
-          countryCode: league?.country?.code || '',
-          countryName: league?.country?.name || '',
-          sportName: 'Cricket'
+          dataSource: 'api-sports',
+          venue: league?.country?.name || '',
+          format: match?.type || 'Match'
         };
         
         return sportEvent;

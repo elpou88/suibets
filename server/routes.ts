@@ -516,7 +516,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use the dynamic import for cricket service in case it's not available
           let cricketEvents = [];
           try {
-            cricketEvents = await cricketService.getEvents(isLive);
+            // Use the correct method names from our CricketService
+            cricketEvents = isLive 
+              ? await cricketService.getLiveEvents()
+              : await cricketService.getUpcomingEvents(20);
           } catch (cricketErr) {
             console.error('[Routes] Error using cricket service, falling back to apiSportsService:', cricketErr);
             // Fall back to apiSportsService if cricket service fails

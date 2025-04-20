@@ -22,6 +22,15 @@ export class CricketService {
   }
   
   /**
+   * Update the API key
+   * @param apiKey The new API key to use
+   */
+  updateApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[CricketService] API key updated');
+  }
+  
+  /**
    * Get live cricket events
    */
   async getLiveEvents(): Promise<SportEvent[]> {

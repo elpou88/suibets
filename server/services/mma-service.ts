@@ -22,6 +22,15 @@ export class MmaService {
   }
   
   /**
+   * Update the API key
+   * @param apiKey The new API key to use
+   */
+  updateApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[MmaService] API key updated');
+  }
+  
+  /**
    * Get live MMA events
    */
   async getLiveEvents(): Promise<SportEvent[]> {

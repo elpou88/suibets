@@ -36,13 +36,23 @@ import { baseballService } from './services/baseballService';
 import { boxingService } from './services/boxing';
 import { rugbyService } from './services/rugbyService';
 
-// Import Cricket service
-import { cricketService } from './services/cricketService';
-
 // Import Soccer service for ID 26
 import { soccerService } from './services/soccerService';
-// Update soccer service with the API key
+// Import tennis service
+import { tennisService } from './services/tennis-service';
+// Import cricket service
+import { cricketService } from './services/cricket-service';
+// Import basketball service
+import { basketballService } from './services/basketball-service';
+// Import MMA service
+import { mmaService } from './services/mma-service';
+
+// Update all services with the API key
 soccerService.updateApiKey(sportsApiKey);
+tennisService.updateApiKey(sportsApiKey);
+cricketService.updateApiKey(sportsApiKey);
+basketballService.updateApiKey(sportsApiKey);
+mmaService.updateApiKey(sportsApiKey);
 
 // Import WebSocket service
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';

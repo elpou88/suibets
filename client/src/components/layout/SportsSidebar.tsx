@@ -238,6 +238,20 @@ export default function SportsSidebar() {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
   });
 
+  // Set up WebSocket connection for live score updates
+  const { connectionStatus } = useWebSocketLiveUpdates<any>({
+    onScoreUpdate: (updatedEvents) => {
+      console.log(`[WebSocket] Received live score updates for ${updatedEvents.length} events`);
+      // We don't need to do anything here since the regular API calls will
+      // get the updated data, but we could update the counts directly if needed
+    },
+    onStatusChange: (status) => {
+      setWsStatus(status);
+      console.log(`[WebSocket] Connection status changed to: ${status}`);
+    },
+    autoReconnect: true
+  });
+
   // Calculate event counts by sport
   // Use a simpler method to update counts only when the data has changed significantly
   // to prevent render loops
@@ -448,6 +462,21 @@ export default function SportsSidebar() {
             <Clock className="mr-2 h-5 w-5 text-cyan-400" />
             Bet History
           </Button>
+          
+          {/* WebSocket connection status indicator */}
+          <div className="mt-4 flex items-center justify-center px-2 py-1 text-xs rounded bg-[#1e3a3f]/50">
+            {wsStatus === 'connected' ? (
+              <div className="flex items-center text-green-400">
+                <Wifi className="h-3 w-3 mr-1" />
+                <span>Live updates enabled</span>
+              </div>
+            ) : (
+              <div className="flex items-center text-yellow-400">
+                <WifiOff className="h-3 w-3 mr-1" />
+                <span>Using polling updates</span>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

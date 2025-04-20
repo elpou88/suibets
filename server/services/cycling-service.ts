@@ -15,12 +15,25 @@ export class CyclingService {
   private upcomingCacheExpiry: number = 15 * 60 * 1000; // 15 minutes for upcoming events
   
   constructor() {
-    // Get API key from environment variable
-    this.apiKey = process.env.API_SPORTS_KEY || '';
+    // Get API key from environment variable or use default
+    this.apiKey = process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
     
     if (!this.apiKey) {
       console.warn('[CyclingService] No API key provided. API requests will likely fail.');
+    } else {
+      console.log('[CyclingService] Initialized with API key');
     }
+  }
+  
+  /**
+   * Update the API key
+   * @param apiKey The new API key to use
+   */
+  public updateApiKey(apiKey: string): void {
+    this.apiKey = apiKey;
+    console.log('[CyclingService] API key updated');
+    // Clear cache when API key changes to ensure fresh data with new key
+    this.cache.clear();
   }
   
   /**

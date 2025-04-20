@@ -25,7 +25,10 @@ export class ApiResilienceService {
   private setupEndpointMappings(): void {
     // Tennis API fallbacks with enhanced reliability (DNS issues observed)
     this.endpointMappings.set('v1.tennis.api-sports.io', [
-      'api-tennis.sportsdata.io/v1', // Primary fallback
+      'tennis-api.api-sports.io', // Primary direct domain
+      'api.tennis-data.org/v1', // Alternative provider
+      'tennis-live-data.p.rapidapi.com', // RapidAPI alternative
+      'api-tennis.sportsdata.io/v1', // SportsData fallback
       'tennis-feeds.api-sports.io/v1',
       'tennis.api-sports.io', // No v1 prefix
       'api-tennis.sportsdataapi.com/v1',
@@ -35,7 +38,10 @@ export class ApiResilienceService {
 
     // Cricket API fallbacks with enhanced reliability (DNS issues observed)
     this.endpointMappings.set('v1.cricket.api-sports.io', [
-      'api-cricket.sportsdata.io/v1', // Primary fallback 
+      'cricket-api.api-sports.io', // Primary direct domain
+      'api.cricapi.com/v1', // Alternative provider 
+      'cricket-live-data.p.rapidapi.com', // RapidAPI alternative
+      'api-cricket.sportsdata.io/v1', // SportsData fallback
       'cricket-feeds.api-sports.io/v1',
       'cricket.api-sports.io', // No v1 prefix
       'api-cricket.sportsdataapi.com/v1',

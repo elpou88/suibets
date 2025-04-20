@@ -163,7 +163,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Return empty array rather than error for frontend compatibility
         return res.json([]);
       }
-    }, 35000); // 35 second timeout - increased from 20 seconds
+    }, 40000); // 40 second timeout - increased to allow for more sports data to be fetched
     
     try {
       const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;

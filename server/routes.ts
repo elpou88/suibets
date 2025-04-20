@@ -1,5 +1,6 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, Server } from "http";
+import { WebSocketServer, WebSocket } from 'ws';
 import { storage } from "./storage";
 import { blockchainStorage } from "./blockchain-storage";
 import { db } from "./db";
@@ -7,6 +8,7 @@ import { ApiSportsService } from "./services/apiSportsService";
 import { aggregatorService } from "./services/aggregatorService"; 
 import { initBasketballService } from "./services/basketballService";
 import { initEventTrackingService } from "./services/eventTrackingService";
+import { LiveScoreUpdateService } from "./services/liveScoreUpdateService";
 import { registerDebugRoutes } from "./debug-routes";
 import { registerWalrusRoutes } from "./routes-walrus";
 import { walrusService } from "./services/walrusService";
@@ -54,8 +56,7 @@ mmaService.updateApiKey(sportsApiKey);
 // Don't use basketballService or cricketService from '-service' files since
 // we already have imports for these from their original files
 
-// Import WebSocket service
-import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
+// LiveScoreUpdateService already imported at the top
 
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
@@ -1749,8 +1750,120 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   const httpServer = createServer(app);
   
-  // Initialize WebSocket service for live score updates
-  console.log("[Routes] Initializing WebSocket server for live score updates");
+  // Initialize WebSocket server directly with proper path to ensure compatibility
+  console.log("[Routes] Initializing standalone WebSocket server on path /ws");
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws',
+    clientTracking: true 
+  });
+  
+  // Set up basic WebSocket connection handling
+  wss.on('connection', (ws: WebSocket) => {
+    console.log("[WebSocket] New client connected");
+    
+    // Send welcome message with connection status
+    try {
+      ws.send(JSON.stringify({
+        type: 'connection',
+        status: 'connected',
+        message: 'Connected to SuiBets WebSocket server',
+        serverTime: Date.now()
+      }));
+    } catch (err) {
+      console.error("[WebSocket] Error sending welcome message:", err);
+    }
+    
+    // Handle incoming messages
+    ws.on('message', (message: string) => {
+      try {
+        const data = JSON.parse(message.toString());
+        console.log("[WebSocket] Received message:", data);
+        
+        // Handle ping message (respond with pong)
+        if (data.type === 'ping') {
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'pong',
+              timestamp: Date.now(),
+              echo: data.timestamp || Date.now()
+            }));
+          }
+          return;
+        }
+        
+        // Handle other message types as needed
+        // Respond with acknowledgment
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({
+            type: 'ack',
+            received: data.type || 'unknown',
+            timestamp: Date.now()
+          }));
+        }
+      } catch (error) {
+        console.error("[WebSocket] Error processing message:", error);
+        
+        // Send error response
+        if (ws.readyState === WebSocket.OPEN) {
+          try {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Invalid message format'
+            }));
+          } catch (err) {
+            console.error("[WebSocket] Error sending error message:", err);
+          }
+        }
+      }
+    });
+    
+    // Handle connection close
+    ws.on('close', (code, reason) => {
+      console.log(`[WebSocket] Client disconnected: Code ${code}, Reason: ${reason || 'No reason provided'}`);
+    });
+    
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error("[WebSocket] Connection error:", error);
+    });
+  });
+  
+  // Broadcast function to send updates to all connected clients
+  const broadcastLiveUpdates = (data: any) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(JSON.stringify(data));
+        } catch (err) {
+          console.error("[WebSocket] Error broadcasting update:", err);
+        }
+      }
+    });
+  };
+  
+  // Set up ping interval to keep connections alive
+  const pingInterval = setInterval(() => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        try {
+          client.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+        } catch (err) {
+          console.error("[WebSocket] Error sending ping:", err);
+        }
+      }
+    });
+  }, 30000); // Send ping every 30 seconds
+  
+  // Clean up on server close
+  httpServer.on('close', () => {
+    clearInterval(pingInterval);
+    console.log("[WebSocket] Server shutting down, cleaning up resources");
+  });
+  
+  // Also initialize the LiveScoreUpdateService which uses its own WebSocket implementation
+  // This ensures backwards compatibility with existing code
+  console.log("[Routes] Also initializing LiveScoreUpdateService for comprehensive live score updates");
   const liveScoreUpdateService = new LiveScoreUpdateService(httpServer, apiSportsService, eventTrackingService);
   
   return httpServer;

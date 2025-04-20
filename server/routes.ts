@@ -40,19 +40,16 @@ import { rugbyService } from './services/rugbyService';
 import { soccerService } from './services/soccerService';
 // Import tennis service
 import { tennisService } from './services/tennis-service';
-// Import cricket service
-import { cricketService } from './services/cricket-service';
-// Import basketball service
-import { basketballService } from './services/basketball-service';
 // Import MMA service
 import { mmaService } from './services/mma-service';
 
-// Update all services with the API key
+// Update services with the API key
 soccerService.updateApiKey(sportsApiKey);
 tennisService.updateApiKey(sportsApiKey);
-cricketService.updateApiKey(sportsApiKey);
-basketballService.updateApiKey(sportsApiKey);
 mmaService.updateApiKey(sportsApiKey);
+
+// Don't use basketballService or cricketService from '-service' files since
+// we already have imports for these from their original files
 
 // Import WebSocket service
 import { LiveScoreUpdateService } from './services/liveScoreUpdateService';
@@ -216,10 +213,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use dedicated service based on sport ID
           switch(reqSportId) {
             case 9: // Cricket
-              // Import cricket service here to avoid circular dependencies
-              const { cricketService } = require('./services/cricketService');
-              specialEvents = await cricketService.getEvents(isLive);
-              console.log(`[Routes] Cricket service returned ${specialEvents?.length || 0} events`);
+              try {
+                // Import cricket service here to avoid circular dependencies
+                const { cricketService } = require('./services/cricketService');
+                if (isLive) {
+                  specialEvents = await cricketService.getLiveEvents();
+                } else {
+                  specialEvents = await cricketService.getUpcomingEvents(20);
+                }
+                console.log(`[Routes] Cricket service returned ${specialEvents?.length || 0} events`);
+              } catch (err) {
+                console.error(`[Routes] Error using Cricket service: ${err}`);
+              }
               break;
             case 14: // Cycling
               // Import cycling service here to avoid circular dependencies

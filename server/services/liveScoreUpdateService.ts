@@ -65,6 +65,17 @@ export class LiveScoreUpdateService {
     this.wss.on('connection', (ws: WebSocket, request) => {
       console.log('[LiveScoreUpdateService] New client connected');
       
+      // Set up ping interval to keep connection alive
+      const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          // Send a ping message to keep connection alive
+          ws.send(JSON.stringify({ type: 'ping', timestamp: Date.now() }));
+        } else {
+          // Clear interval if connection is no longer open
+          clearInterval(pingInterval);
+        }
+      }, 30000); // Send ping every 30 seconds
+      
       // Initialize client data
       this.clients.set(ws, { 
         subscription: ['all'], // Default subscription to all sports
@@ -83,27 +94,38 @@ export class LiveScoreUpdateService {
       ws.on('message', (message: string) => {
         try {
           const data = JSON.parse(message.toString());
+          
+          // Handle pong response from client
+          if (data.type === 'pong') {
+            // Connection is still alive, do nothing
+            return;
+          }
+          
           this.handleClientMessage(ws, data);
         } catch (error) {
           console.error('[LiveScoreUpdateService] Error parsing client message:', error);
           
           // Send error message back to client
-          ws.send(JSON.stringify({
-            type: 'error',
-            message: 'Invalid message format. Message must be valid JSON.'
-          }));
+          if (ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Invalid message format. Message must be valid JSON.'
+            }));
+          }
         }
       });
       
       // Handle client disconnection
       ws.on('close', () => {
         console.log('[LiveScoreUpdateService] Client disconnected');
+        clearInterval(pingInterval);
         this.clients.delete(ws);
       });
       
       // Handle errors
       ws.on('error', (error) => {
         console.error('[LiveScoreUpdateService] WebSocket error:', error);
+        clearInterval(pingInterval);
         this.clients.delete(ws);
       });
     });

@@ -59,6 +59,17 @@ export function useWebSocketLiveUpdates<T>(options: {
         try {
           const data = JSON.parse(event.data);
           
+          // Handle ping messages to keep connection alive
+          if (data.type === 'ping') {
+            // Respond with pong to confirm connection is active
+            socket.send(JSON.stringify({
+              type: 'pong',
+              timestamp: Date.now(),
+              echo: data.timestamp
+            }));
+            return;
+          }
+          
           if (data.type === 'score_update' && data.events && onScoreUpdate) {
             onScoreUpdate(data.events);
           }

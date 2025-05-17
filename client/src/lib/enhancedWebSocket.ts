@@ -28,18 +28,25 @@ export class EnhancedWebSocket extends EventEmitter {
     // Determine the proper WebSocket URL based on the current location
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
+    
+    // Use the base URL from the window location to ensure proper pathing
+    // This helps with Replit's proxy handling
     this.url = options.url || `${protocol}//${host}/ws`;
     
-    // Configure options with defaults
-    this.maxReconnectAttempts = options.maxReconnectAttempts || 50;
-    this.reconnectBaseDelay = options.reconnectBaseDelay || 1000;
-    this.pingIntervalTime = options.pingIntervalTime || 20000;
+    // Configure options with defaults - increased reconnect attempts and delay for reliability
+    this.maxReconnectAttempts = options.maxReconnectAttempts || 150; // More attempts
+    this.reconnectBaseDelay = options.reconnectBaseDelay || 2000; // Longer base delay
+    this.pingIntervalTime = options.pingIntervalTime || 30000; // Longer ping interval
     this.debug = options.debug || false;
     
-    // Initialize with immediate connection if autoConnect is true
-    if (options.autoConnect !== false) {
-      this.connect();
-    }
+    // Add a slight random delay before connecting to prevent connection storms
+    const initialDelay = Math.random() * 1000;
+    setTimeout(() => {
+      // Initialize with immediate connection if autoConnect is true
+      if (options.autoConnect !== false) {
+        this.connect();
+      }
+    }, initialDelay);
   }
 
   /**

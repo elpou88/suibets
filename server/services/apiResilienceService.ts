@@ -209,17 +209,29 @@ export class ApiResilienceService {
       
       // Add more generic fallbacks for any unrecognized domains (helps with DNS issues)
       // These are organized by common sports API patterns
-      if (fallbackDomains.length === 0 && originalDomain.includes('api-sports')) {
+      if (originalDomain.includes('api-sports')) {
         // Try to derive fallbacks based on domain pattern
-        const sport = originalDomain.split('.')[0].replace('v1.', '');
+        const sport = originalDomain.split('.')[0].replace('v1.', '').replace('v2.', '').replace('v3.', '');
         if (sport) {
-          console.log(`[ApiResilienceService] No configured fallbacks for ${originalDomain}, adding generic ones for ${sport}`);
+          console.log(`[ApiResilienceService] Adding additional generic fallbacks for ${originalDomain}`);
+          
+          // Add these fallbacks regardless of whether we have configured ones
+          // This helps with the persistent DNS issues
           fallbackDomains.push(
+            // Direct API alternatives
             `api-${sport}.sportsdata.io/v1`,
             `${sport}-api.api-sports.io`,
-            `${sport}-feeds.api-sports.io/v1`,
             `${sport}.api-sports.io`,
-            `alt-${sport}.apisports.io/v1`
+            
+            // RapidAPI alternatives
+            `api-${sport}.p.rapidapi.com`,
+            `${sport}-data.p.rapidapi.com`,
+            `${sport}-live-data.p.rapidapi.com`,
+            
+            // More variations
+            `${sport}-feeds.api-sports.io/v1`,
+            `alt-${sport}.apisports.io/v1`,
+            `${sport}-live.api-sports.io/v1`
           );
         }
       }

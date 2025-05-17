@@ -1844,16 +1844,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Initialize WebSocket server with enhanced reliability
   console.log("[Routes] Initializing enhanced WebSocket server on path /ws");
+  // Create a separate instance to avoid conflicts with Vite's HMR websocket
   const wss = new WebSocketServer({ 
     server: httpServer, 
     path: '/ws',
     clientTracking: true,
-    // Set permessage-deflate to false for better performance
-    perMessageDeflate: false,
+    // Set permessage-deflate configuration for better performance
+    perMessageDeflate: {
+      threshold: 1024, // Only compress messages larger than 1KB
+      concurrencyLimit: 10, // Limit concurrent compression operations
+      zlibDeflateOptions: {
+        level: 3  // Use a lower compression level for better performance
+      }
+    },
     // Increase maxPayload for larger message support
     maxPayload: 5 * 1024 * 1024 // 5MB max payload size
-    // Note: We'll handle ping/pong with manual implementation since
-    // the ws library's built-in ping/pong is not configurable through options
+    // Note: We handle heartbeat manually since ws library doesn't support direct ping/pong options
   });
   
   // Track connection statistics

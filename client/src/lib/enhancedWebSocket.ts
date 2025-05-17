@@ -447,8 +447,29 @@ export interface WebSocketOptions {
 // With better reconnection handling and error tolerance
 export const globalWebSocket = new EnhancedWebSocket({ 
   debug: true,
-  maxReconnectAttempts: 100, // More reconnection attempts before giving up
-  reconnectBaseDelay: 1000,  // Start with 1s delay between reconnection attempts
-  pingIntervalTime: 20000,   // Send ping every 20s to check connection
-  autoConnect: true          // Auto-connect on initialization
+  maxReconnectAttempts: 200, // Much more reconnection attempts before giving up
+  reconnectBaseDelay: 3000,  // Start with 3s delay between reconnection attempts
+  pingIntervalTime: 35000,   // Send ping every 35s to check connection (longer interval)
+  autoConnect: false         // Don't auto-connect on initialization - we'll do this manually
 });
+
+// Force reconnect on page visibility change
+// This helps with Replit's environment which may suspend inactive connections
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    // If page becomes visible and we're not connected, try to reconnect
+    if (globalWebSocket.getStatus() !== 'connected') {
+      console.log('[WebSocket] Page visibility changed to visible, reconnecting...');
+      
+      // Small delay to ensure page is fully active
+      setTimeout(() => {
+        globalWebSocket.reconnect();
+      }, 1000);
+    }
+  }
+});
+
+// Initialize connection after a slight delay to allow page to fully load
+setTimeout(() => {
+  globalWebSocket.connect();
+}, 2000);

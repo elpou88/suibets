@@ -20,43 +20,54 @@ export class OddsTrackerClient {
   connect(): void {
     if (this.isConnected || this.isConnecting) return;
     
+    // Start with HTTP polling immediately to ensure we have data
+    console.log('Starting with HTTP polling for live data');
+    this.startPolling();
+    
     this.isConnecting = true;
     
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/ws/odds`;
-    
-    console.log(`Attempting to connect to odds tracker at ${wsUrl}`);
-    
-    this.ws = new WebSocket(wsUrl);
-    
-    this.ws.onopen = () => {
-      console.log('Odds tracker WebSocket connected');
-      this.isConnected = true;
+    // Also try WebSocket for real-time updates if available
+    try {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws/odds`;
+      
+      console.log(`Attempting to connect to odds tracker at ${wsUrl}`);
+      
+      this.ws = new WebSocket(wsUrl);
+      
+      this.ws.onopen = () => {
+        console.log('Odds tracker WebSocket connected');
+        this.isConnected = true;
+        this.isConnecting = false;
+        this.reconnectAttempts = 0;
+      };
+      
+      this.ws.onclose = (event) => {
+        console.log(`Odds tracker WebSocket closed: ${event.code}, ${event.reason}`);
+        this.isConnected = false;
+        this.isConnecting = false;
+        // We already have HTTP polling, so no need to reconnect
+      };
+      
+      this.ws.onerror = (error) => {
+        console.error('Odds tracker WebSocket error:', error);
+        this.isConnected = false;
+        this.isConnecting = false;
+      };
+      
+      this.ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          this.handleMessage(data);
+        } catch (error) {
+          console.error('Error parsing odds tracker WebSocket message:', error);
+        }
+      };
+    } catch (error) {
+      console.error('Error initializing WebSocket:', error);
       this.isConnecting = false;
-      this.reconnectAttempts = 0;
-    };
-    
-    this.ws.onclose = (event) => {
-      console.log(`Odds tracker WebSocket closed: ${event.code}, ${event.reason}`);
-      this.isConnected = false;
-      this.isConnecting = false;
-      this.reconnect();
-    };
-    
-    this.ws.onerror = (error) => {
-      console.error('Odds tracker WebSocket error:', error);
-      this.isConnected = false;
-      this.isConnecting = false;
-    };
-    
-    this.ws.onmessage = (event) => {
-      try {
-        const data = JSON.parse(event.data);
-        this.handleMessage(data);
-      } catch (error) {
-        console.error('Error parsing odds tracker WebSocket message:', error);
-      }
-    };
+      // Already using HTTP polling, so we're good
+    }
   }
 
   /**
@@ -91,7 +102,7 @@ export class OddsTrackerClient {
   }
   
   private pollOddsData(): void {
-    fetch('/api/odds/latest')
+    fetch('/api/events/live')
       .then(response => {
         if (!response.ok) {
           throw new Error('Failed to fetch odds data');

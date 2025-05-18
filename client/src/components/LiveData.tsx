@@ -59,8 +59,9 @@ const LiveData: React.FC = () => {
       
       // Set up regular polling for live data
       const pollData = () => {
+        console.log("Polling for live events data...");
         fetchLiveEvents();
-        dataPollingTimer = setTimeout(pollData, 20000); // Poll every 20 seconds
+        dataPollingTimer = setTimeout(pollData, 10000); // Poll every 10 seconds for more responsive updates
       };
       
       // Start polling
@@ -77,6 +78,7 @@ const LiveData: React.FC = () => {
       
       wsConnectionAttempts++;
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      // Updated to match the server's WebSocket path
       const wsUrl = `${protocol}//${window.location.host}/ws`;
       
       console.log(`Attempting WebSocket connection (attempt ${wsConnectionAttempts})...`);

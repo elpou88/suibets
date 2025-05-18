@@ -372,8 +372,7 @@ export class BetsBwinApiService {
    */
   private async fetchEvents(sportId?: number, isLive: boolean = false): Promise<any[]> {
     try {
-      // Use BWin-specific endpoints based on your subscription
-      // Use the domain that appears in your dashboard (b365api.com)
+      // Let's focus on the most likely endpoint to work based on your subscription
       const url = `https://api.b365api.com/v1/bwin/${isLive ? 'inplay' : 'prematch'}`;
       
       const params: any = {
@@ -385,36 +384,47 @@ export class BetsBwinApiService {
         params.sport_id = sportId;
       }
       
-      console.log(`[BetsBwinApiService] Requesting ${isLive ? 'live' : 'upcoming'} events from BWin endpoint ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
+      console.log(`[BetsBwinApiService] Requesting ${isLive ? 'live' : 'upcoming'} events from endpoint ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
-        timeout: 10000 // Increase timeout for BWin API which might be slower
+        timeout: 10000 // Increase timeout for API which might be slower
       });
       
       if (!response) {
-        console.error(`[BetsBwinApiService] Empty response from BWin ${isLive ? 'inplay' : 'prematch'} endpoint`);
-        return [];
+        console.log(`[BetsBwinApiService] Empty response from ${url}`);
+        continue; // Try next endpoint
       }
       
       if (response.success === 0) {
-        console.error(`[BetsBwinApiService] API Error from BWin ${isLive ? 'inplay' : 'prematch'}: ${response.error} - ${response.error_detail || ''}`);
-        return [];
+        console.log(`[BetsBwinApiService] API Error from ${url}: ${response.error} - ${response.error_detail || ''}`);
+        continue; // Try next endpoint
       }
       
       if (!response.results || !Array.isArray(response.results)) {
-        console.error(`[BetsBwinApiService] Invalid response format from BWin ${isLive ? 'inplay' : 'prematch'}`);
-        return [];
+        console.log(`[BetsBwinApiService] Invalid response format from ${url}`);
+        continue; // Try next endpoint
       }
       
-      console.log(`[BetsBwinApiService] Received ${response.results.length} events from BWin ${isLive ? 'inplay' : 'prematch'} endpoint`);
+      console.log(`[BetsBwinApiService] SUCCESS! Received ${response.results.length} events from ${url}`);
       
-      // Transform data to our internal format using BWin-specific transform
-      return this.transformBwinEvents(response.results, isLive);
+      // Transform data to our internal format using BWin-specific transform if it's a BWin endpoint
+      if (url.includes('/bwin/')) {
+        return this.transformBwinEvents(response.results, isLive);
+      } else {
+        // For regular events endpoints, use the standard transform
+        return this.transformEvents(response.results, isLive);
+      }
     } catch (error) {
-      console.error(`[BetsBwinApiService] Error fetching from BWin ${isLive ? 'inplay' : 'prematch'} endpoint:`, error);
-      return [];
+      // Just log and continue to next pattern
+      console.log(`[BetsBwinApiService] Error with endpoint ${url}:`, error.message);
+      continue;
     }
+  }
+  
+  // If we got here, none of the endpoints worked
+  console.error(`[BetsBwinApiService] All endpoints failed for ${isLive ? 'live' : 'upcoming'} events`);
+  return [];
   }
   
   /**

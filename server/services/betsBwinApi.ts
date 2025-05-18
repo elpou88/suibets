@@ -9,6 +9,223 @@ const BETSAPI_KEY = '181477-ToriIDEJRGaxoz';
  * This service specifically integrates with BWin API subscription
  */
 export class BetsBwinApiService {
+  /**
+   * Transform BWin events to our internal format
+   * @param events BWin API events
+   * @param isLive Whether these are live events
+   * @returns Transformed events
+   */
+  private transformBwinEvents(events: any[], isLive: boolean): any[] {
+    try {
+      const transformedEvents: any[] = [];
+      
+      events.forEach(event => {
+        try {
+          // Get our internal sport ID from the BWin sport ID
+          const bwinSportId = event.sport_id;
+          const sportId = this.reverseSportsMapping[bwinSportId] || 1; // Default to soccer if not found
+          
+          // Extract market data (if available)
+          const markets: any[] = [];
+          
+          if (event.odds) {
+            try {
+              // Add 1X2 market if available (most common market for many sports)
+              if (event.odds['1_1'] || event.odds['1_X'] || event.odds['1_2']) {
+                const marketData = {
+                  id: "1",
+                  name: "Match Result",
+                  outcomes: [
+                    {
+                      id: "home",
+                      name: event.home?.name || "Home",
+                      price: parseFloat(event.odds['1_1']) || 2.0,
+                      handicap: 0
+                    },
+                    {
+                      id: "draw",
+                      name: "Draw",
+                      price: parseFloat(event.odds['1_X']) || 3.0,
+                      handicap: 0
+                    },
+                    {
+                      id: "away",
+                      name: event.away?.name || "Away",
+                      price: parseFloat(event.odds['1_2']) || 2.5,
+                      handicap: 0
+                    }
+                  ]
+                };
+                markets.push(marketData);
+              }
+              
+              // Add Over/Under market if available
+              if (event.odds['4_O2.5'] || event.odds['4_U2.5']) {
+                const marketData = {
+                  id: "2",
+                  name: "Over/Under 2.5 Goals",
+                  outcomes: [
+                    {
+                      id: "over",
+                      name: "Over 2.5",
+                      price: parseFloat(event.odds['4_O2.5']) || 1.9,
+                      handicap: 2.5
+                    },
+                    {
+                      id: "under",
+                      name: "Under 2.5",
+                      price: parseFloat(event.odds['4_U2.5']) || 1.9,
+                      handicap: 2.5
+                    }
+                  ]
+                };
+                markets.push(marketData);
+              }
+            } catch (error) {
+              console.error('[BetsBwinApiService] Error parsing markets for event:', event.id);
+            }
+          }
+          
+          // Transform to our internal event format
+          transformedEvents.push({
+            id: event.id.toString(),
+            sportId: sportId,
+            homeTeam: event.home?.name || "Home Team",
+            awayTeam: event.away?.name || "Away Team",
+            startTime: event.time,
+            league: event.league?.name || 'Unknown League',
+            country: event.league?.cc || 'Unknown Country',
+            isLive: isLive,
+            score: event.ss || '',
+            time: event.time_status === '1' ? event.timer || '00:00' : '',
+            markets: markets
+          });
+        } catch (error) {
+          console.error('[BetsBwinApiService] Error transforming BWin event:', error);
+        }
+      });
+      
+      return transformedEvents;
+    } catch (error) {
+      console.error('[BetsBwinApiService] Error in transformBwinEvents:', error);
+      return [];
+    }
+  }
+  
+  /**
+   * Transform BWin event details to our internal format
+   * @param eventDetails BWin API event details
+   * @returns Transformed event details
+   */
+  private transformBwinEventDetails(eventDetails: any): any {
+    if (!eventDetails) return null;
+    
+    try {
+      // Get our internal sport ID from the BWin sport ID
+      const bwinSportId = eventDetails.sport_id;
+      const sportId = this.reverseSportsMapping[bwinSportId] || 1; // Default to soccer if not found
+      
+      // Extract markets data
+      const markets: any[] = [];
+      
+      if (eventDetails.odds) {
+        try {
+          // Process markets from BWin format
+          // Match Result (1X2)
+          if (eventDetails.odds['1_1'] || eventDetails.odds['1_X'] || eventDetails.odds['1_2']) {
+            markets.push({
+              id: "1",
+              name: "Match Result",
+              outcomes: [
+                {
+                  id: "1",
+                  name: eventDetails.home?.name || "Home",
+                  price: parseFloat(eventDetails.odds['1_1']) || 2.0,
+                  handicap: 0
+                },
+                {
+                  id: "X",
+                  name: "Draw",
+                  price: parseFloat(eventDetails.odds['1_X']) || 3.0,
+                  handicap: 0
+                },
+                {
+                  id: "2",
+                  name: eventDetails.away?.name || "Away",
+                  price: parseFloat(eventDetails.odds['1_2']) || 2.5,
+                  handicap: 0
+                }
+              ]
+            });
+          }
+          
+          // Over/Under
+          if (eventDetails.odds['4_O2.5'] || eventDetails.odds['4_U2.5']) {
+            markets.push({
+              id: "2",
+              name: "Over/Under 2.5 Goals",
+              outcomes: [
+                {
+                  id: "over",
+                  name: "Over 2.5",
+                  price: parseFloat(eventDetails.odds['4_O2.5']) || 1.9,
+                  handicap: 2.5
+                },
+                {
+                  id: "under",
+                  name: "Under 2.5",
+                  price: parseFloat(eventDetails.odds['4_U2.5']) || 1.9,
+                  handicap: 2.5
+                }
+              ]
+            });
+          }
+          
+          // Both Teams To Score
+          if (eventDetails.odds['17_yes'] || eventDetails.odds['17_no']) {
+            markets.push({
+              id: "3",
+              name: "Both Teams To Score",
+              outcomes: [
+                {
+                  id: "yes",
+                  name: "Yes",
+                  price: parseFloat(eventDetails.odds['17_yes']) || 1.8,
+                  handicap: 0
+                },
+                {
+                  id: "no",
+                  name: "No",
+                  price: parseFloat(eventDetails.odds['17_no']) || 2.0,
+                  handicap: 0
+                }
+              ]
+            });
+          }
+        } catch (error) {
+          console.error('[BetsBwinApiService] Error parsing BWin markets for event details:', eventDetails.id);
+        }
+      }
+      
+      // Transform to our internal event format
+      return {
+        id: eventDetails.id.toString(),
+        sportId: sportId,
+        homeTeam: eventDetails.home?.name || "Home Team",
+        awayTeam: eventDetails.away?.name || "Away Team",
+        startTime: eventDetails.time,
+        league: eventDetails.league?.name || 'Unknown League',
+        country: eventDetails.league?.cc || 'Unknown Country',
+        isLive: eventDetails.time_status === '1',
+        score: eventDetails.ss || '',
+        time: eventDetails.time_status === '1' ? eventDetails.timer || '00:00' : '',
+        markets: markets
+      };
+    } catch (error) {
+      console.error('[BetsBwinApiService] Error transforming BWin event details:', error);
+      return null;
+    }
+  }
   private apiKey: string;
   
   // Mapping from our internal sport IDs to BWin/bet365 API sport IDs
@@ -96,9 +313,15 @@ export class BetsBwinApiService {
    * @param sportId BWin/bet365 sport ID
    * @returns Array of events
    */
-  private async fetchBet365InPlay(sportId?: number): Promise<any[]> {
+  /**
+   * Fetch BWin inplay events using the v2 BWin API endpoints
+   * @param sportId BWin sport ID
+   * @returns Array of events
+   */
+  private async fetchBwinInPlay(sportId?: number): Promise<any[]> {
     try {
-      const url = 'https://api.betsapi.com/v1/bet365/inplay';
+      // Use BWin inplay endpoint from the documentation: https://es.betsapi.com/docs/bwin/inplay.html
+      const url = 'https://api.betsapi.com/v2/bwin/inplay';
       
       const params: any = {
         token: this.apiKey
@@ -109,7 +332,7 @@ export class BetsBwinApiService {
         params.sport_id = sportId;
       }
       
-      console.log(`[BetsBwinApiService] Requesting bet365 inplay events from ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
+      console.log(`[BetsBwinApiService] Requesting BWin inplay events from ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
@@ -117,26 +340,26 @@ export class BetsBwinApiService {
       });
       
       if (!response) {
-        console.error('[BetsBwinApiService] Empty response from bet365/inplay endpoint');
+        console.error('[BetsBwinApiService] Empty response from BWin inplay endpoint');
         return [];
       }
       
       if (response.success === 0) {
-        console.error(`[BetsBwinApiService] API Error from bet365/inplay: ${response.error} - ${response.error_detail}`);
+        console.error(`[BetsBwinApiService] API Error from BWin inplay: ${response.error} - ${response.error_detail || ''}`);
         return [];
       }
       
       if (!response.results || !Array.isArray(response.results)) {
-        console.error('[BetsBwinApiService] Invalid response format from bet365/inplay');
+        console.error('[BetsBwinApiService] Invalid response format from BWin inplay');
         return [];
       }
       
-      console.log(`[BetsBwinApiService] Received ${response.results.length} events from bet365/inplay endpoint`);
+      console.log(`[BetsBwinApiService] Received ${response.results.length} events from BWin inplay endpoint`);
       
       // Transform data to our internal format
-      return this.transformBet365Events(response.results, true);
+      return this.transformBwinEvents(response.results, true);
     } catch (error) {
-      console.error('[BetsBwinApiService] Error fetching from bet365/inplay endpoint:', error);
+      console.error('[BetsBwinApiService] Error fetching from BWin inplay endpoint:', error);
       return [];
     }
   }
@@ -149,7 +372,9 @@ export class BetsBwinApiService {
    */
   private async fetchEvents(sportId?: number, isLive: boolean = false): Promise<any[]> {
     try {
-      const url = `https://api.betsapi.com/v1/events/${isLive ? 'inplay' : 'upcoming'}`;
+      // Use BWin API endpoints instead of standard BetsAPI endpoints
+      // Documentation: https://es.betsapi.com/docs/bwin/inplay.html and https://es.betsapi.com/docs/bwin/prematch.html
+      const url = `https://api.betsapi.com/v2/bwin/${isLive ? 'inplay' : 'prematch'}`;
       
       const params: any = {
         token: this.apiKey
@@ -160,34 +385,34 @@ export class BetsBwinApiService {
         params.sport_id = sportId;
       }
       
-      console.log(`[BetsBwinApiService] Requesting ${isLive ? 'live' : 'upcoming'} events from ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
+      console.log(`[BetsBwinApiService] Requesting ${isLive ? 'live' : 'upcoming'} events from BWin endpoint ${url}${sportId ? ` with sport_id=${sportId}` : ''}`);
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
-        timeout: 8000
+        timeout: 10000 // Increase timeout for BWin API which might be slower
       });
       
       if (!response) {
-        console.error(`[BetsBwinApiService] Empty response from ${isLive ? 'inplay' : 'upcoming'} endpoint`);
+        console.error(`[BetsBwinApiService] Empty response from BWin ${isLive ? 'inplay' : 'prematch'} endpoint`);
         return [];
       }
       
       if (response.success === 0) {
-        console.error(`[BetsBwinApiService] API Error from ${isLive ? 'inplay' : 'upcoming'}: ${response.error} - ${response.error_detail}`);
+        console.error(`[BetsBwinApiService] API Error from BWin ${isLive ? 'inplay' : 'prematch'}: ${response.error} - ${response.error_detail || ''}`);
         return [];
       }
       
       if (!response.results || !Array.isArray(response.results)) {
-        console.error(`[BetsBwinApiService] Invalid response format from ${isLive ? 'inplay' : 'upcoming'}`);
+        console.error(`[BetsBwinApiService] Invalid response format from BWin ${isLive ? 'inplay' : 'prematch'}`);
         return [];
       }
       
-      console.log(`[BetsBwinApiService] Received ${response.results.length} events from ${isLive ? 'inplay' : 'upcoming'} endpoint`);
+      console.log(`[BetsBwinApiService] Received ${response.results.length} events from BWin ${isLive ? 'inplay' : 'prematch'} endpoint`);
       
-      // Transform data to our internal format
-      return this.transformEvents(response.results, isLive);
+      // Transform data to our internal format using BWin-specific transform
+      return this.transformBwinEvents(response.results, isLive);
     } catch (error) {
-      console.error(`[BetsBwinApiService] Error fetching from ${isLive ? 'inplay' : 'upcoming'} endpoint:`, error);
+      console.error(`[BetsBwinApiService] Error fetching from BWin ${isLive ? 'inplay' : 'prematch'} endpoint:`, error);
       return [];
     }
   }
@@ -199,36 +424,37 @@ export class BetsBwinApiService {
    */
   async fetchEventDetails(eventId: string): Promise<any | null> {
     try {
-      const url = 'https://api.betsapi.com/v1/event/view';
+      // Use BWin event endpoint from documentation: https://es.betsapi.com/docs/bwin/event.html
+      const url = 'https://api.betsapi.com/v2/bwin/event';
       
       const params: any = {
         token: this.apiKey,
         event_id: eventId
       };
       
-      console.log(`[BetsBwinApiService] Requesting event details for event ID ${eventId}`);
+      console.log(`[BetsBwinApiService] Requesting BWin event details for event ID ${eventId}`);
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
-        timeout: 8000
+        timeout: 10000 // Increase timeout for BWin API
       });
       
       if (!response) {
-        console.error(`[BetsBwinApiService] Empty response from event/view endpoint for event ID ${eventId}`);
+        console.error(`[BetsBwinApiService] Empty response from BWin event endpoint for event ID ${eventId}`);
         return null;
       }
       
       if (response.success === 0) {
-        console.error(`[BetsBwinApiService] API Error from event/view for event ID ${eventId}: ${response.error} - ${response.error_detail}`);
+        console.error(`[BetsBwinApiService] API Error from BWin event endpoint for event ID ${eventId}: ${response.error} - ${response.error_detail || ''}`);
         return null;
       }
       
-      console.log(`[BetsBwinApiService] Received event details for event ID ${eventId}`);
+      console.log(`[BetsBwinApiService] Received BWin event details for event ID ${eventId}`);
       
-      // Transform to our internal format
-      return this.transformEventDetails(response.results);
+      // Transform to our internal format with the BWin-specific transform
+      return this.transformBwinEventDetails(response.results);
     } catch (error) {
-      console.error(`[BetsBwinApiService] Error fetching event details for event ID ${eventId}:`, error);
+      console.error(`[BetsBwinApiService] Error fetching BWin event details for event ID ${eventId}:`, error);
       return null;
     }
   }

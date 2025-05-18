@@ -372,9 +372,9 @@ export class BetsBwinApiService {
    */
   private async fetchEvents(sportId?: number, isLive: boolean = false): Promise<any[]> {
     try {
-      // Use BWin API endpoints with the correct domain (b365api.com)
-      // Documentation: https://es.betsapi.com/docs/bwin/inplay.html and https://es.betsapi.com/docs/bwin/prematch.html
-      const url = `https://api.b365api.com/v2/bwin/${isLive ? 'inplay' : 'prematch'}`;
+      // Use BWin-specific endpoints based on your subscription
+      // Use the domain that appears in your dashboard (b365api.com)
+      const url = `https://api.b365api.com/v1/bwin/${isLive ? 'inplay' : 'prematch'}`;
       
       const params: any = {
         token: this.apiKey
@@ -424,8 +424,8 @@ export class BetsBwinApiService {
    */
   async fetchEventDetails(eventId: string): Promise<any | null> {
     try {
-      // Use BWin event endpoint from documentation with correct API URL
-      const url = 'https://api.b365api.com/v2/bwin/event';
+      // Use standard BetsAPI event endpoint
+      const url = 'https://api.betsapi.com/v1/event/view';
       
       const params: any = {
         token: this.apiKey,
@@ -465,8 +465,8 @@ export class BetsBwinApiService {
    */
   async fetchSports(): Promise<any[]> {
     try {
-      // Use the correct BWin API domain for sports endpoint
-      const url = 'https://api.b365api.com/v2/bwin/sports';
+      // Use standard BetsAPI sports endpoint
+      const url = 'https://api.betsapi.com/v1/sports';
       
       const params: any = {
         token: this.apiKey

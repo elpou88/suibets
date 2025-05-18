@@ -46,7 +46,7 @@ export class BetsBwinApiService {
       this.reverseSportsMapping[value] = parseInt(key);
     });
     
-    console.log('[BetsBwinApiService] Initialized with API key for BWin/bet365 API access');
+    console.log('[BetsBwinApiService] Initialized with API key for BWin API access through BetsAPI');
   }
   
   /**
@@ -56,16 +56,16 @@ export class BetsBwinApiService {
    */
   async fetchLiveEvents(sportId?: number): Promise<any[]> {
     try {
-      // Convert sportId to BWin/bet365 sport ID if provided
+      // Convert sportId to BWin sport ID if provided
       const bwinSportId = sportId ? this.sportsMapping[sportId] : undefined;
       
-      // Try bet365 inplay endpoint first
-      const bet365Events = await this.fetchBet365InPlay(bwinSportId);
-      if (bet365Events && bet365Events.length > 0) {
-        return bet365Events;
+      // Try BWin inplay endpoint (v2 API for BWin subscription)
+      const bwinEvents = await this.fetchBwinInPlay(bwinSportId);
+      if (bwinEvents && bwinEvents.length > 0) {
+        return bwinEvents;
       }
       
-      // If bet365 doesn't have data, try the general events endpoint
+      // Fallback to standard events endpoint if BWin endpoint doesn't return data
       return await this.fetchEvents(bwinSportId, true);
     } catch (error) {
       console.error('[BetsBwinApiService] Error fetching live events:', error);

@@ -6,6 +6,7 @@ import { setupBlockchainAuth } from "./blockchain-auth";
 import { blockchainStorage } from "./blockchain-storage";
 import { registerBwinTestRoutes } from "./bwin-api-test";
 import { registerApiTestPage } from "./api-test-page";
+import { registerBetRoutes } from "./bet-routes";
 
 const app = express();
 app.use(express.json());
@@ -69,6 +70,10 @@ app.use((req, res, next) => {
   // Register API test page
   registerApiTestPage(app);
   log('API test page registered');
+  
+  // Register bet routes for blockchain integration
+  registerBetRoutes(app);
+  log('Blockchain betting endpoints registered');
   
   // Register main API routes with the existing server
   const httpServer = await registerRoutes(app);

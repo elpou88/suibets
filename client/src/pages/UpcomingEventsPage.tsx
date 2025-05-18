@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import BetSlip from "@/components/BetSlip";
 
 interface Odds {
   home: number | null;
@@ -29,7 +30,15 @@ interface Event {
   last_updated: number;
 }
 
-const UpcomingEventsPage: React.FC = () => {
+interface UpcomingEventsPageProps {
+  walletConnected?: boolean;
+  walletAddress?: string;
+}
+
+const UpcomingEventsPage: React.FC<UpcomingEventsPageProps> = ({ 
+  walletConnected = false, 
+  walletAddress 
+}) => {
   const [upcomingEvents, setUpcomingEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,155 +190,210 @@ const UpcomingEventsPage: React.FC = () => {
     );
   }
 
+  const addToBetSlip = (event: Event, selection: string, odds: number) => {
+    if (!walletConnected) {
+      toast({
+        title: "Wallet Not Connected",
+        description: "Please connect your wallet to add bets to your slip.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // In a real implementation, this would dispatch an action to add the bet to your bet slip
+    toast({
+      title: "Bet Added",
+      description: `Added ${selection} for ${event.home_team} vs ${event.away_team}`,
+    });
+  };
+
   return (
-    <div className="p-4 space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Upcoming Events</h2>
-        <Button onClick={fetchUpcomingEvents} variant="outline" size="sm">
-          Refresh
-        </Button>
-      </div>
-      
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="mb-4 flex flex-wrap">
-          <TabsTrigger value="all" onClick={() => setSelectedSport(null)}>
-            All Sports
-          </TabsTrigger>
-          {uniqueSports.map(sport => (
-            <TabsTrigger 
-              key={sport.id} 
-              value={sport.id.toString()}
-              onClick={() => setSelectedSport(sport.id)}
-            >
-              {sport.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        <TabsContent value="all" className="mt-0">
-          {filteredEvents.length === 0 ? (
-            <Card>
-              <CardContent className="pt-6">
-                <p className="text-center text-gray-500">No upcoming events currently available</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <ScrollArea className="h-[calc(100vh-240px)]">
-              {sortedDays.map(day => (
-                <div key={day} className="mb-6">
-                  <h3 className="text-xl font-bold mb-4 sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
-                    {day}
-                  </h3>
-                  <div className="space-y-4">
-                    {groupedEvents[day].map((event) => (
-                      <Card key={event.id} className="mb-4">
-                        <CardHeader className="pb-2">
-                          <div className="flex justify-between">
-                            <CardTitle className="text-lg">{event.league_name}</CardTitle>
-                            <Badge variant="secondary">
-                              {formatDate(event.time)}
-                            </Badge>
-                          </div>
-                          <CardDescription>{event.sport_name}</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="grid grid-cols-3 gap-4 items-center">
-                            <div className="text-right font-semibold">{event.home_team}</div>
-                            <div className="text-center">
-                              <div className="bg-primary/5 rounded-md p-2">VS</div>
-                            </div>
-                            <div className="text-left font-semibold">{event.away_team}</div>
-                          </div>
-                        </CardContent>
-                        {event.odds && (
-                          <CardFooter className="pt-0">
-                            <div className="w-full grid grid-cols-3 gap-2 mt-2">
-                              <Button variant="outline" size="sm" className="w-full">
-                                {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
-                              </Button>
-                              {event.odds.draw !== null && (
-                                <Button variant="outline" size="sm" className="w-full">
-                                  Draw {event.odds.draw ? `(${event.odds.draw})` : ''}
-                                </Button>
-                              )}
-                              <Button variant="outline" size="sm" className="w-full">
-                                {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
-                              </Button>
-                            </div>
-                          </CardFooter>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
-                </div>
+    <div className="container mx-auto p-4 md:p-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-bold">Upcoming Events</h1>
+            <Button onClick={fetchUpcomingEvents} variant="outline" size="sm">
+              Refresh
+            </Button>
+          </div>
+          
+          <Tabs defaultValue="all" className="w-full">
+            <TabsList className="mb-4 flex flex-wrap">
+              <TabsTrigger value="all" onClick={() => setSelectedSport(null)}>
+                All Sports
+              </TabsTrigger>
+              {uniqueSports.map(sport => (
+                <TabsTrigger 
+                  key={sport.id} 
+                  value={sport.id.toString()}
+                  onClick={() => setSelectedSport(sport.id)}
+                >
+                  {sport.name}
+                </TabsTrigger>
               ))}
-            </ScrollArea>
-          )}
-        </TabsContent>
+            </TabsList>
 
-        {uniqueSports.map(sport => (
-          <TabsContent key={sport.id} value={sport.id.toString()} className="mt-0">
-            {filteredEvents.length === 0 ? (
-              <Card>
-                <CardContent className="pt-6">
-                  <p className="text-center text-gray-500">No upcoming {sport.name} events currently available</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <ScrollArea className="h-[calc(100vh-240px)]">
-                {sortedDays.map(day => (
-                  <div key={day} className="mb-6">
-                    <h3 className="text-xl font-bold mb-4 sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
-                      {day}
-                    </h3>
-                    <div className="space-y-4">
-                      {groupedEvents[day]?.map((event) => (
-                        <Card key={event.id} className="mb-4">
-                          <CardHeader className="pb-2">
-                            <div className="flex justify-between">
-                              <CardTitle className="text-lg">{event.league_name}</CardTitle>
-                              <Badge variant="secondary">
-                                {formatDate(event.time)}
-                              </Badge>
-                            </div>
-                            <CardDescription>{event.sport_name}</CardDescription>
-                          </CardHeader>
-                          <CardContent>
-                            <div className="grid grid-cols-3 gap-4 items-center">
-                              <div className="text-right font-semibold">{event.home_team}</div>
-                              <div className="text-center">
-                                <div className="bg-primary/5 rounded-md p-2">VS</div>
+            <TabsContent value="all" className="mt-0">
+              {filteredEvents.length === 0 ? (
+                <Card>
+                  <CardContent className="pt-6">
+                    <p className="text-center text-gray-500">No upcoming events currently available</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <ScrollArea className="h-[calc(100vh-240px)]">
+                  {sortedDays.map(day => (
+                    <div key={day} className="mb-6">
+                      <h3 className="text-xl font-bold mb-4 sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
+                        {day}
+                      </h3>
+                      <div className="space-y-4">
+                        {groupedEvents[day].map((event) => (
+                          <Card key={event.id} className="mb-4">
+                            <CardHeader className="pb-2">
+                              <div className="flex justify-between">
+                                <CardTitle className="text-lg">{event.league_name}</CardTitle>
+                                <Badge variant="secondary">
+                                  {formatDate(event.time)}
+                                </Badge>
                               </div>
-                              <div className="text-left font-semibold">{event.away_team}</div>
-                            </div>
-                          </CardContent>
-                          {event.odds && (
-                            <CardFooter className="pt-0">
-                              <div className="w-full grid grid-cols-3 gap-2 mt-2">
-                                <Button variant="outline" size="sm" className="w-full">
-                                  {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
-                                </Button>
-                                {event.odds.draw !== null && (
-                                  <Button variant="outline" size="sm" className="w-full">
-                                    Draw {event.odds.draw ? `(${event.odds.draw})` : ''}
+                              <CardDescription>{event.sport_name}</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                              <div className="grid grid-cols-3 gap-4 items-center">
+                                <div className="text-right font-semibold">{event.home_team}</div>
+                                <div className="text-center">
+                                  <div className="bg-primary/5 rounded-md p-2">VS</div>
+                                </div>
+                                <div className="text-left font-semibold">{event.away_team}</div>
+                              </div>
+                            </CardContent>
+                            {event.odds && (
+                              <CardFooter className="pt-0">
+                                <div className="w-full grid grid-cols-3 gap-2 mt-2">
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="w-full"
+                                    onClick={() => addToBetSlip(event, event.home_team, event.odds.home || 1.5)}
+                                  >
+                                    {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
                                   </Button>
-                                )}
-                                <Button variant="outline" size="sm" className="w-full">
-                                  {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
-                                </Button>
-                              </div>
-                            </CardFooter>
-                          )}
-                        </Card>
-                      ))}
+                                  {event.odds.draw !== null && (
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="w-full"
+                                      onClick={() => addToBetSlip(event, 'Draw', event.odds.draw || 3.0)}
+                                    >
+                                      Draw {event.odds.draw ? `(${event.odds.draw})` : ''}
+                                    </Button>
+                                  )}
+                                  <Button 
+                                    variant="outline" 
+                                    size="sm" 
+                                    className="w-full"
+                                    onClick={() => addToBetSlip(event, event.away_team, event.odds.away || 2.5)}
+                                  >
+                                    {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
+                                  </Button>
+                                </div>
+                              </CardFooter>
+                            )}
+                          </Card>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </ScrollArea>
-            )}
-          </TabsContent>
-        ))}
-      </Tabs>
+                  ))}
+                </ScrollArea>
+              )}
+            </TabsContent>
+
+            {uniqueSports.map(sport => (
+              <TabsContent key={sport.id} value={sport.id.toString()} className="mt-0">
+                {filteredEvents.length === 0 ? (
+                  <Card>
+                    <CardContent className="pt-6">
+                      <p className="text-center text-gray-500">No upcoming {sport.name} events currently available</p>
+                    </CardContent>
+                  </Card>
+                ) : (
+                  <ScrollArea className="h-[calc(100vh-240px)]">
+                    {sortedDays.map(day => (
+                      <div key={day} className="mb-6">
+                        <h3 className="text-xl font-bold mb-4 sticky top-0 bg-background/95 backdrop-blur-sm py-2 z-10">
+                          {day}
+                        </h3>
+                        <div className="space-y-4">
+                          {groupedEvents[day]?.map((event) => (
+                            <Card key={event.id} className="mb-4">
+                              <CardHeader className="pb-2">
+                                <div className="flex justify-between">
+                                  <CardTitle className="text-lg">{event.league_name}</CardTitle>
+                                  <Badge variant="secondary">
+                                    {formatDate(event.time)}
+                                  </Badge>
+                                </div>
+                                <CardDescription>{event.sport_name}</CardDescription>
+                              </CardHeader>
+                              <CardContent>
+                                <div className="grid grid-cols-3 gap-4 items-center">
+                                  <div className="text-right font-semibold">{event.home_team}</div>
+                                  <div className="text-center">
+                                    <div className="bg-primary/5 rounded-md p-2">VS</div>
+                                  </div>
+                                  <div className="text-left font-semibold">{event.away_team}</div>
+                                </div>
+                              </CardContent>
+                              {event.odds && (
+                                <CardFooter className="pt-0">
+                                  <div className="w-full grid grid-cols-3 gap-2 mt-2">
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="w-full"
+                                      onClick={() => addToBetSlip(event, event.home_team, event.odds.home || 1.5)}
+                                    >
+                                      {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
+                                    </Button>
+                                    {event.odds.draw !== null && (
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="w-full"
+                                        onClick={() => addToBetSlip(event, 'Draw', event.odds.draw || 3.0)}
+                                      >
+                                        Draw {event.odds.draw ? `(${event.odds.draw})` : ''}
+                                      </Button>
+                                    )}
+                                    <Button 
+                                      variant="outline" 
+                                      size="sm" 
+                                      className="w-full"
+                                      onClick={() => addToBetSlip(event, event.away_team, event.odds.away || 2.5)}
+                                    >
+                                      {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
+                                    </Button>
+                                  </div>
+                                </CardFooter>
+                              )}
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </ScrollArea>
+                )}
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
+        
+        <div className="h-full">
+          <BetSlip walletConnected={walletConnected} walletAddress={walletAddress} />
+        </div>
+      </div>
     </div>
   );
 };

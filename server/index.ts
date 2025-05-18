@@ -1,9 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes-clean"; // Using clean, sport-separated implementation
+import { registerRoutes } from "./routes-clean"; // Using clean routes for main app functionality
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
 import { blockchainStorage } from "./blockchain-storage";
+import { registerBwinTestRoutes } from "./bwin-api-test";
 
 const app = express();
 app.use(express.json());
@@ -59,6 +60,10 @@ app.use((req, res, next) => {
   
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
+  
+  // Register BWin API testing routes
+  registerBwinTestRoutes(app);
+  log('BWin API testing routes registered');
   
   const server = await registerRoutes(app);
 

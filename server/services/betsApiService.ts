@@ -61,28 +61,39 @@ export class BetsApiService {
   async fetchUpcomingEvents(sportId?: number, daysAhead: number = 3): Promise<any[]> {
     try {
       // If sportId is provided, convert to BetsAPI sport ID
-      const betsApiSportId = sportId ? this.sportsMapping[sportId] : undefined;
+      const betsApiSportId = sportId ? this.sportsMapping[sportId] : 1; // Default to soccer (ID: 1) if not specified
       
       const params: any = {
         token: this.apiKey,
-        sport_id: betsApiSportId,
+        sport_id: betsApiSportId, // Required parameter for BetsAPI
         day: daysAhead
       };
       
-      // Remove undefined params
-      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
-      
       // Make resilient request
       const url = `${this.baseUrl}/events/upcoming`;
+      console.log(`[BetsApiService] Requesting upcoming events from ${url} with sport_id=${betsApiSportId}`);
+      
       const response = await apiResilienceService.makeRequest(url, { params });
       
-      if (!response || !response.results) {
+      if (!response) {
+        console.error('[BetsApiService] Empty response from BetsAPI');
+        return [];
+      }
+      
+      if (response.success === 0) {
+        console.error(`[BetsApiService] API Error: ${response.error} - ${response.error_detail}`);
+        return [];
+      }
+      
+      if (!response.results || !Array.isArray(response.results)) {
         console.error('[BetsApiService] Invalid response format for upcoming events');
         return [];
       }
       
+      console.log(`[BetsApiService] Received ${response.results.length} upcoming events from BetsAPI`);
+      
       // Transform data to our internal format
-      return this.transformEvents(response.results);
+      return this.transformEvents(response.results, false);
     } catch (error) {
       console.error('[BetsApiService] Error fetching upcoming events:', error);
       return [];
@@ -97,24 +108,35 @@ export class BetsApiService {
   async fetchLiveEvents(sportId?: number): Promise<any[]> {
     try {
       // If sportId is provided, convert to BetsAPI sport ID
-      const betsApiSportId = sportId ? this.sportsMapping[sportId] : undefined;
+      const betsApiSportId = sportId ? this.sportsMapping[sportId] : 1; // Default to soccer (ID: 1) if not specified
       
       const params: any = {
         token: this.apiKey,
-        sport_id: betsApiSportId
+        sport_id: betsApiSportId // Required parameter for BetsAPI
       };
-      
-      // Remove undefined params
-      Object.keys(params).forEach(key => params[key] === undefined && delete params[key]);
       
       // Make resilient request
       const url = `${this.baseUrl}/events/inplay`;
+      console.log(`[BetsApiService] Requesting live events from ${url} with sport_id=${betsApiSportId}`);
+      
       const response = await apiResilienceService.makeRequest(url, { params });
       
-      if (!response || !response.results) {
+      if (!response) {
+        console.error('[BetsApiService] Empty response from BetsAPI');
+        return [];
+      }
+      
+      if (response.success === 0) {
+        console.error(`[BetsApiService] API Error: ${response.error} - ${response.error_detail}`);
+        return [];
+      }
+      
+      if (!response.results || !Array.isArray(response.results)) {
         console.error('[BetsApiService] Invalid response format for live events');
         return [];
       }
+      
+      console.log(`[BetsApiService] Received ${response.results.length} live events from BetsAPI`);
       
       // Transform data to our internal format
       return this.transformEvents(response.results, true);

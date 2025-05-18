@@ -320,8 +320,8 @@ export class BetsBwinApiService {
    */
   private async fetchBwinInPlay(sportId?: number): Promise<any[]> {
     try {
-      // Use BWin inplay endpoint from the documentation: https://es.betsapi.com/docs/bwin/inplay.html
-      const url = 'https://api.betsapi.com/v2/bwin/inplay';
+      // Use the correct BWin inplay endpoint URL from the user's subscription
+      const url = 'https://api.b365api.com/v2/bwin/inplay';
       
       const params: any = {
         token: this.apiKey
@@ -336,7 +336,7 @@ export class BetsBwinApiService {
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
-        timeout: 8000
+        timeout: 10000 // Increase timeout for BWin API
       });
       
       if (!response) {
@@ -424,8 +424,8 @@ export class BetsBwinApiService {
    */
   async fetchEventDetails(eventId: string): Promise<any | null> {
     try {
-      // Use BWin event endpoint from documentation: https://es.betsapi.com/docs/bwin/event.html
-      const url = 'https://api.betsapi.com/v2/bwin/event';
+      // Use BWin event endpoint from documentation with correct API URL
+      const url = 'https://api.b365api.com/v2/bwin/event';
       
       const params: any = {
         token: this.apiKey,

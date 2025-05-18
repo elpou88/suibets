@@ -1,6 +1,9 @@
 import axios from 'axios';
 import { apiResilienceService } from './apiResilienceService';
 
+// API key for BetsAPI
+const BETSAPI_KEY = '181477-ToriIDEJRGaxoz';
+
 /**
  * Service to fetch data from the BetsAPI service
  * Provides comprehensive sports data across multiple sports
@@ -119,7 +122,11 @@ export class BetsApiService {
       const url = `${this.baseUrl}/events/inplay`;
       console.log(`[BetsApiService] Requesting live events from ${url} with sport_id=${betsApiSportId}`);
       
-      const response = await apiResilienceService.makeRequest(url, { params });
+      const response = await apiResilienceService.makeRequest(url, { 
+        params,
+        timeout: 5000, // Add timeout to prevent hanging connections
+        retries: 2     // Number of retry attempts before giving up
+      });
       
       if (!response) {
         console.error('[BetsApiService] Empty response from BetsAPI');
@@ -128,6 +135,10 @@ export class BetsApiService {
       
       if (response.success === 0) {
         console.error(`[BetsApiService] API Error: ${response.error} - ${response.error_detail}`);
+        // If permission denied, we have a subscription limitation
+        if (response.error === 'PERMISSION_DENIED') {
+          console.error('[BetsApiService] Subscription limitation with BetsAPI key - check coverage');
+        }
         return [];
       }
       

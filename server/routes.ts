@@ -16,6 +16,7 @@ import { walrusService } from "./services/walrusService";
 import { apiResilienceService } from "./services/apiResilienceService";
 import { betsApiService } from "./services/betsApiService";
 import { rapidApiService } from "./services/rapidApiService";
+import { sportsDataService } from "./services/sportsDataService";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
 // Now using a fixed API key which is shared among all services

@@ -5,6 +5,7 @@ import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
 import { blockchainStorage } from "./blockchain-storage";
 import { registerBwinTestRoutes } from "./bwin-api-test";
+import { registerApiTestPage } from "./api-test-page";
 
 const app = express();
 app.use(express.json());

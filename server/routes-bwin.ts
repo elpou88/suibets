@@ -29,6 +29,9 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
       message: 'Connected to SuiBets WebSocket Server'
     }));
     
+    // Send initial data update immediately after connection
+    sendInitialUpdate(ws);
+    
     // Handle incoming messages
     ws.on('message', (message) => {
       try {
@@ -43,10 +46,10 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
             sportId: data.sportId,
             message: `Subscribed to updates for sport ${data.sportId}`
           }));
+          
+          // Send fresh data after subscription
+          sendInitialUpdate(ws);
         }
-        
-        // Echo back for debugging
-        ws.send(JSON.stringify({ type: 'echo', data }));
       } catch (error) {
         ws.send(JSON.stringify({
           type: 'error',
@@ -56,9 +59,9 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
     });
     
     // Handle disconnections
-    ws.on('close', () => {
+    ws.on('close', (code, reason) => {
       clients.delete(ws);
-      log(`WebSocket client disconnected (${clients.size} remaining)`);
+      log(`WebSocket client disconnected (${clients.size} remaining). Code: ${code}, Reason: ${reason || 'None provided'}`);
     });
     
     // Handle errors
@@ -83,18 +86,50 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
           events: transformedEvents
         });
         
+        let activeClients = 0;
         clients.forEach(client => {
           if (client.readyState === WebSocket.OPEN) {
-            client.send(message);
+            try {
+              client.send(message);
+              activeClients++;
+            } catch (e) {
+              log(`Error sending to client: ${e.message}`);
+            }
+          } else if (client.readyState === WebSocket.CLOSED || client.readyState === WebSocket.CLOSING) {
+            // Remove closed clients
+            clients.delete(client);
           }
         });
         
-        log(`WebSocket broadcast: Sent ${transformedEvents.length} live events to ${clients.size} clients`);
+        log(`WebSocket broadcast: Sent ${transformedEvents.length} live events to ${activeClients} active clients (${clients.size} total)`);
+        
+        // Send update immediately upon connection, then every 15 seconds
       } catch (error: any) {
         log(`WebSocket broadcast error: ${error.message}`);
       }
     }
-  }, 30000); // Update every 30 seconds
+  }, 15000); // Update every 15 seconds
+  
+  // Send an initial update as soon as clients connect
+  const sendInitialUpdate = async (client: WebSocket) => {
+    try {
+      const liveEvents = await bwinApiService.getLiveEvents();
+      const transformedEvents = bwinApiService.transformEvents(liveEvents, true);
+      
+      const message = JSON.stringify({
+        type: 'liveUpdate',
+        timestamp: Date.now(),
+        events: transformedEvents
+      });
+      
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+        log(`Sent initial update with ${transformedEvents.length} events to new client`);
+      }
+    } catch (error: any) {
+      log(`Error sending initial update: ${error.message}`);
+    }
+  };
 
   // Base API info endpoint
   app.get('/api', (_req: Request, res: Response) => {

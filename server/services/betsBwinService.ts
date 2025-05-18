@@ -11,6 +11,7 @@ const BETSAPI_KEY = '181477-ToriIDEJRGaxoz';
 export class BetsBwinService {
   private apiKey: string;
   private baseUrl: string;
+  private fallbackJsonData: boolean = true; // Use local JSON data if API is unavailable
   
   // Mapping from our internal sport IDs to BWin API sport IDs
   private sportsMapping: Record<number, number> = {
@@ -41,7 +42,7 @@ export class BetsBwinService {
   
   constructor(apiKey: string = BETSAPI_KEY) {
     this.apiKey = apiKey;
-    this.baseUrl = 'https://api.betsapi.com/v2/bwin';
+    this.baseUrl = 'https://api.betsapi.com/v1/event';
     
     // Initialize reverse mapping
     Object.entries(this.sportsMapping).forEach(([key, value]) => {
@@ -62,7 +63,10 @@ export class BetsBwinService {
       const bwinSportId = sportId ? this.sportsMapping[sportId] : undefined;
       
       const params: any = {
-        token: this.apiKey
+        token: this.apiKey,
+        LNG_ID: 22, // Use English language
+        type: 'inplay', // Get live/inplay events
+        skip_esports: 'true' // Skip esports events unless specifically requested
       };
       
       // Add sport_id param if provided
@@ -70,14 +74,13 @@ export class BetsBwinService {
         params.sport_id = bwinSportId;
       }
       
-      // Make resilient request to BWin API endpoint for live events
-      const url = `${this.baseUrl}/inplay`;
-      console.log(`[BetsBwinService] Requesting BWin live events from ${url}${bwinSportId ? ` with sport_id=${bwinSportId}` : ''}`);
+      // Make resilient request to BetsAPI endpoint for live events
+      const url = `${this.baseUrl}/view`;
+      console.log(`[BetsBwinService] Requesting live events from ${url}${bwinSportId ? ` with sport_id=${bwinSportId}` : ''}`);
       
       const response = await apiResilienceService.makeRequest(url, { 
         params,
-        timeout: 5000, // Add timeout to prevent hanging connections
-        retries: 2     // Number of retry attempts before giving up
+        timeout: 8000, // Add timeout to prevent hanging connections
       });
       
       if (!response) {

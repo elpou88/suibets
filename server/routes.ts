@@ -12,6 +12,7 @@ import { LiveScoreUpdateService } from "./services/liveScoreUpdateService";
 import { registerDebugRoutes } from "./debug-routes";
 import { registerWalrusRoutes } from "./routes-walrus";
 import { registerBetsApiRoutes } from "./routes-betsapi";
+import { registerBetsBwinRoutes } from "./routes-betsbwin";
 import { walrusService } from "./services/walrusService";
 import { apiResilienceService } from "./services/apiResilienceService";
 import { betsApiService } from "./services/betsApiService";
@@ -142,6 +143,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register Walrus protocol routes
   registerWalrusRoutes(app);
   console.log("[Routes] Registered Walrus protocol routes for blockchain betting");
+  
+  // Register BetsBwin API routes for BWin-specific endpoints
+  registerBetsBwinRoutes(app);
+  console.log("[Routes] Registered BetsBwin API routes for BWin-specific endpoints");
   
   // Download page route
   app.get("/download", (_req: Request, res: Response) => {

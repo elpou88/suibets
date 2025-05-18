@@ -3,6 +3,7 @@ import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import { log } from './vite';
 import { bwinApiService } from './services/bwinApiService';
+import { oddsTracker } from './services/oddsTracker';
 
 /**
  * Register API routes using BWin data integration
@@ -13,6 +14,9 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
 
   // Create a WebSocket server for live updates
   const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Initialize odds tracker with separate WebSocket path
+  oddsTracker.initialize(httpServer, '/ws/odds');
   
   // Track connected clients
   const clients = new Set<WebSocket>();
@@ -363,6 +367,41 @@ export async function registerRoutes(app: express.Express, existingServer?: Serv
         success: false,
         error: 'Error fetching promotions',
         message: error.message
+      });
+    }
+  });
+
+  // API endpoint for odds tracker HTTP fallback
+  app.get('/api/odds/latest', async (req: Request, res: Response) => {
+    try {
+      const sportId = req.query.sport_id ? parseInt(req.query.sport_id as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+      
+      log(`API request: Get latest odds data (sport_id=${sportId}, limit=${limit})`);
+      
+      const liveEvents = await bwinApiService.getLiveEvents(sportId);
+      let events = bwinApiService.transformEvents(liveEvents, true);
+      
+      // Apply limit if needed
+      if (events.length > limit) {
+        events = events.slice(0, limit);
+      }
+      
+      // Return events with odds data
+      res.json({
+        success: true,
+        events: events.map(event => ({
+          id: event.id,
+          home_team: event.home_team,
+          away_team: event.away_team,
+          odds: event.odds
+        }))
+      });
+    } catch (error) {
+      console.error('Error fetching latest odds data:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error fetching latest odds data'
       });
     }
   });

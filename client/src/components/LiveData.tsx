@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
+import EventOddsTracker from './EventOddsTracker';
 
 interface Score {
   home: number;
@@ -347,7 +348,7 @@ const LiveData: React.FC = () => {
                     </div>
                   </CardContent>
                   {event.odds && (
-                    <CardFooter className="pt-0">
+                    <CardFooter className="pt-0 flex-col">
                       <div className="w-full grid grid-cols-3 gap-2 mt-2">
                         <Button variant="outline" size="sm" className="w-full">
                           {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
@@ -360,6 +361,76 @@ const LiveData: React.FC = () => {
                         <Button variant="outline" size="sm" className="w-full">
                           {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
                         </Button>
+                      </div>
+                      
+                      {/* Odds Movement Tracker */}
+                      <div className="mt-4 w-full">
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="text-sm font-medium">Odds Movement</h4>
+                          <Badge variant="outline" className="text-xs">LIVE</Badge>
+                        </div>
+                        {(() => {
+                          // Convert odds to format expected by EventOddsTracker
+                          const markets = [];
+                          
+                          // Match Result market
+                          if (event.odds) {
+                            const resultOdds = [];
+                            
+                            if (event.odds.home !== null) {
+                              resultOdds.push({
+                                name: `${event.home_team} (Win)`,
+                                value: event.odds.home || 2.0
+                              });
+                            }
+                            
+                            if (event.odds.draw !== null) {
+                              resultOdds.push({
+                                name: 'Draw',
+                                value: event.odds.draw || 3.0
+                              });
+                            }
+                            
+                            if (event.odds.away !== null) {
+                              resultOdds.push({
+                                name: `${event.away_team} (Win)`,
+                                value: event.odds.away || 2.0
+                              });
+                            }
+                            
+                            if (resultOdds.length > 0) {
+                              markets.push({
+                                name: 'Match Result',
+                                key: 'result',
+                                odds: resultOdds
+                              });
+                            }
+                            
+                            // Add mock Over/Under market for demonstration
+                            markets.push({
+                              name: 'Over/Under',
+                              key: 'overUnder',
+                              odds: [
+                                { name: 'Over 2.5', value: 1.85 },
+                                { name: 'Under 2.5', value: 1.95 }
+                              ]
+                            });
+                            
+                            // Add mock Both Teams To Score market
+                            markets.push({
+                              name: 'Both Teams To Score',
+                              key: 'bothTeamsToScore',
+                              odds: [
+                                { name: 'Yes', value: 1.75 },
+                                { name: 'No', value: 2.10 }
+                              ]
+                            });
+                          }
+                          
+                          return markets.length > 0 ? (
+                            <EventOddsTracker eventId={event.id} markets={markets} />
+                          ) : null;
+                        })()}
                       </div>
                     </CardFooter>
                   )}
@@ -406,7 +477,7 @@ const LiveData: React.FC = () => {
                       </div>
                     </CardContent>
                     {event.odds && (
-                      <CardFooter className="pt-0">
+                      <CardFooter className="pt-0 flex-col">
                         <div className="w-full grid grid-cols-3 gap-2 mt-2">
                           <Button variant="outline" size="sm" className="w-full">
                             {event.home_team.split(' ')[0]} {event.odds.home ? `(${event.odds.home})` : ''}
@@ -419,6 +490,76 @@ const LiveData: React.FC = () => {
                           <Button variant="outline" size="sm" className="w-full">
                             {event.away_team.split(' ')[0]} {event.odds.away ? `(${event.odds.away})` : ''}
                           </Button>
+                        </div>
+                        
+                        {/* Odds Movement Tracker */}
+                        <div className="mt-4 w-full">
+                          <div className="flex justify-between items-center mb-2">
+                            <h4 className="text-sm font-medium">Odds Movement</h4>
+                            <Badge variant="outline" className="text-xs">LIVE</Badge>
+                          </div>
+                          {(() => {
+                            // Convert odds to format expected by EventOddsTracker
+                            const markets = [];
+                            
+                            // Match Result market
+                            if (event.odds) {
+                              const resultOdds = [];
+                              
+                              if (event.odds.home !== null) {
+                                resultOdds.push({
+                                  name: `${event.home_team} (Win)`,
+                                  value: event.odds.home || 2.0
+                                });
+                              }
+                              
+                              if (event.odds.draw !== null) {
+                                resultOdds.push({
+                                  name: 'Draw',
+                                  value: event.odds.draw || 3.0
+                                });
+                              }
+                              
+                              if (event.odds.away !== null) {
+                                resultOdds.push({
+                                  name: `${event.away_team} (Win)`,
+                                  value: event.odds.away || 2.0
+                                });
+                              }
+                              
+                              if (resultOdds.length > 0) {
+                                markets.push({
+                                  name: 'Match Result',
+                                  key: 'result',
+                                  odds: resultOdds
+                                });
+                              }
+                              
+                              // Add mock Over/Under market for demonstration
+                              markets.push({
+                                name: 'Over/Under',
+                                key: 'overUnder',
+                                odds: [
+                                  { name: 'Over 2.5', value: 1.85 },
+                                  { name: 'Under 2.5', value: 1.95 }
+                                ]
+                              });
+                              
+                              // Add mock Both Teams To Score market
+                              markets.push({
+                                name: 'Both Teams To Score',
+                                key: 'bothTeamsToScore',
+                                odds: [
+                                  { name: 'Yes', value: 1.75 },
+                                  { name: 'No', value: 2.10 }
+                                ]
+                              });
+                            }
+                            
+                            return markets.length > 0 ? (
+                              <EventOddsTracker eventId={event.id} markets={markets} />
+                            ) : null;
+                          })()}
                         </div>
                       </CardFooter>
                     )}

@@ -105,18 +105,20 @@ export class OddsTrackerClient {
     fetch('/api/events/live')
       .then(response => {
         if (!response.ok) {
-          throw new Error('Failed to fetch odds data');
+          throw new Error(`Failed to fetch odds data: ${response.status}`);
         }
         return response.json();
       })
       .then(data => {
-        if (data && data.events) {
-          // Process events with odds data
+        if (data && data.success && data.events) {
+          console.log(`Odds tracker: Received ${data.events.length} events`);
           this.handlePolledData(data.events);
+        } else {
+          console.warn('Odds tracker: Invalid data format received');
         }
       })
       .catch(error => {
-        console.error('Error polling odds data:', error);
+        console.error('Error polling odds data:', error.message || error);
       });
   }
   

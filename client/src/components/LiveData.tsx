@@ -200,6 +200,7 @@ const LiveData: React.FC = () => {
   const fetchLiveEvents = async () => {
     try {
       setLoading(true);
+      console.log('Fetching live events from /api/events/live');
       const response = await fetch('/api/events/live');
       
       if (!response.ok) {
@@ -207,25 +208,25 @@ const LiveData: React.FC = () => {
       }
       
       const data = await response.json();
+      console.log('Received data:', data);
       
       if (data.success && Array.isArray(data.events)) {
+        console.log(`Successfully loaded ${data.events.length} live events`);
         setLiveEvents(data.events);
         
         // Extract unique sports from events
-        const sports = [...new Map(data.events.map((event: Event) => 
+        const sports = Array.from(new Map(data.events.map((event: Event) => 
           [event.sport_id, { id: event.sport_id, name: event.sport_name }]
-        )).values()];
+        )).values());
         setUniqueSports(sports);
+        setError(null); // Clear any previous errors
       } else {
         setError('Invalid data format received from server');
       }
     } catch (err: any) {
+      console.error('Error fetching live events:', err);
       setError(err.message || 'Failed to fetch live events');
-      toast({
-        title: "Error Loading Events",
-        description: err.message || 'Failed to fetch live events',
-        variant: "destructive"
-      });
+      // Don't show toast for every error during polling
     } finally {
       setLoading(false);
     }

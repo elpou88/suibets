@@ -1,11 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes-betsapi"; // Using BetsAPI integration routes
+import { registerRoutes } from "./routes-clean"; // Using clean, sport-separated implementation
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
 import { blockchainStorage } from "./blockchain-storage";
-import { registerApiTestPage } from "./api-test-page";
-import { registerBetRoutes } from "./bet-routes";
 
 const app = express();
 app.use(express.json());
@@ -62,16 +60,7 @@ app.use((req, res, next) => {
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
   
-  // Register API test page
-  registerApiTestPage(app);
-  log('API test page registered');
-  
-  // Register bet routes for blockchain integration
-  registerBetRoutes(app);
-  log('Blockchain betting endpoints registered');
-  
-  // Register main API routes with the existing server
-  const httpServer = await registerRoutes(app);
+  const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -89,11 +78,20 @@ app.use((req, res, next) => {
   // setting up all the other routes so the catch-all route
   // doesn't interfere with the other routes
   if (app.get("env") === "development") {
-    await setupVite(app, httpServer);
+    await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
-  // HTTP server is already listening thanks to registerRoutes
-  log(`Server is running on port 5000`);
+  // ALWAYS serve the app on port 5000
+  // this serves both the API and the client.
+  // It is the only port that is not firewalled.
+  const port = 5000;
+  server.listen({
+    port,
+    host: "0.0.0.0",
+    reusePort: true,
+  }, () => {
+    log(`serving on port ${port}`);
+  });
 })();

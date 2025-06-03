@@ -1,10 +1,9 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes-bwin"; // Using BWin integration routes
+import { registerRoutes } from "./routes-betsapi"; // Using BetsAPI integration routes
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
 import { blockchainStorage } from "./blockchain-storage";
-import { registerBwinTestRoutes } from "./bwin-api-test";
 import { registerApiTestPage } from "./api-test-page";
 import { registerBetRoutes } from "./bet-routes";
 
@@ -62,10 +61,6 @@ app.use((req, res, next) => {
   
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
-  
-  // Register BWin API testing routes
-  registerBwinTestRoutes(app);
-  log('BWin API testing routes registered');
   
   // Register API test page
   registerApiTestPage(app);

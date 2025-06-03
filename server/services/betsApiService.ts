@@ -1,424 +1,304 @@
-import axios from 'axios';
-import { apiResilienceService } from './apiResilienceService';
+import axios, { AxiosResponse } from 'axios';
 
-// API key for BetsAPI
-const BETSAPI_KEY = '181477-ToriIDEJRGaxoz';
+export interface BetsApiEvent {
+  id: string;
+  sport_id: string;
+  time: string;
+  time_status: string;
+  league: {
+    id: string;
+    name: string;
+  };
+  home: {
+    id: string;
+    name: string;
+  };
+  away: {
+    id: string;
+    name: string;
+  };
+  ss?: string; // Current score
+  our_event_id?: string;
+  r_id?: string;
+  updated_at?: string;
+}
 
-/**
- * Service to fetch data from the BetsAPI service
- * Provides comprehensive sports data across multiple sports
- */
+export interface BetsApiOdds {
+  id: string;
+  home_od: string;
+  draw_od: string;
+  away_od: string;
+  ss: string;
+  time_str: string;
+}
+
+export interface TransformedEvent {
+  id: string;
+  bwin_id: string;
+  sport_id: number;
+  sport_name: string;
+  league_id: string;
+  league_name: string;
+  home_team: string;
+  away_team: string;
+  time: string;
+  is_live: boolean;
+  score?: {
+    home: number;
+    away: number;
+  };
+  odds?: {
+    home: number | null;
+    draw: number | null;
+    away: number | null;
+  };
+  status: string;
+  last_updated: number;
+}
+
 export class BetsApiService {
   private apiKey: string;
   private baseUrl: string = 'https://api.b365api.com/v1';
-  private sportsMapping: Record<number, number> = {
-    // Map our internal sport IDs to BetsAPI sport IDs
-    1: 1,    // Soccer/Football
-    26: 1,   // Soccer/Football (alt ID)
-    2: 3,    // Basketball
-    3: 5,    // Tennis
-    4: 16,   // Baseball
-    5: 4,    // Ice Hockey
-    6: 12,   // Volleyball
-    7: 23,   // American Football
-    8: 17,   // Rugby
-    9: 6,    // Golf
-    10: 21,  // Boxing
-    11: 20,  // MMA/UFC
-    12: 20,  // MMA/UFC (alt ID)
-    13: 7,   // Cricket
-    14: 19,  // Cycling
-    15: 2,   // Horse Racing
-    16: 32,  // Esports
-    17: 8,   // Darts
-    18: 22,  // Snooker
-    19: 24,  // Handball
-    20: 11,  // Badminton
-    21: 33,  // Table Tennis
-    22: 13,  // Aussie Rules
-    23: 9,   // Motorsport
-    24: 34,  // Swimming
-    25: 18,  // Waterpolo
-  };
   
-  constructor(apiKey: string) {
-    this.apiKey = apiKey;
-    console.log('[BetsApiService] Initialized with API key');
+  constructor() {
+    this.apiKey = process.env.BETSAPI_KEY || '181477-ToriIDEJRGaxoz';
+    console.log('BetsApiService: Initialized with API key');
   }
 
   /**
-   * Update the API key
-   * @param apiKey New API key to use
+   * Get live events from BetsAPI
    */
-  public setApiKey(apiKey: string): void {
-    this.apiKey = apiKey;
-    console.log('[BetsApiService] API key updated');
-  }
-  
-  /**
-   * Fetch upcoming events for a specific sport
-   * @param sportId Our internal sport ID
-   * @param daysAhead Number of days ahead to fetch events
-   * @returns Array of events
-   */
-  async fetchUpcomingEvents(sportId?: number, daysAhead: number = 3): Promise<any[]> {
+  async getLiveEvents(sportId?: number): Promise<BetsApiEvent[]> {
     try {
-      // If sportId is provided, convert to BetsAPI sport ID
-      const betsApiSportId = sportId ? this.sportsMapping[sportId] : 1; // Default to soccer (ID: 1) if not specified
+      console.log('BetsApiService: Fetching live events');
       
       const params: any = {
         token: this.apiKey,
-        sport_id: betsApiSportId, // Required parameter for BetsAPI
-        day: daysAhead
+        sport_id: sportId || undefined
       };
-      
-      // Make resilient request
-      const url = `${this.baseUrl}/events/upcoming`;
-      console.log(`[BetsApiService] Requesting upcoming events from ${url} with sport_id=${betsApiSportId}`);
-      
-      const response = await apiResilienceService.makeRequest(url, { params });
-      
-      if (!response) {
-        console.error('[BetsApiService] Empty response from BetsAPI');
-        return [];
-      }
-      
-      if (response.success === 0) {
-        console.error(`[BetsApiService] API Error: ${response.error} - ${response.error_detail}`);
-        return [];
-      }
-      
-      if (!response.results || !Array.isArray(response.results)) {
-        console.error('[BetsApiService] Invalid response format for upcoming events');
-        return [];
-      }
-      
-      console.log(`[BetsApiService] Received ${response.results.length} upcoming events from BetsAPI`);
-      
-      // Transform data to our internal format
-      return this.transformEvents(response.results, false);
-    } catch (error) {
-      console.error('[BetsApiService] Error fetching upcoming events:', error);
-      return [];
-    }
-  }
-  
-  /**
-   * Fetch live events for a specific sport
-   * @param sportId Our internal sport ID
-   * @returns Array of events
-   */
-  async fetchLiveEvents(sportId?: number): Promise<any[]> {
-    try {
-      // If sportId is provided, convert to BetsAPI sport ID
-      const betsApiSportId = sportId ? this.sportsMapping[sportId] : 1; // Default to soccer (ID: 1) if not specified
-      
-      const params: any = {
-        token: this.apiKey,
-        sport_id: betsApiSportId // Required parameter for BetsAPI
-      };
-      
-      // Make resilient request
-      const url = `${this.baseUrl}/events/inplay`;
-      console.log(`[BetsApiService] Requesting live events from ${url} with sport_id=${betsApiSportId}`);
-      
-      const response = await apiResilienceService.makeRequest(url, { 
+
+      const response: AxiosResponse = await axios.get(`${this.baseUrl}/events/inplay`, {
         params,
-        timeout: 5000, // Add timeout to prevent hanging connections
-        retries: 2     // Number of retry attempts before giving up
-      });
-      
-      if (!response) {
-        console.error('[BetsApiService] Empty response from BetsAPI');
-        return [];
-      }
-      
-      if (response.success === 0) {
-        console.error(`[BetsApiService] API Error: ${response.error} - ${response.error_detail}`);
-        // If permission denied, we have a subscription limitation
-        if (response.error === 'PERMISSION_DENIED') {
-          console.error('[BetsApiService] Subscription limitation with BetsAPI key - check coverage');
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SuiBets/1.0'
         }
+      });
+
+      if (response.data && response.data.success === 1 && response.data.results) {
+        const events = response.data.results;
+        console.log(`BetsApiService: Found ${events.length} live events`);
+        return events;
+      } else {
+        console.log('BetsApiService: No live events found or API error');
         return [];
       }
-      
-      if (!response.results || !Array.isArray(response.results)) {
-        console.error('[BetsApiService] Invalid response format for live events');
-        return [];
-      }
-      
-      console.log(`[BetsApiService] Received ${response.results.length} live events from BetsAPI`);
-      
-      // Transform data to our internal format
-      return this.transformEvents(response.results, true);
-    } catch (error) {
-      console.error('[BetsApiService] Error fetching live events:', error);
+    } catch (error: any) {
+      console.error('BetsApiService: Error fetching live events:', error.message);
       return [];
     }
   }
-  
+
   /**
-   * Fetch odds for a specific event
-   * @param eventId BetsAPI event ID
-   * @returns Odds data
+   * Get upcoming events from BetsAPI
    */
-  async fetchEventOdds(eventId: string): Promise<any> {
+  async getUpcomingEvents(sportId?: number): Promise<BetsApiEvent[]> {
     try {
-      const params = {
+      console.log('BetsApiService: Fetching upcoming events');
+      
+      const params: any = {
         token: this.apiKey,
-        event_id: eventId
+        sport_id: sportId || undefined,
+        day: new Date().toISOString().split('T')[0] // Today's date in YYYY-MM-DD format
       };
+
+      const response: AxiosResponse = await axios.get(`${this.baseUrl}/events/upcoming`, {
+        params,
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SuiBets/1.0'
+        }
+      });
+
+      if (response.data && response.data.success === 1 && response.data.results) {
+        const events = response.data.results;
+        console.log(`BetsApiService: Found ${events.length} upcoming events`);
+        return events;
+      } else {
+        console.log('BetsApiService: No upcoming events found or API error');
+        return [];
+      }
+    } catch (error: any) {
+      console.error('BetsApiService: Error fetching upcoming events:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Get odds for a specific event
+   */
+  async getEventOdds(eventId: string): Promise<BetsApiOdds | null> {
+    try {
+      console.log(`BetsApiService: Fetching odds for event ${eventId}`);
       
-      // Make resilient request
-      const url = `${this.baseUrl}/event/odds`;
-      const response = await apiResilienceService.makeRequest(url, { params });
-      
-      if (!response || !response.results) {
-        console.error('[BetsApiService] Invalid response format for event odds');
+      const response: AxiosResponse = await axios.get(`${this.baseUrl}/event/odds`, {
+        params: {
+          token: this.apiKey,
+          event_id: eventId
+        },
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SuiBets/1.0'
+        }
+      });
+
+      if (response.data && response.data.success === 1 && response.data.results) {
+        return response.data.results;
+      } else {
+        console.log(`BetsApiService: No odds found for event ${eventId}`);
         return null;
       }
-      
-      return this.transformOdds(response.results);
-    } catch (error) {
-      console.error('[BetsApiService] Error fetching event odds:', error);
+    } catch (error: any) {
+      console.error(`BetsApiService: Error fetching odds for event ${eventId}:`, error.message);
       return null;
     }
   }
-  
+
   /**
-   * Transform BetsAPI events to our internal format
-   * @param events Array of BetsAPI events
-   * @param isLive Whether these are live events
-   * @returns Transformed events
+   * Get available sports
    */
-  private transformEvents(events: any[], isLive: boolean = false): any[] {
+  async getSports(): Promise<any[]> {
+    try {
+      console.log('BetsApiService: Fetching available sports');
+      
+      const response: AxiosResponse = await axios.get(`${this.baseUrl}/sports`, {
+        params: {
+          token: this.apiKey
+        },
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SuiBets/1.0'
+        }
+      });
+
+      if (response.data && response.data.success === 1 && response.data.results) {
+        const sports = response.data.results;
+        console.log(`BetsApiService: Found ${sports.length} sports`);
+        return sports;
+      } else {
+        console.log('BetsApiService: No sports found or API error');
+        return [];
+      }
+    } catch (error: any) {
+      console.error('BetsApiService: Error fetching sports:', error.message);
+      return [];
+    }
+  }
+
+  /**
+   * Transform BetsAPI events to our standard format
+   */
+  transformEvents(events: BetsApiEvent[], isLive: boolean = false): TransformedEvent[] {
     return events.map(event => {
-      // Convert BetsAPI sport ID back to our internal sport ID
-      const sportId = this.findInternalSportId(event.sport_id);
-      
-      // Map teams and scores
-      const homeTeam = event.home.name;
-      const awayTeam = event.away.name;
-      
-      // Handle scores
-      let homeScore = 0;
-      let awayScore = 0;
-      
-      if (isLive && event.ss) {
-        const scores = event.ss.split('-');
-        if (scores.length === 2) {
-          homeScore = parseInt(scores[0].trim());
-          awayScore = parseInt(scores[1].trim());
+      // Parse score if available
+      let score = undefined;
+      if (event.ss && isLive) {
+        const scoreParts = event.ss.split('-');
+        if (scoreParts.length === 2) {
+          score = {
+            home: parseInt(scoreParts[0]) || 0,
+            away: parseInt(scoreParts[1]) || 0
+          };
         }
       }
-      
-      // Create our internal event object
+
+      // Map sport ID to sport name
+      const sportName = this.getSportName(event.sport_id);
+
       return {
-        id: event.id.toString(),
-        sportId,
-        leagueId: event.league.id.toString(),
-        leagueName: event.league.name,
-        homeTeam,
-        awayTeam,
-        homeScore: isNaN(homeScore) ? 0 : homeScore,
-        awayScore: isNaN(awayScore) ? 0 : awayScore,
-        startTime: event.time * 1000, // Convert to milliseconds
-        isLive,
-        status: isLive ? 'LIVE' : 'SCHEDULED',
-        markets: [], // Will be populated when fetching odds
-        // Extra fields from BetsAPI
-        eventName: `${homeTeam} vs ${awayTeam}`,
-        sportName: this.getSportName(sportId),
-        // Time information
-        timeStatus: event.time_status,
-        timeElapsed: isLive ? this.extractTimeElapsed(event) : 0,
-        date: new Date(event.time * 1000).toISOString()
+        id: event.id,
+        bwin_id: event.id, // Using same ID for compatibility
+        sport_id: parseInt(event.sport_id),
+        sport_name: sportName,
+        league_id: event.league.id,
+        league_name: event.league.name,
+        home_team: event.home.name,
+        away_team: event.away.name,
+        time: event.time,
+        is_live: isLive,
+        score,
+        odds: undefined, // Will be populated separately if needed
+        status: event.time_status || (isLive ? 'live' : 'scheduled'),
+        last_updated: Date.now()
       };
     });
   }
-  
+
   /**
-   * Transform BetsAPI odds to our internal format
-   * @param oddsData BetsAPI odds data
-   * @returns Transformed odds
+   * Get sport name by ID
    */
-  private transformOdds(oddsData: any): any {
-    if (!oddsData || !oddsData.odds) return null;
-    
-    const markets = [];
-    
-    // Process each bookmaker's odds
-    Object.keys(oddsData.odds).forEach(bookmaker => {
-      const bookmakerOdds = oddsData.odds[bookmaker];
+  private getSportName(sportId: string): string {
+    const sportMap: { [key: string]: string } = {
+      '1': 'Soccer',
+      '2': 'Tennis',
+      '3': 'Basketball',
+      '4': 'Ice Hockey',
+      '5': 'American Football',
+      '6': 'Baseball',
+      '7': 'Handball',
+      '8': 'Rugby Union',
+      '9': 'Rugby League',
+      '10': 'Boxing',
+      '11': 'Formula 1',
+      '12': 'Golf',
+      '13': 'Volleyball',
+      '14': 'Cricket',
+      '15': 'Darts',
+      '16': 'Snooker',
+      '17': 'Table Tennis',
+      '18': 'Badminton',
+      '19': 'Water Polo',
+      '20': 'Cycling'
+    };
+
+    return sportMap[sportId] || `Sport ${sportId}`;
+  }
+
+  /**
+   * Get event details by ID
+   */
+  async getEventDetails(eventId: string): Promise<BetsApiEvent | null> {
+    try {
+      console.log(`BetsApiService: Fetching event details for ${eventId}`);
       
-      // Process each market type
-      Object.keys(bookmakerOdds).forEach(marketType => {
-        // Skip non-numeric keys (metadata)
-        if (isNaN(Number(marketType))) return;
-        
-        const marketData = bookmakerOdds[marketType];
-        
-        // Get market name based on type
-        const marketName = this.getMarketName(Number(marketType));
-        
-        // Process outcomes
-        const outcomes = Object.keys(marketData).map(outcomeKey => {
-          return {
-            name: this.getOutcomeName(Number(marketType), outcomeKey),
-            price: marketData[outcomeKey],
-            handicap: marketData.handicap || 0
-          };
-        });
-        
-        // Add market to results
-        markets.push({
-          id: `${marketType}_${bookmaker}`,
-          name: marketName,
-          outcomes,
-          marketType: Number(marketType),
-          bookmaker
-        });
+      const response: AxiosResponse = await axios.get(`${this.baseUrl}/event/view`, {
+        params: {
+          token: this.apiKey,
+          event_id: eventId
+        },
+        timeout: 30000,
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'SuiBets/1.0'
+        }
       });
-    });
-    
-    return {
-      eventId: oddsData.id,
-      markets
-    };
-  }
-  
-  /**
-   * Get market name based on BetsAPI market type
-   * @param marketType BetsAPI market type
-   * @returns Market name
-   */
-  private getMarketName(marketType: number): string {
-    const marketNames: Record<number, string> = {
-      1: 'Match Result',
-      2: 'Asian Handicap',
-      3: 'Over/Under',
-      4: 'Both Teams to Score',
-      5: 'Exact Score',
-      6: 'Draw No Bet',
-      7: 'Double Chance',
-      8: 'Halftime/Fulltime',
-      9: 'First Half Result',
-      10: 'First Half Goals',
-      11: 'First Half Asian Handicap',
-      12: 'First Half Over/Under',
-      // Add more market types as needed
-    };
-    
-    return marketNames[marketType] || `Market Type ${marketType}`;
-  }
-  
-  /**
-   * Get outcome name based on market type and outcome key
-   * @param marketType BetsAPI market type
-   * @param outcomeKey Outcome key
-   * @returns Outcome name
-   */
-  private getOutcomeName(marketType: number, outcomeKey: string): string {
-    // Match Result (1X2)
-    if (marketType === 1) {
-      if (outcomeKey === '1') return 'Home';
-      if (outcomeKey === 'X') return 'Draw';
-      if (outcomeKey === '2') return 'Away';
-    }
-    
-    // Over/Under
-    if (marketType === 3) {
-      if (outcomeKey.startsWith('over')) return 'Over';
-      if (outcomeKey.startsWith('under')) return 'Under';
-    }
-    
-    // Both Teams to Score
-    if (marketType === 4) {
-      if (outcomeKey === 'yes') return 'Yes';
-      if (outcomeKey === 'no') return 'No';
-    }
-    
-    // Default to the outcome key if no specific mapping exists
-    return outcomeKey;
-  }
-  
-  /**
-   * Find our internal sport ID from BetsAPI sport ID
-   * @param betsApiSportId BetsAPI sport ID
-   * @returns Our internal sport ID
-   */
-  private findInternalSportId(betsApiSportId: number): number {
-    // Find the matching key in our mapping
-    for (const [internalId, apiId] of Object.entries(this.sportsMapping)) {
-      if (apiId === betsApiSportId) {
-        return Number(internalId);
+
+      if (response.data && response.data.success === 1 && response.data.results) {
+        return response.data.results;
+      } else {
+        console.log(`BetsApiService: Event ${eventId} not found`);
+        return null;
       }
+    } catch (error: any) {
+      console.error(`BetsApiService: Error fetching event details for ${eventId}:`, error.message);
+      return null;
     }
-    
-    // Return 1 (soccer/football) as default if no match found
-    return 1;
-  }
-  
-  /**
-   * Get sport name from our internal sport ID
-   * @param sportId Our internal sport ID
-   * @returns Sport name
-   */
-  private getSportName(sportId: number): string {
-    const sportNames: Record<number, string> = {
-      1: 'Soccer',
-      26: 'Soccer',
-      2: 'Basketball',
-      3: 'Tennis',
-      4: 'Baseball',
-      5: 'Ice Hockey',
-      6: 'Volleyball',
-      7: 'American Football',
-      8: 'Rugby',
-      9: 'Golf',
-      10: 'Boxing',
-      11: 'MMA/UFC',
-      12: 'MMA/UFC',
-      13: 'Cricket',
-      14: 'Cycling',
-      15: 'Horse Racing',
-      16: 'Esports',
-      17: 'Darts',
-      18: 'Snooker',
-      19: 'Handball',
-      20: 'Badminton',
-      21: 'Table Tennis',
-      22: 'Aussie Rules',
-      23: 'Motorsport',
-      24: 'Swimming',
-      25: 'Waterpolo',
-    };
-    
-    return sportNames[sportId] || 'Other';
-  }
-  
-  /**
-   * Extract time elapsed from BetsAPI event
-   * @param event BetsAPI event
-   * @returns Time elapsed in minutes
-   */
-  private extractTimeElapsed(event: any): number {
-    if (event.timer) {
-      // Try to parse timer if available
-      const timerMatch = String(event.timer).match(/(\d+)/);
-      if (timerMatch && timerMatch[1]) {
-        return parseInt(timerMatch[1]);
-      }
-    }
-    
-    // Fall back to time status if numeric
-    if (event.time_status && !isNaN(parseInt(event.time_status))) {
-      return parseInt(event.time_status);
-    }
-    
-    return 0;
   }
 }
 
 // Export singleton instance
-export const betsApiService = new BetsApiService('181477-ToriIDEJRGaxoz');
+export const betsApiService = new BetsApiService();

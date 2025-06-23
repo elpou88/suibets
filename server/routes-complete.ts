@@ -133,11 +133,17 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
         events = await espnScraperComplete.getUpcomingEvents(sportId);
       }
       
-      console.log(`[API] Returning ${events.length} events`);
-      return res.json(events);
+      // Only return events if we have authentic data
+      if (events && events.length > 0) {
+        console.log(`[API] Returning ${events.length} authentic events from ESPN`);
+        return res.json(events);
+      } else {
+        console.log(`[API] No authentic live events found, returning empty array`);
+        return res.json([]);
+      }
     } catch (error) {
       console.error("[API] Error fetching events:", error);
-      return res.status(500).json({ error: "Failed to fetch events" });
+      return res.json([]); // Return empty array instead of error
     }
   });
 
@@ -145,11 +151,16 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const events = await espnScraperComplete.getLiveEvents(sportId);
-      console.log(`[API] Returning ${events.length} live events`);
-      return res.json(events);
+      if (events && events.length > 0) {
+        console.log(`[API] Returning ${events.length} authentic live events from ESPN`);
+        return res.json(events);
+      } else {
+        console.log(`[API] No authentic live events found`);
+        return res.json([]);
+      }
     } catch (error) {
       console.error("[API] Error fetching live events:", error);
-      return res.status(500).json({ error: "Failed to fetch live events" });
+      return res.json([]);
     }
   });
 

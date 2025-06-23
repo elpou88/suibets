@@ -209,14 +209,19 @@ export class ESPNScraperComplete {
     const statusState = event.status.type.state?.toLowerCase() || '';
     const statusDescription = event.status.type.description?.toLowerCase() || '';
     
-    // Enhanced live event detection
+    // Enhanced live event detection - ONLY truly active games
     const liveStatuses = [
       'in-progress', 'live', 'in_progress', 'active', 'ongoing',
       'halftime', 'half-time', 'intermission', 'break',
       'overtime', 'extra-time', 'penalty-shootout', 'shootout',
-      'delay', 'delayed', 'rain-delay', 'weather-delay',
-      'suspension', 'suspended', 'postponed',
       'quarter-break', 'period-break', 'timeout'
+    ];
+    
+    // Excluded statuses that are NOT live
+    const excludedStatuses = [
+      'postponed', 'suspended', 'canceled', 'cancelled',
+      'delay', 'delayed', 'rain-delay', 'weather-delay',
+      'final', 'completed', 'finished', 'ended'
     ];
     
     // Enhanced upcoming event detection
@@ -225,6 +230,15 @@ export class ESPNScraperComplete {
       'pre-game', 'pregame', 'not-started', 'not_started',
       'warmup', 'warm-up', 'preview', 'pending'
     ];
+    
+    // Check if event is excluded first
+    const isExcluded = excludedStatuses.some(status => 
+      statusType.includes(status) || 
+      statusState.includes(status) || 
+      statusDescription.includes(status)
+    );
+    
+    if (isExcluded) return false; // Never include excluded events
     
     const isEventLive = liveStatuses.some(status => 
       statusType.includes(status) || 

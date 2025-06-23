@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, Server } from "http";
 import { WebSocketServer, WebSocket } from 'ws';
-import { betsBwinApiService } from "./services/betsBwinApi";
+import { espnScraper } from "./services/espnScraper";
 import { blockchainStorage } from "./blockchain-storage";
 import { storage } from "./storage";
 
@@ -60,7 +60,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     if (clients.size === 0) return;
     
     try {
-      const liveEvents = await betsBwinApiService.getLiveEvents();
+      const liveEvents = await espnScraper.getLiveEvents();
       const message = JSON.stringify({
         type: 'live_events',
         data: liveEvents,
@@ -100,11 +100,11 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
 
   app.get("/api/sports", async (_req: Request, res: Response) => {
     try {
-      // Get sports from BWin API
-      const sports = await betsBwinApiService.fetchSports();
+      // Get sports from ESPN scraper
+      const sports = await espnScraper.getSports();
       
       if (sports && sports.length > 0) {
-        console.log(`[API] Returning ${sports.length} sports from BWin API`);
+        console.log(`[API] Returning ${sports.length} sports from ESPN`);
         return res.json(sports);
       }
       
@@ -128,9 +128,9 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       let events = [];
       
       if (isLive) {
-        events = await betsBwinApiService.getLiveEvents(sportId);
+        events = await espnScraper.getLiveEvents(sportId);
       } else {
-        events = await betsBwinApiService.getUpcomingEvents(sportId);
+        events = await espnScraper.getUpcomingEvents(sportId);
       }
       
       console.log(`[API] Returning ${events.length} events`);

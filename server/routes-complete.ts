@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, Server } from "http";
 import { WebSocketServer, WebSocket } from 'ws';
-import { espnScraperFixed } from "./services/espnScraperFixed";
+import { espnScraperComplete } from "./services/espnScraperComplete";
 import { blockchainStorage } from "./blockchain-storage";
 import { storage } from "./storage";
 

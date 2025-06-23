@@ -8,31 +8,91 @@ import { apiResilienceService } from './apiResilienceService';
 export class ESPNScraperFixed {
   private baseUrl = 'https://site.api.espn.com/apis/site/v2/sports';
   
-  // Major sports leagues that consistently have data
-  private majorLeagues = [
+  // Complete sports coverage with all major leagues worldwide
+  private allSportsLeagues = [
+    // Soccer/Football - All major leagues
     { sport: 'soccer', league: 'eng.1', sportId: 1, name: 'Premier League' },
     { sport: 'soccer', league: 'esp.1', sportId: 1, name: 'La Liga' },
     { sport: 'soccer', league: 'ger.1', sportId: 1, name: 'Bundesliga' },
     { sport: 'soccer', league: 'ita.1', sportId: 1, name: 'Serie A' },
     { sport: 'soccer', league: 'fra.1', sportId: 1, name: 'Ligue 1' },
+    { sport: 'soccer', league: 'ned.1', sportId: 1, name: 'Eredivisie' },
+    { sport: 'soccer', league: 'por.1', sportId: 1, name: 'Primeira Liga' },
     { sport: 'soccer', league: 'uefa.champions', sportId: 1, name: 'Champions League' },
-    { sport: 'soccer', league: 'fifa.world', sportId: 1, name: 'FIFA World Cup' },
     { sport: 'soccer', league: 'uefa.europa', sportId: 1, name: 'Europa League' },
     { sport: 'soccer', league: 'conmebol.libertadores', sportId: 1, name: 'Copa Libertadores' },
-    { sport: 'soccer', league: 'concacaf.nations.league', sportId: 1, name: 'CONCACAF Nations League' },
-    { sport: 'soccer', league: 'fifa.world.cup.qualifying.uefa', sportId: 1, name: 'UEFA WC Qualifying' },
-    { sport: 'soccer', league: 'club.friendly', sportId: 1, name: 'Club Friendlies' },
     { sport: 'soccer', league: 'usa.1', sportId: 1, name: 'MLS' },
+    { sport: 'soccer', league: 'mex.1', sportId: 1, name: 'Liga MX' },
     { sport: 'soccer', league: 'bra.1', sportId: 1, name: 'Brazilian Serie A' },
-    { sport: 'basketball', league: 'nba', sportId: 2, name: 'NBA' },
-    { sport: 'basketball', league: 'wnba', sportId: 2, name: 'WNBA' },
-    { sport: 'basketball', league: 'mens-college-basketball', sportId: 2, name: 'College Basketball' },
-    { sport: 'baseball', league: 'mlb', sportId: 4, name: 'MLB' },
-    { sport: 'hockey', league: 'nhl', sportId: 6, name: 'NHL' },
+    { sport: 'soccer', league: 'arg.1', sportId: 1, name: 'Argentine Primera' },
+    { sport: 'soccer', league: 'club.friendly', sportId: 1, name: 'Club Friendlies' },
+    
+    // American Football
     { sport: 'football', league: 'nfl', sportId: 29, name: 'NFL' },
     { sport: 'football', league: 'college-football', sportId: 29, name: 'College Football' },
-    { sport: 'tennis', league: 'atp', sportId: 3, name: 'ATP Tennis' },
-    { sport: 'golf', league: 'pga', sportId: 18, name: 'PGA Golf' }
+    
+    // Basketball
+    { sport: 'basketball', league: 'nba', sportId: 2, name: 'NBA' },
+    { sport: 'basketball', league: 'wnba', sportId: 2, name: 'WNBA' },
+    { sport: 'basketball', league: 'mens-college-basketball', sportId: 2, name: 'NCAA Basketball' },
+    { sport: 'basketball', league: 'womens-college-basketball', sportId: 2, name: 'NCAA Women Basketball' },
+    { sport: 'basketball', league: 'nba-g-league', sportId: 2, name: 'NBA G League' },
+    
+    // Baseball
+    { sport: 'baseball', league: 'mlb', sportId: 4, name: 'MLB' },
+    { sport: 'baseball', league: 'college-baseball', sportId: 4, name: 'College Baseball' },
+    { sport: 'baseball', league: 'minors', sportId: 4, name: 'Minor League Baseball' },
+    
+    // Hockey
+    { sport: 'hockey', league: 'nhl', sportId: 6, name: 'NHL' },
+    { sport: 'hockey', league: 'college-hockey', sportId: 6, name: 'College Hockey' },
+    { sport: 'hockey', league: 'ahl', sportId: 6, name: 'AHL' },
+    
+    // Tennis
+    { sport: 'tennis', league: 'atp', sportId: 3, name: 'ATP Tour' },
+    { sport: 'tennis', league: 'wta', sportId: 3, name: 'WTA Tour' },
+    
+    // Golf
+    { sport: 'golf', league: 'pga', sportId: 18, name: 'PGA Tour' },
+    { sport: 'golf', league: 'european', sportId: 18, name: 'European Tour' },
+    { sport: 'golf', league: 'lpga', sportId: 18, name: 'LPGA Tour' },
+    
+    // Auto Racing
+    { sport: 'racing', league: 'sprint-cup', sportId: 22, name: 'NASCAR Cup Series' },
+    { sport: 'racing', league: 'f1', sportId: 22, name: 'Formula 1' },
+    { sport: 'racing', league: 'indycar', sportId: 22, name: 'IndyCar' },
+    
+    // MMA/Fighting
+    { sport: 'mma', league: 'ufc', sportId: 27, name: 'UFC' },
+    { sport: 'boxing', league: 'boxing', sportId: 28, name: 'Boxing' },
+    
+    // Olympics/Multi-sport
+    { sport: 'olympics', league: 'summer', sportId: 30, name: 'Summer Olympics' },
+    { sport: 'olympics', league: 'winter', sportId: 31, name: 'Winter Olympics' },
+    
+    // Cricket
+    { sport: 'cricket', league: 'international', sportId: 8, name: 'International Cricket' },
+    { sport: 'cricket', league: 'county-championship', sportId: 8, name: 'County Championship' },
+    
+    // Rugby
+    { sport: 'rugby', league: 'union', sportId: 12, name: 'Rugby Union' },
+    { sport: 'rugby', league: 'league', sportId: 13, name: 'Rugby League' },
+    
+    // Volleyball
+    { sport: 'volleyball', league: 'beach', sportId: 24, name: 'Beach Volleyball' },
+    { sport: 'volleyball', league: 'indoor', sportId: 25, name: 'Indoor Volleyball' },
+    
+    // Track and Field
+    { sport: 'track-and-field', league: 'outdoor', sportId: 19, name: 'Track and Field' },
+    
+    // Swimming
+    { sport: 'swimming', league: 'competitive', sportId: 20, name: 'Competitive Swimming' },
+    
+    // Cycling
+    { sport: 'cycling', league: 'road', sportId: 21, name: 'Cycling' },
+    
+    // Softball
+    { sport: 'softball', league: 'college', sportId: 23, name: 'College Softball' }
   ];
 
   /**

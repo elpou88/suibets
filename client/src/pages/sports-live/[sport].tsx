@@ -256,6 +256,13 @@ export default function SportPage() {
           }).filter(item => item !== undefined);
           
           console.log(`Validated ${normalizedData.length} events with required fields`);
+          
+          // Final verification before returning
+          console.log(`About to return ${normalizedData.length} normalized events for ${sportName}`);
+          if (normalizedData.length > 0) {
+            console.log(`Sample event data:`, normalizedData[0]);
+          }
+          
           return normalizedData;
         }
         
@@ -452,6 +459,13 @@ export default function SportPage() {
         }
         
         console.log(`Returning ${filteredData.length} filtered events for sportId: ${sportId}`);
+        
+        // Final verification before returning filtered data
+        console.log(`Final return - ${filteredData.length} events for ${sportName}`);
+        if (filteredData.length > 0) {
+          console.log(`Sample filtered event:`, filteredData[0]);
+        }
+        
         return filteredData;
       } catch (error) {
         console.error(`Error fetching events for ${sportName}:`, error);
@@ -466,6 +480,20 @@ export default function SportPage() {
     enabled: !!sportId,
     refetchInterval: selectedTab === 'live' ? 15000 : 60000 // Refresh more frequently for live events
   });
+
+  // Debug logging for events data
+  console.log(`[DEBUG] Current events state:`, {
+    eventsLength: events?.length || 0,
+    isLoading,
+    isError,
+    sportId,
+    sportName,
+    selectedTab
+  });
+
+  if (events && events.length > 0) {
+    console.log(`[DEBUG] First event sample:`, events[0]);
+  }
   
   // Format odds in American format
   const formatOdds = (odds: number) => {

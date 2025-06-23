@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes-clean"; // Using clean, sport-separated implementation
+import { registerCompleteRoutes } from "./routes-complete"; // Using complete BWin API implementation
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
@@ -60,7 +60,7 @@ app.use((req, res, next) => {
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
   
-  const server = await registerRoutes(app);
+  const server = await registerCompleteRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

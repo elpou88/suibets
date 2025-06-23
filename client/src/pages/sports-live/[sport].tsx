@@ -38,7 +38,7 @@ const SPORTS_MAPPING: Record<string, number> = {
   'motorsport': 23,
   'esports': 24,
   'netball': 25,
-  'soccer': 26, // Alias for football
+  'soccer': 1, // Correct database ID for soccer
   'nba': 27,
   'nhl': 28,
   'nfl': 29,

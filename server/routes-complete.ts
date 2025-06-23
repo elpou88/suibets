@@ -60,7 +60,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     if (clients.size === 0) return;
     
     try {
-      const liveEvents = await espnScraperFixed.getLiveEvents();
+      const liveEvents = await espnScraperComplete.getLiveEvents();
       const message = JSON.stringify({
         type: 'live_events',
         data: liveEvents,
@@ -101,7 +101,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/sports", async (_req: Request, res: Response) => {
     try {
       // Get sports from ESPN scraper
-      const sports = await espnScraperFixed.getSports();
+      const sports = await espnScraperComplete.getSports();
       
       if (sports && sports.length > 0) {
         console.log(`[API] Returning ${sports.length} sports from ESPN`);
@@ -128,9 +128,9 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       let events = [];
       
       if (isLive) {
-        events = await espnScraperFixed.getLiveEvents(sportId);
+        events = await espnScraperComplete.getLiveEvents(sportId);
       } else {
-        events = await espnScraperFixed.getUpcomingEvents(sportId);
+        events = await espnScraperComplete.getUpcomingEvents(sportId);
       }
       
       console.log(`[API] Returning ${events.length} events`);
@@ -144,7 +144,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/events/live", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await espnScraperFixed.getLiveEvents(sportId);
+      const events = await espnScraperComplete.getLiveEvents(sportId);
       console.log(`[API] Returning ${events.length} live events`);
       return res.json(events);
     } catch (error) {
@@ -156,7 +156,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/events/upcoming", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await espnScraperFixed.getUpcomingEvents(sportId);
+      const events = await espnScraperComplete.getUpcomingEvents(sportId);
       console.log(`[API] Returning ${events.length} upcoming events`);
       return res.json(events);
     } catch (error) {
@@ -167,7 +167,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events/live-lite", async (_req: Request, res: Response) => {
     try {
-      const events = await espnScraperFixed.getLiveEvents();
+      const events = await espnScraperComplete.getLiveEvents();
       // Return simplified version for sidebar
       const liteEvents = events.slice(0, 50).map((event: any) => ({
         id: event.id,

@@ -8,20 +8,35 @@ import { apiResilienceService } from './apiResilienceService';
 export class ESPNScraper {
   private baseUrl = 'https://site.api.espn.com/apis/site/v2/sports';
   
-  // ESPN sport mappings to our internal sport IDs
-  private sportMappings = {
-    1: { espnSport: 'soccer', league: 'eng.1' }, // Premier League
-    2: { espnSport: 'basketball', league: 'nba' }, // NBA
-    3: { espnSport: 'tennis', league: 'atp' }, // ATP Tennis
-    4: { espnSport: 'baseball', league: 'mlb' }, // MLB
-    5: { espnSport: 'hockey', league: 'nhl' }, // NHL
-    6: { espnSport: 'soccer', league: 'usa.1' }, // MLS
-    7: { espnSport: 'football', league: 'nfl' }, // NFL
-    8: { espnSport: 'rugby', league: 'world' }, // Rugby
-    9: { espnSport: 'cricket', league: 'intl' }, // Cricket
-    10: { espnSport: 'golf', league: 'pga' }, // Golf
-    11: { espnSport: 'boxing', league: 'world' }, // Boxing
-    12: { espnSport: 'mma', league: 'ufc' } // UFC/MMA
+  // ESPN sport mappings to our internal sport IDs with multiple leagues
+  private sportMappings: { [key: number]: { espnSport: string; leagues: string[] } } = {
+    1: { espnSport: 'soccer', leagues: ['eng.1', 'esp.1', 'ger.1', 'ita.1', 'fra.1', 'uefa.champions'] }, // Football/Soccer
+    2: { espnSport: 'basketball', leagues: ['nba', 'wnba', 'mens-college-basketball'] }, // Basketball
+    3: { espnSport: 'tennis', leagues: ['atp', 'wta'] }, // Tennis
+    4: { espnSport: 'baseball', leagues: ['mlb', 'mens-college-baseball'] }, // Baseball
+    5: { espnSport: 'boxing', leagues: ['boxing'] }, // Boxing
+    6: { espnSport: 'hockey', leagues: ['nhl'] }, // Hockey
+    7: { espnSport: 'esports', leagues: ['esports'] }, // Esports
+    8: { espnSport: 'mma', leagues: ['ufc'] }, // MMA/UFC
+    9: { espnSport: 'volleyball', leagues: ['volleyball'] }, // Volleyball
+    10: { espnSport: 'tennis', leagues: ['atp', 'wta'] }, // Table Tennis (using tennis data)
+    11: { espnSport: 'rugby', leagues: ['rugby'] }, // Rugby League
+    12: { espnSport: 'rugby', leagues: ['rugby'] }, // Rugby Union
+    13: { espnSport: 'cricket', leagues: ['cricket'] }, // Cricket
+    14: { espnSport: 'racing', leagues: ['racing'] }, // Horse Racing
+    15: { espnSport: 'racing', leagues: ['racing'] }, // Greyhounds
+    16: { espnSport: 'football', leagues: ['afl'] }, // AFL
+    17: { espnSport: 'tennis', leagues: ['atp', 'wta'] }, // Badminton
+    18: { espnSport: 'golf', leagues: ['pga'] }, // Golf
+    19: { espnSport: 'soccer', leagues: ['eng.1'] }, // Snooker
+    20: { espnSport: 'soccer', leagues: ['eng.1'] }, // Darts
+    21: { espnSport: 'soccer', leagues: ['eng.1'] }, // Handball
+    22: { espnSport: 'volleyball', leagues: ['volleyball'] }, // Beach Volleyball
+    23: { espnSport: 'racing', leagues: ['f1'] }, // Formula 1
+    24: { espnSport: 'cycling', leagues: ['cycling'] }, // Cycling
+    26: { espnSport: 'olympics', leagues: ['swimming'] }, // Swimming
+    27: { espnSport: 'track-and-field', leagues: ['track-and-field'] }, // Athletics
+    29: { espnSport: 'football', leagues: ['nfl', 'college-football'] } // American Football
   };
 
   /**
@@ -35,21 +50,33 @@ export class ESPNScraper {
       
       if (sportId && this.sportMappings[sportId]) {
         const mapping = this.sportMappings[sportId];
-        const liveEvents = await this.fetchSportEvents(mapping.espnSport, mapping.league, true);
-        events.push(...liveEvents);
+        for (const league of mapping.leagues) {
+          try {
+            const sportEvents = await this.fetchSportEvents(mapping.espnSport, league, true);
+            events.push(...sportEvents.map(event => ({ ...event, sportId })));
+          } catch (error: any) {
+            console.log(`[ESPN] Error fetching ${mapping.espnSport}/${league}:`, error.message);
+          }
+        }
       } else {
-        // Fetch from multiple popular sports
-        const popularSports = [1, 2, 3, 4, 5, 7]; // Soccer, Basketball, Tennis, Baseball, Hockey, NFL
+        // Fetch from multiple popular sports with all their leagues
+        const popularSports = [1, 2, 4, 6, 29]; // Soccer, Basketball, Baseball, Hockey, NFL
         
         for (const id of popularSports) {
           try {
             const mapping = this.sportMappings[id];
             if (mapping) {
-              const sportEvents = await this.fetchSportEvents(mapping.espnSport, mapping.league, true);
-              events.push(...sportEvents.map(event => ({ ...event, sportId: id })));
+              for (const league of mapping.leagues) {
+                try {
+                  const sportEvents = await this.fetchSportEvents(mapping.espnSport, league, true);
+                  events.push(...sportEvents.map(event => ({ ...event, sportId: id })));
+                } catch (error: any) {
+                  console.log(`[ESPN] Error fetching ${mapping.espnSport}/${league}:`, error.message);
+                }
+              }
             }
-          } catch (error) {
-            console.log(`[ESPN] Error fetching ${id}:`, error.message);
+          } catch (error: any) {
+            console.log(`[ESPN] Error fetching sport ${id}:`, error.message);
           }
         }
       }
@@ -73,21 +100,33 @@ export class ESPNScraper {
       
       if (sportId && this.sportMappings[sportId]) {
         const mapping = this.sportMappings[sportId];
-        const upcomingEvents = await this.fetchSportEvents(mapping.espnSport, mapping.league, false);
-        events.push(...upcomingEvents);
+        for (const league of mapping.leagues) {
+          try {
+            const sportEvents = await this.fetchSportEvents(mapping.espnSport, league, false);
+            events.push(...sportEvents.map(event => ({ ...event, sportId })));
+          } catch (error: any) {
+            console.log(`[ESPN] Error fetching ${mapping.espnSport}/${league}:`, error.message);
+          }
+        }
       } else {
-        // Fetch from multiple popular sports
-        const popularSports = [1, 2, 3, 4, 5, 7]; // Soccer, Basketball, Tennis, Baseball, Hockey, NFL
+        // Fetch from multiple popular sports with all their leagues
+        const popularSports = [1, 2, 4, 6, 29]; // Soccer, Basketball, Baseball, Hockey, NFL
         
         for (const id of popularSports) {
           try {
             const mapping = this.sportMappings[id];
             if (mapping) {
-              const sportEvents = await this.fetchSportEvents(mapping.espnSport, mapping.league, false);
-              events.push(...sportEvents.map(event => ({ ...event, sportId: id })));
+              for (const league of mapping.leagues) {
+                try {
+                  const sportEvents = await this.fetchSportEvents(mapping.espnSport, league, false);
+                  events.push(...sportEvents.map(event => ({ ...event, sportId: id })));
+                } catch (error: any) {
+                  console.log(`[ESPN] Error fetching ${mapping.espnSport}/${league}:`, error.message);
+                }
+              }
             }
-          } catch (error) {
-            console.log(`[ESPN] Error fetching ${id}:`, error.message);
+          } catch (error: any) {
+            console.log(`[ESPN] Error fetching sport ${id}:`, error.message);
           }
         }
       }

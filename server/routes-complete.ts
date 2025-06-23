@@ -1,7 +1,7 @@
 import { Express, Request, Response, NextFunction } from "express";
 import { createServer, Server } from "http";
 import { WebSocketServer, WebSocket } from 'ws';
-import { espnScraper } from "./services/espnScraper";
+import { espnScraperFixed } from "./services/espnScraperFixed";
 import { blockchainStorage } from "./blockchain-storage";
 import { storage } from "./storage";
 
@@ -60,7 +60,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     if (clients.size === 0) return;
     
     try {
-      const liveEvents = await espnScraper.getLiveEvents();
+      const liveEvents = await espnScraperFixed.getLiveEvents();
       const message = JSON.stringify({
         type: 'live_events',
         data: liveEvents,
@@ -101,7 +101,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/sports", async (_req: Request, res: Response) => {
     try {
       // Get sports from ESPN scraper
-      const sports = await espnScraper.getSports();
+      const sports = await espnScraperFixed.getSports();
       
       if (sports && sports.length > 0) {
         console.log(`[API] Returning ${sports.length} sports from ESPN`);

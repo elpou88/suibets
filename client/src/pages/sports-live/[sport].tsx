@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Clock, CalendarIcon, RefreshCw, Loader2 } from 'lucide-react';
+import { Clock, CalendarIcon, RefreshCw, Loader2, ArrowLeft } from 'lucide-react';
 import SimpleMarkets from '@/components/betting/SimpleMarkets';
+import { EventsDisplay } from '@/components/EventsDisplay';
 
 const SPORTS_MAPPING: Record<string, number> = {
   'football': 1,
@@ -539,11 +540,23 @@ export default function SportPage() {
           const allEvents = await response.json();
           console.log(`[FORCE] Received ${allEvents.length} total authentic events`);
           
-          // Filter events for current sport if needed
-          const sportEvents = sportId ? allEvents.filter((event: any) => event.sportId === sportId) : allEvents;
-          console.log(`[FORCE] Filtered to ${sportEvents.length} events for sport ${sportId}`);
-          
-          if (sportEvents.length > 0) {
+          // For soccer (sportId 1), show all soccer events
+          if (sportId === 1) {
+            const soccerEvents = allEvents.filter((event: any) => 
+              event.sportId === 1 || 
+              event.sport?.toLowerCase().includes('soccer') ||
+              event.sport?.toLowerCase().includes('football') ||
+              event.league?.toLowerCase().includes('premier') ||
+              event.league?.toLowerCase().includes('bundesliga') ||
+              event.league?.toLowerCase().includes('serie') ||
+              event.league?.toLowerCase().includes('liga')
+            );
+            console.log(`[FORCE] Found ${soccerEvents.length} soccer events`);
+            setForceAuthenticData(soccerEvents);
+          } else {
+            // For other sports, filter by sportId
+            const sportEvents = allEvents.filter((event: any) => event.sportId === sportId);
+            console.log(`[FORCE] Filtered to ${sportEvents.length} events for sport ${sportId}`);
             setForceAuthenticData(sportEvents);
           }
         }
@@ -552,7 +565,8 @@ export default function SportPage() {
       }
     };
 
-    if (sportId && (!events || events.length === 0)) {
+    // Always force fetch for soccer, or when main events are empty
+    if (sportId === 1 || (sportId && (!events || events.length === 0))) {
       forceAllEvents();
     }
   }, [sportId, events]);
@@ -746,245 +760,11 @@ export default function SportPage() {
           </TabsList>
           
           <TabsContent value={selectedTab} className="mt-6">
-            {isLoading ? (
-              <div className="grid grid-cols-1 gap-4">
-                {[1, 2, 3].map((i) => (
-                  <Card key={i} className="animate-pulse">
-                    <CardHeader className="pb-2">
-                      <div className="h-5 bg-muted rounded w-3/4"></div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-20 bg-muted rounded"></div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            ) : (!displayEvents || displayEvents.length === 0) ? (
-              <Card className="border border-[#1e3a3f] shadow-xl shadow-cyan-900/10 bg-gradient-to-b from-[#112225] to-[#14292e]">
-                <CardHeader className="pb-3 bg-gradient-to-r from-[#0b1618] to-[#0f1d20] relative border-b border-[#1e3a3f]">
-                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
-                  <CardTitle className="text-cyan-400">No {selectedTab} events found</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4">
-                  <div className="flex items-center space-x-4 mb-3">
-                    <div className="h-8 w-1 bg-cyan-400 rounded-full"></div>
-                    <p className="text-cyan-100">
-                      There are currently no {selectedTab} {sportName.toLowerCase()} matches available.
-                      {selectedTab === 'live' 
-                        ? ' Check back later or view upcoming matches.' 
-                        : ' Check back later for updates.'}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-1 gap-4">
-                {displayEvents.map((event: any) => (
-                  <Card 
-                    key={event.id} 
-                    className={`overflow-hidden border ${sportId === 9 ? 'border-cyan-500/30' : 'border-[#1e3a3f]'} 
-                      shadow-xl ${sportId === 9 ? 'shadow-cyan-900/20' : 'shadow-cyan-900/10'} 
-                      bg-gradient-to-b ${sportId === 9 ? 'from-[#122630] to-[#14292e]' : 'from-[#112225] to-[#14292e]'}`}
-                  >
-                    <CardHeader 
-                      className={`pb-3 bg-gradient-to-r ${sportId === 9 
-                        ? 'from-[#0c1a1e] to-[#102228]' 
-                        : 'from-[#0b1618] to-[#0f1d20]'} 
-                        relative border-b ${sportId === 9 ? 'border-cyan-500/30' : 'border-[#1e3a3f]'}`}
-                    >
-                      <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${
-                        sportId === 9 
-                          ? 'from-cyan-400 to-cyan-300 opacity-80' 
-                          : 'from-cyan-400 to-blue-500 opacity-70'
-                      }`}></div>
-                      {/* Cricket badge for cricket events */}
-                      {sportId === 9 && event._isCricket && (
-                        <div className="absolute top-3 right-3">
-                          <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/50">
-                            🏏 Cricket
-                          </Badge>
-                        </div>
-                      )}
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <CardTitle className="text-lg flex items-center">
-                            <span className="text-cyan-300">{event.leagueName || 'League'}</span>
-                            {selectedTab === 'live' && (
-                              <Badge className="ml-2 bg-gradient-to-r from-red-600 to-red-500 animate-pulse">
-                                <span>
-                                  LIVE
-                                </span>
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          <CardDescription className="flex items-center text-sm mt-1">
-                            <span>
-                              {selectedTab === 'live' 
-                                ? 'In Progress' 
-                                : formatDate(event.startTime)}
-                            </span>
-                          </CardDescription>
-                        </div>
-                        {(event.homeScore !== undefined && event.awayScore !== undefined) && (
-                          <div className="text-right">
-                            <div className="text-sm font-medium text-cyan-400">Score</div>
-                            <div className="text-xl font-bold bg-[#0b1618] py-1 px-3 rounded-lg border border-[#1e3a3f]">
-                              {event.homeScore} - {event.awayScore}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        {/* Home Team */}
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
-                            <div className="font-bold text-cyan-300">{event.homeTeam}</div>
-                            <div className="text-sm text-muted-foreground">Home</div>
-                          </div>
-                          <Button 
-                            variant="outline"
-                            className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
-                            data-event-id={event.id}
-                            data-outcome="home"
-                            data-odd={event.homeOdds}
-                            data-team={event.homeTeam}
-                            data-match-title={`${event.homeTeam} vs ${event.awayTeam}`}
-                          >
-                            {formatOdds(event.homeOdds)}
-                          </Button>
-                        </div>
-                        
-                        {/* Draw (if applicable) */}
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
-                            <div className="font-bold text-gray-300">Draw</div>
-                            <div className="text-sm text-muted-foreground">Tie</div>
-                          </div>
-                          {event.drawOdds !== null ? (
-                            <Button 
-                              variant="outline" 
-                              className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
-                              data-event-id={event.id}
-                              data-outcome="draw"
-                              data-odd={event.drawOdds}
-                              data-team="Draw"
-                              data-match-title={`${event.homeTeam} vs ${event.awayTeam}`}
-                            >
-                              {formatOdds(event.drawOdds)}
-                            </Button>
-                          ) : (
-                            <Button 
-                              variant="outline" 
-                              className="w-full mt-2 opacity-50 bg-[#0b1618] border-[#1e3a3f]"
-                              disabled
-                            >
-                              N/A
-                            </Button>
-                          )}
-                        </div>
-                        
-                        {/* Away Team */}
-                        <div className="flex flex-col items-center justify-center">
-                          <div className="text-center mb-2 bg-[#0b1618] p-2 rounded-lg border border-[#1e3a3f] w-full">
-                            <div className="font-bold text-cyan-300">{event.awayTeam}</div>
-                            <div className="text-sm text-muted-foreground">Away</div>
-                          </div>
-                          <Button 
-                            variant="outline" 
-                            className="w-full mt-2 border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 shadow-lg shadow-cyan-900/10 text-lg font-bold"
-                            data-event-id={event.id}
-                            data-outcome="away"
-                            data-odd={event.awayOdds}
-                            data-team={event.awayTeam}
-                            data-match-title={`${event.homeTeam} vs ${event.awayTeam}`}
-                          >
-                            {formatOdds(event.awayOdds)}
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Additional betting markets based on sport type */}
-                      <div className="mt-8 border-t border-[#1e3a3f] pt-6">
-                        <div className="mb-4 flex items-center">
-                          <div className="h-8 w-1 bg-cyan-400 rounded-full mr-3"></div>
-                          <h3 className="text-xl font-bold text-cyan-400">All Betting Markets</h3>
-                          <div className="ml-auto">
-                            <Badge 
-                              className="bg-gradient-to-r from-cyan-400 to-blue-500 text-black font-bold hover:from-cyan-500 hover:to-blue-600"
-                            >
-                              {params.sport.toUpperCase()} BETS
-                            </Badge>
-                          </div>
-                        </div>
-                        
-                        {/* Use SimpleMarkets component to display all available markets */}
-                        <div className={`betting-markets bg-gradient-to-b ${
-                          sportId === 9 
-                            ? 'from-[#15303c] to-[#112a33]' 
-                            : 'from-[#14292e] to-[#112225]'
-                          } p-4 rounded-lg border ${
-                          sportId === 9 
-                            ? 'border-cyan-500/30' 
-                            : 'border-[#1e3a3f]'
-                          } shadow-lg shadow-cyan-900/10`}
-                        >
-                          {/* Show cricket-specific markets if available */}
-                          {sportId === 9 && event.markets && event.markets.some(m => m.name === 'Top Batsman') && (
-                            <div className="mb-6 pb-5 border-b border-cyan-500/20">
-                              <h4 className="text-lg font-semibold text-cyan-300 mb-3 flex items-center">
-                                <span className="mr-2">🏏</span> Cricket-Specific Markets
-                              </h4>
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {event.markets
-                                  .filter(m => ['Top Batsman', 'Total Runs'].includes(m.name))
-                                  .map((market, idx) => (
-                                    <div key={`cricket-market-${idx}`} className="bg-[#0c1a1e] p-3 rounded-lg border border-cyan-500/20">
-                                      <div className="text-cyan-300 font-medium mb-2">{market.name}</div>
-                                      <div className="grid grid-cols-2 gap-2">
-                                        {market.outcomes.map((outcome, i) => (
-                                          <Button
-                                            key={`outcome-${i}`}
-                                            variant="outline"
-                                            size="sm"
-                                            className="border-cyan-500/30 bg-[#112225] hover:bg-cyan-500/10"
-                                            data-event-id={event.id}
-                                            data-market-id={market.id}
-                                            data-outcome-id={outcome.id}
-                                          >
-                                            <div className="flex w-full justify-between items-center">
-                                              <span className="text-sm">{outcome.name}</span>
-                                              <span className="text-cyan-300 font-bold">{formatOdds(outcome.odds)}</span>
-                                            </div>
-                                          </Button>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  ))
-                                }
-                              </div>
-                            </div>
-                          )}
-                        
-                          <SimpleMarkets
-                            sportType={params.sport}
-                            eventId={event.id}
-                            eventName={`${event.homeTeam} vs ${event.awayTeam}`}
-                            homeTeam={event.homeTeam}
-                            awayTeam={event.awayTeam}
-                            homeOdds={event.homeOdds}
-                            drawOdds={event.drawOdds}
-                            awayOdds={event.awayOdds}
-                            isLive={event.isLive}
-                          />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+            <EventsDisplay 
+              sportId={sportId!} 
+              sportName={sportName} 
+              selectedTab={selectedTab}
+            />
           </TabsContent>
         </Tabs>
       </div>

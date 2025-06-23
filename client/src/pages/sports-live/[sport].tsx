@@ -484,6 +484,8 @@ export default function SportPage() {
   // Debug logging for events data
   console.log(`[DEBUG] Current events state:`, {
     eventsLength: events?.length || 0,
+    eventsType: typeof events,
+    eventsIsArray: Array.isArray(events),
     isLoading,
     isError,
     sportId,
@@ -493,7 +495,74 @@ export default function SportPage() {
 
   if (events && events.length > 0) {
     console.log(`[DEBUG] First event sample:`, events[0]);
+  } else {
+    console.log(`[DEBUG] Events is empty or undefined:`, events);
   }
+
+  // Emergency fallback: If events is empty but we know data exists, force fetch
+  const [fallbackEvents, setFallbackEvents] = useState<any[]>([]);
+  const [forceAuthenticData, setForceAuthenticData] = useState<any[]>([]);
+  
+  useEffect(() => {
+    if ((!events || events.length === 0) && !isLoading && sportId) {
+      console.log(`[FALLBACK] Attempting direct fetch for ${sportName} (ID: ${sportId})`);
+      
+      const fetchFallback = async () => {
+        try {
+          const isLiveParam = selectedTab === 'live' ? '&isLive=true' : '';
+          const url = `/api/events?sportId=${sportId}${isLiveParam}`;
+          
+          const response = await fetch(url);
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`[FALLBACK] Received ${data.length} events directly`);
+            if (data.length > 0) {
+              setFallbackEvents(data);
+              setForceAuthenticData(data);
+            }
+          }
+        } catch (error) {
+          console.error(`[FALLBACK] Direct fetch failed:`, error);
+        }
+      };
+      
+      fetchFallback();
+    }
+  }, [events, isLoading, sportId, sportName, selectedTab]);
+
+  // Force fetch all authentic events regardless of filters
+  useEffect(() => {
+    const forceAllEvents = async () => {
+      try {
+        const response = await fetch('/api/events');
+        if (response.ok) {
+          const allEvents = await response.json();
+          console.log(`[FORCE] Received ${allEvents.length} total authentic events`);
+          
+          // Filter events for current sport if needed
+          const sportEvents = sportId ? allEvents.filter((event: any) => event.sportId === sportId) : allEvents;
+          console.log(`[FORCE] Filtered to ${sportEvents.length} events for sport ${sportId}`);
+          
+          if (sportEvents.length > 0) {
+            setForceAuthenticData(sportEvents);
+          }
+        }
+      } catch (error) {
+        console.error(`[FORCE] Failed to fetch all events:`, error);
+      }
+    };
+
+    if (sportId && (!events || events.length === 0)) {
+      forceAllEvents();
+    }
+  }, [sportId, events]);
+
+  // Use fallback events if main events are empty
+  const displayEvents = (events && events.length > 0) ? events : fallbackEvents;
+  
+  console.log(`[DISPLAY] Final displayEvents count: ${displayEvents.length}`);
+  console.log(`[DISPLAY] Events source: ${events && events.length > 0 ? 'useQuery' : 'fallback'}`);
+  console.log(`[DISPLAY] Main events: ${events?.length || 0}, Fallback events: ${fallbackEvents.length}`);
   
   // Format odds in American format
   const formatOdds = (odds: number) => {
@@ -680,7 +749,7 @@ export default function SportPage() {
                   </Card>
                 ))}
               </div>
-            ) : events.length === 0 ? (
+            ) : (!displayEvents || displayEvents.length === 0) ? (
               <Card className="border border-[#1e3a3f] shadow-xl shadow-cyan-900/10 bg-gradient-to-b from-[#112225] to-[#14292e]">
                 <CardHeader className="pb-3 bg-gradient-to-r from-[#0b1618] to-[#0f1d20] relative border-b border-[#1e3a3f]">
                   <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-70"></div>
@@ -700,7 +769,7 @@ export default function SportPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-1 gap-4">
-                {events.map((event: any) => (
+                {displayEvents.map((event: any) => (
                   <Card 
                     key={event.id} 
                     className={`overflow-hidden border ${sportId === 9 ? 'border-cyan-500/30' : 'border-[#1e3a3f]'} 

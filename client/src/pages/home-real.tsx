@@ -61,65 +61,41 @@ export default function HomeReal() {
     retryDelay: 2000 // Wait 2 seconds between retries
   });
   
-  // Helper function to fetch fallback events when lite API fails
-  async function fetchFallbackEvents(): Promise<any[]> {
+  // Only fetch authentic live events - no fallback data
+  async function fetchAuthenticLiveEvents(): Promise<any[]> {
     try {
-      console.log('Using fallback API endpoint for homepage');
-      const fallbackResponse = await fetch('/api/events?isLive=true', {
+      console.log('Fetching authentic live events from ESPN API');
+      const response = await fetch('/api/events/live', {
         headers: {
           'Accept': 'application/json',
           'Cache-Control': 'no-cache'
         },
-        signal: AbortSignal.timeout(15000) // 15s timeout for fallback
+        signal: AbortSignal.timeout(10000)
       });
       
-      if (!fallbackResponse.ok) {
-        console.warn(`Homepage: Fallback API also failed with status ${fallbackResponse.status}`);
+      if (!response.ok) {
+        console.warn(`Live events API failed with status ${response.status}`);
         return [];
       }
       
-      // Get response as text first
-      const fallbackText = await fallbackResponse.text();
+      const data = await response.json();
       
-      // Strict validation to ensure it's a JSON array format
-      if (!fallbackText.trim().startsWith('[') || !fallbackText.trim().endsWith(']')) {
-        console.warn('Homepage: Fallback API response is not in array format');
+      if (!Array.isArray(data)) {
+        console.warn('Live events API did not return an array');
         return [];
       }
       
-      try {
-        const fallbackData = JSON.parse(fallbackText);
-        
-        if (!Array.isArray(fallbackData)) {
-          console.warn('Homepage: Fallback API did not return an array:', typeof fallbackData);
-          return [];
-        }
-        
-        console.log(`Received ${fallbackData.length} live events from fallback API`);
-        
-        // Filter for valid events with required properties
-        return fallbackData
-          .filter((event) => 
-            event && 
-            typeof event === 'object' && 
-            (event.id || event.eventId) && 
-            (event.homeTeam || event.awayTeam || event.home || event.away || event.team1 || event.team2)
-          )
-          .map((event) => ({
-            ...event,
-            // Ensure minimum required properties
-            homeTeam: event.homeTeam || event.home || event.team1 || 'Team A',
-            awayTeam: event.awayTeam || event.away || event.team2 || 'Team B',
-            name: event.name || `${event.homeTeam || event.home || event.team1 || 'Team A'} vs ${event.awayTeam || event.away || event.team2 || 'Team B'}`,
-            markets: Array.isArray(event.markets) ? event.markets : []
-          }));
-      } catch (parseError) {
-        console.warn('Homepage: Failed to parse fallback JSON:', parseError);
-        return [];
-      }
-    } catch (fallbackError) {
-      console.error("Homepage: Error fetching fallback events:", fallbackError);
-      return []; // Final fallback - empty array
+      console.log(`Received ${data.length} authentic live events from ESPN`);
+      return data.filter(event => 
+        event && 
+        event.homeTeam && 
+        event.awayTeam &&
+        event.status !== 'postponed' &&
+        event.status !== 'cancelled'
+      );
+    } catch (error) {
+      console.warn('Error fetching authentic live events:', error);
+      return [];
     }
   }
 
@@ -147,7 +123,7 @@ export default function HomeReal() {
           
           if (!response.ok) {
             console.warn(`Live events lite API returned status ${response.status}`);
-            return await fetchFallbackEvents();
+            return [];
           }
           
           // Get response as text first
@@ -156,7 +132,7 @@ export default function HomeReal() {
           // Strict validation to ensure it's a JSON array format
           if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
             console.warn('Live events lite API response is not in array format');
-            return await fetchFallbackEvents();
+            return [];
           }
           
           try {
@@ -166,7 +142,7 @@ export default function HomeReal() {
             // Double-check it's an array
             if (!Array.isArray(data)) {
               console.warn('Live events lite API did not return an array after parsing:', typeof data);
-              return await fetchFallbackEvents();
+              return [];
             }
             
             console.log(`Received ${data.length} lite live events for homepage`);
@@ -191,12 +167,12 @@ export default function HomeReal() {
             return validEvents;
           } catch (jsonError) {
             console.warn('Failed to parse JSON from lite API:', jsonError);
-            return await fetchFallbackEvents();
+            return [];
           }
         } catch (fetchError) {
           clearTimeout(timeoutId);
           console.warn('Error fetching from lite API:', fetchError);
-          return await fetchFallbackEvents();
+          return [];
         }
       } catch (error) {
         console.warn(`Error in lite events query: ${error instanceof Error ? error.message : 'Unknown error'}`);

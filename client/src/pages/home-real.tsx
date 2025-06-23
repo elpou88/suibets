@@ -267,11 +267,17 @@ export default function HomeReal() {
                         <div className="grid grid-cols-1 gap-0">
                           <div className="flex items-center justify-between h-5">
                             <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.homeTeam}</div>
-                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[0] || "0"}</div>
+                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{
+                              typeof event.score === 'string' ? event.score.split(' - ')[0] : 
+                              event.score?.home || event.homeScore || "0"
+                            }</div>
                           </div>
                           <div className="flex items-center justify-between h-5">
                             <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.awayTeam}</div>
-                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{event.score?.split(' - ')[1] || "0"}</div>
+                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{
+                              typeof event.score === 'string' ? event.score.split(' - ')[1] : 
+                              event.score?.away || event.awayScore || "0"
+                            }</div>
                           </div>
                         </div>
                       </div>

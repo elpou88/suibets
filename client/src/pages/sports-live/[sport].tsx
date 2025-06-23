@@ -239,6 +239,19 @@ export default function SportPage() {
                 markets: event.markets || [],
                 isLive: event.isLive || selectedTab === 'live'
               };
+            } else {
+              // For all other sports (soccer, basketball, etc.) - use standard format
+              return {
+                ...event,
+                id: event.id,
+                sportId: sportId,
+                homeTeam: event.homeTeam || event.home || event.team1 || "Home Team",
+                awayTeam: event.awayTeam || event.away || event.team2 || "Away Team",
+                leagueName: event.leagueName || event.league || event.competition || "League",
+                date: event.date || event.startTime || new Date().toISOString(),
+                markets: event.markets || [],
+                isLive: event.isLive || selectedTab === 'live'
+              };
             }
           }).filter(item => item !== undefined);
           

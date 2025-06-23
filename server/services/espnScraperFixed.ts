@@ -15,6 +15,15 @@ export class ESPNScraperFixed {
     { sport: 'soccer', league: 'ger.1', sportId: 1, name: 'Bundesliga' },
     { sport: 'soccer', league: 'ita.1', sportId: 1, name: 'Serie A' },
     { sport: 'soccer', league: 'fra.1', sportId: 1, name: 'Ligue 1' },
+    { sport: 'soccer', league: 'uefa.champions', sportId: 1, name: 'Champions League' },
+    { sport: 'soccer', league: 'fifa.world', sportId: 1, name: 'FIFA World Cup' },
+    { sport: 'soccer', league: 'uefa.europa', sportId: 1, name: 'Europa League' },
+    { sport: 'soccer', league: 'conmebol.libertadores', sportId: 1, name: 'Copa Libertadores' },
+    { sport: 'soccer', league: 'concacaf.nations.league', sportId: 1, name: 'CONCACAF Nations League' },
+    { sport: 'soccer', league: 'fifa.world.cup.qualifying.uefa', sportId: 1, name: 'UEFA WC Qualifying' },
+    { sport: 'soccer', league: 'club.friendly', sportId: 1, name: 'Club Friendlies' },
+    { sport: 'soccer', league: 'usa.1', sportId: 1, name: 'MLS' },
+    { sport: 'soccer', league: 'bra.1', sportId: 1, name: 'Brazilian Serie A' },
     { sport: 'basketball', league: 'nba', sportId: 2, name: 'NBA' },
     { sport: 'basketball', league: 'wnba', sportId: 2, name: 'WNBA' },
     { sport: 'basketball', league: 'mens-college-basketball', sportId: 2, name: 'College Basketball' },
@@ -121,12 +130,19 @@ export class ESPNScraperFixed {
       const events = response.events
         .filter((event: any) => {
           if (isLive) {
+            // Include more live status types for comprehensive coverage
             return event.status?.type?.name === 'STATUS_IN_PROGRESS' || 
                    event.status?.type?.name === 'STATUS_HALFTIME' ||
-                   event.status?.type?.name === 'STATUS_SECOND_HALF';
+                   event.status?.type?.name === 'STATUS_SECOND_HALF' ||
+                   event.status?.type?.name === 'STATUS_FIRST_HALF' ||
+                   event.status?.type?.name === 'STATUS_OVERTIME' ||
+                   event.status?.type?.name === 'STATUS_SHOOTOUT';
           } else {
+            // Include friendlies and all scheduled matches
             return event.status?.type?.name === 'STATUS_SCHEDULED' ||
-                   event.status?.type?.name === 'STATUS_POSTPONED';
+                   event.status?.type?.name === 'STATUS_POSTPONED' ||
+                   event.status?.type?.name === 'STATUS_TBD' ||
+                   (event.competitions?.[0]?.type?.name?.toLowerCase().includes('friendly'));
           }
         })
         .map((event: any) => this.transformESPNEvent(event, isLive));
@@ -150,6 +166,27 @@ export class ESPNScraperFixed {
     // Generate realistic odds based on rankings/records
     const odds = this.generateRealisticOdds(homeTeam, awayTeam);
     
+    // Detect if this is a friendly match
+    const isFriendly = event.competitions?.[0]?.type?.name?.toLowerCase().includes('friendly') ||
+                      event.competitions?.[0]?.notes?.[0]?.headline?.toLowerCase().includes('friendly') ||
+                      event.name?.toLowerCase().includes('friendly');
+    
+    // Detect if this is Club World Cup
+    const isClubWorldCup = event.competitions?.[0]?.type?.name?.toLowerCase().includes('club world cup') ||
+                          event.league?.name?.toLowerCase().includes('club world cup') ||
+                          event.name?.toLowerCase().includes('club world cup');
+    
+    let leagueName = event.competitions?.[0]?.notes?.[0]?.headline || 
+                     event.season?.type?.name || 
+                     event.league?.name || 
+                     'League';
+    
+    if (isFriendly) {
+      leagueName = 'International Friendly';
+    } else if (isClubWorldCup) {
+      leagueName = 'FIFA Club World Cup';
+    }
+    
     return {
       id: event.id,
       homeTeam: homeTeam?.team?.displayName || homeTeam?.team?.name || 'Home Team',
@@ -158,15 +195,18 @@ export class ESPNScraperFixed {
       status: isLive ? 'live' : 'upcoming',
       score: isLive ? this.extractScore(homeTeam, awayTeam) : null,
       odds: odds,
-      league: event.competitions?.[0]?.notes?.[0]?.headline || event.season?.type?.name || 'League',
+      league: leagueName,
       venue: event.competitions?.[0]?.venue?.fullName || 'TBD',
       isLive,
+      isFriendly,
+      isClubWorldCup,
       markets: this.generateBettingMarkets(odds),
       espnData: {
         eventId: event.id,
         shortName: event.shortName,
         season: event.season?.year,
-        week: event.week?.number
+        week: event.week?.number,
+        competitionType: event.competitions?.[0]?.type?.name
       }
     };
   }

@@ -557,12 +557,22 @@ export default function SportPage() {
     }
   }, [sportId, events]);
 
-  // Use fallback events if main events are empty
-  const displayEvents = (events && events.length > 0) ? events : fallbackEvents;
+  // Use forced authentic data first, then fallback events, then main events
+  const displayEvents = forceAuthenticData.length > 0 ? forceAuthenticData : 
+                        (events && events.length > 0) ? events : fallbackEvents;
   
   console.log(`[DISPLAY] Final displayEvents count: ${displayEvents.length}`);
-  console.log(`[DISPLAY] Events source: ${events && events.length > 0 ? 'useQuery' : 'fallback'}`);
-  console.log(`[DISPLAY] Main events: ${events?.length || 0}, Fallback events: ${fallbackEvents.length}`);
+  console.log(`[DISPLAY] Events source: ${forceAuthenticData.length > 0 ? 'forced' : events && events.length > 0 ? 'useQuery' : 'fallback'}`);
+  console.log(`[DISPLAY] Main events: ${events?.length || 0}, Fallback events: ${fallbackEvents.length}, Forced: ${forceAuthenticData.length}`);
+  
+  if (displayEvents.length > 0) {
+    console.log(`[DISPLAY] Sample event:`, displayEvents[0]);
+  } else {
+    console.log(`[DISPLAY] No events to display - checking all sources...`);
+    console.log(`[DISPLAY] useQuery data:`, events);
+    console.log(`[DISPLAY] Fallback data:`, fallbackEvents);
+    console.log(`[DISPLAY] Forced data:`, forceAuthenticData);
+  }
   
   // Format odds in American format
   const formatOdds = (odds: number) => {

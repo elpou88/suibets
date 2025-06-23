@@ -144,7 +144,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/events/live", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await betsBwinApiService.getLiveEvents(sportId);
+      const events = await espnScraper.getLiveEvents(sportId);
       console.log(`[API] Returning ${events.length} live events`);
       return res.json(events);
     } catch (error) {
@@ -156,7 +156,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/events/upcoming", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await betsBwinApiService.getUpcomingEvents(sportId);
+      const events = await espnScraper.getUpcomingEvents(sportId);
       console.log(`[API] Returning ${events.length} upcoming events`);
       return res.json(events);
     } catch (error) {
@@ -167,9 +167,9 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
 
   app.get("/api/events/live-lite", async (_req: Request, res: Response) => {
     try {
-      const events = await betsBwinApiService.getLiveEvents();
+      const events = await espnScraper.getLiveEvents();
       // Return simplified version for sidebar
-      const liteEvents = events.slice(0, 50).map(event => ({
+      const liteEvents = events.slice(0, 50).map((event: any) => ({
         id: event.id,
         sportId: event.sportId,
         homeTeam: event.homeTeam,
@@ -189,11 +189,13 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   app.get("/api/events/:id", async (req: Request, res: Response) => {
     try {
       const eventId = req.params.id;
-      const eventDetails = await betsBwinApiService.fetchEventDetails(eventId);
       
-      if (!eventDetails) {
-        return res.status(404).json({ error: "Event not found" });
-      }
+      // For now, return a basic event structure since ESPN doesn't have specific event detail endpoints
+      // In a real implementation, you would fetch from your database or cache
+      const eventDetails = {
+        id: eventId,
+        message: "Event details endpoint - integrate with your preferred sports data provider"
+      };
       
       return res.json(eventDetails);
     } catch (error) {

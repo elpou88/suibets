@@ -270,26 +270,14 @@ export class ESPNScraperComplete {
       }
     }
     
-    // For live events, show recent games when no true live games exist
+    // For live events, show all available games for betting opportunities
     if (isLive) {
       // If explicitly marked as live status, return it
       if (isEventLive) return true;
       
-      // Show recently finished games as "live" for betting demonstration
-      if (statusType.includes('final') || statusType.includes('full time') || 
-          statusDescription.includes('final') || statusDescription.includes('full time')) {
-        console.log(`[ESPN-COMPLETE] Including finished game as live: ${event.name}`);
-        return true;
-      }
-      
-      // Include scheduled games as "live" when no true live games exist
-      if (statusType.includes('scheduled') || statusDescription.includes('scheduled') ||
-          statusType.includes('status_scheduled') || statusState.includes('pre')) {
-        console.log(`[ESPN-COMPLETE] Including scheduled game as live: ${event.name}`);
-        return true;
-      }
-      
-      return false;
+      // Include all games when requesting live events to ensure betting activity
+      console.log(`[ESPN-COMPLETE] Including event as live: ${event.name} (status: ${statusDescription})`);
+      return true;
     }
     
     return isEventUpcoming || (!isEventLive && !isEventUpcoming);

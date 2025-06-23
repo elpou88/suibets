@@ -88,16 +88,11 @@ export class FallbackEventService {
   }
   
   /**
-   * Get live events with optional sport ID filter
+   * Get live events - DISABLED to force authentic data only
    */
   public getLiveEvents(sportId?: number): SportEvent[] {
-    if (!this.initialized) {
-      this.initialize();
-    }
-    
-    return sportId
-      ? this.liveEvents.filter(event => event.sportId === sportId)
-      : this.liveEvents;
+    console.log('[FallbackEventService] DISABLED - returning empty array to force authentic data');
+    return [];
   }
   
   /**

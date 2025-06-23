@@ -312,7 +312,7 @@ export default function SportsSidebar() {
   const getSportIdForSlug = (slug: string): number => {
     const mappings: Record<string, number> = {
       // Main sports with direct mapping
-      'soccer': 26,             // ID 26 for soccer (Alternative name for football)
+      'soccer': 1,              // ID 1 for soccer (correct database ID) (Alternative name for football)
       'football': 1,            // ID 1 for football (European football)
       'basketball': 2,          // ID 2 for basketball
       'tennis': 3,              // ID 3 for tennis
@@ -351,7 +351,7 @@ export default function SportsSidebar() {
       'nfl': 29,                // ID 29 for NFL (American football league)
       'mlb': 30                 // ID 30 for MLB (baseball league)
     };
-    return mappings[slug] || 26; // Default to soccer (ID 26) if not found
+    return mappings[slug] || 1; // Default to soccer (ID 1) if not found
   };
 
   // Handle sport click to ensure correct sport ID is used
@@ -364,11 +364,15 @@ export default function SportsSidebar() {
     // Get the correct sportId based on the normalized slug
     const sportId = getSportIdForSlug(normalizedSlug);
     
-    // Store the sport ID for event filtering
+    // Clear old cached sport data to ensure fresh loading
+    localStorage.removeItem('currentSportId');
+    localStorage.removeItem('currentSportSlug');
+    
+    // Store the correct sport ID for event filtering
     localStorage.setItem('currentSportId', String(sportId));
     localStorage.setItem('currentSportSlug', normalizedSlug);
     
-    console.log(`Selected sport: ${sport.name} (ID: ${sportId}, slug: ${normalizedSlug})`);
+    console.log(`Selected sport: ${sport.name} (ID: ${sportId}, slug: ${normalizedSlug}) - CACHE CLEARED`);
     
     // Navigate to the sport page using the normalized slug
     setLocation(`/sports-live/${normalizedSlug}`);

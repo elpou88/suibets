@@ -38,19 +38,23 @@ export class RealLiveAPI {
   async getRealLiveSportsData(sportId?: number, isLive?: boolean): Promise<RealEvent[]> {
     console.log(`[RealLiveAPI] Fetching REAL data for sport ${sportId || 'all'}, live: ${isLive}`);
     
-    if (!this.rapidKey) {
-      console.log('[RealLiveAPI] NO RAPID API KEY - Using ESPN and free sources only');
-    }
-
     const events: RealEvent[] = [];
     
     try {
-      // Strategy 1: ESPN API (working endpoint)
+      // Strategy 1: If specifically requesting live events, use live-only API
+      if (isLive === true) {
+        const { liveOnlyAPI } = await import('./liveOnlyAPI');
+        const liveEvents = await liveOnlyAPI.getCurrentLiveEvents(sportId);
+        events.push(...liveEvents.map(e => this.convertLiveEvent(e)));
+        console.log(`[RealLiveAPI] Live-only API: ${liveEvents.length} events`);
+      }
+
+      // Strategy 2: ESPN API (working endpoint) 
       const espnEvents = await this.getESPNLiveData(sportId, isLive);
       events.push(...espnEvents);
       console.log(`[RealLiveAPI] ESPN: ${espnEvents.length} events`);
 
-      // Strategy 2: Free sports APIs (if available)
+      // Strategy 3: Free sports APIs (if available)
       if (this.rapidKey) {
         const sportsDataEvents = await this.getSportsDataEvents(sportId, isLive);
         events.push(...sportsDataEvents);
@@ -59,8 +63,6 @@ export class RealLiveAPI {
         const apiSportsEvents = await this.getAPIServicesData(sportId, isLive);
         events.push(...apiSportsEvents);
         console.log(`[RealLiveAPI] API-Sports: ${apiSportsEvents.length} events`);
-      } else {
-        console.log('[RealLiveAPI] Skipping paid API sources - no key available');
       }
 
       console.log(`[RealLiveAPI] TOTAL REAL EVENTS: ${events.length}`);
@@ -96,10 +98,13 @@ export class RealLiveAPI {
             console.log(`[RealLiveAPI] ESPN endpoint success: ${response.data.events.length} events`);
             
             const mappedEvents = response.data.events.slice(0, 10).map((event: any) => {
-              const isCurrentlyLive = event.status?.type?.state === 'in' || event.status?.type?.name === 'STATUS_IN_PROGRESS';
-              const isScheduled = event.status?.type?.name === 'STATUS_SCHEDULED';
+              const statusState = event.status?.type?.state;
+              const statusName = event.status?.type?.name;
+              const isCurrentlyLive = statusState === 'in' || statusName === 'STATUS_IN_PROGRESS' || statusName === 'STATUS_LIVE' || statusState === 'live';
               
-              // Include both live and scheduled events based on filter
+              console.log(`[RealLiveAPI] Event ${event.shortName || 'unknown'}: status=${statusName}, state=${statusState}, isLive=${isCurrentlyLive}`);
+              
+              // Filter based on live status
               if (isLive === true && !isCurrentlyLive) return null;
               if (isLive === false && isCurrentlyLive) return null;
 
@@ -407,6 +412,23 @@ export class RealLiveAPI {
     }
     
     return odds;
+  }
+
+  private convertLiveEvent(liveEvent: any): RealEvent {
+    return {
+      id: liveEvent.id,
+      homeTeam: liveEvent.homeTeam,
+      awayTeam: liveEvent.awayTeam,
+      league: liveEvent.league,
+      sport: liveEvent.sport,
+      sportId: liveEvent.sportId,
+      status: liveEvent.status,
+      startTime: liveEvent.startTime,
+      isLive: liveEvent.isLive,
+      score: liveEvent.score,
+      odds: liveEvent.odds,
+      source: liveEvent.source
+    };
   }
 }
 

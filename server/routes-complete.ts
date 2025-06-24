@@ -123,14 +123,14 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const isLive = req.query.isLive === 'true';
       
-      console.log(`[API] Fetching authentic ${isLive ? 'live' : 'upcoming'} events from FlashScore/SofaScore for sport ${sportId || 'all'}`);
+      console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
       // Import and use real sports API service
       const { realSportsAPI } = await import('./services/realSportsAPI');
       
       const events = await realSportsAPI.getRealEvents(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} real events with proper odds`);
+      console.log(`[API] Returning ${events.length} real events with proper decimal odds`);
       return res.json(events);
     } catch (error) {
       console.error("[API] Error fetching real events:", error);

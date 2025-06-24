@@ -123,27 +123,18 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const isLive = req.query.isLive === 'true';
       
-      console.log(`[API] Fetching ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
+      console.log(`[API] Fetching authentic ${isLive ? 'live' : 'upcoming'} events from FlashScore/SofaScore for sport ${sportId || 'all'}`);
       
-      let events = [];
+      // Import and use authentic sports service
+      const { authenticSportsService } = await import('./services/authenticSportsService');
       
-      if (isLive) {
-        events = await espnScraperComplete.getLiveEvents(sportId);
-      } else {
-        events = await espnScraperComplete.getUpcomingEvents(sportId);
-      }
+      const events = await authenticSportsService.getAuthenticEvents(sportId, isLive);
       
-      // Only return events if we have authentic data
-      if (events && events.length > 0) {
-        console.log(`[API] Returning ${events.length} authentic events from ESPN`);
-        return res.json(events);
-      } else {
-        console.log(`[API] No authentic live events found, returning empty array`);
-        return res.json([]);
-      }
+      console.log(`[API] Returning ${events.length} authentic events from FlashScore/SofaScore`);
+      return res.json(events);
     } catch (error) {
-      console.error("[API] Error fetching events:", error);
-      return res.json([]); // Return empty array instead of error
+      console.error("[API] Error fetching authentic events:", error);
+      return res.status(500).json({ error: "Failed to fetch authentic sports data" });
     }
   });
 

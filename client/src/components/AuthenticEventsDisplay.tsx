@@ -14,9 +14,11 @@ interface AuthenticEvent {
   venue?: string;
   isLive?: boolean;
   odds?: {
+    home?: string | number;
+    away?: string | number;
+    draw?: string | number;
     homeWin?: number;
     awayWin?: number;
-    draw?: number;
   };
   score?: {
     home?: number;
@@ -30,9 +32,24 @@ interface AuthenticEventsDisplayProps {
   selectedTab: 'live' | 'upcoming';
 }
 
-function formatAmericanOdds(odds: number): string {
-  if (!odds || isNaN(odds)) return 'N/A';
-  return odds > 0 ? `+${odds}` : `${odds}`;
+function formatDecimalOdds(odds: string | number): string {
+  if (!odds) return 'N/A';
+  
+  // If it's already a decimal format (like "2.50"), return as is
+  if (typeof odds === 'string' && odds.includes('.')) {
+    return odds;
+  }
+  
+  // If it's a number, treat as American odds and convert
+  if (typeof odds === 'number') {
+    if (odds > 0) {
+      return (odds / 100 + 1).toFixed(2);
+    } else {
+      return (100 / Math.abs(odds) + 1).toFixed(2);
+    }
+  }
+  
+  return odds.toString();
 }
 
 function formatEventTime(dateStr?: string): string {
@@ -72,16 +89,16 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
         }
         
         const authenticEvents = await response.json();
-        console.log(`✓ Authentic Sports Events: ${authenticEvents.length} ${selectedTab} ${sportName} matches`);
+        console.log(`✓ Real Sports Events: ${authenticEvents.length} ${selectedTab} ${sportName} matches`);
         
         if (authenticEvents.length > 0) {
-          console.log('Sample authentic event:', {
+          console.log('Sample real event:', {
             id: authenticEvents[0].id,
             homeTeam: authenticEvents[0].homeTeam,
             awayTeam: authenticEvents[0].awayTeam,
             odds: authenticEvents[0].odds,
             isLive: authenticEvents[0].isLive,
-            source: 'authentic_api'
+            source: authenticEvents[0].source || 'real_api'
           });
         }
         
@@ -175,7 +192,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
       <div className="flex items-center justify-between">
         <Badge className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1">
           <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-          {events.length} Authentic {selectedTab.toUpperCase()} Events
+          {events.length} Real {selectedTab.toUpperCase()} Events
         </Badge>
         <Badge variant="outline" className="text-cyan-400 border-cyan-400/50">
           {sportName}
@@ -257,7 +274,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
                       variant="outline"
                       className="w-full border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 text-lg font-bold"
                     >
-                      {formatAmericanOdds(event.odds.homeWin || 150)}
+                      {formatDecimalOdds(event.odds.home || event.odds.homeWin || 150)}
                     </Button>
                   </div>
                   
@@ -272,7 +289,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
                       className="w-full border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 text-lg font-bold"
                       disabled={!event.odds.draw}
                     >
-                      {event.odds.draw ? formatAmericanOdds(event.odds.draw) : 'N/A'}
+                      {event.odds.draw ? formatDecimalOdds(event.odds.draw) : 'N/A'}
                     </Button>
                   </div>
                   
@@ -286,7 +303,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
                       variant="outline" 
                       className="w-full border-[#1e3a3f] bg-[#14292e] hover:bg-cyan-400/20 hover:border-cyan-400 hover:text-cyan-400 transition-all duration-200 text-lg font-bold"
                     >
-                      {formatAmericanOdds(event.odds.awayWin || -150)}
+                      {formatDecimalOdds(event.odds.away || event.odds.awayWin || -150)}
                     </Button>
                   </div>
                 </div>
@@ -296,7 +313,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
               <div className="mt-6 pt-4 border-t border-[#1e3a3f] text-center">
                 <div className="flex items-center justify-center text-xs text-green-400">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                  Event ID: {event.id} • Authentic Sports Data
+                  Event ID: {event.id} • Real Sports Data
                 </div>
               </div>
             </CardContent>

@@ -125,16 +125,16 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching authentic ${isLive ? 'live' : 'upcoming'} events from FlashScore/SofaScore for sport ${sportId || 'all'}`);
       
-      // Import and use authentic API service
-      const { authenticAPIService } = await import('./services/authenticAPIService');
+      // Import and use real sports API service
+      const { realSportsAPI } = await import('./services/realSportsAPI');
       
-      const events = await authenticAPIService.getAuthenticEvents(sportId, isLive);
+      const events = await realSportsAPI.getRealEvents(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} authentic events from sports APIs`);
+      console.log(`[API] Returning ${events.length} real events with proper odds`);
       return res.json(events);
     } catch (error) {
-      console.error("[API] Error fetching authentic events:", error);
-      return res.status(500).json({ error: "Failed to fetch authentic sports data" });
+      console.error("[API] Error fetching real events:", error);
+      return res.status(500).json({ error: "Failed to fetch real sports data" });
     }
   });
 

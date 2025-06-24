@@ -125,12 +125,12 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use REAL DATA API with verified endpoints
-      const { realDataAPI } = await import('./services/realDataAPI');
+      // Import and use SOFASCORE API for real live sports data
+      const { sofaScoreAPI } = await import('./services/sofascoreAPI');
       
-      const events = await realDataAPI.getAllRealSportsData(sportId, isLive);
+      const events = await sofaScoreAPI.getAllLiveSportsData(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} REAL LIVE sports events from working APIs`);
+      console.log(`[API] Returning ${events.length} LIVE sports events from SofaScore`);
       return res.json(events);
     } catch (error) {
       console.error("[API] Error fetching live events:", error);
@@ -144,8 +144,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
       
-      const { realDataAPI } = await import('./services/realDataAPI');
-      const events = await realDataAPI.getAllRealSportsData(sportId, true);
+      const { sofaScoreAPI } = await import('./services/sofascoreAPI');
+      const events = await sofaScoreAPI.getAllLiveSportsData(sportId, true);
       
       console.log(`[API] Returning ${events.length} current live events`);
       return res.json(events);
@@ -161,8 +161,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
       
-      const { realDataAPI } = await import('./services/realDataAPI');
-      const events = await realDataAPI.getAllRealSportsData(sportId, false);
+      const { sofaScoreAPI } = await import('./services/sofascoreAPI');
+      const events = await sofaScoreAPI.getAllLiveSportsData(sportId, false);
       
       console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);

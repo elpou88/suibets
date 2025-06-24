@@ -125,12 +125,12 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use ULTIMATE SPORTS API with working endpoints
-      const { ultimateSportsAPI } = await import('./services/ultimateSportsAPI');
+      // Import and use REAL LIVE API - NO MOCK DATA
+      const { realLiveAPI } = await import('./services/realLiveAPI');
       
-      const events = await ultimateSportsAPI.getComprehensiveSportsData(sportId, isLive);
+      const events = await realLiveAPI.getRealLiveSportsData(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} COMPREHENSIVE sports events from multiple sources`);
+      console.log(`[API] Returning ${events.length} REAL LIVE sports events - NO MOCK DATA`);
       return res.json(events);
     } catch (error) {
       console.error("[API] Error fetching live events:", error);
@@ -144,8 +144,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
       
-      const { ultimateSportsAPI } = await import('./services/ultimateSportsAPI');
-      const events = await ultimateSportsAPI.getComprehensiveSportsData(sportId, true);
+      const { realLiveAPI } = await import('./services/realLiveAPI');
+      const events = await realLiveAPI.getRealLiveSportsData(sportId, true);
       
       console.log(`[API] Returning ${events.length} current live events`);
       return res.json(events);
@@ -161,8 +161,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
       
-      const { ultimateSportsAPI } = await import('./services/ultimateSportsAPI');
-      const events = await ultimateSportsAPI.getComprehensiveSportsData(sportId, false);
+      const { realLiveAPI } = await import('./services/realLiveAPI');
+      const events = await realLiveAPI.getRealLiveSportsData(sportId, false);
       
       console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);

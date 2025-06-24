@@ -92,28 +92,33 @@ export class RealLiveAPI {
             }
           });
 
-          if (response.data?.events) {
+          if (response.data?.events && response.data.events.length > 0) {
             console.log(`[RealLiveAPI] ESPN endpoint success: ${response.data.events.length} events`);
             
             const mappedEvents = response.data.events.slice(0, 10).map((event: any) => {
-              const isCurrentlyLive = event.status?.type?.state === 'in';
+              const isCurrentlyLive = event.status?.type?.state === 'in' || event.status?.type?.name === 'STATUS_IN_PROGRESS';
+              const isScheduled = event.status?.type?.name === 'STATUS_SCHEDULED';
               
+              // Include both live and scheduled events based on filter
               if (isLive === true && !isCurrentlyLive) return null;
               if (isLive === false && isCurrentlyLive) return null;
 
+              const homeCompetitor = event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home');
+              const awayCompetitor = event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away');
+
               return {
                 id: `espn_real_${event.id}`,
-                homeTeam: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.displayName || 'Home Team',
-                awayTeam: event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.displayName || 'Away Team',
-                league: event.league?.name || 'Professional League',
+                homeTeam: homeCompetitor?.team?.displayName || homeCompetitor?.team?.name || 'Home Team',
+                awayTeam: awayCompetitor?.team?.displayName || awayCompetitor?.team?.name || 'Away Team',
+                league: event.league?.name || event.league?.abbreviation || 'Professional League',
                 sport: this.mapESPNSport(endpoint),
                 sportId: this.getSportIdFromESPN(endpoint),
-                status: isCurrentlyLive ? event.status?.type?.detail || 'Live' : 'Scheduled',
+                status: isCurrentlyLive ? (event.status?.type?.detail || event.status?.displayClock || 'Live') : 'Scheduled',
                 startTime: event.date,
                 isLive: isCurrentlyLive,
-                score: isCurrentlyLive && event.competitions?.[0]?.competitors ? {
-                  home: parseInt(event.competitions[0].competitors.find((c: any) => c.homeAway === 'home')?.score || '0'),
-                  away: parseInt(event.competitions[0].competitors.find((c: any) => c.homeAway === 'away')?.score || '0')
+                score: isCurrentlyLive && homeCompetitor && awayCompetitor ? {
+                  home: parseInt(homeCompetitor.score || '0'),
+                  away: parseInt(awayCompetitor.score || '0')
                 } : undefined,
                 odds: this.generateRealisticOdds(this.mapESPNSport(endpoint)),
                 source: 'espn_live_api'
@@ -136,44 +141,57 @@ export class RealLiveAPI {
 
   private async getSportsDataEvents(sportId?: number, isLive?: boolean): Promise<RealEvent[]> {
     try {
-      const response = await axios.get('https://sportsdata.usatoday.com/v1/scores', {
-        headers: {
-          'X-RapidAPI-Key': this.rapidKey,
-          'X-RapidAPI-Host': 'sportsdata.usatoday.com'
-        },
-        timeout: 8000
-      });
+      // Try multiple working free sports APIs
+      const freeEndpoints = [
+        'https://api.football-data.org/v4/competitions/PL/matches',
+        'https://api.football-data.org/v4/competitions/CL/matches',
+        'https://api.openligadb.de/getmatchdata/bl1/2024',
+      ];
 
-      if (response.data && Array.isArray(response.data)) {
-        console.log(`[RealLiveAPI] SportsData success: ${response.data.length} events`);
-        
-        return response.data.slice(0, 15).map((event: any) => {
-          const isCurrentlyLive = event.status === 'live' || event.status === 'in_progress';
-          
-          if (isLive === true && !isCurrentlyLive) return null;
-          if (isLive === false && isCurrentlyLive) return null;
+      for (const endpoint of freeEndpoints) {
+        try {
+          const response = await axios.get(endpoint, {
+            headers: {
+              'X-Auth-Token': 'your-token-here' // This would need a real token
+            },
+            timeout: 8000
+          });
 
-          return {
-            id: `sportsdata_${event.id || Date.now()}`,
-            homeTeam: event.home_team || 'Home Team',
-            awayTeam: event.away_team || 'Away Team',
-            league: event.league || 'Professional League',
-            sport: event.sport || 'football',
-            sportId: this.mapSportNameToId(event.sport || 'football'),
-            status: isCurrentlyLive ? 'Live' : 'Scheduled',
-            startTime: event.start_time || new Date().toISOString(),
-            isLive: isCurrentlyLive,
-            score: isCurrentlyLive ? {
-              home: event.home_score || 0,
-              away: event.away_score || 0
-            } : undefined,
-            odds: this.generateRealisticOdds(event.sport || 'football'),
-            source: 'sportsdata_api'
-          };
-        }).filter(Boolean);
+          if (response.data?.matches || response.data) {
+            const matches = response.data.matches || response.data;
+            console.log(`[RealLiveAPI] Free API success: ${matches.length} events`);
+            
+            return matches.slice(0, 10).map((match: any) => {
+              const isCurrentlyLive = match.status === 'IN_PLAY' || match.status === 'LIVE';
+              
+              if (isLive === true && !isCurrentlyLive) return null;
+              if (isLive === false && isCurrentlyLive) return null;
+
+              return {
+                id: `free_api_${match.id || Date.now()}`,
+                homeTeam: match.homeTeam?.name || match.team1?.teamName || 'Home Team',
+                awayTeam: match.awayTeam?.name || match.team2?.teamName || 'Away Team',
+                league: match.competition?.name || 'Professional League',
+                sport: 'football',
+                sportId: 1,
+                status: isCurrentlyLive ? 'Live' : 'Scheduled',
+                startTime: match.utcDate || match.matchDateTime || new Date().toISOString(),
+                isLive: isCurrentlyLive,
+                score: isCurrentlyLive && match.score ? {
+                  home: match.score.fullTime?.homeTeam || match.pointsTeam1 || 0,
+                  away: match.score.fullTime?.awayTeam || match.pointsTeam2 || 0
+                } : undefined,
+                odds: this.generateRealisticOdds('football'),
+                source: 'free_football_api'
+              };
+            }).filter(Boolean);
+          }
+        } catch (apiError) {
+          console.log(`[RealLiveAPI] Free API endpoint failed: ${endpoint}`);
+        }
       }
     } catch (error) {
-      console.error('[RealLiveAPI] SportsData API error:', error.message);
+      console.error('[RealLiveAPI] Free API error:', error.message);
     }
     
     return [];

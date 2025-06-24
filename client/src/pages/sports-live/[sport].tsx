@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { Clock, CalendarIcon, RefreshCw, Loader2, ArrowLeft } from 'lucide-react';
 import SimpleMarkets from '@/components/betting/SimpleMarkets';
-import { EventsDisplay } from '@/components/EventsDisplay';
+import { AuthenticEventsDisplay } from '@/components/AuthenticEventsDisplay';
 
 const SPORTS_MAPPING: Record<string, number> = {
   'football': 1,
@@ -760,7 +760,7 @@ export default function SportPage() {
           </TabsList>
           
           <TabsContent value={selectedTab} className="mt-6">
-            <EventsDisplay 
+            <AuthenticEventsDisplay 
               sportId={sportId!} 
               sportName={sportName} 
               selectedTab={selectedTab}

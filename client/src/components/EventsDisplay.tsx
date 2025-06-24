@@ -1,23 +1,35 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { formatOddsDisplay, isLiveEvent } from '@/utils/oddsFormatter';
+import { Clock } from 'lucide-react';
 
 interface Event {
   id: string;
   homeTeam: string;
   awayTeam: string;
   league?: string;
+  leagueName?: string;
   sport?: string;
   sportId?: number;
   status?: string;
   date?: string;
+  startTime?: string;
+  venue?: string;
   homeScore?: number;
   awayScore?: number;
+  isLive?: boolean;
   odds?: {
+    homeWin?: number;
+    awayWin?: number;
+    draw?: number;
     home?: number;
     away?: number;
-    draw?: number;
+  };
+  score?: {
+    home?: number;
+    away?: number;
   };
 }
 
@@ -38,16 +50,21 @@ export function EventsDisplay({ sportId, sportName, selectedTab }: EventsDisplay
         setLoading(true);
         setError(null);
         
-        // Direct fetch to bypass React Query issues
-        const response = await fetch('/api/events');
+        console.log(`Fetching ${selectedTab} events for ${sportName} (ID: ${sportId})`);
+        
+        // Fetch events with proper filters
+        const url = `/api/events?sportId=${sportId}&isLive=${selectedTab === 'live'}`;
+        console.log(`Fetching from: ${url}`);
+        
+        const response = await fetch(url);
         if (!response.ok) {
           throw new Error(`Failed to fetch events: ${response.status}`);
         }
         
         const allEvents = await response.json();
-        console.log(`[DIRECT] Received ${allEvents.length} total events`);
+        console.log(`Received ${allEvents.length} authentic ${selectedTab} events for ${sportName}`);
         
-        // Filter events for current sport
+        // Process and fix event data
         let filteredEvents = allEvents;
         
         if (sportId === 1) {

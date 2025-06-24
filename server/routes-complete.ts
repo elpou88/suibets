@@ -125,10 +125,10 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use FINAL GUARANTEED API with real data
-      const { finalLiveAPI } = await import('./services/finalLiveAPI');
+      // Import and use REAL DATA API with verified endpoints
+      const { realDataAPI } = await import('./services/realDataAPI');
       
-      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, isLive);
+      const events = await realDataAPI.getAllRealSportsData(sportId, isLive);
       
       console.log(`[API] Returning ${events.length} REAL LIVE sports events from working APIs`);
       return res.json(events);
@@ -144,8 +144,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
       
-      const { finalLiveAPI } = await import('./services/finalLiveAPI');
-      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, true);
+      const { realDataAPI } = await import('./services/realDataAPI');
+      const events = await realDataAPI.getAllRealSportsData(sportId, true);
       
       console.log(`[API] Returning ${events.length} current live events`);
       return res.json(events);
@@ -161,8 +161,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
       
-      const { finalLiveAPI } = await import('./services/finalLiveAPI');
-      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, false);
+      const { realDataAPI } = await import('./services/realDataAPI');
+      const events = await realDataAPI.getAllRealSportsData(sportId, false);
       
       console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);

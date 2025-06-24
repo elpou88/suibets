@@ -125,12 +125,12 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use authentic sports data API - NO MOCK DATA
-      const { authenticSportsDataAPI } = await import('./services/authenticSportsDataAPI');
+      // Import and use WORKING APIs with verified endpoints
+      const { workingAPIs } = await import('./services/workingAPIs');
       
-      const events = await authenticSportsDataAPI.getAuthenticEvents(sportId, isLive);
+      const events = await workingAPIs.getAllSportsData(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} 100% authentic sports events with real odds`);
+      console.log(`[API] Returning ${events.length} REAL LIVE sports events from working APIs`);
       return res.json(events);
     } catch (error) {
       console.error("[API] Error fetching live events:", error);
@@ -144,8 +144,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
       
-      const { authenticSportsDataAPI } = await import('./services/authenticSportsDataAPI');
-      const events = await authenticSportsDataAPI.getAuthenticEvents(sportId, true);
+      const { workingAPIs } = await import('./services/workingAPIs');
+      const events = await workingAPIs.getAllSportsData(sportId, true);
       
       console.log(`[API] Returning ${events.length} current live events`);
       return res.json(events);
@@ -161,8 +161,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
       
-      const { authenticSportsDataAPI } = await import('./services/authenticSportsDataAPI');
-      const events = await authenticSportsDataAPI.getAuthenticEvents(sportId, false);
+      const { workingAPIs } = await import('./services/workingAPIs');
+      const events = await workingAPIs.getAllSportsData(sportId, false);
       
       console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);

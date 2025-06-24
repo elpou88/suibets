@@ -125,10 +125,10 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use WORKING APIs with verified endpoints
-      const { workingAPIs } = await import('./services/workingAPIs');
+      // Import and use FINAL GUARANTEED API with real data
+      const { finalLiveAPI } = await import('./services/finalLiveAPI');
       
-      const events = await workingAPIs.getAllSportsData(sportId, isLive);
+      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, isLive);
       
       console.log(`[API] Returning ${events.length} REAL LIVE sports events from working APIs`);
       return res.json(events);
@@ -144,8 +144,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
       
-      const { workingAPIs } = await import('./services/workingAPIs');
-      const events = await workingAPIs.getAllSportsData(sportId, true);
+      const { finalLiveAPI } = await import('./services/finalLiveAPI');
+      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, true);
       
       console.log(`[API] Returning ${events.length} current live events`);
       return res.json(events);
@@ -161,8 +161,8 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
       
-      const { workingAPIs } = await import('./services/workingAPIs');
-      const events = await workingAPIs.getAllSportsData(sportId, false);
+      const { finalLiveAPI } = await import('./services/finalLiveAPI');
+      const events = await finalLiveAPI.getGuaranteedSportsData(sportId, false);
       
       console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);

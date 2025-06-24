@@ -125,45 +125,50 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       
       console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
       
-      // Import and use real sports API service
-      const { realSportsAPI } = await import('./services/realSportsAPI');
+      // Import and use live sports API service for current events
+      const { liveSportsAPI } = await import('./services/liveSportsAPI');
       
-      const events = await realSportsAPI.getRealEvents(sportId, isLive);
+      const events = await liveSportsAPI.getLiveEvents(sportId, isLive);
       
-      console.log(`[API] Returning ${events.length} real events with proper decimal odds`);
+      console.log(`[API] Returning ${events.length} live sports events with proper decimal odds`);
       return res.json(events);
     } catch (error) {
-      console.error("[API] Error fetching real events:", error);
-      return res.status(500).json({ error: "Failed to fetch real sports data" });
+      console.error("[API] Error fetching live events:", error);
+      return res.status(500).json({ error: "Failed to fetch live sports data" });
     }
   });
 
   app.get("/api/events/live", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await espnScraperComplete.getLiveEvents(sportId);
-      if (events && events.length > 0) {
-        console.log(`[API] Returning ${events.length} authentic live events from ESPN`);
-        return res.json(events);
-      } else {
-        console.log(`[API] No authentic live events found`);
-        return res.json([]);
-      }
+      
+      console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
+      
+      const { liveSportsAPI } = await import('./services/liveSportsAPI');
+      const events = await liveSportsAPI.getLiveEvents(sportId, true);
+      
+      console.log(`[API] Returning ${events.length} current live events`);
+      return res.json(events);
     } catch (error) {
-      console.error("[API] Error fetching live events:", error);
-      return res.json([]);
+      console.error("[API] Error fetching current live events:", error);
+      return res.status(500).json({ error: "Failed to fetch current live events" });
     }
   });
 
   app.get("/api/events/upcoming", async (req: Request, res: Response) => {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
-      const events = await espnScraperComplete.getUpcomingEvents(sportId);
-      console.log(`[API] Returning ${events.length} upcoming events`);
+      
+      console.log(`[API] Fetching upcoming events from FlashScore for sport ${sportId || 'all'}`);
+      
+      const { liveSportsAPI } = await import('./services/liveSportsAPI');
+      const events = await liveSportsAPI.getLiveEvents(sportId, false);
+      
+      console.log(`[API] Returning ${events.length} upcoming events from FlashScore`);
       return res.json(events);
     } catch (error) {
-      console.error("[API] Error fetching upcoming events:", error);
-      return res.status(500).json({ error: "Failed to fetch upcoming events" });
+      console.error("[API] Error fetching upcoming events from FlashScore:", error);
+      return res.status(500).json({ error: "Failed to fetch upcoming events from FlashScore" });
     }
   });
 

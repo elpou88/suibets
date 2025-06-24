@@ -89,16 +89,17 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
         }
         
         const authenticEvents = await response.json();
-        console.log(`✓ Real Sports Events: ${authenticEvents.length} ${selectedTab} ${sportName} matches`);
+        console.log(`✓ FlashScore Events: ${authenticEvents.length} ${selectedTab} ${sportName} matches`);
         
         if (authenticEvents.length > 0) {
-          console.log('Sample real event:', {
+          console.log('Sample FlashScore event:', {
             id: authenticEvents[0].id,
             homeTeam: authenticEvents[0].homeTeam,
             awayTeam: authenticEvents[0].awayTeam,
             odds: authenticEvents[0].odds,
             isLive: authenticEvents[0].isLive,
-            source: authenticEvents[0].source || 'real_api'
+            status: authenticEvents[0].status,
+            source: authenticEvents[0].source || 'flashscore'
           });
         }
         
@@ -192,7 +193,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
       <div className="flex items-center justify-between">
         <Badge className="bg-green-600/20 text-green-400 border border-green-500/30 px-3 py-1">
           <span className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></span>
-          {events.length} Real {selectedTab.toUpperCase()} Events
+          {events.length} FlashScore {selectedTab.toUpperCase()} Events
         </Badge>
         <Badge variant="outline" className="text-cyan-400 border-cyan-400/50">
           {sportName}
@@ -313,7 +314,7 @@ export function AuthenticEventsDisplay({ sportId, sportName, selectedTab }: Auth
               <div className="mt-6 pt-4 border-t border-[#1e3a3f] text-center">
                 <div className="flex items-center justify-center text-xs text-green-400">
                   <span className="w-2 h-2 bg-green-400 rounded-full mr-2"></span>
-                  Event ID: {event.id} • Real Sports Data
+                  Event ID: {event.id} • FlashScore Data
                 </div>
               </div>
             </CardContent>

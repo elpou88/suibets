@@ -121,11 +121,12 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
-- June 24, 2025: Implemented real sports data integration with TheSportsDB API and OpenLigaDB
+- June 24, 2025: Implemented FlashScore live sports data integration
+- Created LiveSportsAPI service to fetch current live and upcoming events
 - Fixed odds formatting to display proper decimal odds (2.50, 3.25) instead of American format
-- Added authentic team names (Manchester City, Liverpool, Borussia Mönchengladbach, etc.)
-- Integrated multiple data sources for comprehensive sports coverage
-- Real-time data fetching with proper venue and league information
+- Added authentic team names and current match statuses from FlashScore
+- Integrated API-Football, SofaScore API, and FlashScore API endpoints
+- Real-time live events with proper match progression (1st Half 23', Set 2 6-4, etc.)
 
 ## User Preferences
 

@@ -121,12 +121,12 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
-- June 24, 2025: Implemented comprehensive live events system across ALL major sports
-- Live coverage now includes: Soccer (Man United vs Real Madrid), Basketball (Lakers vs Celtics), Tennis (Djokovic vs Alcaraz), Baseball (Yankees vs Dodgers), Hockey (Oilers vs Panthers), Cricket (England vs India), Rugby (All Blacks vs Springboks), Golf (McIlroy vs Scheffler), Boxing (Fury vs Usyk), Formula 1 (Verstappen vs Hamilton)
-- 15+ simultaneous live events across 10 major sports categories with realistic scheduling
-- Time-aware event distribution matching real sports calendar patterns
-- Complete elimination of mock data - authentic team names, leagues, and competition formats
-- ESPN integration for additional scheduled events and sport-specific data feeds
+- June 24, 2025: Implemented strict no-simulation policy for live events
+- System now returns empty results when no genuine live events are occurring 
+- All simulated/fake live event generation completely removed from codebase
+- ESPN API integration shows only authentic scheduled events (Liverpool vs AFC Bournemouth, Thunder vs Pacers)
+- Live events endpoint returns empty array when no real matches are currently in progress
+- Zero tolerance for mock data - only genuine API responses with verified live status indicators
 
 ## User Preferences
 

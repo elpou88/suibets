@@ -41,12 +41,10 @@ export class RealLiveAPI {
     const events: RealEvent[] = [];
     
     try {
-      // Strategy 1: If specifically requesting live events, use live-only API
+      // Strategy 1: NO SIMULATED DATA - Only real live events from APIs
       if (isLive === true) {
-        const { liveOnlyAPI } = await import('./liveOnlyAPI');
-        const liveEvents = await liveOnlyAPI.getCurrentLiveEvents(sportId);
-        events.push(...liveEvents.map(e => this.convertLiveEvent(e)));
-        console.log(`[RealLiveAPI] Live-only API: ${liveEvents.length} events`);
+        console.log(`[RealLiveAPI] LIVE EVENTS REQUESTED - Only returning ACTUAL live events from real APIs`);
+        // Do not use any simulated live events - only return what we get from real APIs below
       }
 
       // Strategy 2: ESPN API (working endpoint) 
@@ -102,10 +100,13 @@ export class RealLiveAPI {
               const statusName = event.status?.type?.name;
               const isCurrentlyLive = statusState === 'in' || statusName === 'STATUS_IN_PROGRESS' || statusName === 'STATUS_LIVE' || statusState === 'live';
               
-              console.log(`[RealLiveAPI] Event ${event.shortName || 'unknown'}: status=${statusName}, state=${statusState}, isLive=${isCurrentlyLive}`);
+              console.log(`[RealLiveAPI] Event ${event.shortName || event.name || 'unknown'}: status=${statusName}, state=${statusState}, isLive=${isCurrentlyLive}`);
               
-              // Filter based on live status
-              if (isLive === true && !isCurrentlyLive) return null;
+              // STRICT FILTER: Only return events that are ACTUALLY live right now
+              if (isLive === true && !isCurrentlyLive) {
+                console.log(`[RealLiveAPI] REJECTING ${event.shortName || 'event'} - not currently live`);
+                return null;
+              }
               if (isLive === false && isCurrentlyLive) return null;
 
               const homeCompetitor = event.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home');

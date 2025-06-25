@@ -40,7 +40,9 @@ export class LiveScoreAPI {
         this.getFlashScoreLive(),
         this.get365ScoresLive(),
         this.getESPNLive(),
-        this.getBetExplorerLive()
+        this.getBetExplorerLive(),
+        this.getSofaScoreScraped(),
+        this.getApiFootballLive()
       ]);
 
       sources.forEach((result, index) => {
@@ -62,67 +64,178 @@ export class LiveScoreAPI {
   }
 
   private async getTheSportsDBLive(): Promise<LiveEvent[]> {
+    const liveEvents: LiveEvent[] = [];
+    
     try {
-      const response = await axios.get('https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4328', {
-        timeout: 5000
-      });
+      // Multiple TheSportsDB endpoints for different sports
+      const endpoints = [
+        'https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4328', // Premier League
+        'https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4334', // La Liga
+        'https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4331', // Bundesliga
+        'https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4332', // Serie A
+        'https://www.thesportsdb.com/api/v1/json/3/livescore.php?l=4335', // Ligue 1
+        'https://www.thesportsdb.com/api/v1/json/3/latestscore.php', // Latest scores across all sports
+        'https://www.thesportsdb.com/api/v1/json/3/eventslive.php' // Current live events
+      ];
 
-      if (response.data?.events) {
-        const liveEvents = response.data.events.filter((event: any) => 
-          event.strStatus === 'Match On' || 
-          event.strStatus === 'Live' || 
-          event.strStatus === 'In Progress' ||
-          event.strStatus === '1st Half' ||
-          event.strStatus === '2nd Half'
-        );
+      for (const endpoint of endpoints) {
+        try {
+          const response = await axios.get(endpoint, { timeout: 5000 });
+          
+          if (response.data?.events) {
+            const events = response.data.events.filter((event: any) => {
+              const isLive = event.strStatus === 'Match On' || 
+                           event.strStatus === 'Live' || 
+                           event.strStatus === 'In Progress' ||
+                           event.strStatus === '1st Half' ||
+                           event.strStatus === '2nd Half' ||
+                           event.strStatus === 'HT' ||
+                           (event.strProgress && event.strProgress !== 'FT');
+              
+              return isLive;
+            });
 
-        return liveEvents.map((event: any) => ({
-          id: `thesportsdb_${event.idEvent}`,
-          homeTeam: event.strHomeTeam,
-          awayTeam: event.strAwayTeam,
-          league: event.strLeague || 'Live Match',
-          sport: 'football',
-          sportId: 1,
-          status: event.strProgress || event.strStatus || 'Live',
-          score: {
-            home: parseInt(event.intHomeScore || '0'),
-            away: parseInt(event.intAwayScore || '0')
-          },
-          odds: this.generateLiveOdds(),
-          source: 'thesportsdb'
-        }));
+            const mappedEvents = events.map((event: any) => ({
+              id: `thesportsdb_${event.idEvent || Math.random()}`,
+              homeTeam: event.strHomeTeam || event.strTeam || 'Home',
+              awayTeam: event.strAwayTeam || event.strTeamVs || 'Away',
+              league: event.strLeague || event.strSport || 'Live Match',
+              sport: this.mapTheSportsDBSport(event.strSport),
+              sportId: this.getTheSportsDBSportId(event.strSport),
+              status: event.strProgress || event.strStatus || 'Live',
+              score: {
+                home: parseInt(event.intHomeScore || event.intScore || '0'),
+                away: parseInt(event.intAwayScore || event.intScoreVs || '0')
+              },
+              odds: this.generateLiveOdds(),
+              source: 'thesportsdb'
+            }));
+
+            liveEvents.push(...mappedEvents);
+            console.log(`[LiveScoreAPI] TheSportsDB: Found ${mappedEvents.length} live events from ${endpoint}`);
+          }
+        } catch (endpointError) {
+          console.log(`[LiveScoreAPI] TheSportsDB endpoint failed: ${endpoint}`);
+        }
       }
+
+      // Also try the latest scores and ongoing events
+      try {
+        const ongoingResponse = await axios.get('https://www.thesportsdb.com/api/v1/json/3/eventslive.php', {
+          timeout: 5000
+        });
+        
+        if (ongoingResponse.data?.events) {
+          const ongoingEvents = ongoingResponse.data.events.map((event: any) => ({
+            id: `thesportsdb_live_${event.idEvent || Math.random()}`,
+            homeTeam: event.strHomeTeam || 'Home',
+            awayTeam: event.strAwayTeam || 'Away',
+            league: event.strLeague || 'Live Event',
+            sport: this.mapTheSportsDBSport(event.strSport),
+            sportId: this.getTheSportsDBSportId(event.strSport),
+            status: event.strProgress || 'Live',
+            score: {
+              home: parseInt(event.intHomeScore || '0'),
+              away: parseInt(event.intAwayScore || '0')
+            },
+            odds: this.generateLiveOdds(),
+            source: 'thesportsdb_live'
+          }));
+          
+          liveEvents.push(...ongoingEvents);
+          console.log(`[LiveScoreAPI] TheSportsDB ongoing: Found ${ongoingEvents.length} live events`);
+        }
+      } catch (ongoingError) {
+        console.log('[LiveScoreAPI] TheSportsDB ongoing events not available');
+      }
+
+      return liveEvents;
     } catch (error) {
-      console.log('[LiveScoreAPI] TheSportsDB not available');
+      console.log('[LiveScoreAPI] TheSportsDB not available:', error.message);
     }
-    return [];
+    return liveEvents;
+  }
+
+  private mapTheSportsDBSport(sport: string): string {
+    const sportMap: { [key: string]: string } = {
+      'Soccer': 'football',
+      'Football': 'football',
+      'American Football': 'american_football',
+      'Basketball': 'basketball',
+      'Baseball': 'baseball',
+      'Tennis': 'tennis',
+      'Ice Hockey': 'hockey',
+      'Cricket': 'cricket',
+      'Rugby': 'rugby',
+      'Golf': 'golf',
+      'Boxing': 'boxing'
+    };
+    return sportMap[sport] || 'football';
+  }
+
+  private getTheSportsDBSportId(sport: string): number {
+    const sportIdMap: { [key: string]: number } = {
+      'Soccer': 1,
+      'Football': 1,
+      'American Football': 8,
+      'Basketball': 2,
+      'Baseball': 4,
+      'Tennis': 3,
+      'Ice Hockey': 5,
+      'Cricket': 6,
+      'Rugby': 7,
+      'Golf': 9,
+      'Boxing': 10
+    };
+    return sportIdMap[sport] || 1;
   }
 
   private async getFootballDataLive(): Promise<LiveEvent[]> {
     try {
-      const response = await axios.get('https://api.football-data.org/v4/matches', {
-        params: { status: 'IN_PLAY' },
-        headers: { 'X-Auth-Token': 'demo' },
-        timeout: 5000
-      });
+      // Multiple football-data.org endpoints for live matches
+      const endpoints = [
+        'https://api.football-data.org/v4/matches?status=IN_PLAY',
+        'https://api.football-data.org/v4/competitions/PL/matches?status=IN_PLAY',
+        'https://api.football-data.org/v4/competitions/CL/matches?status=IN_PLAY',
+        'https://api.football-data.org/v4/competitions/BL1/matches?status=IN_PLAY',
+        'https://api.football-data.org/v4/competitions/SA/matches?status=IN_PLAY'
+      ];
 
-      if (response.data?.matches) {
-        return response.data.matches.map((match: any) => ({
-          id: `footballdata_${match.id}`,
-          homeTeam: match.homeTeam.name,
-          awayTeam: match.awayTeam.name,
-          league: match.competition.name,
-          sport: 'football',
-          sportId: 1,
-          status: `${match.minute || 0}'`,
-          score: {
-            home: match.score?.fullTime?.homeTeam || 0,
-            away: match.score?.fullTime?.awayTeam || 0
-          },
-          odds: this.generateLiveOdds(),
-          source: 'footballdata'
-        }));
+      const liveEvents: LiveEvent[] = [];
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await axios.get(endpoint, {
+            headers: { 'X-Auth-Token': 'demo' },
+            timeout: 5000
+          });
+
+          if (response.data?.matches) {
+            const matches = response.data.matches.map((match: any) => ({
+              id: `footballdata_${match.id}`,
+              homeTeam: match.homeTeam.name,
+              awayTeam: match.awayTeam.name,
+              league: match.competition.name,
+              sport: 'football',
+              sportId: 1,
+              status: `${match.minute || 0}'`,
+              score: {
+                home: match.score?.fullTime?.homeTeam || 0,
+                away: match.score?.fullTime?.awayTeam || 0
+              },
+              odds: this.generateLiveOdds(),
+              source: 'footballdata'
+            }));
+            
+            liveEvents.push(...matches);
+            console.log(`[LiveScoreAPI] Football-Data: Found ${matches.length} live matches`);
+          }
+        } catch (endpointError) {
+          console.log(`[LiveScoreAPI] Football-Data endpoint failed: ${endpoint}`);
+        }
       }
+
+      return liveEvents;
     } catch (error) {
       console.log('[LiveScoreAPI] Football-Data not available');
     }
@@ -362,6 +475,32 @@ export class LiveScoreAPI {
       'soccer': 1
     };
     return sportIdMap[sportType] || 1;
+  }
+
+  private async getSofaScoreScraped(): Promise<LiveEvent[]> {
+    try {
+      const { sofaScoreScraper } = await import('./sofaScoreScraper');
+      const scrapedMatches = await sofaScoreScraper.getLiveMatches();
+      
+      console.log(`[LiveScoreAPI] SofaScore Scraper: Found ${scrapedMatches.length} live matches`);
+      return scrapedMatches;
+    } catch (error) {
+      console.log('[LiveScoreAPI] SofaScore scraping failed:', error.message);
+      return [];
+    }
+  }
+
+  private async getApiFootballLive(): Promise<LiveEvent[]> {
+    try {
+      const { apiFootballService } = await import('./apiFootballService');
+      const apiMatches = await apiFootballService.getLiveMatches();
+      
+      console.log(`[LiveScoreAPI] API-Football: Found ${apiMatches.length} live matches`);
+      return apiMatches;
+    } catch (error) {
+      console.log('[LiveScoreAPI] API-Football failed:', error.message);
+      return [];
+    }
   }
 
   private generateLiveOdds(): { home: string; away: string; draw?: string } {

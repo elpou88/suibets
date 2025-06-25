@@ -124,25 +124,18 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       const isLive = req.query.isLive === 'true';
       
       if (isLive) {
-        console.log(`[API] Searching for ALL live events including friendlies, internationals, lower leagues`);
+        console.log(`[API] STRICT MODE: Only verified authentic live events - NO MOCK DATA`);
         
-        // Import both APIs
-        const [{ realLiveAPI }, { liveScoreAPI }] = await Promise.all([
-          import('./services/realLiveAPI'),
-          import('./services/liveScoreAPI')
-        ]);
+        // Use only verified authentic live events
+        const { realLiveEventsOnly } = await import('./services/realLiveEventsOnly');
+        const authenticEvents = await realLiveEventsOnly.getOnlyAuthenticLiveEvents();
         
-        // Get events from multiple sources
-        const [realLiveEvents, liveScoreEvents] = await Promise.all([
-          realLiveAPI.getRealLiveSportsData(sportId, true),
-          liveScoreAPI.getAllCurrentLiveEvents()
-        ]);
+        // Filter by sport if requested
+        const filteredEvents = sportId ? 
+          authenticEvents.filter(e => e.sportId === sportId) : 
+          authenticEvents;
         
-        // Combine all live events
-        const allLiveEvents = [...realLiveEvents, ...liveScoreEvents];
-        const filteredEvents = sportId ? allLiveEvents.filter(e => e.sportId === sportId) : allLiveEvents;
-        
-        console.log(`[API] FOUND ${filteredEvents.length} TOTAL LIVE EVENTS from all sources`);
+        console.log(`[API] VERIFIED AUTHENTIC LIVE EVENTS: ${filteredEvents.length} (zero tolerance for mock data)`);
         
         // Add no-cache headers for live data
         res.set({

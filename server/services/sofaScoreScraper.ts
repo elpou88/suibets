@@ -192,50 +192,9 @@ export class SofaScoreScraper {
   }
 
   private getFallbackLiveMatches(): SofaScoreMatch[] {
-    // When scraping fails, provide some realistic live matches
-    const currentTime = new Date();
-    const isEuropeanTime = currentTime.getHours() >= 14 && currentTime.getHours() <= 23;
-    
-    if (!isEuropeanTime) {
-      return []; // No matches during off-peak hours
-    }
-
-    const fallbackMatches = [
-      {
-        homeTeam: 'Manchester City',
-        awayTeam: 'Arsenal',
-        league: 'Premier League',
-        status: `${Math.floor(Math.random() * 45) + 45}'`
-      },
-      {
-        homeTeam: 'Barcelona',
-        awayTeam: 'Real Madrid',
-        league: 'La Liga',
-        status: `${Math.floor(Math.random() * 30) + 60}'`
-      },
-      {
-        homeTeam: 'Bayern Munich',
-        awayTeam: 'Borussia Dortmund',
-        league: 'Bundesliga',
-        status: `${Math.floor(Math.random() * 20) + 70}'`
-      }
-    ];
-
-    return fallbackMatches.map((match, index) => ({
-      id: `sofascore_fallback_${index}`,
-      homeTeam: match.homeTeam,
-      awayTeam: match.awayTeam,
-      league: match.league,
-      sport: 'football',
-      sportId: 1,
-      status: match.status,
-      score: {
-        home: Math.floor(Math.random() * 3),
-        away: Math.floor(Math.random() * 3)
-      },
-      odds: this.generateRealisticOdds(),
-      source: 'sofascore_fallback'
-    }));
+    // NO FALLBACK DATA - Only return empty array when scraping fails
+    console.log('[SofaScoreScraper] No fallback data - only real scraped matches allowed');
+    return [];
   }
 
   private inferLeague(homeTeam: string, awayTeam: string): string {

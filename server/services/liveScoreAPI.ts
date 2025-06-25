@@ -401,43 +401,8 @@ export class LiveScoreAPI {
   }
 
   private async getBetExplorerLive(): Promise<LiveEvent[]> {
-    try {
-      // Generate some current live events from known active leagues
-      const currentHour = new Date().getHours();
-      const liveEvents: LiveEvent[] = [];
-
-      // Different regions have different peak times
-      if (currentHour >= 12 && currentHour <= 23) {
-        // European afternoon/evening - likely live matches
-        const europeanMatches = [
-          { home: 'Real Sociedad', away: 'Athletic Bilbao', league: 'La Liga' },
-          { home: 'Lens', away: 'Marseille', league: 'Ligue 1' },
-          { home: 'Borussia Dortmund', away: 'Bayern Munich', league: 'Bundesliga' }
-        ];
-
-        europeanMatches.forEach((match, index) => {
-          liveEvents.push({
-            id: `live_euro_${index}`,
-            homeTeam: match.home,
-            awayTeam: match.away,
-            league: match.league,
-            sport: 'football',
-            sportId: 1,
-            status: `${45 + Math.floor(Math.random() * 45)}'`,
-            score: {
-              home: Math.floor(Math.random() * 3),
-              away: Math.floor(Math.random() * 3)
-            },
-            odds: this.generateLiveOdds(),
-            source: 'live_tracker'
-          });
-        });
-      }
-
-      return liveEvents;
-    } catch (error) {
-      console.log('[LiveScoreAPI] BetExplorer not available');
-    }
+    // NO MOCK DATA - Only return real API data
+    console.log('[LiveScoreAPI] BetExplorer: No mock data - only real API responses allowed');
     return [];
   }
 

@@ -123,18 +123,45 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       const isLive = req.query.isLive === 'true';
       
-      console.log(`[API] Fetching real ${isLive ? 'live' : 'upcoming'} events for sport ${sportId || 'all'}`);
-      
-      // Import and use REAL LIVE API - NO MOCK DATA
-      const { realLiveAPI } = await import('./services/realLiveAPI');
-      
-      const events = await realLiveAPI.getRealLiveSportsData(sportId, isLive);
-      
-      console.log(`[API] Returning ${events.length} REAL LIVE sports events - NO MOCK DATA`);
-      return res.json(events);
+      if (isLive) {
+        console.log(`[API] Searching for ALL live events including friendlies, internationals, lower leagues`);
+        
+        // Import both APIs
+        const [{ realLiveAPI }, { liveScoreAPI }] = await Promise.all([
+          import('./services/realLiveAPI'),
+          import('./services/liveScoreAPI')
+        ]);
+        
+        // Get events from multiple sources
+        const [realLiveEvents, liveScoreEvents] = await Promise.all([
+          realLiveAPI.getRealLiveSportsData(sportId, true),
+          liveScoreAPI.getAllCurrentLiveEvents()
+        ]);
+        
+        // Combine all live events
+        const allLiveEvents = [...realLiveEvents, ...liveScoreEvents];
+        const filteredEvents = sportId ? allLiveEvents.filter(e => e.sportId === sportId) : allLiveEvents;
+        
+        console.log(`[API] FOUND ${filteredEvents.length} TOTAL LIVE EVENTS from all sources`);
+        
+        // Add no-cache headers for live data
+        res.set({
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        });
+        
+        return res.json(filteredEvents);
+      } else {
+        console.log(`[API] Fetching upcoming events for sport ${sportId || 'all'}`);
+        const { realLiveAPI } = await import('./services/realLiveAPI');
+        const events = await realLiveAPI.getRealLiveSportsData(sportId, false);
+        console.log(`[API] Returning ${events.length} upcoming events`);
+        return res.json(events);
+      }
     } catch (error) {
-      console.error("[API] Error fetching live events:", error);
-      return res.status(500).json({ error: "Failed to fetch live sports data" });
+      console.error("[API] Error fetching events:", error);
+      return res.status(500).json({ error: "Failed to fetch events" });
     }
   });
 
@@ -142,13 +169,31 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     try {
       const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
       
-      console.log(`[API] Fetching current live events for sport ${sportId || 'all'}`);
+      console.log(`[API] Fetching ALL current live events including friendlies for sport ${sportId || 'all'}`);
       
-      const { realLiveAPI } = await import('./services/realLiveAPI');
-      const events = await realLiveAPI.getRealLiveSportsData(sportId, true);
+      // Get from both live sources
+      const [{ realLiveAPI }, { liveScoreAPI }] = await Promise.all([
+        import('./services/realLiveAPI'),
+        import('./services/liveScoreAPI')
+      ]);
       
-      console.log(`[API] Returning ${events.length} current live events`);
-      return res.json(events);
+      const [realEvents, liveEvents] = await Promise.all([
+        realLiveAPI.getRealLiveSportsData(sportId, true),
+        liveScoreAPI.getAllCurrentLiveEvents()
+      ]);
+      
+      const allEvents = [...realEvents, ...liveEvents];
+      const filteredEvents = sportId ? allEvents.filter(e => e.sportId === sportId) : allEvents;
+      
+      console.log(`[API] Returning ${filteredEvents.length} total live events from all sources`);
+      
+      res.set({
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      
+      return res.json(filteredEvents);
     } catch (error) {
       console.error("[API] Error fetching current live events:", error);
       return res.status(500).json({ error: "Failed to fetch current live events" });

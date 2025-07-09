@@ -61,6 +61,10 @@ app.use((req, res, next) => {
   log('Blockchain-based storage system initialized');
   
   const server = await registerCompleteRoutes(app);
+  
+  // Register BWin API routes for additional sports data
+  const { registerBetsBwinRoutes } = await import('./routes-betsbwin');
+  registerBetsBwinRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

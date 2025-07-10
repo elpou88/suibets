@@ -11,7 +11,7 @@ export function registerBetsBwinRoutes(app: Express) {
       const sportId = req.query.sportId ? parseInt(req.query.sportId as string) : undefined;
       console.log(`[BetsBwin Routes] Fetching live events for sport ID ${sportId || 'all'}`);
       
-      const liveEvents = await betsBwinApiService.fetchLiveEvents(sportId);
+      const liveEvents = await betsBwinApiService.getLiveEvents(sportId);
       return res.json(liveEvents);
     } catch (error) {
       console.error('[BetsBwin Routes] Error fetching live events:', error);
@@ -26,7 +26,7 @@ export function registerBetsBwinRoutes(app: Express) {
       const days = req.query.days ? parseInt(req.query.days as string) : 3;
       console.log(`[BetsBwin Routes] Fetching upcoming events for sport ID ${sportId || 'all'}`);
       
-      const upcomingEvents = await betsBwinApiService.fetchUpcomingEvents(sportId, days);
+      const upcomingEvents = await betsBwinApiService.getUpcomingEvents(sportId);
       return res.json(upcomingEvents);
     } catch (error) {
       console.error('[BetsBwin Routes] Error fetching upcoming events:', error);

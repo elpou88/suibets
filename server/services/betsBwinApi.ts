@@ -4,7 +4,7 @@ import { apiResilienceService } from './apiResilienceService';
  * BetsAPI BWin Service - Dedicated service for BWin API integration
  * Handles all BWin-specific API calls and data transformations
  */
-export class BetsBwinApiService {
+class BetsBwinApiService {
   private apiKey: string;
   private baseUrl: string = 'https://api.b365api.com';
 

@@ -60,11 +60,11 @@ app.use((req, res, next) => {
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
   
-  const server = await registerCompleteRoutes(app);
-  
-  // Register BWin API routes for additional sports data
+  // Register BWin API routes FIRST to avoid route conflicts
   const { registerBetsBwinRoutes } = await import('./routes-betsbwin');
   registerBetsBwinRoutes(app);
+  
+  const server = await registerCompleteRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

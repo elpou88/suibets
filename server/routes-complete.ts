@@ -325,6 +325,187 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Withdraw winnings endpoint
+  app.post("/api/bets/:betId/withdraw-winnings", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.betId;
+      const { userId, walletAddress } = req.body;
+      
+      if (!betId) {
+        return res.status(400).json({ message: "Bet ID is required" });
+      }
+      
+      if (!userId) {
+        return res.status(400).json({ message: "User ID is required" });
+      }
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      // Import suiMoveService for blockchain operations
+      const { suiMoveService } = await import('./services/suiMoveService');
+      
+      // Check if bet exists and user owns it
+      const bet = await storage.getBet(parseInt(betId));
+      if (!bet) {
+        return res.status(404).json({ message: "Bet not found" });
+      }
+      
+      if (bet.userId !== userId) {
+        return res.status(403).json({ message: "Bet does not belong to this user" });
+      }
+      
+      if (bet.status !== 'won') {
+        return res.status(400).json({ message: `Bet is not won. Current status: ${bet.status}` });
+      }
+      
+      if (bet.winningsWithdrawn) {
+        return res.status(400).json({ message: "Winnings have already been withdrawn" });
+      }
+      
+      // Process the winnings claim through blockchain
+      const txHash = await suiMoveService.claimWinnings(walletAddress, betId);
+      
+      if (!txHash) {
+        return res.status(500).json({ message: "Failed to process winnings withdrawal on blockchain" });
+      }
+      
+      // Update bet in database to mark winnings as withdrawn
+      try {
+        await storage.markBetWinningsWithdrawn(parseInt(betId), txHash);
+      } catch (dbError: any) {
+        console.warn('Error updating bet in database, but blockchain transaction completed:', dbError.message);
+        // Continue since blockchain transaction was successful
+      }
+      
+      // Get updated bet details
+      const updatedBet = await storage.getBet(parseInt(betId));
+      
+      console.log(`[API] Winnings withdrawn for bet ${betId}, amount: ${bet.payout}`);
+      
+      res.json({
+        success: true,
+        message: "Winnings successfully withdrawn",
+        transactionHash: txHash,
+        bet: updatedBet,
+        amount: bet.payout,
+        currency: bet.feeCurrency || 'SUI'
+      });
+    } catch (error: any) {
+      console.error("[API] Error withdrawing winnings:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to withdraw winnings" 
+      });
+    }
+  });
+
+  // Cash out endpoint for early settlement
+  app.post("/api/bets/:betId/cash-out", async (req: Request, res: Response) => {
+    try {
+      const betId = parseInt(req.params.betId);
+      const { userId, walletAddress, currency = 'SUI' } = req.body;
+      
+      if (isNaN(betId)) {
+        return res.status(400).json({ message: 'Invalid bet ID' });
+      }
+      
+      if (!userId || !walletAddress) {
+        return res.status(400).json({ message: 'User ID and wallet address are required' });
+      }
+      
+      // Check if the bet is eligible for cash out
+      const bet = await storage.getBet(betId);
+      if (!bet) {
+        return res.status(404).json({ message: 'Bet not found' });
+      }
+      
+      if (bet.userId !== userId) {
+        return res.status(403).json({ message: 'Bet does not belong to this user' });
+      }
+      
+      if (bet.status !== 'pending') {
+        return res.status(400).json({ message: `Bet is not eligible for cash out. Status: ${bet.status}` });
+      }
+      
+      // Calculate cash out amount (typically 80% of potential payout)
+      const cashOutAmount = bet.potentialPayout * 0.8;
+      
+      // Import suiMoveService for blockchain operations
+      const { suiMoveService } = await import('./services/suiMoveService');
+      
+      // Process the cash out using blockchain
+      const txHash = await suiMoveService.cashOutSingleBet(walletAddress, betId.toString(), cashOutAmount);
+      
+      if (!txHash) {
+        return res.status(500).json({ message: 'Failed to process cash out' });
+      }
+      
+      // Update the bet status
+      try {
+        await storage.cashOutSingleBet(betId);
+      } catch (dbError: any) {
+        console.warn('Error updating bet in database, but blockchain transaction completed:', dbError.message);
+      }
+      
+      // Get the updated bet details
+      const updatedBet = await storage.getBet(betId);
+      
+      console.log(`[API] Bet ${betId} cashed out for ${cashOutAmount} ${currency}`);
+      
+      res.json({ 
+        success: true, 
+        message: 'Bet successfully cashed out',
+        transactionHash: txHash,
+        bet: updatedBet,
+        amount: cashOutAmount,
+        currency
+      });
+    } catch (error: any) {
+      console.error('Error cashing out bet:', error);
+      res.status(500).json({ message: error.message || 'Failed to process cash out' });
+    }
+  });
+
+  // Claim dividends endpoint  
+  app.post("/api/dividends/claim", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      // Get current dividends
+      const dividends = await blockchainStorage.getUserDividends(walletAddress);
+      
+      if (!dividends.availableDividends || dividends.availableDividends <= 0) {
+        return res.status(400).json({ message: "No dividends available to claim" });
+      }
+      
+      // Import suiMoveService for blockchain operations
+      const { suiMoveService } = await import('./services/suiMoveService');
+      
+      // Process dividends claim through blockchain
+      const txHash = await suiMoveService.claimDividends(walletAddress);
+      
+      console.log(`[API] Dividends claimed for ${walletAddress}, amount: ${dividends.availableDividends}`);
+      
+      res.json({
+        success: true,
+        message: "Dividends successfully claimed",
+        transactionHash: txHash,
+        amount: dividends.availableDividends,
+        currency: "SBETS"
+      });
+    } catch (error: any) {
+      console.error("[API] Error claiming dividends:", error);
+      res.status(500).json({ 
+        message: error.message || "Failed to claim dividends" 
+      });
+    }
+  });
+
   // Error handling middleware
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     console.error("Unhandled error:", err);

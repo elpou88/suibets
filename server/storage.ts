@@ -24,6 +24,11 @@ export interface IStorage {
   getMarkets(eventId: number): Promise<Market[]>;
   getPromotions(): Promise<any[]>;
   
+  // Betting methods
+  getBet(betId: number): Promise<any | undefined>;
+  markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void>;
+  cashOutSingleBet(betId: number): Promise<void>;
+  
   // Session store
   sessionStore: session.SessionStore;
 }
@@ -210,6 +215,40 @@ export class DatabaseStorage implements IStorage {
         isActive: true
       }
     ];
+  }
+
+  // Betting methods implementation
+  async getBet(betId: number): Promise<any | undefined> {
+    // Since we don't have a bets table in the current schema, return a mock bet
+    // In a real implementation, this would query the bets table
+    return {
+      id: betId,
+      userId: 1,
+      eventId: "test_event_123",
+      marketId: "winner",
+      outcomeId: "home_win",
+      odds: 2.5,
+      amount: 10,
+      potentialPayout: 25,
+      payout: 25,
+      status: betId % 2 === 0 ? 'won' : 'pending', // Mock: even IDs are won, odd are pending
+      feeCurrency: 'SUI',
+      winningsWithdrawn: false,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+  }
+
+  async markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void> {
+    // In a real implementation, this would update the bet in the database
+    // For now, we'll just log the action
+    console.log(`Marking bet ${betId} winnings as withdrawn with tx hash: ${txHash}`);
+  }
+
+  async cashOutSingleBet(betId: number): Promise<void> {
+    // In a real implementation, this would update the bet status to 'cashed_out'
+    // For now, we'll just log the action
+    console.log(`Cashing out bet ${betId}`);
   }
 }
 

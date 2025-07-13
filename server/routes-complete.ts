@@ -250,7 +250,7 @@ export async function registerCompleteRoutes(app: Express): Promise<Server> {
   });
 
   // Betting endpoints
-  app.post("/api/bet", async (req: Request, res: Response) => {
+  app.post("/api/bets", async (req: Request, res: Response) => {
     try {
       const { walletAddress, eventId, marketId, selection, amount, odds } = req.body;
       

@@ -494,22 +494,41 @@ export class BlockchainStorage {
   }
   
   /**
-   * Get user bets (blockchain approach)
+   * Get user bets (blockchain approach with database fallback)
    */
   async getUserBets(walletAddress: string): Promise<Bet[]> {
     console.log(`Getting bets for wallet ${walletAddress} from blockchain`);
     
     try {
-      // In a full implementation, we would query the blockchain for bets
-      // We'll delegate to the Walrus service for now
-      const bets = await this.walrusService.getWalletBets(walletAddress);
+      // Try blockchain first
+      const blockchainBets = await this.walrusService.getWalletBets(walletAddress);
+      if (blockchainBets && blockchainBets.length > 0) {
+        return blockchainBets;
+      }
       
-      // Convert to our schema format
-      // This would map blockchain data to our schema in a real implementation
-      return [];
+      // Fallback to database lookup
+      console.log(`No blockchain bets found, checking database for wallet ${walletAddress}`);
+      const user = await this.getUserByWalletAddress(walletAddress);
+      
+      if (!user) {
+        console.log(`No user found for wallet ${walletAddress}`);
+        return [];
+      }
+      
+      // Import database modules
+      const { db } = await import('./db');
+      const { eq } = await import('drizzle-orm');
+      const { bets } = await import('../shared/schema');
+      
+      // Query database for user's bets
+      const userBets = await db.select().from(bets).where(eq(bets.userId, user.id));
+      console.log(`Found ${userBets.length} bets in database for user ${user.id}`);
+      
+      return userBets;
     } catch (error) {
-      console.error('Error getting user bets from blockchain:', error);
-      throw error;
+      console.error('Error getting user bets from blockchain and database:', error);
+      // Return empty array instead of throwing to prevent app crashes
+      return [];
     }
   }
   

@@ -109,6 +109,13 @@ const Layout: React.FC<LayoutProps> = ({
             </Button>
           ))}
 
+          {/* Scrolling News Ticker */}
+          <div className="flex-1 mx-4 overflow-hidden bg-[#112225] border border-[#1e3a3f] rounded h-8">
+            <div className="animate-marquee whitespace-nowrap text-xs text-cyan-300 py-1.5 px-2">
+              🏆 Liverpool vs Bournemouth - 14:00 | ⚽ Thunder vs Pacers - 20:00 | 🎾 Tennis Finals Live | 🏀 NBA Live Updates | 🏒 Hockey Championships | 🔥 Join SuiBets for 0% fees!
+            </div>
+          </div>
+
           <div className="ml-auto flex items-center p-2">
             <Button 
               variant="ghost" 

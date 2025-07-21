@@ -61,6 +61,12 @@ import { ParlayPage } from "@/components/parlay/ParlayPage";
 import { StakingSection } from "@/components/defi/StakingSection";
 import Layout from "@/components/layout/Layout";
 
+// New pages for complete functionality
+import JoinPage from "@/pages/join";
+import LiveEventsPage from "@/pages/live-events";
+import UpcomingEventsPage from "@/pages/upcoming-events";
+import ResultsPage from "@/pages/results";
+
 function App() {
   console.log("Starting React application");
   
@@ -154,7 +160,10 @@ function App() {
                             }}
                           </Route>
                           <Route path="/wallet-dashboard" component={WalletDashboard} />
-                          <Route path="/join" component={HomeReal} />
+                          <Route path="/join" component={JoinPage} />
+                          <Route path="/live-events" component={LiveEventsPage} />
+                          <Route path="/upcoming-events" component={UpcomingEventsPage} />
+                          <Route path="/results" component={ResultsPage} />
                           <Route path="/live-scores" component={LiveScoresPage} />
                           
                           {/* Info Pages */}

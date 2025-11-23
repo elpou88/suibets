@@ -102,13 +102,17 @@ export class ApiSportsService {
   };
 
   constructor(apiKey?: string) {
-    // Priority: API_SPORTS_KEY > SPORTSDATA_API_KEY > provided key > fallback
-    this.apiKey = apiKey || process.env.API_SPORTS_KEY || process.env.SPORTSDATA_API_KEY || "3ec255b133882788e32f6349eff77b21";
+    // PAID API-SPORTS ONLY - NO FALLBACKS
+    this.apiKey = apiKey || process.env.API_SPORTS_KEY;
     
-    // Log key information with activation status
-    const keyStatus = process.env.API_SPORTS_KEY ? '✅ ACTIVE' : '⚠️ SUSPENDED/FALLBACK';
-    console.log(`[ApiSportsService] 🔑 API-SPORTS KEY: ${keyStatus} | Key length: ${this.apiKey.length}`);
-    console.log(`[ApiSportsService] 📍 Using endpoint: https://v3.football.api-sports.io`);
+    if (!this.apiKey) {
+      const errorMsg = '❌ CRITICAL: API_SPORTS_KEY environment variable not set! Paid API-Sports is REQUIRED. Set API_SPORTS_KEY in Railway/Replit environment.';
+      console.error(errorMsg);
+      throw new Error(errorMsg);
+    }
+    
+    console.log(`[ApiSportsService] ✅ API-SPORTS KEY ACTIVE | Key length: ${this.apiKey.length}`);
+    console.log(`[ApiSportsService] 📍 Endpoint: https://v3.football.api-sports.io | POLICY: PAID API ONLY - NO FALLBACKS`);
     
     // Set longer timeout for API requests
     axios.defaults.timeout = 15000;

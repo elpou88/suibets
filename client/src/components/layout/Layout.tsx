@@ -24,18 +24,18 @@ const Layout: React.FC<LayoutProps> = ({
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   
   // Fetch upcoming events for the ticker
-  const { data: upcomingEvents = [] } = useQuery({
+  const { data: upcomingEvents = [] } = useQuery<any[]>({
     queryKey: ['/api/events', 'upcoming'],
     refetchInterval: 30000
   });
   
   // Format upcoming events for ticker display
   const getTickerText = () => {
-    if (upcomingEvents.length === 0) {
+    if (!upcomingEvents || upcomingEvents.length === 0) {
       return '🏆 Loading latest matches... | ⚽ Check back soon for upcoming games! | 🎾 Live betting on all major sports | 🏀 Real-time odds updates | 🏒 Join SuiBets for 0% fees!';
     }
     
-    const events = upcomingEvents.slice(0, 5).map((event: any) => {
+    const events = (upcomingEvents as any[]).slice(0, 5).map((event: any) => {
       const time = new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       const sportEmoji = getSportEmoji(event.sport);
       return `${sportEmoji} ${event.homeTeam} vs ${event.awayTeam} - ${time}`;

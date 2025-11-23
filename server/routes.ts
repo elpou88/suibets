@@ -13,7 +13,6 @@ import { registerDebugRoutes } from "./debug-routes";
 import { registerWalrusRoutes } from "./routes-walrus";
 import { registerBetsApiRoutes } from "./routes-betsapi";
 import { registerBetsBwinRoutes } from "./routes-betsbwin";
-import { registerStakingRoutes } from "./routes-staking";
 import { walrusService } from "./services/walrusService";
 import { apiResilienceService } from "./services/apiResilienceService";
 import { betsApiService } from "./services/betsApiService";

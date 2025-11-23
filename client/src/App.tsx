@@ -58,7 +58,6 @@ import StoragePage from "@/pages/storage";
 import LiveScoresPage from "@/pages/live-scores";
 // Import components directly instead of pages
 import { ParlayPage } from "@/components/parlay/ParlayPage";
-import { StakingSection } from "@/components/defi/StakingSection";
 import Layout from "@/components/layout/Layout";
 
 // New pages for complete functionality

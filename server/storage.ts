@@ -30,11 +30,11 @@ export interface IStorage {
   cashOutSingleBet(betId: number): Promise<void>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 }
 
 export class DatabaseStorage implements IStorage {
-  sessionStore: session.SessionStore;
+  sessionStore: any;
 
   constructor() {
     // Initialize the PostgreSQL session store
@@ -114,26 +114,26 @@ export class DatabaseStorage implements IStorage {
       // If we don't have any sports in the DB yet, return default sports
       if (!sportsList || sportsList.length === 0) {
         return [
-          { id: 1, name: 'Football', slug: 'football', icon: 'football', isActive: true },
-          { id: 2, name: 'Basketball', slug: 'basketball', icon: 'basketball', isActive: true },
-          { id: 3, name: 'Tennis', slug: 'tennis', icon: 'tennis', isActive: true },
-          { id: 4, name: 'Baseball', slug: 'baseball', icon: 'baseball', isActive: true },
-          { id: 5, name: 'Hockey', slug: 'hockey', icon: 'hockey', isActive: true },
-          { id: 6, name: 'Handball', slug: 'handball', icon: 'handball', isActive: true },
-          { id: 7, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball', isActive: true },
-          { id: 8, name: 'Rugby', slug: 'rugby', icon: 'rugby', isActive: true },
-          { id: 9, name: 'Cricket', slug: 'cricket', icon: 'cricket', isActive: true },
-          { id: 10, name: 'Golf', slug: 'golf', icon: 'golf', isActive: true },
-          { id: 11, name: 'Boxing', slug: 'boxing', icon: 'boxing', isActive: true },
-          { id: 12, name: 'MMA/UFC', slug: 'mma-ufc', icon: 'mma', isActive: true },
-          { id: 13, name: 'Formula 1', slug: 'formula_1', icon: 'formula1', isActive: true },
-          { id: 14, name: 'Cycling', slug: 'cycling', icon: 'cycling', isActive: true },
-          { id: 15, name: 'American Football', slug: 'american_football', icon: 'american-football', isActive: true },
-          { id: 16, name: 'Australian Football', slug: 'afl', icon: 'australian-football', isActive: true },
-          { id: 17, name: 'Snooker', slug: 'snooker', icon: 'snooker', isActive: true },
-          { id: 18, name: 'Darts', slug: 'darts', icon: 'darts', isActive: true },
-          { id: 19, name: 'Table Tennis', slug: 'table-tennis', icon: 'table-tennis', isActive: true },
-          { id: 20, name: 'Badminton', slug: 'badminton', icon: 'badminton', isActive: true }
+          { id: 1, name: 'Football', slug: 'football', icon: 'football', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 2, name: 'Basketball', slug: 'basketball', icon: 'basketball', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 3, name: 'Tennis', slug: 'tennis', icon: 'tennis', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 4, name: 'Baseball', slug: 'baseball', icon: 'baseball', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 5, name: 'Hockey', slug: 'hockey', icon: 'hockey', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 6, name: 'Handball', slug: 'handball', icon: 'handball', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 7, name: 'Volleyball', slug: 'volleyball', icon: 'volleyball', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 8, name: 'Rugby', slug: 'rugby', icon: 'rugby', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 9, name: 'Cricket', slug: 'cricket', icon: 'cricket', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 10, name: 'Golf', slug: 'golf', icon: 'golf', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 11, name: 'Boxing', slug: 'boxing', icon: 'boxing', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 12, name: 'MMA/UFC', slug: 'mma-ufc', icon: 'mma', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 13, name: 'Formula 1', slug: 'formula_1', icon: 'formula1', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 14, name: 'Cycling', slug: 'cycling', icon: 'cycling', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 15, name: 'American Football', slug: 'american_football', icon: 'american-football', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 16, name: 'Australian Football', slug: 'afl', icon: 'australian-football', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 17, name: 'Snooker', slug: 'snooker', icon: 'snooker', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 18, name: 'Darts', slug: 'darts', icon: 'darts', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 19, name: 'Table Tennis', slug: 'table-tennis', icon: 'table-tennis', wurlusSportId: null, providerId: null, isActive: true },
+          { id: 20, name: 'Badminton', slug: 'badminton', icon: 'badminton', wurlusSportId: null, providerId: null, isActive: true }
         ];
       }
       

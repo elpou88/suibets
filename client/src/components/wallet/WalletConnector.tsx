@@ -14,7 +14,7 @@ interface WalletConnectorProps {
 
 export function WalletConnector({ onConnect }: WalletConnectorProps) {
   const { toast } = useToast();
-  const { connectWalletMutation, useWalletRegistration, currentWallet, setCurrentWallet } = useWalrusProtocol();
+  const { currentWallet, connectToWurlusProtocol } = useWalrusProtocol();
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
   const [showWallets, setShowWallets] = useState(false);
@@ -28,17 +28,12 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
 
   // Effect to handle successful connection
   useEffect(() => {
-    if (selectedWallet && registrationData?.isRegistered) {
-      setCurrentWallet({
-        address: selectedWallet,
-        isRegistered: true
-      });
-      
+    if (selectedWallet && currentWallet?.address) {
       if (onConnect) {
         onConnect(selectedWallet);
       }
     }
-  }, [selectedWallet, registrationData, setCurrentWallet, onConnect]);
+  }, [selectedWallet, currentWallet, onConnect]);
   
   // Effect to handle Suiet wallet connection
   useEffect(() => {
@@ -47,12 +42,6 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
       
       // Set the selected wallet to the connected Suiet wallet
       setSelectedWallet(suietWallet.address);
-      
-      // Update the current wallet in the Walrus protocol
-      setCurrentWallet({
-        address: suietWallet.address,
-        isRegistered: true // Assuming registration, we'll check later
-      });
       
       // Notify parent component
       if (onConnect) {
@@ -64,7 +53,7 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
         description: `Connected to ${suietWallet.address.substring(0, 8)}...${suietWallet.address.substring(suietWallet.address.length - 6)}`,
       });
     }
-  }, [suietWallet.connected, suietWallet.address, setCurrentWallet, onConnect, toast]);
+  }, [suietWallet.connected, suietWallet.address, onConnect, toast]);
 
   const handleConnectWallet = async (walletAddress: string) => {
     setSelectedWallet(walletAddress);

@@ -64,6 +64,11 @@ app.use((req, res, next) => {
   const { registerBetsBwinRoutes } = await import('./routes-betsbwin');
   registerBetsBwinRoutes(app);
   
+  // Register betting routes for blockchain-based betting system
+  const { registerBettingRoutes } = await import('./routes-betting');
+  registerBettingRoutes(app);
+  log('Betting routes registered successfully');
+  
   const server = await registerCompleteRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

@@ -789,7 +789,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Basketball service returned ${basketballGames.length} games`);
           
           if (basketballGames.length > 0) {
-            return res.json(basketballGames);
+            const cleanedBasketball = finalizeEventResponse(basketballGames, reqSportId, isLive || false);
+            return res.json(cleanedBasketball);
           }
         } catch (err) {
           console.error('Error using basketball service:', err);
@@ -829,16 +830,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Routes] First cricket event: ${fixedCricketEvents[0].homeTeam} vs ${fixedCricketEvents[0].awayTeam}`);
             console.log(`[Routes] League name: ${fixedCricketEvents[0].leagueName}`);
             
-            // FILTER OUT PAST EVENTS FOR UPCOMING CRICKET
-            if (!isLive) {
-              const futureCricketEvents = filterEventsByDate(fixedCricketEvents);
-              console.log(`[DateFilter] Cricket: ${fixedCricketEvents.length} → ${futureCricketEvents.length} after date filter`);
-              const strictCricket = filterEventsBySportId(futureCricketEvents, reqSportId);
-              return res.json(strictCricket);
-            }
-            
-            const strictCricket = filterEventsBySportId(fixedCricketEvents, reqSportId);
-            return res.json(strictCricket);
+            const cleanedCricket = finalizeEventResponse(fixedCricketEvents, reqSportId, isLive || false);
+            return res.json(cleanedCricket);
           }
           
           // If cricket service returned no events, fall through to regular API handling
@@ -1061,8 +1054,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   });
                   
                   console.log(`Returning ${enhancedBoxingEvents.length} filtered boxing events`);
-                  const strictEnhancedBoxing = filterEventsBySportId(enhancedBoxingEvents, reqSportId);
-                  return res.json(strictEnhancedBoxing);
+                  const cleanedEnhancedBoxing = finalizeEventResponse(enhancedBoxingEvents, reqSportId, false);
+                  return res.json(cleanedEnhancedBoxing);
                 }
               } catch (error) {
                 console.error('Error using Boxing service:', error);
@@ -1076,8 +1069,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 });
                 
                 console.log(`Error in BoxingService. Returning ${filteredEvents.length} filtered API Sports events`);
-                const strictBoxingError = filterEventsBySportId(filteredEvents, reqSportId);
-                return res.json(strictBoxingError);
+                const cleanedBoxingError = finalizeEventResponse(filteredEvents, reqSportId, false);
+                return res.json(cleanedBoxingError);
               }
             }
             
@@ -1093,9 +1086,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (formula1Events && formula1Events.length > 0) {
                   console.log(`Formula1Service returned ${formula1Events.length} upcoming races`);
-                  const futureF1Races = filterEventsByDate(formula1Events);
-                  const strictF1Upcoming = filterEventsBySportId(futureF1Races, reqSportId);
-                  return res.json(strictF1Upcoming);
+                  const cleanedF1Upcoming = finalizeEventResponse(formula1Events, reqSportId, false);
+                  return res.json(cleanedF1Upcoming);
                 } else {
                   console.log(`Formula1Service returned 0 upcoming races, falling back to API Sports service`);
                   
@@ -1109,9 +1101,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     leagueName: event.leagueName || 'Formula 1 Championship'
                   }));
                   console.log(`Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
-                  const futureF1 = filterEventsByDate(formula1Events);
-                  const strictF1Api = filterEventsBySportId(futureF1, reqSportId);
-                  return res.json(strictF1Api);
+                  const cleanedF1Api = finalizeEventResponse(formula1Events, reqSportId, false);
+                  return res.json(cleanedF1Api);
                 }
               } catch (error) {
                 console.error('Error using Formula 1 service:', error);
@@ -1125,9 +1116,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   leagueName: event.leagueName || 'Formula 1 Championship'
                 }));
                 console.log(`Error in Formula1Service. Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
-                const futureF1Error = filterEventsByDate(formula1Events);
-                const strictF1Error = filterEventsBySportId(futureF1Error, reqSportId);
-                return res.json(strictF1Error);
+                const cleanedF1Error = finalizeEventResponse(formula1Events, reqSportId, false);
+                return res.json(cleanedF1Error);
               }
             }
             
@@ -1140,12 +1130,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const filteredEvents = eventsWithCorrectSportId.filter(event => event.sportId === reqSportId);
             console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
             
-            // CRITICAL: Filter out past/finished events - only show FUTURE upcoming matches
-            const futureEvents = filterEventsByDate(filteredEvents);
-            console.log(`[DateFilter] Filtered to ${futureEvents.length} future ${sportName} events (removed past matches)`);
-            
-            const strictFiltered = filterEventsBySportId(futureEvents, reqSportId);
-            return res.json(strictFiltered);
+            // CRITICAL: Apply universal filtering
+            const cleanedFiltered = finalizeEventResponse(filteredEvents, reqSportId, false);
+            return res.json(cleanedFiltered);
           } else {
             console.log(`No upcoming ${sportName} events found from API, returning empty array`);
             return res.json([]);

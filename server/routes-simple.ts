@@ -10,6 +10,7 @@ import { AdminService } from "./services/adminService";
 import errorHandlingService from "./services/errorHandlingService";
 import { EnvValidationService } from "./services/envValidationService";
 import monitoringService from "./services/monitoringService";
+import notificationService from "./services/notificationService";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
@@ -134,6 +135,56 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.json(stats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch error stats" });
+    }
+  });
+
+  // Notifications endpoints
+  app.get("/api/notifications", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string || 'user1'; // Default user for demo
+      const limit = parseInt(req.query.limit as string) || 20;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      
+      const notifications = notificationService.getUserNotifications(userId, limit, unreadOnly);
+      res.json(notifications);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch notifications" });
+    }
+  });
+
+  app.get("/api/notifications/unread-count", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string || 'user1';
+      const count = notificationService.getUnreadCount(userId);
+      res.json({ unreadCount: count });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch unread count" });
+    }
+  });
+
+  app.post("/api/notifications/mark-as-read", async (req: Request, res: Response) => {
+    try {
+      const { userId, notificationId } = req.body;
+      if (!userId || !notificationId) {
+        return res.status(400).json({ message: "Missing userId or notificationId" });
+      }
+      const notif = notificationService.markAsRead(userId, notificationId);
+      res.json({ success: !!notif });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark as read" });
+    }
+  });
+
+  app.post("/api/notifications/mark-all-as-read", async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.body;
+      if (!userId) {
+        return res.status(400).json({ message: "Missing userId" });
+      }
+      const count = notificationService.markAllAsRead(userId);
+      res.json({ success: true, markedCount: count });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to mark all as read" });
     }
   });
 

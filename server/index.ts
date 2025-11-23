@@ -1,5 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerCompleteRoutes } from "./routes-complete"; // Using complete BWin API implementation
+import { registerRoutes } from "./routes-simple"; // Main SuiBets API implementation
 import { setupVite, serveStatic, log } from "./vite";
 import { initDb, seedDb } from "./db";
 import { setupBlockchainAuth } from "./blockchain-auth";
@@ -60,16 +60,10 @@ app.use((req, res, next) => {
   // Use blockchain-based storage for the app
   log('Blockchain-based storage system initialized');
   
-  // Register BWin API routes FIRST to avoid route conflicts
-  const { registerBetsBwinRoutes } = await import('./routes-betsbwin');
-  registerBetsBwinRoutes(app);
+  // Register all SuiBets routes
+  log('Registering SuiBets API routes...');
   
-  // Register betting routes for blockchain-based betting system
-  const { registerBettingRoutes } = await import('./routes-betting');
-  registerBettingRoutes(app);
-  log('Betting routes registered successfully');
-  
-  const server = await registerCompleteRoutes(app);
+  const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

@@ -15,7 +15,7 @@ import antiCheatService from "./services/smartContractAntiCheatService";
 import zkLoginService from "./services/zkLoginService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
-import WebSocket from 'ws';
+import { WebSocketServer } from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -27,17 +27,17 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
   // Create HTTP server with WebSocket support
   const httpServer = createServer(app);
-  const wss = new WebSocket.Server({ server: httpServer });
+  const wss = new WebSocketServer({ server: httpServer });
   let broadcastInterval: NodeJS.Timeout;
   let connectedClients = new Set<any>();
 
   // WebSocket connection handler
-  wss.on('connection', (ws: WebSocket) => {
+  wss.on('connection', (ws: any) => {
     connectedClients.add(ws);
     ws.on('close', () => {
       connectedClients.delete(ws);
     });
-    ws.on('error', (error) => {
+    ws.on('error', (error: any) => {
       console.error('WebSocket error:', error);
     });
   });

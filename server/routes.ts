@@ -149,10 +149,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   registerBetsBwinRoutes(app);
   console.log("[Routes] Registered BetsBwin API routes for BWin-specific endpoints");
   
-  // Register staking routes for DeFi staking functionality
-  registerStakingRoutes(app);
-  console.log("[Routes] Registered staking routes for DeFi staking functionality");
-  
   // Download page route
   app.get("/download", (_req: Request, res: Response) => {
     res.sendFile("download.html", { root: "./public" });

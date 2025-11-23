@@ -126,13 +126,6 @@ function App() {
                           <Route path="/settings" component={Settings} />
                           <Route path="/bet-history" component={BetHistoryPage} />
                           <Route path="/dividends" component={DividendsReal} />
-                          <Route path="/defi-staking">
-                            {() => (
-                              <Layout>
-                                <StakingSection />
-                              </Layout>
-                            )}
-                          </Route>
                           <Route path="/storage" component={StoragePage} />
                           
                           {/* Redirect connect-wallet route to HomePage with modal approach */}

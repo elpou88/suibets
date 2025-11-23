@@ -9,7 +9,6 @@ import { format } from 'date-fns';
 import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
-import { WalletCard } from '@/components/wallet/WalletCard';
 import { Clock, Calendar, Plus, Minus } from 'lucide-react';
 import { BettingButton } from '@/components/betting/BettingButton';
 
@@ -442,11 +441,8 @@ export default function HomeReal() {
           </div>
         </div>
         
-        {/* Right sidebar with wallet and bet slip */}
+        {/* Right sidebar with bet slip */}
         <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4 flex flex-col gap-4">
-          {/* Wallet Card with deposit/withdraw functionality */}
-          <WalletCard />
-          
           {/* Bet Slip */}
           <BetSlip />
         </div>

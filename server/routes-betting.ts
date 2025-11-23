@@ -47,8 +47,14 @@ export function registerBettingRoutes(app: Express) {
         market
       } = validated;
 
-      // Calculate potential win
-      const potentialWin = stake * odds;
+      // CRITICAL: APPLY 1% PLATFORM FEE
+      const platformFee = stake * 0.01;
+      const betAmountAfterFee = stake - platformFee;
+      
+      // Calculate potential win AFTER fee deduction
+      const potentialWin = betAmountAfterFee * odds;
+      
+      console.log(`[Betting] Stake: ${stake}, Platform Fee (1%): ${platformFee}, Bet Amount: ${betAmountAfterFee}, Potential Win: ${potentialWin.toFixed(2)}`);
       
       // Create bet record
       const betId = `${walletAddress}-${eventId}-${Date.now()}`;
@@ -58,24 +64,24 @@ export function registerBettingRoutes(app: Express) {
         eventId: String(eventId),
         selectionName,
         odds,
-        stake,
+        stake: betAmountAfterFee, // Store actual bet amount (after fee)
         market,
         potentialWin,
         status: 'pending',
         placedAt: new Date()
       };
 
-      // Store bet on Sui blockchain via Walrus protocol
+      // Store bet on Sui blockchain via Walrus protocol - use amount AFTER fee
       try {
         const txHash = await walrusService.placeBet(
           walletAddress,
           String(eventId),
           selectionName,
-          stake,
+          betAmountAfterFee, // Use amount after fee deduction
           odds
         );
         bet.txHash = txHash;
-        console.log(`[Betting] Bet placed on blockchain - TxHash: ${txHash}`);
+        console.log(`[Betting] Bet placed on blockchain - TxHash: ${txHash}, Amount: ${betAmountAfterFee}, Fee: ${platformFee}`);
       } catch (blockchainError) {
         console.warn('[Betting] Blockchain storage failed, using fallback:', blockchainError);
         bet.txHash = `bet_${Date.now()}_${Math.random().toString(16).substring(2, 8)}`;
@@ -89,7 +95,12 @@ export function registerBettingRoutes(app: Express) {
         betId,
         bet,
         txHash: bet.txHash,
-        message: `Bet placed: ${stake} SBETS on ${selectionName} @ ${odds} odds. Potential win: ${potentialWin.toFixed(2)} SBETS`
+        originalStake: stake,
+        platformFee: platformFee.toFixed(2),
+        betAmount: betAmountAfterFee.toFixed(2),
+        potentialWin: potentialWin.toFixed(2),
+        odds: odds,
+        message: `Bet placed: ${betAmountAfterFee.toFixed(2)} SBETS on ${selectionName} @ ${odds} odds. Fee: ${platformFee.toFixed(2)} SBETS. Potential win: ${potentialWin.toFixed(2)} SBETS`
       });
     } catch (error) {
       console.error('[Betting] Error placing bet:', error);
@@ -130,7 +141,9 @@ export function registerBettingRoutes(app: Express) {
         return res.status(404).json({ error: 'Bet not found' });
       }
 
+      // Calculate cashout amount based on current odds
       const cashoutAmount = bet.stake * (cashoutOdds || 1.0);
+      const originalFeeOnInitialStake = bet.stake / 0.99 * 0.01; // Calculate original fee from adjusted stake
       
       // Update status
       bet.status = 'cashout';
@@ -138,14 +151,15 @@ export function registerBettingRoutes(app: Express) {
       // Store cashout on blockchain
       try {
         const txHash = await walrusService.cashoutBet(betId, cashoutAmount);
-        console.log(`[Betting] Cashout processed - BetId: ${betId}, Amount: ${cashoutAmount} SBETS, TxHash: ${txHash}`);
+        console.log(`[Betting] Cashout processed - BetId: ${betId}, Bet Amount: ${bet.stake}, Cashout: ${cashoutAmount.toFixed(2)}, TxHash: ${txHash}`);
         
         return res.json({
           success: true,
           betId,
-          originalStake: bet.stake,
+          betAmount: bet.stake.toFixed(2),
           cashoutAmount: cashoutAmount.toFixed(2),
-          profit: (cashoutAmount - bet.stake).toFixed(2),
+          profitLoss: (cashoutAmount - bet.stake).toFixed(2),
+          originalFee: originalFeeOnInitialStake.toFixed(2),
           txHash
         });
       } catch (blockchainError) {
@@ -155,9 +169,10 @@ export function registerBettingRoutes(app: Express) {
         return res.json({
           success: true,
           betId,
-          originalStake: bet.stake,
+          betAmount: bet.stake.toFixed(2),
           cashoutAmount: cashoutAmount.toFixed(2),
-          profit: (cashoutAmount - bet.stake).toFixed(2),
+          profitLoss: (cashoutAmount - bet.stake).toFixed(2),
+          originalFee: originalFeeOnInitialStake.toFixed(2),
           txHash: fallbackTxHash,
           warning: 'Processed locally, blockchain sync pending'
         });
@@ -180,12 +195,17 @@ export function registerBettingRoutes(app: Express) {
       }
 
       bet.status = result === 'won' ? 'won' : 'lost';
+      // Payout is potential win if won, 0 if lost
       const payout = result === 'won' ? bet.potentialWin : 0;
+      // Platform keeps the stake amount if lost, or the profit (payout - stake) if won
+      const platformRevenue = result === 'won' ? (payout - bet.stake) : bet.stake;
+
+      console.log(`[Betting] Settling: BetId: ${betId}, Result: ${result}, Bet Amount: ${bet.stake}, Payout: ${payout.toFixed(2)}, Platform Revenue: ${platformRevenue.toFixed(2)}`);
 
       // Store settlement on blockchain
       try {
         const txHash = await walrusService.settleBet(betId, result, payout);
-        console.log(`[Betting] Bet settled - BetId: ${betId}, Result: ${result}, Payout: ${payout} SBETS, TxHash: ${txHash}`);
+        console.log(`[Betting] Bet settled on blockchain - TxHash: ${txHash}`);
       } catch (err) {
         console.warn('[Betting] Blockchain settlement failed:', err);
       }
@@ -193,8 +213,10 @@ export function registerBettingRoutes(app: Express) {
       return res.json({
         success: true,
         betId,
+        betAmount: bet.stake.toFixed(2),
         result,
-        payout: payout.toFixed(2)
+        payout: payout.toFixed(2),
+        platformRevenue: platformRevenue.toFixed(2)
       });
     } catch (error) {
       console.error('[Betting] Error settling bet:', error);

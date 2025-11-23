@@ -1562,8 +1562,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               score: event.score || 'In Progress'
             }));
             console.log(`Error in Formula1Service. Returning ${formula1Events.length} live Formula 1 events with corrected sportId from API Sports`);
-            const strictF1Error = filterEventsBySportId(formula1Events, reqSportId);
-            return res.json(strictF1Error);
+            const cleanedLiveF1Error = finalizeEventResponse(formula1Events, reqSportId, true);
+            return res.json(cleanedLiveF1Error);
           }
         }
         

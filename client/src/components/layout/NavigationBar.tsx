@@ -90,12 +90,12 @@ const NavigationBar = () => {
             Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
           </a>
           
-          {/* Promotions link - direct text */}
+          {/* Results link - direct text */}
           <a 
-            href="/promotions" 
+            href="/results" 
             className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
           >
-            Promo
+            Results
           </a>
         </div>
       </div>

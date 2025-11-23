@@ -123,7 +123,8 @@ function App() {
                           <Route path="/live/:id" component={LiveEventPage} />
                           
                           {/* Additional Pages - Using real-time data pages */}
-                          <Route path="/promotions" component={PromotionsReal} />
+                          <Route path="/promotions" component={ResultsPage} />
+                          <Route path="/results" component={ResultsPage} />
                           <Route path="/promotions/referral" component={ReferralPage} />
                           <Route path="/notifications" component={Notifications} />
                           <Route path="/settings" component={Settings} />

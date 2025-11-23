@@ -58,23 +58,23 @@ const FixedNavbar = () => {
         setLocation('/live');
       });
       
-      // Create Promotions link
-      const promotionsLink = document.createElement('a');
-      promotionsLink.href = '#';
-      promotionsLink.textContent = 'Promotions';
-      promotionsLink.style.color = 'white';
-      promotionsLink.style.textDecoration = 'none';
+      // Create Results link
+      const resultsLink = document.createElement('a');
+      resultsLink.href = '#';
+      resultsLink.textContent = 'Results';
+      resultsLink.style.color = 'white';
+      resultsLink.style.textDecoration = 'none';
       
       // Add an event listener for router navigation
-      promotionsLink.addEventListener('click', (e) => {
+      resultsLink.addEventListener('click', (e) => {
         e.preventDefault();
-        setLocation('/goto-promotions');
+        setLocation('/results');
       });
       
       // Add all links to container
       navContainer.appendChild(sportsLink);
       navContainer.appendChild(liveLink);
-      navContainer.appendChild(promotionsLink);
+      navContainer.appendChild(resultsLink);
       
       // Add container to our ref
       containerRef.current.appendChild(navContainer);

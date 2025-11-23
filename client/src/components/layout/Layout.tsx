@@ -25,7 +25,7 @@ const Layout: React.FC<LayoutProps> = ({
   const topNavItems = [
     { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/home-real' },
     { label: 'Live', i18nKey: 'live', icon: <TrendingDown />, href: '/live-real' },
-    { label: 'Promotions', i18nKey: 'promotions', icon: <Megaphone />, href: '/promotions' },
+    { label: 'Results', i18nKey: 'results', icon: <Trophy />, href: '/results' },
   ];
 
   const bottomNavItems = [

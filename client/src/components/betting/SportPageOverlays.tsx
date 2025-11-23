@@ -47,7 +47,7 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
         const eventCard = element.closest('[data-event-id]');
         if (eventCard) {
           const eventId = parseInt(eventCard.getAttribute('data-event-id') || '0');
-          const event = events.find(e => e.id === eventId);
+          const event = events?.find(e => e?.id === eventId);
           
           if (event) {
             // Determine which part of the card was clicked
@@ -57,15 +57,15 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
             const relXPercent = relX / rect.width * 100;
             
             // Right side might be away team odds
-            if (relXPercent > 70) {
+            if (relXPercent > 70 && event?.awayTeam) {
               handleBetClick(event, event.awayTeam, event.awayOdds || 3.50, 'Match Winner');
             }
             // Middle might be draw (if applicable)
-            else if (relXPercent > 45 && relXPercent < 70 && event.drawOdds) {
+            else if (relXPercent > 45 && relXPercent < 70 && event?.drawOdds) {
               handleBetClick(event, 'Draw', event.drawOdds, 'Match Winner');
             } 
             // Left side might be home team odds
-            else if (relXPercent < 45) {
+            else if (relXPercent < 45 && event?.homeTeam) {
               handleBetClick(event, event.homeTeam, event.homeOdds || 1.90, 'Match Winner');
             }
           }

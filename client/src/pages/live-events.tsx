@@ -41,22 +41,24 @@ export default function LiveEventsPage() {
 
   function getSportName(sportId: number): string {
     const sportNames: Record<number, string> = {
-      1: 'Football',
-      2: 'Basketball', 
-      3: 'Tennis',
-      4: 'Baseball',
-      5: 'Hockey',
-      6: 'Handball',
-      7: 'Volleyball',
-      8: 'Rugby',
-      9: 'Cricket',
-      10: 'Golf',
-      11: 'Boxing',
-      12: 'MMA',
-      13: 'Formula 1',
-      14: 'Cycling',
-      15: 'American Football',
-      26: 'Soccer'
+      1: '⚽ Football',
+      2: '🏀 Basketball', 
+      3: '🎾 Tennis',
+      4: '⚾ Baseball',
+      5: '🏒 Hockey',
+      6: '🤾 Handball',
+      7: '🏐 Volleyball',
+      8: '🏉 Rugby',
+      9: '🏏 Cricket',
+      10: '⛳ Golf',
+      11: '🥊 Boxing',
+      12: '🥋 MMA',
+      13: '🏎️ Formula 1',
+      14: '🚴 Cycling',
+      15: '🏈 American Football',
+      20: '🏸 Badminton',
+      23: '🏎️ Motorsports',
+      26: '⚽ Soccer'
     };
     return sportNames[sportId] || `Sport ${sportId}`;
   }

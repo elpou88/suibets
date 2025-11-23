@@ -6,7 +6,7 @@ import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
-import { Bell, Settings, LogOut, Wallet, Plus } from "lucide-react";
+import { Bell, Settings, LogOut } from "lucide-react";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -198,7 +198,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button */}
+            {/* Connect Wallet Button - No Icon */}
             <Button 
               className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
               onClick={attemptQuickWalletConnection}

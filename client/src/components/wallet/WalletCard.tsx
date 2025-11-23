@@ -116,10 +116,7 @@ export function WalletCard() {
   return (
     <Card className="bg-[#112225] border-[#1e3a3f] w-full">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2 text-[#00FFFF]">
-          <Wallet className="h-5 w-5" />
-          <span>Your Wallet</span>
-        </CardTitle>
+        <CardTitle className="text-[#00FFFF]">Your Wallet</CardTitle>
       </CardHeader>
       <CardContent>
         {!address ? (

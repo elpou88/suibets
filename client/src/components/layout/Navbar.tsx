@@ -86,7 +86,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-[#09181B] border-b border-[#112225] py-3 px-4 flex items-center">
+    <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-4 px-6 flex items-center shadow-lg shadow-cyan-900/20">
       <div className="flex-1 flex items-center">
         <div className="w-[120px]"></div> {/* Spacer */}
         
@@ -102,18 +102,18 @@ export default function Navbar() {
             )}
           </a>
           
-          {/* Live link - direct text */}
+          {/* Live link - Enhanced */}
           <a 
             href="/live-final.html" 
-            className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+            className="text-black bg-gradient-to-r from-[#00FFFF] to-[#00d9ff] px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-cyan-400/50 transition-all duration-300 transform hover:scale-105"
           >
-            Live<span className="ml-1 inline-block w-1.5 h-1.5 bg-red-600 rounded-full animate-pulse"></span>
+            Live<span className="ml-1 inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
           </a>
           
-          {/* Promotions link - direct text */}
+          {/* Promo link - Enhanced */}
           <a 
             href="/promotions-final.html" 
-            className="text-black bg-[#00FFFF] px-3 py-1 rounded cursor-pointer"
+            className="text-black bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105"
           >
             Promo
           </a>
@@ -138,7 +138,7 @@ export default function Navbar() {
             {/* Wallet dropdown with address */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
+                <Button variant="outline" className="border-cyan-500/50 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 font-medium transition-all duration-300">
                   <span className="hidden sm:inline">{shortenAddress(user.walletAddress)}</span>
                   <span className="sm:hidden">Wallet</span>
                 </Button>
@@ -198,9 +198,9 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button - No Icon */}
+            {/* Connect Wallet Button - Enhanced */}
             <Button 
-              className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
+              className="bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-semibold px-6 py-2 rounded-lg shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 transform hover:scale-105" 
               onClick={attemptQuickWalletConnection}
               disabled={isAttemptingConnection}
             >

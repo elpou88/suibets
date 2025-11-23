@@ -758,12 +758,12 @@ export class ApiSportsService {
           if (response.data && response.data.response && Array.isArray(response.data.response)) {
             console.log(`[ApiSportsService] Found ${response.data.response.length} upcoming events for ${sport}`);
             
-            // Set _sportId and _sportName properties on each event
+            // Set sportId and sportName properties on each event (not _sportId!)
             const sportId = this.getSportId(sport);
             const eventsWithSportInfo = response.data.response.map((event: any) => ({
               ...event,
-              _sportId: sportId,
-              _sportName: sport
+              sportId: sportId, // CRITICAL: Must be 'sportId' not '_sportId'
+              sportName: sport
             }));
             
             // Increase the limit for better results
@@ -812,8 +812,8 @@ export class ApiSportsService {
               const sportId = this.getSportId(sport);
               const eventsWithSportInfo = altResponse.data.response.map((event: any) => ({
                 ...event,
-                _sportId: sportId,
-                _sportName: sport
+                sportId: sportId,
+                sportName: sport
               }));
               
               return eventsWithSportInfo.slice(0, Math.max(limit, 20));
@@ -858,8 +858,8 @@ export class ApiSportsService {
                   })
                   .map((event: any) => ({
                     ...event,
-                    _sportId: sportId,
-                    _sportName: sport
+                    sportId: sportId,
+                    sportName: sport
                   }));
                 
                 console.log(`[ApiSportsService] Found ${futureEvents.length} future events for ${sport}`);
@@ -1028,8 +1028,8 @@ export class ApiSportsService {
     // For all sports, use the appropriate transformer
     return events.map((event, index) => {
       // Ensure the correct sportId is set
-      if (event._sportId === undefined) {
-        event._sportId = this.getSportId(sport);
+      if (event.sportId === undefined) {
+        event.sportId = this.getSportId(sport);
       }
       if (event._sportName === undefined) {
         event._sportName = sport;

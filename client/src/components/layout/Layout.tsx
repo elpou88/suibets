@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   Home, TrendingUp, Megaphone, Bell, Settings, 
   Clock, Wallet, ChevronLeft, Landmark, 
-  TrendingDown, Trophy, Search, MenuIcon, MessageCircle
+  TrendingDown, Trophy, MenuIcon, MessageCircle
 } from 'lucide-react';
 import { ConnectWalletModal } from '@/components/modals/ConnectWalletModal';
 
@@ -170,13 +170,6 @@ const Layout: React.FC<LayoutProps> = ({
               onClick={() => setLocation('/notifications')}
             >
               <Bell className="h-5 w-5" />
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="p-1 rounded-full text-cyan-400 hover:bg-[#1e3a3f] hover:text-cyan-300 transition-colors"
-            >
-              <Search className="h-5 w-5" />
             </Button>
             <Button 
               variant="ghost" 

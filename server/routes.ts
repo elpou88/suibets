@@ -243,6 +243,47 @@ function enrichEventsWithOdds(events: any[]): any[] {
   return events.map(event => enrichEventWithOdds(event));
 }
 
+// UNIVERSAL EVENT FILTER - applies ALL filtering rules at response time
+function finalizeEventResponse(events: any[], sportId: number | undefined, isLive: boolean): any[] {
+  console.log(`[FinalResponse] Starting with ${events.length} events (sport=${sportId}, isLive=${isLive})`);
+  
+  // Step 1: Remove finished matches (CRITICAL for upcoming events)
+  const nonFinished = events.filter(event => {
+    const statusStr = (event.status || '').toString().toUpperCase();
+    const stateStr = (event.state || '').toString().toLowerCase();
+    const finishedStatuses = ['FULL_TIME', 'FINAL', 'FINISHED', 'STATUS_FULL_TIME', 'STATUS_FINAL', 'FT', 'AET'];
+    const finishedStates = ['post', 'completed', 'final'];
+    const isFinished = finishedStatuses.some(s => statusStr.includes(s)) || finishedStates.includes(stateStr);
+    if (isFinished) {
+      console.log(`[FinalResponse] REMOVING finished: ${event.homeTeam} vs ${event.awayTeam} (status=${event.status})`);
+    }
+    return !isFinished;
+  });
+  console.log(`[FinalResponse] After removing finished: ${nonFinished.length} events`);
+  
+  // Step 2: Remove past events (for upcoming events)
+  let filtered = nonFinished;
+  if (!isLive) {
+    filtered = filterEventsByDate(nonFinished);
+    console.log(`[FinalResponse] After date filter: ${filtered.length} events`);
+  }
+  
+  // Step 3: Enforce sport ID isolation (CRITICAL - no mixing sports)
+  if (sportId) {
+    filtered = filtered.filter(event => {
+      const isCorrectSport = event.sportId === sportId;
+      if (!isCorrectSport) {
+        console.log(`[FinalResponse] REJECTING WRONG SPORT: ${event.homeTeam} vs ${event.awayTeam} (has sportId=${event.sportId}, needs ${sportId})`);
+      }
+      return isCorrectSport;
+    });
+    console.log(`[FinalResponse] After sport filter: ${filtered.length} events for sportId=${sportId}`);
+  }
+  
+  console.log(`[FinalResponse] Returning ${filtered.length} clean events`);
+  return filtered;
+}
+
 // STRICT SPORTID FILTER - only returns events matching the requested sport
 function filterEventsBySportId(events: any[], sportId: number | undefined): any[] {
   if (!sportId) return events; // If no sportId specified, return all

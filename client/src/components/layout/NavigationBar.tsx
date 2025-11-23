@@ -104,30 +104,22 @@ const NavigationBar = () => {
         {/* Place wallet connection button before bell/settings icons */}
         {user?.walletAddress ? (
           <div className="flex items-center">
-            {/* Dashboard link button */}
-            <Button 
-              variant="ghost" 
-              className="text-[#00FFFF] hover:bg-[#112225] mr-2"
-              onClick={() => setLocation('/wallet-dashboard')}
-            >
-              <Wallet className="h-4 w-4 mr-2" />
-              Dashboard
-            </Button>
-            
-            {/* Connect Wallet Button/Dropdown when connected */}
+            {/* Wallet dropdown with address */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20">
-                  <Wallet className="h-4 w-4 mr-2" />
+                <Button variant="outline" className="border-[#00FFFF] bg-[#112225] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
                   <span className="hidden sm:inline">{shortenAddress(user.walletAddress)}</span>
-                  <span className="sm:hidden">Connected</span>
+                  <span className="sm:hidden">Wallet</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuLabel>My Wallet</DropdownMenuLabel>
+                <DropdownMenuLabel>Your Wallet</DropdownMenuLabel>
+                <div className="px-2 py-2 text-sm text-cyan-300">
+                  {shortenAddress(user.walletAddress)}
+                </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
-                  className="font-medium text-[#00FFFF] cursor-pointer"
+                  className="cursor-pointer"
                   onClick={() => setLocation('/wallet-dashboard')}
                 >
                   Wallet Dashboard
@@ -138,6 +130,12 @@ const NavigationBar = () => {
                   onClick={() => setLocation('/bet-history')}
                 >
                   My Bets
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer"
+                  onClick={() => setLocation('/dividends')}
+                >
+                  Dividends
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={disconnectWallet}>
@@ -169,13 +167,12 @@ const NavigationBar = () => {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button - no plus sign */}
+            {/* Connect Wallet Button */}
             <Button 
               className="bg-[#00FFFF] hover:bg-[#00FFFF]/90 text-black font-medium" 
               onClick={attemptQuickWalletConnection}
               disabled={isAttemptingConnection}
             >
-              <Wallet className="h-4 w-4 mr-2" />
               {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
             </Button>
             

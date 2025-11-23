@@ -25,7 +25,7 @@ const SPORTS_MAPPING: Record<string, number> = {
   'golf': 10,
   'boxing': 11,
   'mma': 12,
-  'mma-ufc': 12, // Added this entry to match the slug in the sidebar
+  'mma-ufc': 12,
   'formula-1': 13,
   'cycling': 14,
   'american-football': 15,
@@ -37,9 +37,12 @@ const SPORTS_MAPPING: Record<string, number> = {
   'beach-volleyball': 21,
   'winter-sports': 22,
   'motorsport': 23,
+  'racing': 23, // Racing maps to Motorsport
+  'motogp': 23, // MotoGP also maps to Motorsport
+  'horse-racing': 23, // Horse racing maps to Motorsport
   'esports': 24,
   'netball': 25,
-  'soccer': 1, // Correct database ID for soccer
+  'soccer': 1,
   'nba': 27,
   'nhl': 28,
   'nfl': 29,

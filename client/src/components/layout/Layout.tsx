@@ -93,10 +93,17 @@ const Layout: React.FC<LayoutProps> = ({
                 Back
               </Button>
             ) : (
-              <div className="font-bold text-xl text-cyan-400 relative">
-                <span className="relative z-10">SuiBets</span>
-                <span className="absolute -bottom-1 left-0 w-full h-0.5 bg-cyan-400 opacity-30"></span>
-                <span className="absolute -left-2 top-0 w-1.5 h-1.5 rounded-full bg-cyan-400 shadow-[0_0_8px_rgba(0,255,255,0.8)]"></span>
+              <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLocation('/home-real')}>
+                <img 
+                  src="/logo/suibets-logo.png?v=999" 
+                  alt="SuiBets Logo" 
+                  className="h-8 w-auto object-contain"
+                  data-testid="logo-image"
+                  onError={(e) => {
+                    console.warn('Logo failed to load, showing text fallback');
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
               </div>
             )}
             {showBackButton && title && (

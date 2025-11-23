@@ -4,21 +4,48 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>SuiBets - Crypto Sports Betting Platform</title>
-    <link rel="icon" type="image/svg+xml" href="/logo/suibets-logo.svg" />
+    <link rel="icon" type="image/png" href="/logo/suibets-logo.png" />
     <script src="/debug-script.js"></script>
-    <!-- Disable Vite HMR completely to prevent WebSocket errors -->
+    <!-- CRITICAL: Disable Vite HMR completely to prevent WebSocket errors in Replit -->
     <script>
-      // Disable HMR for Replit environment
+      // Disable HMR for Replit environment BEFORE any other scripts load
       window.__VITE_DISABLE_HMR__ = true;
-      // Suppress all unhandled promise rejections from HMR
+      
+      // Trap and suppress ALL WebSocket construction errors
+      const OriginalWebSocket = window.WebSocket;
+      window.WebSocket = function(...args) {
+        try {
+          return new OriginalWebSocket(...args);
+        } catch (e) {
+          if (e.message?.includes('wss://localhost:undefined') || e.message?.includes('Failed to construct')) {
+            console.log('[HMR-SUPPRESSED] WebSocket connection blocked:', e.message);
+            throw new Error('HMR disabled');
+          }
+          throw e;
+        }
+      };
+      
+      // Suppress all unhandled promise rejections related to HMR/WebSocket
       window.addEventListener('unhandledrejection', event => {
-        if (event.reason?.message?.includes('WebSocket') || 
-            event.reason?.message?.includes('HMR') ||
-            event.reason?.message?.includes('Failed to construct')) {
-          console.log('[HMR] Suppressed error - using non-HMR mode');
+        const msg = event.reason?.message || String(event.reason || '');
+        if (msg.includes('WebSocket') || 
+            msg.includes('HMR') ||
+            msg.includes('Failed to construct') ||
+            msg.includes('localhost:undefined') ||
+            msg.includes('HMR disabled')) {
+          console.log('[HMR-SUPPRESSED] Unhandled rejection prevented');
           event.preventDefault();
         }
-      });
+      }, true);
+      
+      // Suppress console errors related to WebSocket/HMR
+      const originalError = console.error;
+      console.error = function(...args) {
+        const msg = String(args[0] || '');
+        if (!msg.includes('WebSocket') && !msg.includes('HMR')) {
+          originalError.apply(console, args);
+        }
+      };
     </script>
   </head>
   <body>

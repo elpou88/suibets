@@ -15,7 +15,6 @@ import antiCheatService from "./services/smartContractAntiCheatService";
 import zkLoginService from "./services/zkLoginService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
-import { WebSocketServer } from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -25,22 +24,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   const envValidation = EnvValidationService.validateEnvironment();
   EnvValidationService.printValidationResults(envValidation);
 
-  // Create HTTP server with WebSocket support
+  // Create HTTP server
   const httpServer = createServer(app);
-  const wss = new WebSocketServer({ server: httpServer });
-  let broadcastInterval: NodeJS.Timeout;
-  let connectedClients = new Set<any>();
-
-  // WebSocket connection handler
-  wss.on('connection', (ws: any) => {
-    connectedClients.add(ws);
-    ws.on('close', () => {
-      connectedClients.delete(ws);
-    });
-    ws.on('error', (error: any) => {
-      console.error('WebSocket error:', error);
-    });
-  });
 
   // Health check endpoint
   app.get("/api/health", async (req: Request, res: Response) => {
@@ -810,42 +795,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.status(500).json({ message: "Failed to process cash-out" });
     }
   });
-
-  // Broadcast live score updates every 5 seconds
-  broadcastInterval = setInterval(async () => {
-    if (connectedClients.size === 0) return;
-
-    try {
-      // Fetch live events
-      const liveEvents = await apiSportsService.getLiveEvents('football').catch(() => []);
-      
-      if (liveEvents.length > 0) {
-        const update = {
-          type: 'score-update',
-          events: liveEvents.slice(0, 5), // Send top 5 live events
-          timestamp: Date.now(),
-          total: liveEvents.length
-        };
-
-        // Broadcast to all connected clients
-        connectedClients.forEach(client => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify(update));
-          }
-        });
-      }
-    } catch (error) {
-      console.error('Live update error:', error);
-    }
-  }, 5000); // Update every 5 seconds
-
-  // Cleanup on server shutdown
-  const originalClose = httpServer.close.bind(httpServer);
-  httpServer.close = function(callback?: () => void) {
-    clearInterval(broadcastInterval);
-    wss.close();
-    return originalClose(callback);
-  };
 
   return httpServer;
 }

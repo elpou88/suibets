@@ -42,6 +42,7 @@ import { UniversalClickHandler } from "@/components/betting/UniversalClickHandle
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 import { SuietWalletProvider } from "@/components/wallet/SuietWalletProvider";
 import { SuiDappKitProvider } from "@/components/wallet/SuiDappKitProvider";
+import { WalletKitProvider } from "@mysten/wallet-kit";
 
 // New real-time data pages
 import HomeReal from "@/pages/home-real";
@@ -96,12 +97,14 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        {/* Order matters - SuiDappKitProvider must be the outermost wallet provider */}
-        <SuiDappKitProvider>
-          {/* SuietWalletProvider as a fallback for Suiet wallet compatibility */}
-          <SuietWalletProvider>
-            {/* Other application providers */}
-            <WalProvider>
+        {/* Order matters - WalletKitProvider enables useWalletKit hook */}
+        <WalletKitProvider>
+          {/* SuiDappKitProvider for Sui dapp integration */}
+          <SuiDappKitProvider>
+            {/* SuietWalletProvider as a fallback for Suiet wallet compatibility */}
+            <SuietWalletProvider>
+              {/* Other application providers */}
+              <WalProvider>
               <WalrusProtocolProvider>
                 <BlockchainAuthProvider>
                   <AuthProvider>
@@ -199,8 +202,9 @@ function App() {
                 </BlockchainAuthProvider>
               </WalrusProtocolProvider>
             </WalProvider>
-          </SuietWalletProvider>
-        </SuiDappKitProvider>
+            </SuietWalletProvider>
+          </SuiDappKitProvider>
+        </WalletKitProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

@@ -375,6 +375,219 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Place a single bet
+  app.post("/api/bets", async (req: Request, res: Response) => {
+    try {
+      const { userId = 'user1', eventId, marketId, outcomeId, odds, betAmount, prediction } = req.body;
+      
+      if (!eventId || !marketId || !outcomeId || !odds || !betAmount || !prediction) {
+        return res.status(400).json({ message: "Missing required fields: eventId, marketId, outcomeId, odds, betAmount, prediction" });
+      }
+
+      if (betAmount <= 0 || odds <= 0) {
+        return res.status(400).json({ message: "Bet amount and odds must be positive" });
+      }
+
+      const betId = `bet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const platformFee = betAmount * 0.01; // 1% platform fee
+      const totalDebit = betAmount + platformFee;
+      const potentialPayout = Math.round(betAmount * odds * 100) / 100;
+
+      const bet = {
+        id: betId,
+        userId,
+        eventId,
+        marketId,
+        outcomeId,
+        odds,
+        betAmount,
+        status: 'pending' as const,
+        prediction,
+        placedAt: Date.now(),
+        potentialPayout,
+        platformFee,
+        totalDebit
+      };
+
+      // Store bet in storage
+      const storedBet = await storage.createBet(bet);
+
+      // Notify user of bet placement
+      notificationService.notifyBetPlaced(userId, {
+        ...bet,
+        homeTeam: 'Team A',
+        awayTeam: 'Team B'
+      });
+
+      // Store on Walrus protocol
+      try {
+        await new WalrusProtocolService().storeBetOnWalrus({
+          betId,
+          walletAddress: `${userId}-${eventId}`,
+          eventId,
+          odds,
+          amount: betAmount
+        });
+      } catch (e) {
+        console.warn('Walrus storage failed (non-critical):', e);
+      }
+
+      // Log to monitoring
+      monitoringService.logBet({
+        betId,
+        userId,
+        eventId,
+        odds,
+        amount: betAmount,
+        timestamp: Date.now()
+      });
+
+      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`);
+
+      res.json({
+        success: true,
+        bet: storedBet || bet,
+        calculations: {
+          betAmount,
+          platformFee,
+          totalDebit,
+          potentialPayout,
+          odds
+        },
+        walrus: { status: 'stored' }
+      });
+    } catch (error: any) {
+      console.error("Bet placement error:", error);
+      res.status(500).json({ message: error.message || "Failed to place bet" });
+    }
+  });
+
+  // Place a parlay bet (multiple selections)
+  app.post("/api/bets/parlay", async (req: Request, res: Response) => {
+    try {
+      const { userId = 'user1', selections, betAmount } = req.body;
+      
+      if (!selections || !Array.isArray(selections) || selections.length < 2) {
+        return res.status(400).json({ message: "Parlay requires at least 2 selections" });
+      }
+
+      if (!betAmount || betAmount <= 0) {
+        return res.status(400).json({ message: "Bet amount must be positive" });
+      }
+
+      // Calculate parlay odds (multiply all odds)
+      const parlayOdds = selections.reduce((acc: number, sel: any) => acc * sel.odds, 1);
+      
+      if (!isFinite(parlayOdds) || parlayOdds <= 0) {
+        return res.status(400).json({ message: "Invalid parlay odds calculation" });
+      }
+
+      const platformFee = betAmount * 0.01; // 1% platform fee
+      const totalDebit = betAmount + platformFee;
+      const potentialPayout = Math.round(betAmount * parlayOdds * 100) / 100;
+
+      const parlayId = `parlay-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+      const parlay = {
+        id: parlayId,
+        userId,
+        selections,
+        odds: parlayOdds,
+        betAmount,
+        status: 'pending' as const,
+        placedAt: Date.now(),
+        potentialPayout,
+        platformFee,
+        totalDebit,
+        selectionCount: selections.length
+      };
+
+      // Store parlay in storage
+      const storedParlay = await storage.createParlay(parlay);
+
+      // Notify user
+      notificationService.createNotification(
+        userId,
+        'bet_placed',
+        `🔥 Parlay Placed: ${selections.length} Selections`,
+        `${selections.length}-leg parlay @ ${parlayOdds.toFixed(2)} odds. Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`,
+        parlay
+      );
+
+      // Store on Walrus
+      try {
+        await new WalrusProtocolService().storeBetOnWalrus({
+          betId: parlayId,
+          walletAddress: `${userId}-parlay`,
+          eventId: 'parlay',
+          odds: parlayOdds,
+          amount: betAmount
+        });
+      } catch (e) {
+        console.warn('Walrus parlay storage failed (non-critical):', e);
+      }
+
+      // Log to monitoring
+      monitoringService.logBet({
+        betId: parlayId,
+        userId,
+        eventId: 'parlay',
+        odds: parlayOdds,
+        amount: betAmount,
+        timestamp: Date.now()
+      });
+
+      console.log(`🔥 PARLAY PLACED: ${parlayId} - ${selections.length} selections @ ${parlayOdds.toFixed(2)} odds, Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`);
+
+      res.json({
+        success: true,
+        parlay: storedParlay || parlay,
+        calculations: {
+          betAmount,
+          platformFee,
+          totalDebit,
+          potentialPayout,
+          parlayOdds,
+          legCount: selections.length
+        }
+      });
+    } catch (error: any) {
+      console.error("Parlay placement error:", error);
+      res.status(500).json({ message: error.message || "Failed to place parlay" });
+    }
+  });
+
+  // Get user's bets
+  app.get("/api/bets", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string || 'user1';
+      const status = req.query.status as string | undefined;
+      
+      const bets = await storage.getUserBets(userId);
+      const filtered = status ? bets.filter(b => b.status === status) : bets;
+      
+      res.json(filtered);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bets" });
+    }
+  });
+
+  // Get a specific bet
+  app.get("/api/bets/:id", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.id;
+      const bet = await storage.getBet(betId);
+      
+      if (!bet) {
+        return res.status(404).json({ message: "Bet not found" });
+      }
+      
+      res.json(bet);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bet" });
+    }
+  });
+
   // Settlement endpoint - Auto-settle bets based on event results
   app.post("/api/bets/:id/settle", async (req: Request, res: Response) => {
     try {
@@ -401,8 +614,39 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       };
 
       const settlement = SettlementService.settleBet(mockBet, eventResult);
+      const platformFee = settlement.payout > 0 ? settlement.payout * 0.01 : 0;
+      const netPayout = settlement.payout - platformFee;
       
-      console.log(`✅ BET SETTLED: ${betId} - Status: ${settlement.status}, Payout: ${settlement.payout}`);
+      // Update bet status
+      await storage.updateBetStatus(betId, settlement.status, settlement.payout);
+
+      // Notify user of settlement
+      const outcome = settlement.status === 'won' ? 'won' : settlement.status === 'lost' ? 'lost' : 'void';
+      notificationService.notifyBetSettled(mockBet.userId, mockBet, outcome);
+
+      // Store settlement on Walrus
+      try {
+        await new WalrusProtocolService().storeSettlementOnWalrus({
+          betId,
+          settlementId: `settlement-${betId}-${Date.now()}`,
+          outcome: settlement.status,
+          payout: settlement.payout
+        });
+      } catch (e) {
+        console.warn('Walrus settlement storage failed (non-critical):', e);
+      }
+
+      // Log settlement
+      monitoringService.logSettlement({
+        settlementId: `settlement-${betId}`,
+        betId,
+        outcome: settlement.status,
+        payout: settlement.payout,
+        timestamp: Date.now(),
+        fees: platformFee
+      });
+
+      console.log(`✅ BET SETTLED: ${betId} - Status: ${settlement.status}, Payout: ${settlement.payout}, Fee: ${platformFee}, Net: ${netPayout}`);
       
       res.json({
         success: true,
@@ -410,8 +654,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         settlement: {
           status: settlement.status,
           payout: settlement.payout,
-          settledAt: Date.now(),
-          platformFee: settlement.payout * 0.01 // 1% platform fee
+          platformFee: platformFee,
+          netPayout: netPayout,
+          settledAt: Date.now()
         }
       });
     } catch (error) {

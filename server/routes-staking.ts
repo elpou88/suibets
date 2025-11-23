@@ -4,6 +4,14 @@ import { wurlusStaking } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { walrusService } from './services/walrusService';
 
+interface StakingRecord {
+  id: number;
+  walletAddress: string;
+  amountStaked: number | null;
+  rewardRate: number | null;
+  accumulatedRewards: number | null;
+}
+
 export function registerStakingRoutes(app: Express) {
   app.post('/api/staking/stake', async (req: Request, res: Response) => {
     try {
@@ -27,7 +35,7 @@ export function registerStakingRoutes(app: Express) {
       // Store stake on Sui blockchain via Walrus protocol
       let txHash = '';
       try {
-        txHash = await walrusService.stakeTokens(walletAddress, amount, periodDays, rewardRate);
+        txHash = await walrusService.stakeTokens(walletAddress, amount, periodDays);
       } catch (blockchainError) {
         console.warn('[Staking] Blockchain storage failed, using fallback:', blockchainError);
         txHash = `stake_${Date.now()}_${Math.random().toString(16).substring(2, 8)}`;
@@ -69,14 +77,14 @@ export function registerStakingRoutes(app: Express) {
         .from(wurlusStaking)
         .where(eq(wurlusStaking.walletAddress, walletAddress));
 
-      const totalStaked = stakes.reduce((sum, s) => sum + (s.amountStaked || 0), 0);
-      const totalRewards = stakes.reduce((sum, s) => sum + (s.accumulatedRewards || 0), 0);
+      const totalStaked = stakes.reduce((sum: number, s: StakingRecord) => sum + (s.amountStaked || 0), 0);
+      const totalRewards = stakes.reduce((sum: number, s: StakingRecord) => sum + (s.accumulatedRewards || 0), 0);
 
       return res.json({
         stakes,
         totalStaked,
         totalRewards,
-        activeStakes: stakes.filter(s => s.isActive).length
+        activeStakes: stakes.filter((s: StakingRecord) => s.isActive).length
       });
     } catch (error) {
       console.error('[Staking] Error fetching stakes:', error);
@@ -101,10 +109,10 @@ export function registerStakingRoutes(app: Express) {
         return res.status(404).json({ error: 'Stake not found' });
       }
 
-      const stake = stakes[0];
+      const stake = stakes[0] as StakingRecord;
 
       const now = new Date();
-      if (stake.lockedUntil && new Date(stake.lockedUntil) > now) {
+      if (stake.lockedUntil && new Date(stake.lockedUntil as any) > now) {
         return res.status(400).json({ error: 'Tokens still locked' });
       }
 
@@ -142,10 +150,10 @@ export function registerStakingRoutes(app: Express) {
       const now = new Date().getTime();
       let totalRewards = 0;
 
-      const stakesWithRewards = stakes.map(stake => {
+      const stakesWithRewards = stakes.map((stake: StakingRecord) => {
         if (!stake.stakingDate || !stake.rewardRate) return { ...stake, pendingRewards: 0 };
 
-        const stakeTime = new Date(stake.stakingDate).getTime();
+        const stakeTime = new Date(stake.stakingDate as any).getTime();
         const daysPassed = (now - stakeTime) / (1000 * 60 * 60 * 24);
         const dailyReward = (stake.amountStaked || 0) * (stake.rewardRate / 365);
         const pendingRewards = dailyReward * daysPassed;
@@ -184,7 +192,7 @@ export function registerStakingRoutes(app: Express) {
       for (const stake of stakes) {
         if (!stake.stakingDate || !stake.rewardRate) continue;
 
-        const stakeTime = new Date(stake.stakingDate).getTime();
+        const stakeTime = new Date(stake.stakingDate as any).getTime();
         const daysPassed = (now - stakeTime) / (1000 * 60 * 60 * 24);
         const dailyReward = (stake.amountStaked || 0) * (stake.rewardRate / 365);
         const pendingRewards = dailyReward * daysPassed;

@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { 
   Home, TrendingUp, Megaphone, Bell, Settings, 
   Clock, Wallet, ChevronLeft, Landmark, 
-  TrendingDown, Trophy, Search, MenuIcon
+  TrendingDown, Trophy, Search, MenuIcon, MessageCircle
 } from 'lucide-react';
 import { ConnectWalletModal } from '@/components/modals/ConnectWalletModal';
 
@@ -112,6 +112,16 @@ const Layout: React.FC<LayoutProps> = ({
           </div>
           
           <div className="flex items-center space-x-2">
+            <Button 
+              variant="default" 
+              size="sm"
+              className="bg-[#0088cc] hover:bg-[#0077bb] text-white text-xs shadow-[0_0_10px_rgba(0,136,204,0.3)] transition-all hover:shadow-[0_0_15px_rgba(0,136,204,0.5)] flex items-center gap-1"
+              onClick={() => window.open('https://t.me/Sui_Bets', '_blank')}
+              data-testid="button-join-now"
+            >
+              <MessageCircle className="h-4 w-4" />
+              JOIN NOW
+            </Button>
             <Button 
               variant="default" 
               size="sm"

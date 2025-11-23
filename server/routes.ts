@@ -133,12 +133,13 @@ updateSportServices();
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
-// Helper function to filter events for tomorrow onwards (Nov 24, 2025+) - AGGRESSIVE DATE FILTERING
+// Helper function to filter events for TODAY onwards - removes past events
 function filterEventsByDate(events: any[]): any[] {
   const now = new Date();
-  now.setUTCHours(0, 0, 0, 0);
-  const cutoffDate = new Date(now);
-  cutoffDate.setUTCDate(cutoffDate.getUTCDate() + 1); // Tomorrow at 00:00 UTC (Nov 24)
+  // Set to current moment (not start of day) to filter out past events today
+  console.log(`[DateFilter] Current UTC time: ${now.toISOString()}`);
+  
+  const cutoffDate = now; // Today at current time, not tomorrow
   
   const filtered = events.filter(event => {
     // Handle multiple date/time formats
@@ -175,10 +176,10 @@ function filterEventsByDate(events: any[]): any[] {
       return false;
     }
     
-    // STRICT: Only include if event is on Nov 24 or later
+    // STRICT: Only include if event is in the future (not past)
     const isValid = eventTime >= cutoffDate;
     if (!isValid) {
-      console.log(`[DateFilter] EXCLUDED past event: ${event.homeTeam} vs ${event.awayTeam} on ${eventTime.toISOString()}`);
+      console.log(`[DateFilter] EXCLUDED PAST event: ${event.homeTeam} vs ${event.awayTeam} at ${eventTime.toISOString()} (cutoff: ${cutoffDate.toISOString()})`);
     }
     return isValid;
   });

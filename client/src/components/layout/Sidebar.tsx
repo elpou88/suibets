@@ -293,9 +293,10 @@ export default function Sidebar() {
       <div className="py-4 px-4 flex items-center justify-between border-b border-[#123040]">
         <a href="/">
           <img 
-            src="/logo/suibets-logo.png" 
+            src="/logo/suibets-logo.png?v=999" 
             alt="SuiBets Logo" 
             className="h-8 cursor-pointer"
+            onError={(e) => console.log('Logo loading:', e)}
           />
         </a>
       </div>

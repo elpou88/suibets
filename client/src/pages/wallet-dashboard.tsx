@@ -94,9 +94,6 @@ export default function WalletDashboardPage() {
         
         <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-3 mt-4 md:mt-0 w-full md:w-auto">
           <div className="flex items-center">
-            <div className="h-10 w-10 rounded-full bg-[#1e3a3f] flex items-center justify-center mr-3">
-              <Wallet className="h-5 w-5 text-[#00ffff]" />
-            </div>
             <div>
               <p className="text-gray-400 text-xs">Connected Wallet</p>
               <p className="text-white font-mono">{formatWalletAddress(currentWallet.address)}</p>

@@ -124,9 +124,10 @@ export default function Navbar() {
       <div className="md:hidden absolute left-1/2 transform -translate-x-1/2">
         <Link href="/">
           <img 
-            src="/logo/suibets-logo.png" 
+            src="/logo/suibets-logo.png?v=999" 
             alt="SuiBets Logo" 
             className="h-8"
+            onError={(e) => console.log('Logo loading:', e)}
           />
         </Link>
       </div>

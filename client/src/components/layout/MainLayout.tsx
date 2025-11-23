@@ -24,9 +24,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <img 
-                src="/logo/suibets-logo.png" 
+                src="/logo/suibets-logo.png?v=999" 
                 alt="SuiBets Logo" 
                 className="h-8" 
+                onError={(e) => console.log('Logo loading:', e)}
               />
               <p className="text-sm text-gray-400 mt-2">
                 © {new Date().getFullYear()} SuiBets. All rights reserved.

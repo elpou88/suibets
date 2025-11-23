@@ -6,12 +6,16 @@
     <title>SuiBets - Crypto Sports Betting Platform</title>
     <link rel="icon" type="image/svg+xml" href="/logo/suibets-logo.svg" />
     <script src="/debug-script.js"></script>
-    <!-- Suppress Vite HMR WebSocket errors that block app display -->
+    <!-- Disable Vite HMR completely to prevent WebSocket errors -->
     <script>
-      window.__HMR_CONFIG__ = { protocol: 'http', host: 'localhost', port: 5000, timeout: 0, overlay: false };
+      // Disable HMR for Replit environment
+      window.__VITE_DISABLE_HMR__ = true;
+      // Suppress all unhandled promise rejections from HMR
       window.addEventListener('unhandledrejection', event => {
-        if (event.reason?.message?.includes('WebSocket') && event.reason?.message?.includes('invalid')) {
-          console.warn('[HMR] WebSocket connection skipped - using fallback mode');
+        if (event.reason?.message?.includes('WebSocket') || 
+            event.reason?.message?.includes('HMR') ||
+            event.reason?.message?.includes('Failed to construct')) {
+          console.log('[HMR] Suppressed error - using non-HMR mode');
           event.preventDefault();
         }
       });

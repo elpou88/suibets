@@ -99,9 +99,10 @@ export default function MobileSidebar() {
           <div className="py-6 px-6 flex items-center">
             <Link href="/" onClick={() => handleNavigation('/')}>
               <img 
-                src="/logo/suibets-logo.png" 
+                src="/logo/suibets-logo.png?v=999" 
                 alt="SuiBets Logo" 
                 className="h-8"
+                onError={(e) => console.log('Logo loading:', e)}
               />
             </Link>
           </div>

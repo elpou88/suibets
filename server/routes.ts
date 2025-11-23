@@ -774,6 +774,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Routes] First cricket event: ${fixedCricketEvents[0].homeTeam} vs ${fixedCricketEvents[0].awayTeam}`);
             console.log(`[Routes] League name: ${fixedCricketEvents[0].leagueName}`);
             
+            // FILTER OUT PAST EVENTS FOR UPCOMING CRICKET
+            if (!isLive) {
+              const futureCricketEvents = filterEventsByDate(fixedCricketEvents);
+              console.log(`[DateFilter] Cricket: ${fixedCricketEvents.length} → ${futureCricketEvents.length} after date filter`);
+              const strictCricket = filterEventsBySportId(futureCricketEvents, reqSportId);
+              return res.json(strictCricket);
+            }
+            
             const strictCricket = filterEventsBySportId(fixedCricketEvents, reqSportId);
             return res.json(strictCricket);
           }
@@ -1157,7 +1165,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
           }
           console.log(`Found ${combinedEvents.length} upcoming events for all sports combined`);
-          const strictCombined = filterEventsBySportId(combinedEvents, reqSportId);
+          // CRITICAL: Filter out past events even for all-sports view
+          const futureAllSportsEvents = filterEventsByDate(combinedEvents);
+          console.log(`[DateFilter] All-sports: ${combinedEvents.length} → ${futureAllSportsEvents.length} after date filter`);
+          const strictCombined = filterEventsBySportId(futureAllSportsEvents, reqSportId);
           return res.json(strictCombined);
         }
       }

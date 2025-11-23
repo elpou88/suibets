@@ -14,24 +14,44 @@ export default function ResultsPage() {
   const [dateFilter, setDateFilter] = useState<string>('week');
 
   // Fetch completed events/results
-  const { data: results = [], isLoading } = useQuery({
+  const { data: results = [], isLoading, error } = useQuery({
     queryKey: ['/api/events/results', selectedSport, dateFilter],
     queryFn: async () => {
-      // This would typically fetch finished events from your API
-      // For now, we'll simulate some results data
-      const response = await apiRequest('GET', '/api/events');
-      if (!response.ok) throw new Error('Failed to fetch results');
-      
-      const data = await response.json();
-      // Filter for completed events only (would have status: 'finished')
-      return Array.isArray(data) ? data.filter(event => 
-        event.status === 'finished' || 
-        event.status === 'Finished' ||
-        event.status === 'Final'
-      ) : [];
+      try {
+        // Fetch events and filter for finished ones
+        const response = await apiRequest('GET', '/api/events?isFinished=true');
+        if (!response.ok) {
+          // Fallback to regular events endpoint if finished endpoint doesn't exist
+          const fallbackResponse = await apiRequest('GET', '/api/events');
+          if (!fallbackResponse.ok) throw new Error('Failed to fetch results');
+          
+          const data = await fallbackResponse.json();
+          // Filter for completed events (FULL_TIME, FINAL, STATUS_FINAL, etc.)
+          return Array.isArray(data) ? data.filter(event => {
+            const status = String(event.status || '').toUpperCase();
+            return status.includes('FULL_TIME') || 
+                   status.includes('FINAL') || 
+                   status.includes('FT') || 
+                   status.includes('FINISHED') ||
+                   event.state === 'post' ||
+                   event.state === 'completed';
+          }) : [];
+        }
+        
+        const data = await response.json();
+        return Array.isArray(data) ? data : [];
+      } catch (err) {
+        console.error('Error fetching results:', err);
+        return [];
+      }
     },
     refetchInterval: 300000, // Refresh every 5 minutes
   });
+
+  // Show error if needed
+  if (error) {
+    console.warn('Results page error:', error);
+  }
 
   function getSportName(sportId: number): string {
     const sportNames: Record<number, string> = {
@@ -61,14 +81,21 @@ export default function ResultsPage() {
   }
 
   function getWinner(event: any): string {
-    if (!event.homeScore && !event.awayScore) return 'TBD';
+    // Handle various score field names from different APIs
+    const homeScore = parseInt(event.homeScore || event.homeTeamScore || event.score?.home || '0') || 0;
+    const awayScore = parseInt(event.awayScore || event.awayTeamScore || event.score?.away || '0') || 0;
     
-    const homeScore = parseInt(event.homeScore) || 0;
-    const awayScore = parseInt(event.awayScore) || 0;
+    if (homeScore === 0 && awayScore === 0) return 'TBD';
     
     if (homeScore > awayScore) return event.homeTeam;
     if (awayScore > homeScore) return event.awayTeam;
     return 'Draw';
+  }
+
+  function getScoreDisplay(event: any): string {
+    const homeScore = event.homeScore || event.homeTeamScore || event.score?.home || '-';
+    const awayScore = event.awayScore || event.awayTeamScore || event.score?.away || '-';
+    return `${homeScore} - ${awayScore}`;
   }
 
   // Get unique sports from results

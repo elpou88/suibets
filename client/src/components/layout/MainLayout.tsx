@@ -24,7 +24,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
           <div className="flex flex-col md:flex-row justify-between items-center">
             <div className="mb-4 md:mb-0">
               <img 
-                src="/logo/suibets-logo.svg" 
+                src="/logo/suibets-logo.png" 
                 alt="SuiBets Logo" 
                 className="h-8" 
               />

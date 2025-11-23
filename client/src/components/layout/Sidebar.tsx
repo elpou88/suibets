@@ -293,7 +293,7 @@ export default function Sidebar() {
       <div className="py-4 px-4 flex items-center justify-between border-b border-[#123040]">
         <a href="/">
           <img 
-            src="/logo/suibets-logo.svg" 
+            src="/logo/suibets-logo.png" 
             alt="SuiBets Logo" 
             className="h-8 cursor-pointer"
           />

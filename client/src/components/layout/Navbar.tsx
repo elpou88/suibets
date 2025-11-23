@@ -124,7 +124,7 @@ export default function Navbar() {
       <div className="md:hidden absolute left-1/2 transform -translate-x-1/2">
         <Link href="/">
           <img 
-            src="/logo/suibets-logo.svg" 
+            src="/logo/suibets-logo.png" 
             alt="SuiBets Logo" 
             className="h-8"
           />

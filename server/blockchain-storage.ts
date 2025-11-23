@@ -1,6 +1,5 @@
 import { SuiClient } from '@mysten/sui.js/client';
 import { TransactionBlock } from '@mysten/sui.js/transactions';
-import { walrusService } from './services/walrusService';
 import config from './config';
 import { User, InsertUser, Sport, Event, Market, Outcome, Bet, WurlusStaking } from '@shared/schema';
 import { bcs } from '@mysten/bcs';
@@ -15,7 +14,6 @@ const MemStore = MemoryStore(session);
  */
 export class BlockchainStorage {
   private provider: SuiClient;
-  private walrusService: typeof walrusService;
   sessionStore: any; // Use any type to avoid SessionStore import issues
   
   private readonly packagesConfig = {
@@ -43,7 +41,6 @@ export class BlockchainStorage {
     
     const nodeUrl = networks[this.packagesConfig.network];
     this.provider = new SuiClient({ url: nodeUrl });
-    this.walrusService = walrusService;
     
     // Initialize session store
     this.sessionStore = new MemStore({
@@ -88,7 +85,7 @@ export class BlockchainStorage {
       }
       
       // Check if wallet is registered with Walrus protocol
-      const isRegistered = await this.walrusService.isWalletRegistered(walletAddress);
+      const isRegistered = await Promise.resolve(isWalletRegistered(walletAddress);
       
       if (!isRegistered) {
         return undefined;
@@ -148,7 +145,7 @@ export class BlockchainStorage {
       }
       
       // Register wallet with Walrus protocol
-      const txHash = await this.walrusService.registerWallet(walletAddress);
+      const txHash = await Promise.resolve(registerWallet(walletAddress);
       
       // Create user object
       const user: User = {
@@ -194,7 +191,7 @@ export class BlockchainStorage {
       }
       
       // Register wallet with Walrus protocol
-      const txHash = await this.walrusService.registerWallet(walletAddress);
+      const txHash = await Promise.resolve(registerWallet(walletAddress);
       
       // Create user object
       const user: User = {
@@ -501,7 +498,7 @@ export class BlockchainStorage {
     
     try {
       // Try blockchain first
-      const blockchainBets = await this.walrusService.getWalletBets(walletAddress);
+      const blockchainBets = await Promise.resolve(getWalletBets(walletAddress);
       if (blockchainBets && blockchainBets.length > 0) {
         return blockchainBets;
       }
@@ -548,7 +545,7 @@ export class BlockchainStorage {
     
     try {
       // Delegate to Walrus service to place the bet
-      const txHash = await this.walrusService.placeBet(
+      const txHash = await Promise.resolve(placeBet(
         walletAddress,
         eventId,
         marketId,
@@ -588,7 +585,7 @@ export class BlockchainStorage {
     
     try {
       // Delegate to Walrus service to get dividends
-      const dividends = await this.walrusService.getWalletDividends(walletAddress);
+      const dividends = await Promise.resolve(getWalletDividends(walletAddress);
       
       return dividends;
     } catch (error) {

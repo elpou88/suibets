@@ -12,6 +12,7 @@ import monitoringService from "./services/monitoringService";
 import notificationService from "./services/notificationService";
 import balanceService from "./services/balanceService";
 import antiCheatService from "./services/smartContractAntiCheatService";
+import zkLoginService from "./services/zkLoginService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
 import WebSocket from 'ws';
@@ -792,43 +793,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Walrus Protocol endpoint - Store bet on blockchain
-  app.post("/api/walrus/store-bet", async (req: Request, res: Response) => {
-    try {
-      const { betId, walletAddress, eventId, odds, amount } = req.body;
-
-      if (!betId || !walletAddress || !eventId || !odds || !amount) {
-        return res.status(400).json({ message: "All bet fields required" });
-      }
-
-      const walrusService = new WalrusProtocolService();
-      const betBlob = await walrusService.storeBetOnWalrus({
-        betId,
-        walletAddress,
-        eventId,
-        odds,
-        amount
-      });
-
-      console.log(`✅ BET STORED ON WALRUS: ${betId}`);
-
-      res.json({
-        success: true,
-        walrus: betBlob,
-        message: `Bet ${betId} stored immutably on Walrus protocol`
-        console.error('WebSocket message error:', error);
-      }
-    });
-
-    ws.on('close', () => {
-      console.log('❌ WebSocket client disconnected');
-      connectedClients.delete(ws);
-    });
-
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-    });
-  });
 
   // Broadcast live score updates every 5 seconds
   broadcastInterval = setInterval(async () => {

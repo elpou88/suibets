@@ -1,6 +1,7 @@
 import React, { ReactNode, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { useQuery } from '@tanstack/react-query';
 import { 
   Home, TrendingUp, Megaphone, Bell, Settings, 
   Clock, Wallet, ChevronLeft, Landmark, 
@@ -21,6 +22,41 @@ const Layout: React.FC<LayoutProps> = ({
 }) => {
   const [location, setLocation] = useLocation();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  
+  // Fetch upcoming events for the ticker
+  const { data: upcomingEvents = [] } = useQuery({
+    queryKey: ['/api/events', 'upcoming'],
+    refetchInterval: 30000
+  });
+  
+  // Format upcoming events for ticker display
+  const getTickerText = () => {
+    if (upcomingEvents.length === 0) {
+      return '🏆 Loading latest matches... | ⚽ Check back soon for upcoming games! | 🎾 Live betting on all major sports | 🏀 Real-time odds updates | 🏒 Join SuiBets for 0% fees!';
+    }
+    
+    const events = upcomingEvents.slice(0, 5).map((event: any) => {
+      const time = new Date(event.startTime).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      const sportEmoji = getSportEmoji(event.sport);
+      return `${sportEmoji} ${event.homeTeam} vs ${event.awayTeam} - ${time}`;
+    }).join(' | ');
+    
+    return events + ' | 🔥 Join SuiBets for 0% fees!';
+  };
+  
+  const getSportEmoji = (sport: string): string => {
+    const emojiMap: Record<string, string> = {
+      'football': '⚽',
+      'basketball': '🏀',
+      'tennis': '🎾',
+      'baseball': '⚾',
+      'hockey': '🏒',
+      'boxing': '🥊',
+      'rugby': '🏉',
+      'golf': '⛳'
+    };
+    return emojiMap[sport?.toLowerCase()] || '🏆';
+  };
   
   const topNavItems = [
     { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/home-real' },
@@ -110,10 +146,10 @@ const Layout: React.FC<LayoutProps> = ({
             </Button>
           ))}
 
-          {/* Scrolling News Ticker */}
-          <div className="flex-1 mx-4 overflow-hidden bg-[#112225] border border-[#1e3a3f] rounded h-8">
-            <div className="animate-marquee whitespace-nowrap text-xs text-cyan-300 py-1.5 px-2">
-              🏆 Liverpool vs Bournemouth - 14:00 | ⚽ Thunder vs Pacers - 20:00 | 🎾 Tennis Finals Live | 🏀 NBA Live Updates | 🏒 Hockey Championships | 🔥 Join SuiBets for 0% fees!
+          {/* Scrolling News Ticker with Live Events */}
+          <div className="flex-1 mx-4 overflow-hidden bg-gradient-to-r from-cyan-900/20 to-cyan-900/10 border border-cyan-700/30 rounded-lg h-8 shadow-lg shadow-cyan-500/10">
+            <div className="animate-marquee whitespace-nowrap text-xs text-cyan-300 py-1.5 px-3 font-medium">
+              {getTickerText()}
             </div>
           </div>
 

@@ -47,6 +47,7 @@ import { hockeyService } from './services/hockey-service';
 import { golfService } from './services/golf-service';
 import { cyclingService } from './services/cycling-service';
 import { americanFootballService } from './services/american-football-service';
+import { flashscoreScraperService } from './services/flashscoreScraperService';
 
 // Update all services with the consistent API key
 console.log("[Routes] Updating all sport services with consistent API key");

@@ -117,9 +117,24 @@ export function useWebSocketLiveUpdates<T>(options: {
       
       // Create WebSocket connection with correct protocol based on current location
       const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-      const wsUrl = `${protocol}//${window.location.host}/ws`;
       
-      console.log(`[WebSocket] Connecting to ${wsUrl}`);
+      // Construct host with proper port handling for Replit dev environment
+      let host = window.location.hostname || 'localhost';
+      let port = window.location.port;
+      
+      // For Replit dev environment, ensure we have a valid port
+      if (!port || port === '') {
+        port = window.location.protocol === "https:" ? "443" : "80";
+      }
+      
+      // Build the host:port combination, handling edge cases
+      const hostPort = port && port !== "80" && port !== "443" 
+        ? `${host}:${port}` 
+        : host;
+      
+      const wsUrl = `${protocol}//${hostPort}/ws`;
+      
+      console.log(`[WebSocket] Connecting to ${wsUrl} (host: ${host}, port: ${port})`);
       
       // Create new WebSocket with timeout
       const socket = new WebSocket(wsUrl);

@@ -595,7 +595,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
             
             console.log(`[Routes] Using ${fixedEvents.length} events from specialized service for ${sportName}`);
-            return res.json(fixedEvents);
+            const strictFixed = filterEventsBySportId(fixedEvents, reqSportId);
+            return res.json(strictFixed);
           }
           
           console.log(`[Routes] No events from specialized service for ${sportName}, falling back to normal flow`);
@@ -619,7 +620,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } else {
             // For upcoming events, check if we have cached data from previous calls
             const cachedEvents = (global as any).cachedUpcomingEvents || [];
-            return res.json(cachedEvents.length > 0 ? cachedEvents : []);
+            const filtered = filterEventsBySportId(cachedEvents, reqSportId);
+            return res.json(filtered.length > 0 ? filtered : []);
           }
         }
       }, 15000); // Hard deadline of 15 seconds for the entire request
@@ -771,7 +773,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`[Routes] First cricket event: ${fixedCricketEvents[0].homeTeam} vs ${fixedCricketEvents[0].awayTeam}`);
             console.log(`[Routes] League name: ${fixedCricketEvents[0].leagueName}`);
             
-            return res.json(fixedCricketEvents);
+            const strictCricket = filterEventsBySportId(fixedCricketEvents, reqSportId);
+            return res.json(strictCricket);
           }
           
           // If cricket service returned no events, fall through to regular API handling
@@ -1056,7 +1059,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const filteredEvents = upcomingEvents.filter(event => event.sportId === reqSportId);
             console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
             
-            return res.json(filteredEvents);
+            const strictFiltered = filterEventsBySportId(filteredEvents, reqSportId);
+            return res.json(strictFiltered);
           } else {
             console.log(`No upcoming ${sportName} events found from API, returning empty array`);
             return res.json([]);
@@ -1128,7 +1132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Return the combined events
           console.log(`Found ${combinedEvents.length} upcoming events for all sports combined`);
-          return res.json(combinedEvents);
+          const strictCombined = filterEventsBySportId(combinedEvents, reqSportId);
+          return res.json(strictCombined);
         }
       }
       

@@ -113,7 +113,10 @@ export class RealLiveAPI {
                   home: parseInt(homeCompetitor.score || '0'),
                   away: parseInt(awayCompetitor.score || '0')
                 } : undefined,
-                odds: this.generateRealisticOdds(this.mapESPNSport(endpoint)),
+                odds: {
+                  home: event.competitions?.[0]?.odds?.[0]?.homeTeamOdds?.toString() || '',
+                  away: event.competitions?.[0]?.odds?.[0]?.awayTeamOdds?.toString() || ''
+                },
                 source: 'espn_live_api'
               };
             }).filter(Boolean);
@@ -174,7 +177,10 @@ export class RealLiveAPI {
                   home: match.score.fullTime?.homeTeam || match.pointsTeam1 || 0,
                   away: match.score.fullTime?.awayTeam || match.pointsTeam2 || 0
                 } : undefined,
-                odds: this.generateRealisticOdds('football'),
+                odds: {
+                  home: match.score?.fullTime?.homeTeam?.toString() || '',
+                  away: match.score?.fullTime?.awayTeam?.toString() || ''
+                },
                 source: 'free_football_api'
               };
             }).filter(Boolean);
@@ -386,20 +392,15 @@ export class RealLiveAPI {
     }
   }
 
-  private generateRealisticOdds(sport: string): { home: string; away: string; draw?: string } {
-    const homeOdds = (1.6 + Math.random() * 2.4).toFixed(2);
-    const awayOdds = (1.6 + Math.random() * 2.4).toFixed(2);
-    
-    const odds: { home: string; away: string; draw?: string } = {
-      home: homeOdds,
-      away: awayOdds
+  // NOTE: No mock odds generation - ONLY official API odds allowed
+  // All odds must come from real ESPN API data or other verified sources
+  // Zero tolerance for synthetic/mock odds
+  private getOddsFromAPI(event: any): { home: string; away: string; draw?: string } {
+    // STRICT: Only return odds if they exist in official API data
+    return {
+      home: event.competitions?.[0]?.odds?.[0]?.homeTeamOdds?.toString() || '',
+      away: event.competitions?.[0]?.odds?.[0]?.awayTeamOdds?.toString() || ''
     };
-    
-    if (sport === 'football') {
-      odds.draw = (3.0 + Math.random() * 1.5).toFixed(2);
-    }
-    
-    return odds;
   }
 
   private convertLiveEvent(liveEvent: any): RealEvent {

@@ -56,7 +56,7 @@ export interface IOracleProvider {
 }
 
 export class OracleAdapterService {
-  private currentOracle: IOracleProvider;
+  private currentOracle: IOracleProvider | null = null;
   private oracleProviders: Map<OracleType, IOracleProvider> = new Map();
   private currentOracleType: OracleType = 'api-sports';
 

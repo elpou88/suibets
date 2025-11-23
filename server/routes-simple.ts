@@ -25,6 +25,23 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   const envValidation = EnvValidationService.validateEnvironment();
   EnvValidationService.printValidationResults(envValidation);
 
+  // Create HTTP server with WebSocket support
+  const httpServer = createServer(app);
+  const wss = new WebSocket.Server({ server: httpServer });
+  let broadcastInterval: NodeJS.Timeout;
+  let connectedClients = new Set<any>();
+
+  // WebSocket connection handler
+  wss.on('connection', (ws: WebSocket) => {
+    connectedClients.add(ws);
+    ws.on('close', () => {
+      connectedClients.delete(ws);
+    });
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+  });
+
   // Health check endpoint
   app.get("/api/health", async (req: Request, res: Response) => {
     const report = monitoringService.getHealthReport();
@@ -793,7 +810,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.status(500).json({ message: "Failed to process cash-out" });
     }
   });
-
 
   // Broadcast live score updates every 5 seconds
   broadcastInterval = setInterval(async () => {

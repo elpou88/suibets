@@ -5,6 +5,7 @@ import { ApiSportsService } from "./services/apiSportsService";
 const apiSportsService = new ApiSportsService();
 import { generateBasketballEvents, generateTennisEvents, generateSportEvents, getSportName } from "./services/basketballService";
 import { SettlementService } from "./services/settlementService";
+import { WalrusProtocolService } from "./services/walrusProtocolService";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
@@ -285,6 +286,97 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     } catch (error) {
       console.error("Cash-out error:", error);
       res.status(500).json({ message: "Failed to process cash-out" });
+    }
+  });
+
+  // Walrus Protocol endpoint - Store bet on blockchain
+  app.post("/api/walrus/store-bet", async (req: Request, res: Response) => {
+    try {
+      const { betId, walletAddress, eventId, odds, amount } = req.body;
+
+      if (!betId || !walletAddress || !eventId || !odds || !amount) {
+        return res.status(400).json({ message: "All bet fields required" });
+      }
+
+      const walrusService = new WalrusProtocolService();
+      const betBlob = await walrusService.storeBetOnWalrus({
+        betId,
+        walletAddress,
+        eventId,
+        odds,
+        amount
+      });
+
+      console.log(`✅ BET STORED ON WALRUS: ${betId}`);
+
+      res.json({
+        success: true,
+        walrus: betBlob,
+        message: `Bet ${betId} stored immutably on Walrus protocol`
+      });
+    } catch (error) {
+      console.error("Walrus storage error:", error);
+      res.status(500).json({ message: "Failed to store bet on Walrus" });
+    }
+  });
+
+  // Walrus Protocol endpoint - Store settlement on blockchain
+  app.post("/api/walrus/store-settlement", async (req: Request, res: Response) => {
+    try {
+      const { betId, settlementId, outcome, payout } = req.body;
+
+      if (!betId || !settlementId || !outcome || payout === undefined) {
+        return res.status(400).json({ message: "All settlement fields required" });
+      }
+
+      const walrusService = new WalrusProtocolService();
+      const settlementBlob = await walrusService.storeSettlementOnWalrus({
+        betId,
+        settlementId,
+        outcome,
+        payout
+      });
+
+      console.log(`✅ SETTLEMENT STORED ON WALRUS: ${settlementId}`);
+
+      res.json({
+        success: true,
+        walrus: settlementBlob,
+        message: `Settlement ${settlementId} stored immutably on Walrus protocol`
+      });
+    } catch (error) {
+      console.error("Walrus settlement error:", error);
+      res.status(500).json({ message: "Failed to store settlement on Walrus" });
+    }
+  });
+
+  // Move transaction generation endpoint
+  app.post("/api/sui/generate-bet-transaction", async (req: Request, res: Response) => {
+    try {
+      const { eventId, odds, amount, walletAddress } = req.body;
+
+      if (!eventId || !odds || !amount || !walletAddress) {
+        return res.status(400).json({ message: "All transaction fields required" });
+      }
+
+      const walrusService = new WalrusProtocolService();
+      const transaction = walrusService.createBetTransaction({
+        eventId,
+        odds,
+        amount,
+        walletAddress
+      });
+
+      console.log(`🔗 MOVE TRANSACTION GENERATED for bet`);
+
+      res.json({
+        success: true,
+        transaction,
+        message: "Sui Move transaction ready for wallet signing"
+      });
+    } catch (error) {
+      console.error("Transaction generation error:", error);
+      res.status(500).json({ message: "Failed to generate transaction" });
     }
   });
 

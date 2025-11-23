@@ -1,4 +1,3 @@
-import { SportEvent } from '../types';
 
 export interface Bet {
   id: string;

@@ -103,14 +103,15 @@ export class ApiSportsService {
 
   constructor(apiKey?: string) {
     // PAID API-SPORTS ONLY - NO FALLBACKS
-    this.apiKey = apiKey || process.env.API_SPORTS_KEY;
+    const key = apiKey || process.env.API_SPORTS_KEY;
     
-    if (!this.apiKey) {
+    if (!key) {
       const errorMsg = '❌ CRITICAL: API_SPORTS_KEY environment variable not set! Paid API-Sports is REQUIRED. Set API_SPORTS_KEY in Railway/Replit environment.';
       console.error(errorMsg);
       throw new Error(errorMsg);
     }
     
+    this.apiKey = key;
     console.log(`[ApiSportsService] ✅ API-SPORTS KEY ACTIVE | Key length: ${this.apiKey.length}`);
     console.log(`[ApiSportsService] 📍 Endpoint: https://v3.football.api-sports.io | POLICY: PAID API ONLY - NO FALLBACKS`);
     

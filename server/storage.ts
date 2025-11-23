@@ -25,7 +25,12 @@ export interface IStorage {
   getPromotions(): Promise<any[]>;
   
   // Betting methods
-  getBet(betId: number): Promise<any | undefined>;
+  getBet(betId: number | string): Promise<any | undefined>;
+  getBetByStringId(betId: string): Promise<any | undefined>;
+  createBet(bet: any): Promise<any>;
+  createParlay(parlay: any): Promise<any>;
+  getUserBets(userId: string): Promise<any[]>;
+  updateBetStatus(betId: string, status: string, payout?: number): Promise<void>;
   markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void>;
   cashOutSingleBet(betId: number): Promise<void>;
   
@@ -218,7 +223,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Betting methods implementation with real database queries
-  async getBet(betId: number): Promise<any | undefined> {
+  async getBet(betId: number | string): Promise<any | undefined> {
+    if (typeof betId === 'string') {
+      return this.getBetByStringId(betId);
+    }
+    
     try {
       const [bet] = await db.select().from(bets).where(eq(bets.id, betId));
       if (!bet) return undefined;
@@ -231,25 +240,100 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('Error getting bet from database:', error);
-      // Fallback to mock data if database fails
-      return {
-        id: betId,
-        userId: 1,
-        eventId: "test_event_123",
-        marketId: "winner",
-        outcomeId: "home_win",
-        odds: 2.5,
-        betAmount: 10,
-        amount: 10,
-        potentialPayout: 25,
-        payout: 25,
-        status: betId % 2 === 0 ? 'won' : 'pending',
-        feeCurrency: 'SUI',
-        winningsWithdrawn: false,
-        createdAt: new Date()
-      };
+      return undefined;
     }
   }
+
+  async getBetByStringId(betId: string): Promise<any | undefined> {
+    // In-memory storage for string-based bet IDs (for non-DB bets)
+    if (!this.betStorage) {
+      this.betStorage = new Map();
+    }
+    return this.betStorage.get(betId);
+  }
+
+  async createBet(bet: any): Promise<any> {
+    try {
+      // Store in memory for now
+      if (!this.betStorage) {
+        this.betStorage = new Map();
+      }
+      this.betStorage.set(bet.id, {
+        ...bet,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      console.log(`✅ BET STORED: ${bet.id}`);
+      return this.betStorage.get(bet.id);
+    } catch (error) {
+      console.error('Error creating bet:', error);
+      return bet; // Return the bet anyway
+    }
+  }
+
+  async createParlay(parlay: any): Promise<any> {
+    try {
+      // Store in memory
+      if (!this.parlayStorage) {
+        this.parlayStorage = new Map();
+      }
+      this.parlayStorage.set(parlay.id, {
+        ...parlay,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      
+      console.log(`✅ PARLAY STORED: ${parlay.id}`);
+      return this.parlayStorage.get(parlay.id);
+    } catch (error) {
+      console.error('Error creating parlay:', error);
+      return parlay; // Return the parlay anyway
+    }
+  }
+
+  async getUserBets(userId: string): Promise<any[]> {
+    try {
+      if (!this.betStorage) {
+        this.betStorage = new Map();
+      }
+      // Filter bets by userId
+      const userBets: any[] = [];
+      this.betStorage.forEach((bet) => {
+        if (bet.userId === userId) {
+          userBets.push(bet);
+        }
+      });
+      return userBets;
+    } catch (error) {
+      console.error('Error getting user bets:', error);
+      return [];
+    }
+  }
+
+  async updateBetStatus(betId: string, status: string, payout?: number): Promise<void> {
+    try {
+      if (!this.betStorage) {
+        this.betStorage = new Map();
+      }
+      const bet = this.betStorage.get(betId);
+      if (bet) {
+        bet.status = status;
+        if (payout !== undefined) {
+          bet.actualPayout = payout;
+        }
+        bet.updatedAt = new Date();
+        this.betStorage.set(betId, bet);
+        console.log(`✅ BET STATUS UPDATED: ${betId} -> ${status}`);
+      }
+    } catch (error) {
+      console.error('Error updating bet status:', error);
+    }
+  }
+
+  // Add storage properties
+  private betStorage?: Map<string, any>;
+  private parlayStorage?: Map<string, any>;
 
   async markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void> {
     try {

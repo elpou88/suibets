@@ -861,7 +861,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (rugbyEvents.length > 0) {
                   console.log(`Returning ${rugbyEvents.length} Rugby events from dedicated Rugby service`);
-                  return res.json(rugbyEvents);
+                  const strictRugby = filterEventsBySportId(rugbyEvents, reqSportId);
+                  return res.json(strictRugby);
                 }
               } catch (error) {
                 console.error('Error using Rugby service:', error);
@@ -880,7 +881,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 // Return the baseball events from the dedicated service
                 console.log(`BaseballService returned ${baseballEvents.length} upcoming games`);
-                return res.json(baseballEvents);
+                const strictBaseball = filterEventsBySportId(baseballEvents, reqSportId);
+                return res.json(strictBaseball);
               } catch (error) {
                 console.error('Error using Baseball service:', error);
                 
@@ -902,7 +904,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 if (boxingEvents && boxingEvents.length > 0) {
                   // Return the boxing events from the dedicated service
                   console.log(`BoxingService returned ${boxingEvents.length} upcoming matches`);
-                  return res.json(boxingEvents);
+                  const strictBoxing = filterEventsBySportId(boxingEvents, reqSportId);
+                  return res.json(strictBoxing);
                 } else {
                   console.log(`BoxingService returned 0 upcoming matches, filtering API Sports data`);
                   
@@ -1200,7 +1203,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (rugbyEvents.length > 0) {
               console.log(`Returning ${rugbyEvents.length} combined Rugby events from dedicated Rugby service`);
-              return res.json(rugbyEvents);
+              const strictRugbyLive = filterEventsBySportId(rugbyEvents, reqSportId);
+              return res.json(strictRugbyLive);
             } else {
               console.log(`Rugby service returned 0 live games, trying to identify rugby data from API Sports`);
               
@@ -1233,7 +1237,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }));
                 
                 console.log(`Returning ${enhancedRugbyEvents.length} properly identified live Rugby events`);
-                return res.json(enhancedRugbyEvents);
+                const strictEnhancedRugby = filterEventsBySportId(enhancedRugbyEvents, reqSportId);
+                return res.json(strictEnhancedRugby);
               } else {
                 console.log(`No genuine rugby events found, returning empty array`);
                 return res.json([]);
@@ -1249,7 +1254,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             console.log(`Error in RugbyService. Returning ${filteredEvents.length} rugby events with basic filtering`);
-            return res.json(filteredEvents);
+            const strictFiltered = filterEventsBySportId(filteredEvents, reqSportId);
+            return res.json(strictFiltered);
           }
         }
         
@@ -1308,7 +1314,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }));
                 
                 console.log(`Returning ${baseballEvents.length} properly identified live Baseball events`);
-                return res.json(baseballEvents);
+                const strictBaseballLive = filterEventsBySportId(baseballEvents, reqSportId);
+                return res.json(strictBaseballLive);
               } else {
                 console.log(`No genuine baseball events found, returning empty array`);
                 return res.json([]);
@@ -1401,7 +1408,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }));
                 
                 console.log(`Returning ${boxingEvents.length} properly identified live Boxing events`);
-                return res.json(boxingEvents);
+                const strictBoxingLive = filterEventsBySportId(boxingEvents, reqSportId);
+                return res.json(strictBoxingLive);
               } else {
                 console.log(`No genuine boxing events found, returning empty array`);
                 return res.json([]);
@@ -1428,7 +1436,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               score: event.score || 'In Progress'
             }));
             console.log(`Error in BoxingService. Returning ${boxingEvents.length} filtered live Boxing events with corrected sportId from API Sports`);
-            return res.json(boxingEvents);
+            const strictBoxingError = filterEventsBySportId(boxingEvents, reqSportId);
+            return res.json(strictBoxingError);
           }
         }
         
@@ -1442,7 +1451,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (liveFormula1Events && liveFormula1Events.length > 0) {
               console.log(`Formula1Service returned ${liveFormula1Events.length} live races`);
-              return res.json(liveFormula1Events);
+              const strictF1Live = filterEventsBySportId(liveFormula1Events, reqSportId);
+              return res.json(strictF1Live);
             } else {
               console.log(`Formula1Service returned 0 live races, falling back to API Sports service`);
               
@@ -1458,7 +1468,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 score: event.score || 'In Progress'
               }));
               console.log(`Returning ${formula1Events.length} live Formula 1 events with corrected sportId from API Sports`);
-              return res.json(formula1Events);
+              const strictF1 = filterEventsBySportId(formula1Events, reqSportId);
+              return res.json(strictF1);
             }
           } catch (error) {
             console.error('Error using Formula 1 service for live events:', error);
@@ -1473,7 +1484,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               score: event.score || 'In Progress'
             }));
             console.log(`Error in Formula1Service. Returning ${formula1Events.length} live Formula 1 events with corrected sportId from API Sports`);
-            return res.json(formula1Events);
+            const strictF1Error = filterEventsBySportId(formula1Events, reqSportId);
+            return res.json(strictF1Error);
           }
         }
         
@@ -1738,7 +1750,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (liveEvents && liveEvents.length > 0) {
           console.log(`[Routes] Found ${liveEvents.length} live events directly, returning them`);
-          return res.json(liveEvents);
+          const strictLive = filterEventsBySportId(liveEvents, sportId);
+          return res.json(strictLive);
         }
       } catch (directError) {
         console.error('[Routes] Error fetching live events directly:', directError);

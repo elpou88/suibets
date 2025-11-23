@@ -142,6 +142,20 @@ function filterEventsByDate(events: any[]): any[] {
   const cutoffDate = now; // Today at current time, not tomorrow
   
   const filtered = events.filter(event => {
+    // CRITICAL: EXCLUDE ALL FINISHED MATCHES - status=FULL_TIME, FINAL, post state
+    const statusStr = (event.status || '').toString().toUpperCase();
+    const stateStr = (event.state || '').toString().toLowerCase();
+    
+    // Finished status indicators
+    const finishedStatuses = ['FULL_TIME', 'FINAL', 'FINISHED', 'STATUS_FULL_TIME', 'STATUS_FINAL', 'FT', 'AET'];
+    const finishedStates = ['post', 'completed', 'final'];
+    
+    const isFinished = finishedStatuses.some(s => statusStr.includes(s)) || finishedStates.includes(stateStr);
+    if (isFinished) {
+      console.log(`[DateFilter] EXCLUDED FINISHED match: ${event.homeTeam} vs ${event.awayTeam} (status: ${event.status}, state: ${event.state})`);
+      return false;
+    }
+    
     // Handle multiple date/time formats
     let eventTime: Date | null = null;
     

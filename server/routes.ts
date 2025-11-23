@@ -133,6 +133,37 @@ updateSportServices();
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
+// Helper function to filter events for tomorrow onwards (Nov 24, 2025+)
+function filterEventsByDate(events: any[]): any[] {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1); // Tomorrow at 00:00
+  
+  return events.filter(event => {
+    // Handle both startTime (string/date) and time (string) properties
+    let eventTime: Date | null = null;
+    
+    if (event.startTime) {
+      eventTime = new Date(event.startTime);
+    } else if (event.time && typeof event.time === 'string') {
+      // Try to parse time string if it's ISO or other format
+      const parsed = new Date(event.time);
+      if (!isNaN(parsed.getTime())) {
+        eventTime = parsed;
+      }
+    }
+    
+    // If we can't determine time, include the event (upcoming/live)
+    if (!eventTime || isNaN(eventTime.getTime())) {
+      return true;
+    }
+    
+    // Include if event is tomorrow or later
+    return eventTime >= tomorrow;
+  });
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Start the event tracking service to monitor upcoming events
   eventTrackingService.start();
@@ -356,6 +387,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     ...event,
                     sportId: reqSportId // Preserve the requested sportId (1 or 26)
                   }));
+                  // Filter to tomorrow onwards
+                  specialEvents = filterEventsByDate(specialEvents);
                 }
               } catch (err) {
                 console.error(`[Routes] Error using Soccer/Football service for ID ${reqSportId}:`, err);
@@ -1501,14 +1534,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       clearTimeout(requestTimeout);
       
       if (allEvents.length > 0) {
-        console.log(`Found a total of ${allEvents.length} live events from all sports combined`);
-        return res.json(allEvents);
+        // Filter to only show tomorrow's matches (Nov 24+)
+        const filteredAllEvents = filterEventsByDate(allEvents);
+        console.log(`Found a total of ${filteredAllEvents.length} events for tomorrow and beyond`);
+        return res.json(filteredAllEvents);
       }
       
       // Flashscore fallback for upcoming events
       console.log("[Routes] No live events from ESPN, trying Flashscore scraper for upcoming matches");
       try {
-        const flashscoreEvents = await flashscoreScraperService.scrapeUpcomingMatches(undefined, 1);
+        const flashscoreEvents = await flashscoreScraperService.scrapeUpcomingMatches();
         if (flashscoreEvents && flashscoreEvents.length > 0) {
           console.log(`[Routes] Flashscore returned ${flashscoreEvents.length} upcoming matches`);
           const transformed = flashscoreEvents.map((e: any, i: number) => ({

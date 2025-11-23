@@ -11,6 +11,7 @@ import errorHandlingService from "./services/errorHandlingService";
 import { EnvValidationService } from "./services/envValidationService";
 import monitoringService from "./services/monitoringService";
 import notificationService from "./services/notificationService";
+import { getSportsToFetch } from "./sports-config";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
@@ -211,15 +212,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         console.log(`🔴 LIVE EVENTS MODE - Paid API-Sports ONLY (NO fallbacks, NO free alternatives)`);
         
         try {
-          // Fetch from ALL available sports
-          const allSports = [
-            'football', 'basketball', 'tennis', 'baseball', 'hockey', 'handball', 'volleyball', 
-            'rugby', 'cricket', 'golf', 'boxing', 'mma', 'formula-1', 'cycling', 
-            'american-football', 'aussie-rules', 'snooker', 'darts', 'table-tennis', 
-            'badminton', 'motorsport', 'esports', 'netball'
-          ];
+          // Get configurable sports list
+          const sportsToFetch = getSportsToFetch();
           
-          const sportPromises = allSports.map(sport =>
+          const sportPromises = sportsToFetch.map(sport =>
             apiSportsService.getLiveEvents(sport).catch(e => {
               console.log(`❌ API-Sports failed for ${sport}: ${e.message} - NO FALLBACK, returning empty`);
               return [];
@@ -229,7 +225,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           const sportResults = await Promise.all(sportPromises);
           const allLiveEvents = sportResults.flat();
           
-          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total PAID API-Sports live events (zero tolerance policy)`);
+          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total PAID API-Sports live events (${sportsToFetch.length} sports, zero tolerance policy)`);
           
           // Filter by sport if requested
           if (reqSportId && allLiveEvents.length > 0) {
@@ -249,15 +245,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // UPCOMING EVENTS MODE - PAID API ONLY, NO FALLBACKS
       console.log(`📅 UPCOMING EVENTS MODE - Paid API-Sports ONLY (NO fallbacks, NO free alternatives)`);
       try {
-        // Fetch from ALL available sports
-        const allSports = [
-          'football', 'basketball', 'tennis', 'baseball', 'hockey', 'handball', 'volleyball', 
-          'rugby', 'cricket', 'golf', 'boxing', 'mma', 'formula-1', 'cycling', 
-          'american-football', 'aussie-rules', 'snooker', 'darts', 'table-tennis', 
-          'badminton', 'motorsport', 'esports', 'netball'
-        ];
+        // Get configurable sports list
+        const sportsToFetch = getSportsToFetch();
         
-        const sportPromises = allSports.map(sport =>
+        const sportPromises = sportsToFetch.map(sport =>
           apiSportsService.getUpcomingEvents(sport).catch(e => {
             console.log(`❌ API-Sports failed for ${sport}: ${e.message} - NO FALLBACK, returning empty`);
             return [];
@@ -267,7 +258,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         const sportResults = await Promise.all(sportPromises);
         const allUpcomingEvents = sportResults.flat();
         
-        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total PAID API-Sports upcoming events (zero tolerance policy)`);
+        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total PAID API-Sports upcoming events (${sportsToFetch.length} sports, zero tolerance policy)`);
         
         // Filter by sport if requested
         if (reqSportId && allUpcomingEvents.length > 0) {

@@ -651,8 +651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
             
             console.log(`[Routes] Using ${fixedEvents.length} events from specialized service for ${sportName}`);
-            const strictFixed = filterEventsBySportId(fixedEvents, reqSportId);
-            return res.json(strictFixed);
+            const cleanedEvents = finalizeEventResponse(fixedEvents, reqSportId, isLive || false);
+            return res.json(cleanedEvents);
           }
           
           console.log(`[Routes] No events from specialized service for ${sportName}, falling back to normal flow`);
@@ -1223,11 +1223,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }));
           }
           console.log(`Found ${combinedEvents.length} upcoming events for all sports combined`);
-          // CRITICAL: Filter out past events even for all-sports view
-          const futureAllSportsEvents = filterEventsByDate(combinedEvents);
-          console.log(`[DateFilter] All-sports: ${combinedEvents.length} → ${futureAllSportsEvents.length} after date filter`);
-          const strictCombined = filterEventsBySportId(futureAllSportsEvents, reqSportId);
-          return res.json(strictCombined);
+          const cleanedCombined = finalizeEventResponse(combinedEvents, reqSportId, false);
+          return res.json(cleanedCombined);
         }
       }
       
@@ -1294,8 +1291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (rugbyEvents.length > 0) {
               console.log(`Returning ${rugbyEvents.length} combined Rugby events from dedicated Rugby service`);
-              const strictRugbyLive = filterEventsBySportId(rugbyEvents, reqSportId);
-              return res.json(strictRugbyLive);
+              const cleanedRugbyLive = finalizeEventResponse(rugbyEvents, reqSportId, true);
+              return res.json(cleanedRugbyLive);
             } else {
               console.log(`Rugby service returned 0 live games, trying to identify rugby data from API Sports`);
               
@@ -1328,8 +1325,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }));
                 
                 console.log(`Returning ${enhancedRugbyEvents.length} properly identified live Rugby events`);
-                const strictEnhancedRugby = filterEventsBySportId(enhancedRugbyEvents, reqSportId);
-                return res.json(strictEnhancedRugby);
+                const cleanedEnhancedRugby = finalizeEventResponse(enhancedRugbyEvents, reqSportId, true);
+                return res.json(cleanedEnhancedRugby);
               } else {
                 console.log(`No genuine rugby events found, returning empty array`);
                 return res.json([]);
@@ -1366,8 +1363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 sportId: 4, // Make sure sportId is always Baseball (4)
                 isLive: true // These are live events
               }));
-              const strictBaseball = filterEventsBySportId(validBaseballEvents, reqSportId);
-              return res.json(strictBaseball);
+              const cleanedBaseball = finalizeEventResponse(validBaseballEvents, reqSportId, true);
+              return res.json(cleanedBaseball);
             } else {
               console.log(`BaseballService returned 0 live games, trying to identify baseball data from API Sports`);
               
@@ -1406,8 +1403,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }));
                 
                 console.log(`Returning ${baseballEvents.length} properly identified live Baseball events`);
-                const strictBaseballLive = filterEventsBySportId(baseballEvents, reqSportId);
-                return res.json(strictBaseballLive);
+                const cleanedBaseballLive = finalizeEventResponse(baseballEvents, reqSportId, true);
+                return res.json(cleanedBaseballLive);
               } else {
                 console.log(`No genuine baseball events found, returning empty array`);
                 return res.json([]);

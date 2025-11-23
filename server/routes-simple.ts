@@ -96,6 +96,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       } catch (error) {
         console.error(`❌ UPCOMING API fetch failed:`, error);
         return res.json([]);
+      }
     } catch (error) {
       console.error("Error fetching events:", error);
       res.status(500).json({ message: "Failed to fetch events" });

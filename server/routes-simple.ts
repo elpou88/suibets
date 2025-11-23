@@ -26,27 +26,28 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       // Get data from API for any sport if it's live - ONLY REAL API DATA, ALWAYS
       if (isLive === true) {
-        console.log(`🔴 LIVE EVENTS MODE - Fetching ONLY from paid API-Sports (NO mocks, NO fallbacks)`);
+        console.log(`🔴 LIVE EVENTS MODE - Fetching from ALL sports via paid API-Sports (NO mocks, NO fallbacks)`);
         
         try {
-          // Always fetch ALL live events from football, basketball, tennis
-          const [footballLive, basketballLive, tennisLive] = await Promise.all([
-            apiSportsService.getLiveEvents('football').catch(e => {
-              console.error('Football live error:', e.message);
-              return [];
-            }),
-            apiSportsService.getLiveEvents('basketball').catch(e => {
-              console.error('Basketball live error:', e.message);
-              return [];
-            }),
-            apiSportsService.getLiveEvents('tennis').catch(e => {
-              console.error('Tennis live error:', e.message);
+          // Fetch from ALL available sports
+          const allSports = [
+            'football', 'basketball', 'tennis', 'baseball', 'hockey', 'handball', 'volleyball', 
+            'rugby', 'cricket', 'golf', 'boxing', 'mma', 'formula-1', 'cycling', 
+            'american-football', 'aussie-rules', 'snooker', 'darts', 'table-tennis', 
+            'badminton', 'motorsport', 'esports', 'netball'
+          ];
+          
+          const sportPromises = allSports.map(sport =>
+            apiSportsService.getLiveEvents(sport).catch(e => {
+              console.debug(`${sport} live error:`, e.message);
               return [];
             })
-          ]);
+          );
           
-          const allLiveEvents = [...footballLive, ...basketballLive, ...tennisLive];
-          console.log(`✅ LIVE: Fetched ${footballLive.length} football, ${basketballLive.length} basketball, ${tennisLive.length} tennis = ${allLiveEvents.length} total REAL live events`);
+          const sportResults = await Promise.all(sportPromises);
+          const allLiveEvents = sportResults.flat();
+          
+          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total REAL live events from ${allSports.length} sports`);
           
           // Filter by sport if requested
           if (reqSportId && allLiveEvents.length > 0) {
@@ -64,25 +65,27 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
       
       // UPCOMING EVENTS MODE - ONLY REAL API DATA
-      console.log(`📅 UPCOMING EVENTS MODE - Fetching ONLY from paid API-Sports (NO mocks, NO fallbacks)`);
+      console.log(`📅 UPCOMING EVENTS MODE - Fetching from ALL sports via paid API-Sports (NO mocks, NO fallbacks)`);
       try {
-        const [footballUpcoming, basketballUpcoming, tennisUpcoming] = await Promise.all([
-          apiSportsService.getLiveEvents('football').catch(e => {
-            console.error('Football upcoming error:', e.message);
-            return [];
-          }),
-          apiSportsService.getLiveEvents('basketball').catch(e => {
-            console.error('Basketball upcoming error:', e.message);
-            return [];
-          }),
-          apiSportsService.getLiveEvents('tennis').catch(e => {
-            console.error('Tennis upcoming error:', e.message);
+        // Fetch from ALL available sports
+        const allSports = [
+          'football', 'basketball', 'tennis', 'baseball', 'hockey', 'handball', 'volleyball', 
+          'rugby', 'cricket', 'golf', 'boxing', 'mma', 'formula-1', 'cycling', 
+          'american-football', 'aussie-rules', 'snooker', 'darts', 'table-tennis', 
+          'badminton', 'motorsport', 'esports', 'netball'
+        ];
+        
+        const sportPromises = allSports.map(sport =>
+          apiSportsService.getLiveEvents(sport).catch(e => {
+            console.debug(`${sport} upcoming error:`, e.message);
             return [];
           })
-        ]);
+        );
         
-        const allUpcomingEvents = [...footballUpcoming, ...basketballUpcoming, ...tennisUpcoming];
-        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total REAL upcoming/live events`);
+        const sportResults = await Promise.all(sportPromises);
+        const allUpcomingEvents = sportResults.flat();
+        
+        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total REAL upcoming/live events from ${allSports.length} sports`);
         
         // Filter by sport if requested
         if (reqSportId && allUpcomingEvents.length > 0) {

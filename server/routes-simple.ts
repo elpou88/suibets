@@ -752,6 +752,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       if (!currentOdds || !percentageWinning) {
         return res.status(400).json({ message: "Current odds and percentage winning required" });
+  
       }
 
       // Mock bet for demo

@@ -82,13 +82,19 @@ export function registerWalrusRoutes(app: Express) {
       // Validate token type
       const validTokenType = tokenType === 'SUI' || tokenType === 'SBETS' ? tokenType : 'SUI';
       
-      // Place the bet through Walrus protocol
+      // CALCULATE 1% PLATFORM FEE
+      const platformFee = amount * 0.01;
+      const betAmountAfterFee = amount - platformFee;
+      
+      console.log(`[Walrus Bet] Amount: ${amount}, Platform Fee (1%): ${platformFee}, After Fee: ${betAmountAfterFee}`);
+      
+      // Place the bet through Walrus protocol with fee deducted
       const txHash = await walrusService.placeBet(
         walletAddress, 
         eventId, 
         marketId, 
         outcomeId, 
-        amount, 
+        betAmountAfterFee, // Use amount after fee
         validTokenType as 'SUI' | 'SBETS'
       );
       
@@ -100,9 +106,11 @@ export function registerWalrusRoutes(app: Express) {
         eventId,
         marketId,
         outcomeId,
-        amount,
+        betAmount: amount,
+        platformFee: platformFee,
+        betAmountAfterFee: betAmountAfterFee,
         tokenType: validTokenType,
-        message: `Successfully placed bet with ${validTokenType}`
+        message: `Successfully placed bet with ${validTokenType}. Fee: ${platformFee} ${validTokenType}`
       });
     } catch (error: any) {
       console.error("Error placing bet with Walrus protocol:", error);

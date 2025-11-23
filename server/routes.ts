@@ -189,28 +189,36 @@ function filterEventsByDate(events: any[]): any[] {
 
 // Helper function to enrich events with betting odds
 function enrichEventWithOdds(event: any): any {
-  // If odds already exist, don't overwrite
-  if (event.odds && event.odds.homeWin && event.odds.awayWin) {
+  // If odds already exist with proper structure, don't overwrite
+  if (event.odds && (event.odds.homeWin || event.odds.home)) {
+    // Ensure proper format
+    if (!event.odds.homeWin && event.odds.home) event.odds.homeWin = event.odds.home;
+    if (!event.odds.awayWin && event.odds.away) event.odds.awayWin = event.odds.away;
+    if (!event.odds.draw) event.odds.draw = 3.2;
     return event;
   }
   
-  // Generate realistic odds based on sport
-  const sportId = event.sportId || 1;
+  // Generate realistic odds
   let homeWinOdds = 1.85;
   let drawOdds = 3.2;
   let awayOdds = 2.1;
   
-  // Adjust odds slightly based on sport for realism
-  const oddsVariation = Math.random() * 0.3 - 0.15; // -0.15 to +0.15
+  // Adjust odds slightly for variation
+  const oddsVariation = Math.random() * 0.3 - 0.15;
+  const h = homeWinOdds + oddsVariation;
+  const d = drawOdds + oddsVariation;
+  const a = awayOdds + oddsVariation;
   
   return {
     ...event,
     odds: {
-      homeWin: parseFloat((homeWinOdds + oddsVariation).toFixed(2)),
-      home: parseFloat((homeWinOdds + oddsVariation).toFixed(2)), // Alias
-      draw: parseFloat((drawOdds + oddsVariation).toFixed(2)),
-      awayWin: parseFloat((awayOdds + oddsVariation).toFixed(2)),
-      away: parseFloat((awayOdds + oddsVariation).toFixed(2)) // Alias
+      homeWin: h,
+      home: h,
+      draw: d,
+      awayWin: a,
+      away: a,
+      home_win: h,
+      away_win: a
     }
   };
 }
@@ -1641,8 +1649,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }));
           // Filter to tomorrow onwards
           const filteredFlashscore = filterEventsByDate(transformed);
-          console.log(`[Routes] Returning ${filteredFlashscore.length} Flashscore events for tomorrow+`);
-          return res.json(filteredFlashscore);
+          const enrichedFlashscore = enrichEventsWithOdds(filteredFlashscore);
+          console.log(`[Routes] Returning ${enrichedFlashscore.length} Flashscore events for tomorrow+ with odds`);
+          return res.json(enrichedFlashscore);
         }
       } catch (err) {
         console.warn("[Routes] Flashscore fallback failed:", err);
@@ -1660,8 +1669,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return all events if we have them
       if (events && events.length > 0) {
         const filteredDbEvents = filterEventsByDate(events);
-        console.log(`[Routes] Successfully returning ${filteredDbEvents.length} database events for tomorrow+`);
-        return res.json(filteredDbEvents);
+        const enrichedDbEvents = enrichEventsWithOdds(filteredDbEvents);
+        console.log(`[Routes] Successfully returning ${enrichedDbEvents.length} database events for tomorrow+ with odds`);
+        return res.json(enrichedDbEvents);
       } else {
         // If we somehow got here with no events from any source, log and return an empty array
         console.warn(`[Routes] No events found from any source for sportId: ${reqSportId}, isLive: ${isLive}`);

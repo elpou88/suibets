@@ -133,35 +133,58 @@ updateSportServices();
 // Initialize event tracking service to monitor upcoming events for live status
 const eventTrackingService = initEventTrackingService(apiSportsService);
 
-// Helper function to filter events for tomorrow onwards (Nov 24, 2025+)
+// Helper function to filter events for tomorrow onwards (Nov 24, 2025+) - AGGRESSIVE DATE FILTERING
 function filterEventsByDate(events: any[]): any[] {
   const now = new Date();
-  now.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(now);
-  tomorrow.setDate(tomorrow.getDate() + 1); // Tomorrow at 00:00
+  now.setUTCHours(0, 0, 0, 0);
+  const cutoffDate = new Date(now);
+  cutoffDate.setUTCDate(cutoffDate.getUTCDate() + 1); // Tomorrow at 00:00 UTC (Nov 24)
   
-  return events.filter(event => {
-    // Handle both startTime (string/date) and time (string) properties
+  const filtered = events.filter(event => {
+    // Handle multiple date/time formats
     let eventTime: Date | null = null;
     
+    // Try startTime first (most common)
     if (event.startTime) {
-      eventTime = new Date(event.startTime);
-    } else if (event.time && typeof event.time === 'string') {
-      // Try to parse time string if it's ISO or other format
-      const parsed = new Date(event.time);
-      if (!isNaN(parsed.getTime())) {
-        eventTime = parsed;
+      if (typeof event.startTime === 'string') {
+        eventTime = new Date(event.startTime);
+      } else if (event.startTime instanceof Date) {
+        eventTime = event.startTime;
       }
+    } 
+    // Try kickoff or eventDate
+    else if (event.kickoff && typeof event.kickoff === 'string') {
+      eventTime = new Date(event.kickoff);
+    }
+    // Try eventDate
+    else if (event.eventDate && typeof event.eventDate === 'string') {
+      eventTime = new Date(event.eventDate);
+    }
+    // Try time property
+    else if (event.time && typeof event.time === 'string') {
+      eventTime = new Date(event.time);
+    }
+    // Try dateTime
+    else if (event.dateTime && typeof event.dateTime === 'string') {
+      eventTime = new Date(event.dateTime);
     }
     
-    // If we can't determine time, include the event (upcoming/live)
+    // If we still can't determine time, EXCLUDE it (be conservative with unknown dates)
     if (!eventTime || isNaN(eventTime.getTime())) {
-      return true;
+      console.log(`[DateFilter] WARNING: Event has no valid date, excluding: ${event.homeTeam} vs ${event.awayTeam}`);
+      return false;
     }
     
-    // Include if event is tomorrow or later
-    return eventTime >= tomorrow;
+    // STRICT: Only include if event is on Nov 24 or later
+    const isValid = eventTime >= cutoffDate;
+    if (!isValid) {
+      console.log(`[DateFilter] EXCLUDED past event: ${event.homeTeam} vs ${event.awayTeam} on ${eventTime.toISOString()}`);
+    }
+    return isValid;
   });
+  
+  console.log(`[DateFilter] Filtered ${events.length} events → ${filtered.length} events (cutoff: ${cutoffDate.toISOString()})`);
+  return filtered;
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {

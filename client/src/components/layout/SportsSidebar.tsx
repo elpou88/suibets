@@ -76,7 +76,6 @@ export default function SportsSidebar() {
         // Return hardcoded default sports as fallback to ensure sidebar always shows something
         // IDs MUST match server/routes.ts sportId mappings
         return [
-          { id: 26, name: 'Soccer', slug: 'soccer', icon: '⚽', isActive: true },
           { id: 1, name: 'Football', slug: 'football', icon: '⚽', isActive: true }, 
           { id: 2, name: 'Basketball', slug: 'basketball', icon: '🏀', isActive: true },
           { id: 3, name: 'Tennis', slug: 'tennis', icon: '🎾', isActive: true },
@@ -91,7 +90,22 @@ export default function SportsSidebar() {
           { id: 12, name: 'MMA/UFC', slug: 'mma-ufc', icon: '🥋', isActive: true },
           { id: 13, name: 'Formula 1', slug: 'formula-1', icon: '🏎️', isActive: true },
           { id: 14, name: 'Cycling', slug: 'cycling', icon: '🚴', isActive: true },
-          { id: 15, name: 'American Football', slug: 'american-football', icon: '🏈', isActive: true }
+          { id: 15, name: 'American Football', slug: 'american-football', icon: '🏈', isActive: true },
+          { id: 16, name: 'AFL', slug: 'afl', icon: '🏐', isActive: true },
+          { id: 17, name: 'Snooker', slug: 'snooker', icon: '🎱', isActive: true },
+          { id: 18, name: 'Darts', slug: 'darts', icon: '🎯', isActive: true },
+          { id: 19, name: 'Table Tennis', slug: 'table-tennis', icon: '🏓', isActive: true },
+          { id: 20, name: 'Badminton', slug: 'badminton', icon: '🏸', isActive: true },
+          { id: 21, name: 'Beach Volleyball', slug: 'beach-volleyball', icon: '🏐', isActive: true },
+          { id: 22, name: 'Winter Sports', slug: 'winter-sports', icon: '⛷️', isActive: true },
+          { id: 23, name: 'Motorsport', slug: 'motorsport', icon: '🏎️', isActive: true },
+          { id: 24, name: 'Esports', slug: 'esports', icon: '🎮', isActive: true },
+          { id: 25, name: 'Netball', slug: 'netball', icon: '🏐', isActive: true },
+          { id: 26, name: 'Soccer', slug: 'soccer', icon: '⚽', isActive: true },
+          { id: 27, name: 'NBA', slug: 'nba', icon: '🏀', isActive: true },
+          { id: 28, name: 'NHL', slug: 'nhl', icon: '🏒', isActive: true },
+          { id: 29, name: 'NFL', slug: 'nfl', icon: '🏈', isActive: true },
+          { id: 30, name: 'MLB', slug: 'mlb', icon: '⚾', isActive: true }
         ];
       }
     },

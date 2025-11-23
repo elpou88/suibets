@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState } from 'react';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { 
@@ -6,6 +6,7 @@ import {
   Clock, Wallet, ChevronLeft, Landmark, 
   TrendingDown, Trophy, Search, MenuIcon
 } from 'lucide-react';
+import { ConnectWalletModal } from '@/components/modals/ConnectWalletModal';
 
 export interface LayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ const Layout: React.FC<LayoutProps> = ({
   showBackButton = false
 }) => {
   const [location, setLocation] = useLocation();
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   
   const topNavItems = [
     { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/home-real' },
@@ -80,7 +82,7 @@ const Layout: React.FC<LayoutProps> = ({
               variant="default" 
               size="sm"
               className="bg-[#00ffff] hover:bg-[#00d8d8] text-black text-xs shadow-[0_0_10px_rgba(0,255,255,0.3)] transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.5)]"
-              onClick={() => setLocation('/connect-wallet')}
+              onClick={() => setIsWalletModalOpen(true)}
             >
               <Wallet className="mr-2 h-3 w-3" />
               Connect Wallet
@@ -180,6 +182,12 @@ const Layout: React.FC<LayoutProps> = ({
           ))}
         </div>
       </div>
+      
+      {/* Wallet Connection Modal */}
+      <ConnectWalletModal 
+        isOpen={isWalletModalOpen}
+        onClose={() => setIsWalletModalOpen(false)}
+      />
     </div>
   );
 };

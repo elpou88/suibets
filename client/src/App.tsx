@@ -38,7 +38,6 @@ import { SettingsProvider } from "@/context/SettingsContext"; // Add settings pr
 import { WalProvider } from "@/components/ui/wal-components";
 import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
-import { DepositWithdrawFAB } from "@/components/modals/DepositWithdrawFAB";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 import { SuietWalletProvider } from "@/components/wallet/SuietWalletProvider";
@@ -109,6 +108,7 @@ function App() {
                     <SettingsProvider>
                       <BettingProvider>
                         <div className="root-container">
+                          <UniversalClickHandler />
                           <Switch>
                           {/* Main Routes - Use real data pages as the default */}
                           <Route path="/" component={HomeReal} />
@@ -188,11 +188,7 @@ function App() {
                           <Route component={NotFound} />
                         </Switch>
                         
-                        {/* Floating deposit/withdraw buttons that appear on all pages */}
-                        <DepositWithdrawFAB />
-                        
                         {/* Universal betting handlers to enable betting across all pages */}
-                        <UniversalClickHandler />
                         <SportBettingWrapper />
                       </div>
                       <SpecialLinks />

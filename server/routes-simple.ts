@@ -6,9 +6,139 @@ const apiSportsService = new ApiSportsService();
 import { generateBasketballEvents, generateTennisEvents, generateSportEvents, getSportName } from "./services/basketballService";
 import { SettlementService } from "./services/settlementService";
 import { WalrusProtocolService } from "./services/walrusProtocolService";
+import { AdminService } from "./services/adminService";
+import { ErrorHandlingService } from "./services/errorHandlingService";
+import { EnvValidationService } from "./services/envValidationService";
+import { MonitoringService } from "./services/monitoringService";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
+  // Initialize services
+  const adminService = new AdminService();
+  const errorHandlingService = ErrorHandlingService;
+  const monitoringService = MonitoringService;
+
+  // Validate environment on startup
+  const envValidation = EnvValidationService.validateEnvironment();
+  EnvValidationService.printValidationResults(envValidation);
+
+  // Health check endpoint
+  app.get("/api/health", async (req: Request, res: Response) => {
+    const report = monitoringService.getHealthReport();
+    const statusCode = report.status === 'HEALTHY' ? 200 : 503;
+    res.status(statusCode).json(report);
+  });
+
+  // System stats endpoint
+  app.get("/api/admin/stats", async (req: Request, res: Response) => {
+    try {
+      const stats = monitoringService.getStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch stats" });
+    }
+  });
+
+  // Admin force-settle endpoint
+  app.post("/api/admin/settle-bet", async (req: Request, res: Response) => {
+    try {
+      const { betId, outcome, reason, adminPassword } = req.body;
+      
+      if (!betId || !outcome || !adminPassword) {
+        return res.status(400).json({ message: "Missing required fields: betId, outcome, adminPassword" });
+      }
+
+      if (!['won', 'lost', 'void'].includes(outcome)) {
+        return res.status(400).json({ message: "Invalid outcome - must be 'won', 'lost', or 'void'" });
+      }
+
+      const action = await adminService.forceSettleBet(betId, outcome, reason || 'Admin force settle', adminPassword);
+      
+      if (action) {
+        monitoringService.logSettlement({
+          settlementId: action.id,
+          betId,
+          outcome,
+          payout: action.result?.payout || 0,
+          timestamp: Date.now(),
+          fees: 0
+        });
+        
+        res.json({ success: true, action });
+      } else {
+        res.status(401).json({ message: "Unauthorized" });
+      }
+    } catch (error: any) {
+      console.error("Admin settle error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Admin cancel-bet endpoint
+  app.post("/api/admin/cancel-bet", async (req: Request, res: Response) => {
+    try {
+      const { betId, reason, adminPassword } = req.body;
+      
+      if (!betId || !adminPassword) {
+        return res.status(400).json({ message: "Missing required fields: betId, adminPassword" });
+      }
+
+      const action = await adminService.cancelBet(betId, reason || 'Admin cancelled', adminPassword);
+      
+      if (action) {
+        monitoringService.logCancelledBet(betId, reason || 'Admin cancelled');
+        res.json({ success: true, action });
+      } else {
+        res.status(401).json({ message: "Unauthorized" });
+      }
+    } catch (error: any) {
+      console.error("Admin cancel error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Admin refund endpoint
+  app.post("/api/admin/refund-bet", async (req: Request, res: Response) => {
+    try {
+      const { betId, amount, reason, adminPassword } = req.body;
+      
+      if (!betId || amount === undefined || !adminPassword) {
+        return res.status(400).json({ message: "Missing required fields: betId, amount, adminPassword" });
+      }
+
+      const action = await adminService.refundBet(betId, amount, reason || 'Admin refund', adminPassword);
+      
+      if (action) {
+        res.json({ success: true, action });
+      } else {
+        res.status(401).json({ message: "Unauthorized" });
+      }
+    } catch (error: any) {
+      console.error("Admin refund error:", error);
+      res.status(400).json({ message: error.message });
+    }
+  });
+
+  // Admin logs endpoint
+  app.get("/api/admin/logs", async (req: Request, res: Response) => {
+    try {
+      const logs = monitoringService.getRecentLogs(50);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch logs" });
+    }
+  });
+
+  // API error statistics
+  app.get("/api/admin/error-stats", async (req: Request, res: Response) => {
+    try {
+      const stats = errorHandlingService.getErrorStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch error stats" });
+    }
+  });
+
   // Sports routes
   app.get("/api/sports", async (req: Request, res: Response) => {
     try {

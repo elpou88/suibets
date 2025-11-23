@@ -36,34 +36,21 @@ export class RealLiveAPI {
   }
 
   async getRealLiveSportsData(sportId?: number, isLive?: boolean): Promise<RealEvent[]> {
-    console.log(`[RealLiveAPI] Fetching REAL data for sport ${sportId || 'all'}, live: ${isLive}`);
+    console.log(`[RealLiveAPI] Fetching REAL data from PRIMARY ESPN API for sport ${sportId || 'all'}, live: ${isLive}`);
     
     const events: RealEvent[] = [];
     
     try {
-      // Strategy 1: NO SIMULATED DATA - Only real live events from APIs
-      if (isLive === true) {
-        console.log(`[RealLiveAPI] LIVE EVENTS REQUESTED - Only returning ACTUAL live events from real APIs`);
-        // Do not use any simulated live events - only return what we get from real APIs below
-      }
-
-      // Strategy 2: ESPN API (working endpoint) 
+      // PRIMARY API: ESPN API ONLY - Consistent data source across entire platform
+      console.log(`[RealLiveAPI] Using PRIMARY ESPN API as single source of truth`);
       const espnEvents = await this.getESPNLiveData(sportId, isLive);
       events.push(...espnEvents);
-      console.log(`[RealLiveAPI] ESPN: ${espnEvents.length} events`);
+      console.log(`[RealLiveAPI] PRIMARY ESPN API: ${espnEvents.length} events`);
 
-      // Strategy 3: Free sports APIs (if available)
-      if (this.rapidKey) {
-        const sportsDataEvents = await this.getSportsDataEvents(sportId, isLive);
-        events.push(...sportsDataEvents);
-        console.log(`[RealLiveAPI] SportsData: ${sportsDataEvents.length} events`);
+      // NOTE: All other API sources (SportsData, API-Sports) are DISABLED to ensure consistency
+      // The platform uses ESPN API exclusively for all games and matches everywhere
 
-        const apiSportsEvents = await this.getAPIServicesData(sportId, isLive);
-        events.push(...apiSportsEvents);
-        console.log(`[RealLiveAPI] API-Sports: ${apiSportsEvents.length} events`);
-      }
-
-      console.log(`[RealLiveAPI] TOTAL REAL EVENTS: ${events.length}`);
+      console.log(`[RealLiveAPI] TOTAL REAL EVENTS FROM PRIMARY API: ${events.length}`);
       return events;
     } catch (error) {
       console.error('[RealLiveAPI] Error fetching real data:', error.message);

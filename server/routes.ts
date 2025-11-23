@@ -1064,7 +1064,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // For other sports, FIRST ensure events have correct sportId, THEN filter
+            // For other sports, FIRST ensure events have correct sportId, THEN filter by date and sport
             const eventsWithCorrectSportId = upcomingEvents.map(event => ({
               ...event,
               sportId: reqSportId // FORCE correct sportId for this sport
@@ -1073,7 +1073,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const filteredEvents = eventsWithCorrectSportId.filter(event => event.sportId === reqSportId);
             console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
             
-            const strictFiltered = filterEventsBySportId(filteredEvents, reqSportId);
+            // CRITICAL: Filter out past/finished events - only show FUTURE upcoming matches
+            const futureEvents = filterEventsByDate(filteredEvents);
+            console.log(`[DateFilter] Filtered to ${futureEvents.length} future ${sportName} events (removed past matches)`);
+            
+            const strictFiltered = filterEventsBySportId(futureEvents, reqSportId);
             return res.json(strictFiltered);
           } else {
             console.log(`No upcoming ${sportName} events found from API, returning empty array`);

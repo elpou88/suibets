@@ -833,7 +833,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const upcomingEvents = await apiSportsService.getUpcomingEvents(sportName, 20);
           
           if (upcomingEvents && upcomingEvents.length > 0) {
-            console.log(`Found ${upcomingEvents.length} upcoming ${sportName} events from API`);
+            console.log(`[CRITICAL DEBUG] Found ${upcomingEvents.length} upcoming ${sportName} (ID:${reqSportId}) events from API`);
+            console.log(`[CRITICAL DEBUG] First event sportId: ${upcomingEvents[0]?.sportId}, homeTeam: ${upcomingEvents[0]?.homeTeam}`);
             
             // Special handling for Rugby - use dedicated Rugby service
             if (sportName === 'rugby') {

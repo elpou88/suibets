@@ -44,3 +44,8 @@ task = "packager.installForAll"
 task = "shell.exec"
 args = "npm run dev"
 waitForPort = 5000
+
+[userenv]
+
+[userenv.shared]
+API_SPORTS_KEY = "3ec255b133882788e32f6349eff77b21"

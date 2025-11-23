@@ -4,6 +4,8 @@ import { storage } from "./storage";
 import { ApiSportsService } from "./services/apiSportsService";
 const apiSportsService = new ApiSportsService();
 import { generateBasketballEvents, generateTennisEvents, generateSportEvents, getSportName } from "./services/basketballService";
+import { SettlementService } from "./services/settlementService";
+import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Sports routes
@@ -192,7 +194,171 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Create HTTP server
+  // Settlement endpoint - Auto-settle bets based on event results
+  app.post("/api/bets/:id/settle", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.id;
+      const { eventResult } = req.body;
+
+      if (!eventResult) {
+        return res.status(400).json({ message: "Event result required" });
+      }
+
+      // Mock settlement for now - in production, fetch actual bet from database
+      const mockBet = {
+        id: betId,
+        userId: 'user1',
+        eventId: eventResult.eventId || '1',
+        marketId: 'match-winner',
+        outcomeId: 'home',
+        odds: 2.0,
+        betAmount: 100,
+        status: 'pending' as const,
+        prediction: eventResult.result || 'home',
+        placedAt: Date.now(),
+        potentialPayout: 200
+      };
+
+      const settlement = SettlementService.settleBet(mockBet, eventResult);
+      
+      console.log(`✅ BET SETTLED: ${betId} - Status: ${settlement.status}, Payout: ${settlement.payout}`);
+      
+      res.json({
+        success: true,
+        betId,
+        settlement: {
+          status: settlement.status,
+          payout: settlement.payout,
+          settledAt: Date.now(),
+          platformFee: settlement.payout * 0.01 // 1% platform fee
+        }
+      });
+    } catch (error) {
+      console.error("Settlement error:", error);
+      res.status(500).json({ message: "Failed to settle bet" });
+    }
+  });
+
+  // Cash-out endpoint - Allow early cash-out of pending bets
+  app.post("/api/bets/:id/cash-out", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.id;
+      const { currentOdds = 2.0, percentageWinning = 0.8 } = req.body;
+
+      if (!currentOdds || !percentageWinning) {
+        return res.status(400).json({ message: "Current odds and percentage winning required" });
+      }
+
+      // Mock bet for demo
+      const mockBet = {
+        id: betId,
+        userId: 'user1',
+        eventId: '1',
+        marketId: 'match-winner',
+        outcomeId: 'home',
+        odds: 2.0,
+        betAmount: 100,
+        status: 'pending' as const,
+        prediction: 'home',
+        placedAt: Date.now(),
+        potentialPayout: 200
+      };
+
+      const cashOutValue = SettlementService.calculateCashOut(mockBet, currentOdds, percentageWinning);
+      const platformFee = cashOutValue * 0.01; // 1% cash-out fee
+      const netCashOut = cashOutValue - platformFee;
+
+      console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue}, Fee: ${platformFee}, Net: ${netCashOut}`);
+
+      res.json({
+        success: true,
+        betId,
+        cashOut: {
+          originalStake: mockBet.betAmount,
+          cashOutValue: cashOutValue,
+          platformFee: platformFee,
+          netAmount: netCashOut,
+          cashOutAt: Date.now(),
+          status: 'cashed_out'
+        }
+      });
+    } catch (error) {
+      console.error("Cash-out error:", error);
+      res.status(500).json({ message: "Failed to process cash-out" });
+    }
+  });
+
+  // WebSocket endpoint for live updates
   const httpServer = createServer(app);
+  const wss = new WebSocket.Server({ server: httpServer, path: '/ws' });
+
+  // Track connected clients
+  let connectedClients = new Set<WebSocket>();
+  let broadcastInterval: NodeJS.Timeout;
+
+  wss.on('connection', (ws: WebSocket) => {
+    console.log('✅ WebSocket client connected');
+    connectedClients.add(ws);
+
+    ws.on('message', (data: string) => {
+      try {
+        const message = JSON.parse(data);
+        
+        if (message.type === 'ping') {
+          ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+        } else if (message.type === 'subscribe') {
+          console.log(`Subscribed to sports: ${message.sports?.join(', ')}`);
+        }
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+      }
+    });
+
+    ws.on('close', () => {
+      console.log('❌ WebSocket client disconnected');
+      connectedClients.delete(ws);
+    });
+
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+    });
+  });
+
+  // Broadcast live score updates every 5 seconds
+  broadcastInterval = setInterval(async () => {
+    if (connectedClients.size === 0) return;
+
+    try {
+      // Fetch live events
+      const liveEvents = await apiSportsService.getLiveEvents('football').catch(() => []);
+      
+      if (liveEvents.length > 0) {
+        const update = {
+          type: 'score-update',
+          events: liveEvents.slice(0, 5), // Send top 5 live events
+          timestamp: Date.now(),
+          total: liveEvents.length
+        };
+
+        // Broadcast to all connected clients
+        connectedClients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify(update));
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Live update error:', error);
+    }
+  }, 5000); // Update every 5 seconds
+
+  // Cleanup on server shutdown
+  const originalClose = httpServer.close.bind(httpServer);
+  httpServer.close = function(callback?: () => void) {
+    clearInterval(broadcastInterval);
+    wss.close();
+    return originalClose(callback);
+  };
+
   return httpServer;
 }

@@ -87,14 +87,6 @@ export function useWebSocketLiveUpdates<T>(options: {
     try {
       isConnecting.current = true;
       
-      // DISABLED: WebSocket HMR conflicts in Replit environment
-      // Using polling instead for live updates
-      console.log('[WebSocket] WebSocket disabled - using polling fallback for live updates');
-      setConnectionStatus('disconnected');
-      onStatusChange?.('disconnected');
-      isConnecting.current = false;
-      return;
-      
       // Clear any existing timeouts or intervals
       if (reconnectTimeout.current) {
         clearTimeout(reconnectTimeout.current);

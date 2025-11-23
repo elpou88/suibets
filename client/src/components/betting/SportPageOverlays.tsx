@@ -101,7 +101,7 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
     // Add the bet to the slip
     addBet({
       id: betId,
-      eventId: event.id,
+      eventId: typeof event.id === 'number' ? event.id : parseInt(String(event.id), 10),
       eventName: `${event.homeTeam} vs ${event.awayTeam}`,
       selectionName,
       odds,
@@ -151,11 +151,11 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
   const attachEventIds = () => {
     // Get all cards or container elements that might be event cards
     const cardElements = [
-      ...document.querySelectorAll('.card'),
-      ...document.querySelectorAll('.overflow-hidden'),
-      ...document.querySelectorAll('[class*="event"]'),
-      ...document.querySelectorAll('[class*="match"]'),
-      ...document.querySelectorAll('.p-4'),
+      ...Array.from(document.querySelectorAll('.card')),
+      ...Array.from(document.querySelectorAll('.overflow-hidden')),
+      ...Array.from(document.querySelectorAll('[class*="event"]')),
+      ...Array.from(document.querySelectorAll('[class*="match"]')),
+      ...Array.from(document.querySelectorAll('.p-4')),
     ];
     
     // Count attached events for logging

@@ -7,16 +7,14 @@ import { generateBasketballEvents, generateTennisEvents, generateSportEvents, ge
 import { SettlementService } from "./services/settlementService";
 import { WalrusProtocolService } from "./services/walrusProtocolService";
 import { AdminService } from "./services/adminService";
-import { ErrorHandlingService } from "./services/errorHandlingService";
+import errorHandlingService from "./services/errorHandlingService";
 import { EnvValidationService } from "./services/envValidationService";
-import { MonitoringService } from "./services/monitoringService";
+import monitoringService from "./services/monitoringService";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
   const adminService = new AdminService();
-  const errorHandlingService = ErrorHandlingService;
-  const monitoringService = MonitoringService;
 
   // Validate environment on startup
   const envValidation = EnvValidationService.validateEnvironment();

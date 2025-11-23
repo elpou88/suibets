@@ -18,10 +18,6 @@ externalPort = 80
 localPort = 39467
 externalPort = 3000
 
-[[ports]]
-localPort = 41519
-externalPort = 3001
-
 [workflows]
 runButton = "Project"
 
@@ -53,3 +49,4 @@ waitForPort = 5000
 
 [userenv.shared]
 API_SPORTS_KEY = "3ec255b133882788e32f6349eff77b21"
+ADMIN_PASSWORD = "123Jamie88"

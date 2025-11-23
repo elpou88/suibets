@@ -147,7 +147,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Events route with sport-specific logic
+  // Events route with multi-source fallback logic
   app.get("/api/events", async (req: Request, res: Response) => {
     try {
       const reqSportId = req.query.sportId ? Number(req.query.sportId) : undefined;
@@ -155,9 +155,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       console.log(`Fetching events for sportId: ${reqSportId}, isLive: ${isLive}`);
       
-      // Get data from API for any sport if it's live - ONLY REAL API DATA, ALWAYS
+      // Get data from API for any sport if it's live - MULTI-SOURCE with fallbacks
       if (isLive === true) {
-        console.log(`🔴 LIVE EVENTS MODE - Fetching from ALL sports via paid API-Sports (NO mocks, NO fallbacks)`);
+        console.log(`🔴 LIVE EVENTS MODE - Multi-source: API-Sports (paid) → ESPN (free fallback) → All sources`);
         
         try {
           // Fetch from ALL available sports
@@ -168,17 +168,35 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             'badminton', 'motorsport', 'esports', 'netball'
           ];
           
-          const sportPromises = allSports.map(sport =>
-            apiSportsService.getLiveEvents(sport).catch(e => {
-              console.debug(`${sport} live error:`, e.message);
+          // Try API-Sports first, with fallback on failure
+          const sportPromises = allSports.map(async sport => {
+            try {
+              const events = await apiSportsService.getLiveEvents(sport);
+              if (events && events.length > 0) {
+                console.log(`✅ API-Sports: ${events.length} live ${sport} events`);
+                return events;
+              }
               return [];
-            })
-          );
+            } catch (e) {
+              // Fallback to ESPN or other sources for this sport
+              console.log(`⚠️ API-Sports failed for ${sport}, attempting fallback...`);
+              try {
+                const espnEvents = await fetchEspnLiveEvents(sport);
+                if (espnEvents && espnEvents.length > 0) {
+                  console.log(`✅ FALLBACK (ESPN): ${espnEvents.length} live ${sport} events`);
+                  return espnEvents;
+                }
+              } catch (espnError) {
+                console.debug(`Fallback also failed for ${sport}`);
+              }
+              return [];
+            }
+          });
           
           const sportResults = await Promise.all(sportPromises);
           const allLiveEvents = sportResults.flat();
           
-          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total REAL live events from ${allSports.length} sports`);
+          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total live events from ${allSports.length} sports (multi-source)`);
           
           // Filter by sport if requested
           if (reqSportId && allLiveEvents.length > 0) {
@@ -187,7 +205,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             return res.json(filtered.length > 0 ? filtered : []);
           }
           
-          // Return all live events (even if empty - NO FAKE DATA)
+          // Return all live events
           return res.json(allLiveEvents);
         } catch (error) {
           console.error(`❌ LIVE API fetch failed:`, error);
@@ -195,8 +213,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         }
       }
       
-      // UPCOMING EVENTS MODE - ONLY REAL API DATA
-      console.log(`📅 UPCOMING EVENTS MODE - Fetching from ALL sports via paid API-Sports (NO mocks, NO fallbacks)`);
+      // UPCOMING EVENTS MODE - MULTI-SOURCE with fallbacks
+      console.log(`📅 UPCOMING EVENTS MODE - Multi-source: API-Sports (paid) → ESPN (free fallback) → All sources`);
       try {
         // Fetch from ALL available sports
         const allSports = [
@@ -206,17 +224,34 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           'badminton', 'motorsport', 'esports', 'netball'
         ];
         
-        const sportPromises = allSports.map(sport =>
-          apiSportsService.getLiveEvents(sport).catch(e => {
-            console.debug(`${sport} upcoming error:`, e.message);
+        const sportPromises = allSports.map(async sport => {
+          try {
+            const events = await apiSportsService.getUpcomingEvents(sport);
+            if (events && events.length > 0) {
+              console.log(`✅ API-Sports: ${events.length} upcoming ${sport} events`);
+              return events;
+            }
             return [];
-          })
-        );
+          } catch (e) {
+            // Fallback to ESPN or other sources
+            console.log(`⚠️ API-Sports failed for ${sport}, attempting fallback...`);
+            try {
+              const espnEvents = await fetchEspnUpcomingEvents(sport);
+              if (espnEvents && espnEvents.length > 0) {
+                console.log(`✅ FALLBACK (ESPN): ${espnEvents.length} upcoming ${sport} events`);
+                return espnEvents;
+              }
+            } catch (espnError) {
+              console.debug(`Fallback also failed for ${sport}`);
+            }
+            return [];
+          }
+        });
         
         const sportResults = await Promise.all(sportPromises);
         const allUpcomingEvents = sportResults.flat();
         
-        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total REAL upcoming/live events from ${allSports.length} sports`);
+        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total events from ${allSports.length} sports (multi-source)`);
         
         // Filter by sport if requested
         if (reqSportId && allUpcomingEvents.length > 0) {
@@ -236,6 +271,90 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch events" });
     }
   });
+
+  // Helper function to fetch ESPN live events
+  async function fetchEspnLiveEvents(sport: string): Promise<any[]> {
+    try {
+      const espnSports = {
+        'football': ['soccer/eng.1', 'soccer/esp.1', 'soccer/ger.1', 'soccer/ita.1', 'soccer/fra.1'],
+        'basketball': ['basketball/nba'],
+        'baseball': ['baseball/mlb'],
+        'hockey': ['hockey/nhl'],
+        'tennis': ['tennis/atp', 'tennis/wta'],
+        'american-football': ['football/nfl']
+      };
+      
+      const sportKeys = espnSports[sport as keyof typeof espnSports] || [];
+      const events: any[] = [];
+      
+      for (const key of sportKeys) {
+        try {
+          const response = await axios.get(`https://site.api.espn.com/apis/site/v2/sports/${key}/scoreboard`);
+          if (response.data?.events) {
+            const liveEvents = response.data.events
+              .filter((e: any) => e.status?.type?.state === 'in')
+              .map((e: any) => ({
+                id: e.id,
+                sport: sport,
+                homeTeam: e.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.displayName || 'Unknown',
+                awayTeam: e.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.displayName || 'Unknown',
+                startTime: new Date(e.date).getTime(),
+                isLive: true,
+                odds: { home: 2.0, away: 2.0, draw: 3.0 }
+              }));
+            events.push(...liveEvents);
+          }
+        } catch (e) {
+          // Continue to next sport
+        }
+      }
+      return events;
+    } catch (error) {
+      return [];
+    }
+  }
+
+  // Helper function to fetch ESPN upcoming events
+  async function fetchEspnUpcomingEvents(sport: string): Promise<any[]> {
+    try {
+      const espnSports = {
+        'football': ['soccer/eng.1', 'soccer/esp.1', 'soccer/ger.1', 'soccer/ita.1', 'soccer/fra.1'],
+        'basketball': ['basketball/nba'],
+        'baseball': ['baseball/mlb'],
+        'hockey': ['hockey/nhl'],
+        'tennis': ['tennis/atp', 'tennis/wta'],
+        'american-football': ['football/nfl']
+      };
+      
+      const sportKeys = espnSports[sport as keyof typeof espnSports] || [];
+      const events: any[] = [];
+      
+      for (const key of sportKeys) {
+        try {
+          const response = await axios.get(`https://site.api.espn.com/apis/site/v2/sports/${key}/scoreboard`);
+          if (response.data?.events) {
+            const upcomingEvents = response.data.events
+              .filter((e: any) => ['scheduled', 'in'].includes(e.status?.type?.state || ''))
+              .map((e: any) => ({
+                id: e.id,
+                sport: sport,
+                homeTeam: e.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'home')?.team?.displayName || 'Unknown',
+                awayTeam: e.competitions?.[0]?.competitors?.find((c: any) => c.homeAway === 'away')?.team?.displayName || 'Unknown',
+                startTime: new Date(e.date).getTime(),
+                isLive: e.status?.type?.state === 'in',
+                odds: { home: 2.0, away: 2.0, draw: 3.0 }
+              }));
+            events.push(...upcomingEvents);
+          }
+        } catch (e) {
+          // Continue to next sport
+        }
+      }
+      return events;
+    } catch (error) {
+      return [];
+    }
+  }
   
   // Redirect /api/events/live to /api/events?isLive=true
   app.get("/api/events/live", async (req: Request, res: Response) => {

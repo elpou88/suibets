@@ -1431,7 +1431,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (realEvents && realEvents.length > 0) {
           console.log(`Found ${realEvents.length} genuine ${sportName} events from API`);
-          return res.json(realEvents);
+          const filteredRealEvents = filterEventsByDate(realEvents);
+          console.log(`[DateFilter] Filtered to ${filteredRealEvents.length} future ${sportName} events`);
+          return res.json(filteredRealEvents);
         } else {
           console.log(`No genuine live ${sportName} events found from API, returning empty array`);
           return res.json([]);

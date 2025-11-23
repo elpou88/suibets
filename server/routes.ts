@@ -1052,7 +1052,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 
                 if (formula1Events && formula1Events.length > 0) {
                   console.log(`Formula1Service returned ${formula1Events.length} upcoming races`);
-                  const strictF1Upcoming = filterEventsBySportId(formula1Events, reqSportId);
+                  const futureF1Races = filterEventsByDate(formula1Events);
+                  const strictF1Upcoming = filterEventsBySportId(futureF1Races, reqSportId);
                   return res.json(strictF1Upcoming);
                 } else {
                   console.log(`Formula1Service returned 0 upcoming races, falling back to API Sports service`);
@@ -1067,7 +1068,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                     leagueName: event.leagueName || 'Formula 1 Championship'
                   }));
                   console.log(`Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
-                  const strictF1Api = filterEventsBySportId(formula1Events, reqSportId);
+                  const futureF1 = filterEventsByDate(formula1Events);
+                  const strictF1Api = filterEventsBySportId(futureF1, reqSportId);
                   return res.json(strictF1Api);
                 }
               } catch (error) {
@@ -1082,7 +1084,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                   leagueName: event.leagueName || 'Formula 1 Championship'
                 }));
                 console.log(`Error in Formula1Service. Returning ${formula1Events.length} Formula 1 events with corrected sportId from API Sports`);
-                const strictF1Error = filterEventsBySportId(formula1Events, reqSportId);
+                const futureF1Error = filterEventsByDate(formula1Events);
+                const strictF1Error = filterEventsBySportId(futureF1Error, reqSportId);
                 return res.json(strictF1Error);
               }
             }

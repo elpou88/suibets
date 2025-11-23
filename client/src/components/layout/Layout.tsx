@@ -31,7 +31,6 @@ const Layout: React.FC<LayoutProps> = ({
   const bottomNavItems = [
     { label: 'Home', i18nKey: 'home', icon: <Home />, href: '/home-real' },
     { label: 'Live', i18nKey: 'live', icon: <TrendingUp />, href: '/live-real' },
-    { label: 'DeFi', i18nKey: 'staking', icon: <Landmark />, href: '/defi-staking' },
     { label: 'History', i18nKey: 'bet_history', icon: <Clock />, href: '/bet-history' },
     { label: 'Settings', i18nKey: 'settings', icon: <Settings />, href: '/settings' },
   ];

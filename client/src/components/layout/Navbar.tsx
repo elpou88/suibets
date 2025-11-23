@@ -176,18 +176,6 @@ export default function Navbar() {
                 >
                   Dividends
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/defi-staking')}
-                >
-                  DeFi Staking
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/storage')}
-                >
-                  Storage Vaults
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={disconnectWallet}>
                   <LogOut className="mr-2 h-4 w-4" />

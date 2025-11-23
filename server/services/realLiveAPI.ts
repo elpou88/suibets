@@ -36,19 +36,24 @@ export class RealLiveAPI {
   }
 
   async getRealLiveSportsData(sportId?: number, isLive?: boolean): Promise<RealEvent[]> {
-    console.log(`[RealLiveAPI] Fetching REAL data from PRIMARY ESPN API for sport ${sportId || 'all'}, live: ${isLive}`);
+    console.log(`[RealLiveAPI] Fetching REAL data from PRIMARY PAID API (API-Sports) for sport ${sportId || 'all'}, live: ${isLive}`);
     
     const events: RealEvent[] = [];
     
     try {
-      // PRIMARY API: ESPN API ONLY - Consistent data source across entire platform
-      console.log(`[RealLiveAPI] Using PRIMARY ESPN API as single source of truth`);
-      const espnEvents = await this.getESPNLiveData(sportId, isLive);
-      events.push(...espnEvents);
-      console.log(`[RealLiveAPI] PRIMARY ESPN API: ${espnEvents.length} events`);
+      // PRIMARY API: API-Sports (PAID) - Official verified sports data
+      console.log(`[RealLiveAPI] Using PRIMARY API-Sports (PAID) as single source of truth`);
+      const apiSportsEvents = await this.getAPIServicesData(sportId, isLive);
+      events.push(...apiSportsEvents);
+      console.log(`[RealLiveAPI] PRIMARY API-Sports: ${apiSportsEvents.length} events`);
 
-      // NOTE: All other API sources (SportsData, API-Sports) are DISABLED to ensure consistency
-      // The platform uses ESPN API exclusively for all games and matches everywhere
+      // FALLBACK: ESPN API only if primary paid API fails
+      if (events.length === 0) {
+        console.log(`[RealLiveAPI] Primary API-Sports failed, trying ESPN fallback`);
+        const espnEvents = await this.getESPNLiveData(sportId, isLive);
+        events.push(...espnEvents);
+        console.log(`[RealLiveAPI] ESPN FALLBACK: ${espnEvents.length} events`);
+      }
 
       console.log(`[RealLiveAPI] TOTAL REAL EVENTS FROM PRIMARY API: ${events.length}`);
       return events;

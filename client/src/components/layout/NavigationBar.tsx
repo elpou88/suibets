@@ -139,12 +139,6 @@ const NavigationBar = () => {
                 >
                   My Bets
                 </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/defi-staking')}
-                >
-                  DeFi Staking
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={disconnectWallet}>
                   <LogOut className="mr-2 h-4 w-4" />

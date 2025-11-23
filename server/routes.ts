@@ -1510,7 +1510,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(allEvents);
       }
       
-      // If we get here, just return what's in the database
+      // Flashscore fallback for upcoming events
+      console.log("[Routes] No live events from ESPN, trying Flashscore scraper for upcoming matches");
+      try {
+        const flashscoreEvents = await flashscoreScraperService.scrapeUpcomingMatches(undefined, 1);
+        if (flashscoreEvents && flashscoreEvents.length > 0) {
+          console.log(`[Routes] Flashscore returned ${flashscoreEvents.length} upcoming matches`);
+          const transformed = flashscoreEvents.map((e: any, i: number) => ({
+            id: `fs-${i}`,
+            homeTeam: e.homeTeam || 'Home',
+            awayTeam: e.awayTeam || 'Away',
+            leagueName: e.leagueName || 'League',
+            homeOdds: e.homeOdds || 1.9,
+            drawOdds: e.drawOdds,
+            awayOdds: e.awayOdds || 3.5,
+            sport: e.sport || 'football',
+            sportId: e.sportId || 1,
+            isLive: false,
+            score: '0-0',
+            time: e.time || 'TBD',
+            source: 'flashscore',
+            ...e
+          }));
+          return res.json(transformed);
+        }
+      } catch (err) {
+        console.warn("[Routes] Flashscore fallback failed:", err);
+      }
+      
+      // If we get here, return database events
       console.log("No live events found from API, returning database events");
       
       // Make sure we haven't already sent a response

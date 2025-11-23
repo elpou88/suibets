@@ -95,8 +95,8 @@ export const SportPageOverlays: React.FC<SportPageOverlaysProps> = ({ sportSlug 
     odds: number,
     market: string
   ) => {
-    // Create a unique bet ID
-    const betId = `${event.id}-${market}-${selectionName}-${Date.now()}`;
+    // Create a unique bet ID - ensure it's always a string
+    const betId: string = `${String(event.id)}-${market}-${selectionName}-${Date.now()}`;
     
     // Add the bet to the slip
     addBet({

@@ -228,6 +228,22 @@ function enrichEventsWithOdds(events: any[]): any[] {
   return events.map(event => enrichEventWithOdds(event));
 }
 
+// STRICT SPORTID FILTER - only returns events matching the requested sport
+function filterEventsBySportId(events: any[], sportId: number | undefined): any[] {
+  if (!sportId) return events; // If no sportId specified, return all
+  
+  const filtered = events.filter(event => {
+    const matches = event.sportId === sportId;
+    if (!matches) {
+      console.log(`[SportFilter] REJECTING ${event.homeTeam} vs ${event.awayTeam}: sportId=${event.sportId}, requested=${sportId}`);
+    }
+    return matches;
+  });
+  
+  console.log(`[SportFilter] Filtered ${events.length} events → ${filtered.length} events for sportId ${sportId}`);
+  return filtered;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Start the event tracking service to monitor upcoming events
   eventTrackingService.start();
@@ -1620,8 +1636,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Filter to only show tomorrow's matches (Nov 24+)
         const filteredAllEvents = filterEventsByDate(allEvents);
         const enrichedAllEvents = enrichEventsWithOdds(filteredAllEvents);
-        console.log(`Found a total of ${enrichedAllEvents.length} events for tomorrow and beyond with odds`);
-        return res.json(enrichedAllEvents);
+        // STRICT: Filter by sportId if one was requested
+        const strictlyFilteredEvents = filterEventsBySportId(enrichedAllEvents, reqSportId);
+        console.log(`Found a total of ${strictlyFilteredEvents.length} events for sportId ${reqSportId || 'all'} with odds`);
+        return res.json(strictlyFilteredEvents);
       }
       
       // Flashscore fallback for upcoming events
@@ -1650,8 +1668,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Filter to tomorrow onwards
           const filteredFlashscore = filterEventsByDate(transformed);
           const enrichedFlashscore = enrichEventsWithOdds(filteredFlashscore);
-          console.log(`[Routes] Returning ${enrichedFlashscore.length} Flashscore events for tomorrow+ with odds`);
-          return res.json(enrichedFlashscore);
+          // STRICT: Filter by sportId if one was requested
+          const strictFlashscore = filterEventsBySportId(enrichedFlashscore, reqSportId);
+          console.log(`[Routes] Returning ${strictFlashscore.length} Flashscore events for sportId ${reqSportId || 'all'}`);
+          return res.json(strictFlashscore);
         }
       } catch (err) {
         console.warn("[Routes] Flashscore fallback failed:", err);
@@ -1670,8 +1690,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (events && events.length > 0) {
         const filteredDbEvents = filterEventsByDate(events);
         const enrichedDbEvents = enrichEventsWithOdds(filteredDbEvents);
-        console.log(`[Routes] Successfully returning ${enrichedDbEvents.length} database events for tomorrow+ with odds`);
-        return res.json(enrichedDbEvents);
+        // STRICT: Filter by sportId if one was requested
+        const strictDbEvents = filterEventsBySportId(enrichedDbEvents, reqSportId);
+        console.log(`[Routes] Successfully returning ${strictDbEvents.length} database events for sportId ${reqSportId || 'all'}`);
+        return res.json(strictDbEvents);
       } else {
         // If we somehow got here with no events from any source, log and return an empty array
         console.warn(`[Routes] No events found from any source for sportId: ${reqSportId}, isLive: ${isLive}`);

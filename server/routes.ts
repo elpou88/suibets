@@ -1063,8 +1063,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
-            // For other sports, filter by sportId as usual
-            const filteredEvents = upcomingEvents.filter(event => event.sportId === reqSportId);
+            // For other sports, FIRST ensure events have correct sportId, THEN filter
+            const eventsWithCorrectSportId = upcomingEvents.map(event => ({
+              ...event,
+              sportId: reqSportId // FORCE correct sportId for this sport
+            }));
+            
+            const filteredEvents = eventsWithCorrectSportId.filter(event => event.sportId === reqSportId);
             console.log(`Filtered to ${filteredEvents.length} events that match sportId: ${reqSportId}`);
             
             const strictFiltered = filterEventsBySportId(filteredEvents, reqSportId);
@@ -1138,7 +1143,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Continue with just the API Sports events on error
           }
           
-          // Return the combined events
+          // Return the combined events - if sportId requested, ensure correct sportId on all events
+          if (reqSportId) {
+            combinedEvents = combinedEvents.map(event => ({
+              ...event,
+              sportId: reqSportId // FORCE correct sportId
+            }));
+          }
           console.log(`Found ${combinedEvents.length} upcoming events for all sports combined`);
           const strictCombined = filterEventsBySportId(combinedEvents, reqSportId);
           return res.json(strictCombined);
@@ -1497,22 +1508,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // For other sports, check if events are not the correct sportId or have a dataSource property indicating they're adapted
-        const realEvents = sportEvents.filter(event => {
-          // Check if sportId matches
-          const matchesSportId = event.sportId === reqSportId;
-          
+        // For other sports, FORCE correct sportId on all events, then filter
+        const eventsWithForcedSportId = sportEvents.map(event => ({
+          ...event,
+          sportId: reqSportId // FORCE correct sportId for requested sport
+        }));
+        
+        // Filter out adapted events
+        const realEvents = eventsWithForcedSportId.filter(event => {
           // Check if event has a dataSource property indicating adaptation
           // @ts-ignore - event.dataSource may not be in the type definition but might be present in runtime
           const isAdapted = event.dataSource && typeof event.dataSource === 'string' && 
                           event.dataSource.includes("adapted");
           
-          // Only keep events that match the sport ID and are not adapted
-          return matchesSportId && !isAdapted;
+          // Only keep events that are not adapted
+          return !isAdapted;
         });
         
         if (realEvents && realEvents.length > 0) {
-          console.log(`Found ${realEvents.length} genuine ${sportName} events from API`);
+          console.log(`Found ${realEvents.length} genuine ${sportName} events from API (forced sportId: ${reqSportId})`);
           const filteredRealEvents = filterEventsByDate(realEvents);
           const enrichedRealEvents = enrichEventsWithOdds(filteredRealEvents);
           console.log(`[DateFilter] Filtered to ${enrichedRealEvents.length} future ${sportName} events with odds`);

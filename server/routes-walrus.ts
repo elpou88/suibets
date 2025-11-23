@@ -78,15 +78,40 @@ export function registerWalrusRoutes(app: Express) {
           message: "Missing required bet parameters" 
         });
       }
+
+      // SECURITY: Validate wallet address format (basic check)
+      if (!/^0x[a-f0-9]{40}$/i.test(walletAddress)) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid wallet address format"
+        });
+      }
+
+      // SECURITY: Validate amount is a positive number and within limits
+      const numAmount = Number(amount);
+      if (isNaN(numAmount) || numAmount <= 0 || numAmount > 10000000000000) {
+        return res.status(400).json({
+          success: false,
+          message: "Invalid amount - must be between 1 and 10,000,000,000,000"
+        });
+      }
       
       // Validate token type
       const validTokenType = tokenType === 'SUI' || tokenType === 'SBETS' ? tokenType : 'SUI';
       
-      // CALCULATE 1% PLATFORM FEE
-      const platformFee = amount * 0.01;
-      const betAmountAfterFee = amount - platformFee;
+      // CALCULATE 1% PLATFORM FEE - CRITICAL FOR REVENUE
+      const platformFee = numAmount * 0.01;
+      const betAmountAfterFee = numAmount - platformFee;
       
-      console.log(`[Walrus Bet] Amount: ${amount}, Platform Fee (1%): ${platformFee}, After Fee: ${betAmountAfterFee}`);
+      // SECURITY: Ensure bet amount after fee is still positive
+      if (betAmountAfterFee <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Bet amount too small after fee deduction"
+        });
+      }
+      
+      console.log(`[Walrus Bet] Wallet: ${walletAddress.slice(0,6)}...${walletAddress.slice(-4)}, Amount: ${numAmount}, Platform Fee (1%): ${platformFee}, After Fee: ${betAmountAfterFee}`);
       
       // Place the bet through Walrus protocol with fee deducted
       const txHash = await walrusService.placeBet(

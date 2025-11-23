@@ -37,8 +37,10 @@ const LiveScoreUpdates: React.FC<LiveScoreProps> = ({
   // Format the WebSocket URL based on current location
   const getWebSocketUrl = useCallback(() => {
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    // Ensure we have a valid host with port
-    const host = window.location.host || `localhost:${window.location.protocol === "https:" ? 443 : 80}`;
+    // Use window.location.host which includes port on Replit, fallback to localhost:5000
+    const host = window.location.host && window.location.host !== 'localhost' 
+      ? window.location.host 
+      : 'localhost:5000';
     return `${protocol}//${host}/ws`;
   }, []);
 

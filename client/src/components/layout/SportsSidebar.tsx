@@ -141,7 +141,6 @@ export default function SportsSidebar() {
           
           // Handle non-OK responses
           if (!response.ok) {
-            console.warn(`Live events lite API returned status ${response.status}`);
             throw new Error(`API status: ${response.status}`);
           }
           
@@ -150,7 +149,6 @@ export default function SportsSidebar() {
           
           // Simple validation that response looks like a JSON array
           if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
-            console.warn("Live events lite API did not return an array format");
             throw new Error("Invalid array format");
           }
           
@@ -160,7 +158,6 @@ export default function SportsSidebar() {
             
             // Double-check it's an array
             if (!Array.isArray(data)) {
-              console.warn("Live events lite API did not return an array after parsing:", typeof data);
               throw new Error("Not an array after parsing");
             }
             
@@ -176,12 +173,10 @@ export default function SportsSidebar() {
             
             return validEvents;
           } catch (jsonError) {
-            console.warn("Failed to parse lite API response:", jsonError);
             throw jsonError;
           }
         } catch (liteError) {
           // Fallback to main API endpoint
-          console.warn("Lite API failed, using fallback endpoint:", liteError);
           
           // Use the main API endpoint with longer timeout as fallback
           const fallbackResponse = await apiRequest('GET', '/api/events?isLive=true', undefined, { 
@@ -190,7 +185,6 @@ export default function SportsSidebar() {
           });
           
           if (!fallbackResponse.ok) {
-            console.warn(`Fallback API also failed with status ${fallbackResponse.status}`);
             return [];
           }
           

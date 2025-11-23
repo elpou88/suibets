@@ -122,7 +122,6 @@ export default function HomeReal() {
           clearTimeout(timeoutId);
           
           if (!response.ok) {
-            console.warn(`Live events lite API returned status ${response.status}`);
             return [];
           }
           
@@ -131,7 +130,6 @@ export default function HomeReal() {
           
           // Strict validation to ensure it's a JSON array format
           if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
-            console.warn('Live events lite API response is not in array format');
             return [];
           }
           
@@ -141,7 +139,6 @@ export default function HomeReal() {
             
             // Double-check it's an array
             if (!Array.isArray(data)) {
-              console.warn('Live events lite API did not return an array after parsing:', typeof data);
               return [];
             }
             
@@ -166,12 +163,10 @@ export default function HomeReal() {
             
             return validEvents;
           } catch (jsonError) {
-            console.warn('Failed to parse JSON from lite API:', jsonError);
             return [];
           }
         } catch (fetchError) {
           clearTimeout(timeoutId);
-          console.warn('Error fetching from lite API:', fetchError);
           return [];
         }
       } catch (error) {

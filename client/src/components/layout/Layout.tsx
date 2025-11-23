@@ -113,20 +113,12 @@ const Layout: React.FC<LayoutProps> = ({
           
           <div className="flex items-center space-x-2">
             <Button 
-              variant="outline" 
-              size="sm"
-              className="border-[#1e3a3f] bg-[#112225] text-cyan-200 text-xs hover:bg-[#1e3a3f] hover:text-cyan-400 transition-colors"
-              onClick={() => setLocation('/join')}
-            >
-              Join Now
-            </Button>
-            <Button 
               variant="default" 
               size="sm"
               className="bg-[#00ffff] hover:bg-[#00d8d8] text-black text-xs shadow-[0_0_10px_rgba(0,255,255,0.3)] transition-all hover:shadow-[0_0_15px_rgba(0,255,255,0.5)]"
               onClick={() => setIsWalletModalOpen(true)}
+              data-testid="button-connect-wallet"
             >
-              <Wallet className="mr-2 h-3 w-3" />
               Connect Wallet
             </Button>
           </div>

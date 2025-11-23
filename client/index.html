@@ -18,8 +18,15 @@
           return new OriginalWebSocket(...args);
         } catch (e) {
           if (e.message?.includes('wss://localhost:undefined') || e.message?.includes('Failed to construct')) {
-            console.log('[HMR-SUPPRESSED] WebSocket connection blocked:', e.message);
-            throw new Error('HMR disabled');
+            console.log('[HMR-SUPPRESSED] WebSocket connection blocked');
+            // Return a mock WebSocket that immediately closes to prevent errors
+            return {
+              readyState: WebSocket.CLOSED,
+              send: () => {},
+              close: () => {},
+              addEventListener: () => {},
+              removeEventListener: () => {}
+            };
           }
           throw e;
         }

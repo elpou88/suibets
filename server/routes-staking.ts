@@ -10,6 +10,11 @@ interface StakingRecord {
   amountStaked: number | null;
   rewardRate: number | null;
   accumulatedRewards: number | null;
+  isActive?: boolean;
+  lockedUntil?: Date;
+  stakingDate?: Date;
+  unstakingDate?: Date | null;
+  txHash?: string;
 }
 
 export function registerStakingRoutes(app: Express) {
@@ -84,7 +89,7 @@ export function registerStakingRoutes(app: Express) {
         stakes,
         totalStaked,
         totalRewards,
-        activeStakes: stakes.filter((s: StakingRecord) => s.isActive).length
+        activeStakes: stakes.filter((s: StakingRecord) => s.isActive === true).length
       });
     } catch (error) {
       console.error('[Staking] Error fetching stakes:', error);
@@ -112,7 +117,8 @@ export function registerStakingRoutes(app: Express) {
       const stake = stakes[0] as StakingRecord;
 
       const now = new Date();
-      if (stake.lockedUntil && new Date(stake.lockedUntil as any) > now) {
+      const lockedUntilDate = stake.lockedUntil ? new Date(stake.lockedUntil) : null;
+      if (lockedUntilDate && lockedUntilDate > now) {
         return res.status(400).json({ error: 'Tokens still locked' });
       }
 

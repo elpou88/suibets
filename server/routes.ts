@@ -1559,10 +1559,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             isLive: false,
             score: '0-0',
             time: e.time || 'TBD',
+            startTime: e.startTime || e.time || new Date().toISOString(),
             source: 'flashscore',
             ...e
           }));
-          return res.json(transformed);
+          // Filter to tomorrow onwards
+          const filteredFlashscore = filterEventsByDate(transformed);
+          console.log(`[Routes] Returning ${filteredFlashscore.length} Flashscore events for tomorrow+`);
+          return res.json(filteredFlashscore);
         }
       } catch (err) {
         console.warn("[Routes] Flashscore fallback failed:", err);
@@ -1579,8 +1583,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Return all events if we have them
       if (events && events.length > 0) {
-        console.log(`[Routes] Successfully returning ${events.length} events`);
-        return res.json(events);
+        const filteredDbEvents = filterEventsByDate(events);
+        console.log(`[Routes] Successfully returning ${filteredDbEvents.length} database events for tomorrow+`);
+        return res.json(filteredDbEvents);
       } else {
         // If we somehow got here with no events from any source, log and return an empty array
         console.warn(`[Routes] No events found from any source for sportId: ${reqSportId}, isLive: ${isLive}`);

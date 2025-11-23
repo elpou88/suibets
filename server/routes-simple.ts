@@ -5,7 +5,6 @@ import { ApiSportsService } from "./services/apiSportsService";
 const apiSportsService = new ApiSportsService();
 import { generateBasketballEvents, generateTennisEvents, generateSportEvents, getSportName } from "./services/basketballService";
 import { SettlementService } from "./services/settlementService";
-import { WalrusProtocolService } from "./services/walrusProtocolService";
 import { AdminService } from "./services/adminService";
 import errorHandlingService from "./services/errorHandlingService";
 import { EnvValidationService } from "./services/envValidationService";
@@ -428,18 +427,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         awayTeam: 'Team B'
       });
 
-      // Store on Walrus protocol
-      try {
-        await new WalrusProtocolService().storeBetOnWalrus({
-          betId,
-          walletAddress: `${userId}-${eventId}`,
-          eventId,
-          odds,
-          amount: betAmount
-        });
-      } catch (e) {
-        console.warn('Walrus storage failed (non-critical):', e);
-      }
 
       // Log to monitoring
       monitoringService.logBet({
@@ -463,7 +450,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           potentialPayout,
           odds
         },
-        walrus: { status: 'stored' }
       });
     } catch (error: any) {
       console.error("Bet placement error:", error);

@@ -102,11 +102,13 @@ export class ApiSportsService {
   };
 
   constructor(apiKey?: string) {
-    // Use provided key, environment variables, or default to the known working key
-    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "3ec255b133882788e32f6349eff77b21";
+    // Priority: API_SPORTS_KEY > SPORTSDATA_API_KEY > provided key > fallback
+    this.apiKey = apiKey || process.env.API_SPORTS_KEY || process.env.SPORTSDATA_API_KEY || "3ec255b133882788e32f6349eff77b21";
     
-    // Log key information
-    console.log(`[ApiSportsService] API key set, length: ${this.apiKey.length}`);
+    // Log key information with activation status
+    const keyStatus = process.env.API_SPORTS_KEY ? '✅ ACTIVE' : '⚠️ SUSPENDED/FALLBACK';
+    console.log(`[ApiSportsService] 🔑 API-SPORTS KEY: ${keyStatus} | Key length: ${this.apiKey.length}`);
+    console.log(`[ApiSportsService] 📍 Using endpoint: https://v3.football.api-sports.io`);
     
     // Set longer timeout for API requests
     axios.defaults.timeout = 15000;

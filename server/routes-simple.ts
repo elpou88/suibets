@@ -11,7 +11,9 @@ import errorHandlingService from "./services/errorHandlingService";
 import { EnvValidationService } from "./services/envValidationService";
 import monitoringService from "./services/monitoringService";
 import notificationService from "./services/notificationService";
+import balanceService from "./services/balanceService";
 import { getSportsToFetch } from "./sports-config";
+import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
 import WebSocket from 'ws';
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
@@ -369,19 +371,35 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Place a single bet
   app.post("/api/bets", async (req: Request, res: Response) => {
     try {
-      const { userId = 'user1', eventId, marketId, outcomeId, odds, betAmount, prediction } = req.body;
-      
-      if (!eventId || !marketId || !outcomeId || !odds || !betAmount || !prediction) {
-        return res.status(400).json({ message: "Missing required fields: eventId, marketId, outcomeId, odds, betAmount, prediction" });
+      // Validate request
+      const validation = validateRequest(PlaceBetSchema, req.body);
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: validation.errors 
+        });
       }
 
-      if (betAmount <= 0 || odds <= 0) {
-        return res.status(400).json({ message: "Bet amount and odds must be positive" });
+      const { userId, eventId, marketId, outcomeId, odds, betAmount, prediction } = validation.data!;
+
+      // Check user balance
+      const balance = balanceService.getBalance(userId);
+      const platformFee = betAmount * 0.01; // 1% platform fee
+      const totalDebit = betAmount + platformFee;
+
+      if (balance.suiBalance < totalDebit) {
+        return res.status(400).json({ 
+          message: `Insufficient balance. Required: ${totalDebit} SUI, Available: ${balance.suiBalance} SUI`
+        });
+      }
+
+      // Deduct bet from balance
+      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee);
+      if (!deductSuccess) {
+        return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
       }
 
       const betId = `bet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      const platformFee = betAmount * 0.01; // 1% platform fee
-      const totalDebit = betAmount + platformFee;
       const potentialPayout = Math.round(betAmount * odds * 100) / 100;
 
       const bet = {
@@ -456,16 +474,20 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Place a parlay bet (multiple selections)
   app.post("/api/bets/parlay", async (req: Request, res: Response) => {
     try {
-      const { userId = 'user1', selections, betAmount } = req.body;
+      // Validate request
+      const validation = validateRequest(ParlaySchema, req.body);
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: validation.errors 
+        });
+      }
+
+      const { userId, selections, betAmount } = validation.data!;
+
+      // Check user balance
+      const balance = balanceService.getBalance(userId);
       
-      if (!selections || !Array.isArray(selections) || selections.length < 2) {
-        return res.status(400).json({ message: "Parlay requires at least 2 selections" });
-      }
-
-      if (!betAmount || betAmount <= 0) {
-        return res.status(400).json({ message: "Bet amount must be positive" });
-      }
-
       // Calculate parlay odds (multiply all odds)
       const parlayOdds = selections.reduce((acc: number, sel: any) => acc * sel.odds, 1);
       
@@ -475,6 +497,19 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
+
+      if (balance.suiBalance < totalDebit) {
+        return res.status(400).json({ 
+          message: `Insufficient balance. Required: ${totalDebit} SUI, Available: ${balance.suiBalance} SUI`
+        });
+      }
+
+      // Deduct bet from balance
+      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee);
+      if (!deductSuccess) {
+        return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
+      }
+
       const potentialPayout = Math.round(betAmount * parlayOdds * 100) / 100;
 
       const parlayId = `parlay-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -653,6 +688,67 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     } catch (error) {
       console.error("Settlement error:", error);
       res.status(500).json({ message: "Failed to settle bet" });
+    }
+  });
+
+  // Get user balance
+  app.get("/api/user/balance", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string || 'user1';
+      const balance = balanceService.getBalance(userId);
+      res.json(balance);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch balance" });
+    }
+  });
+
+  // Withdraw SUI to wallet
+  app.post("/api/user/withdraw", async (req: Request, res: Response) => {
+    try {
+      // Validate request
+      const validation = validateRequest(WithdrawSchema, req.body);
+      if (!validation.valid) {
+        return res.status(400).json({ 
+          message: "Validation failed",
+          errors: validation.errors 
+        });
+      }
+
+      const { userId, amount } = validation.data!;
+      const result = balanceService.withdraw(userId, amount);
+
+      if (!result.success) {
+        return res.status(400).json({ message: result.message });
+      }
+
+      // Notify user of withdrawal
+      notificationService.notifyWithdrawal(userId, amount, 'completed');
+
+      console.log(`✅ WITHDRAWAL PROCESSED: ${userId} - ${amount} SUI`);
+      res.json({
+        success: true,
+        withdrawal: {
+          amount,
+          txHash: result.txHash,
+          status: 'completed',
+          timestamp: Date.now()
+        }
+      });
+    } catch (error: any) {
+      console.error("Withdrawal error:", error);
+      res.status(500).json({ message: error.message || "Failed to process withdrawal" });
+    }
+  });
+
+  // Get transaction history
+  app.get("/api/user/transactions", async (req: Request, res: Response) => {
+    try {
+      const userId = req.query.userId as string || 'user1';
+      const limit = parseInt(req.query.limit as string) || 50;
+      const transactions = balanceService.getTransactionHistory(userId, limit);
+      res.json(transactions);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch transactions" });
     }
   });
 

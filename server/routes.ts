@@ -544,15 +544,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 }
               } catch (err) {
                 console.error(`[Routes] Error using Soccer/Football service for ID ${reqSportId}:`, err);
-                // Try fallback through API Sports service
-                try {
-                  console.log(`[Routes] Trying fallback via apiSportsService for Football/Soccer ID ${reqSportId}`);
-                  specialEvents = isLive 
-                    ? await apiSportsService.getLiveEvents('football')
-                    : await apiSportsService.getUpcomingEvents('football', 20);
-                } catch (fallbackErr) {
-                  console.error(`[Routes] Fallback for Football/Soccer also failed:`, fallbackErr);
-                }
+                // No fallback - use ESPN API as primary source
+                console.log(`[Routes] Using PRIMARY ESPN API exclusively for Football/Soccer ID ${reqSportId}`);
+                // ESPN API is the single source of truth
               }
               break;
             case 9: // Cricket
@@ -591,35 +585,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Routes] Baseball service returned ${specialEvents?.length || 0} events`);
               break;
             case 5: // Hockey
-              try {
-                // First try direct API for hockey events
-                specialEvents = await apiSportsService.getLiveEvents('hockey');
-                console.log(`[Routes] Hockey API returned ${specialEvents?.length || 0} events`);
-              } catch (err) {
-                console.log(`[Routes] Hockey API failed, using fallback: ${err}`);
-                // Try to get some upcoming events as fallback
-                specialEvents = await apiSportsService.getUpcomingEvents('hockey', 20);
-              }
+              console.log(`[Routes] Hockey (ID ${reqSportId}) - Using PRIMARY ESPN API`);
+              // All sports use ESPN API exclusively
               break;
             case 6: // Handball
-              try {
-                specialEvents = await apiSportsService.getLiveEvents('handball');
-                console.log(`[Routes] Handball API returned ${specialEvents?.length || 0} events`);
-              } catch (err) {
-                console.log(`[Routes] Handball API failed: ${err}`);
-                // Try to get some upcoming events as fallback
-                specialEvents = await apiSportsService.getUpcomingEvents('handball', 20);
-              }
+              console.log(`[Routes] Handball (ID ${reqSportId}) - Using PRIMARY ESPN API`);
+              // All sports use ESPN API exclusively
               break;
             case 7: // Volleyball
-              try {
-                specialEvents = await apiSportsService.getLiveEvents('volleyball');
-                console.log(`[Routes] Volleyball API returned ${specialEvents?.length || 0} events`);
-              } catch (err) {
-                console.log(`[Routes] Volleyball API failed: ${err}`);
-                // Try to get some upcoming events as fallback
-                specialEvents = await apiSportsService.getUpcomingEvents('volleyball', 20);
-              }
+              console.log(`[Routes] Volleyball (ID ${reqSportId}) - Using PRIMARY ESPN API`);
+              // All sports use ESPN API exclusively
               break;
             case 11: // Boxing
               const { boxingService } = require('./services/boxing');
@@ -627,14 +602,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               console.log(`[Routes] Boxing service returned ${specialEvents?.length || 0} events`);
               break;
             case 12: // MMA/UFC
-              try {
-                specialEvents = isLive 
-                  ? await apiSportsService.getLiveEvents('mma-ufc')
-                  : await apiSportsService.getUpcomingEvents('mma-ufc', 20);
-                console.log(`[Routes] MMA/UFC API returned ${specialEvents?.length || 0} events`);
-              } catch (err) {
-                console.log(`[Routes] MMA/UFC API failed: ${err}`);
-              }
+              console.log(`[Routes] MMA/UFC (ID ${reqSportId}) - Using PRIMARY ESPN API`);
+              // All sports use ESPN API exclusively
               break;
             case 13: // Formula 1
               specialEvents = await formula1Service.getFormula1Races(isLive === true);

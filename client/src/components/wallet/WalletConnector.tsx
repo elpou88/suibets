@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { useWalrusProtocol } from '@/hooks/useWalrusProtocol';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Wallet, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Wallet, CheckCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ConnectButton, useWallet } from '@suiet/wallet-kit';
@@ -19,14 +19,8 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
   const [connecting, setConnecting] = useState(false);
   const [showWallets, setShowWallets] = useState(false);
   
-  // Get Suiet wallet state
   const suietWallet = useWallet();
 
-  // Check registration status if wallet is selected
-  const { data: registrationData, isLoading: isCheckingRegistration } = 
-    useWalletRegistration(selectedWallet || undefined);
-
-  // Effect to handle successful connection
   useEffect(() => {
     if (selectedWallet && currentWallet?.address) {
       if (onConnect) {
@@ -35,15 +29,11 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
     }
   }, [selectedWallet, currentWallet, onConnect]);
   
-  // Effect to handle Suiet wallet connection
   useEffect(() => {
     if (suietWallet.connected && suietWallet.address) {
       console.log('Suiet wallet connected:', suietWallet.address);
-      
-      // Set the selected wallet to the connected Suiet wallet
       setSelectedWallet(suietWallet.address);
       
-      // Notify parent component
       if (onConnect) {
         onConnect(suietWallet.address);
       }
@@ -60,27 +50,19 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
     setConnecting(true);
     
     try {
-      // First check if the wallet is already registered
-      if (registrationData?.isRegistered) {
-        toast({
-          title: 'Wallet Already Connected',
-          description: 'This wallet is already connected to the Walrus protocol.',
-          variant: 'default',
-        });
-        
-        setCurrentWallet({
-          address: walletAddress,
-          isRegistered: true
-        });
-        
-        if (onConnect) {
-          onConnect(walletAddress);
-        }
-      } else {
-        // If not registered, register it
-        await connectWalletMutation.mutateAsync(walletAddress);
+      await connectToWurlusProtocol(walletAddress);
+      
+      toast({
+        title: 'Wallet Connected',
+        description: `Connected to ${walletAddress.substring(0, 8)}...${walletAddress.substring(walletAddress.length - 6)}`,
+        variant: 'default',
+      });
+      
+      if (onConnect) {
+        onConnect(walletAddress);
       }
     } catch (error) {
+      console.error('Connection error:', error);
       toast({
         title: 'Connection Failed',
         description: 'Failed to connect wallet. Please try again.',
@@ -98,9 +80,7 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
 
   const handleDisconnect = async () => {
     setSelectedWallet(null);
-    setCurrentWallet(null);
     
-    // Disconnect Suiet wallet if connected
     if (suietWallet.connected) {
       try {
         await suietWallet.disconnect();
@@ -117,7 +97,6 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
     });
   };
 
-  // Display connected wallet info
   if (currentWallet?.address) {
     return (
       <Card className="w-full max-w-md mx-auto bg-[#112225] border-[#1e3a3f] text-white">
@@ -166,22 +145,19 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {connecting || connectWalletMutation.isPending || isCheckingRegistration ? (
+        {connecting ? (
           <div className="flex flex-col items-center justify-center p-4">
             <Loader2 className="h-8 w-8 animate-spin text-[#00ffff] mb-4" />
             <p className="text-sm text-gray-300 mb-2">
-              {isCheckingRegistration 
-                ? 'Checking wallet registration status...' 
-                : 'Connecting to Walrus protocol...'}
+              Connecting to Walrus protocol...
             </p>
             <Progress 
-              value={isCheckingRegistration ? 50 : 75} 
+              value={75} 
               className="h-1 w-full bg-[#1e3a3f]" 
             />
           </div>
         ) : showWallets ? (
           <div className="space-y-3">
-            {/* Suiet Wallet Connect Button */}
             <div className="w-full rounded overflow-hidden mb-4">
               <ConnectButton 
                 className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold py-3 px-4 rounded flex items-center justify-center"
@@ -210,28 +186,16 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
                 </li>
               </ul>
             </div>
+            <Button 
+              onClick={handleWalletButtonClick}
+              className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold"
+            >
+              <Wallet className="h-4 w-4 mr-2" />
+              Connect Wallet
+            </Button>
           </div>
         )}
       </CardContent>
-      <CardFooter>
-        {!showWallets && !connecting && !connectWalletMutation.isPending && !isCheckingRegistration && (
-          <Button 
-            className="w-full bg-[#00ffff] text-[#112225] hover:bg-cyan-300"
-            onClick={handleWalletButtonClick}
-          >
-            <Wallet className="mr-2 h-4 w-4" /> Connect Wallet
-          </Button>
-        )}
-        {showWallets && !connecting && !connectWalletMutation.isPending && !isCheckingRegistration && (
-          <Button 
-            variant="outline" 
-            className="w-full border-[#1e3a3f] text-gray-300 hover:bg-[#1e3a3f]"
-            onClick={() => setShowWallets(false)}
-          >
-            Cancel
-          </Button>
-        )}
-      </CardFooter>
     </Card>
   );
 }

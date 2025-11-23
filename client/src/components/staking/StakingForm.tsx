@@ -3,11 +3,10 @@ import { useLocation } from 'wouter';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { AlertCircle, Loader2, ArrowRight, TrendingUp, Lock, Wallet, Info, Calendar } from 'lucide-react';
+import { AlertCircle, Loader2, TrendingUp, Lock, Wallet, Info, Calendar } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
@@ -15,7 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from '@/hooks/use-toast';
-import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useWalrusProtocol } from '@/hooks/useWalrusProtocol';
 
 interface StakingOption {
   periodDays: number;
@@ -33,9 +32,8 @@ export function StakingForm({ className }: StakingFormProps) {
   const [selectedPeriod, setSelectedPeriod] = useState<number>(30);
   const [isStaking, setIsStaking] = useState(false);
   
-  const { currentWallet, stakeTokensMutation } = useWalrusProtocolContext();
+  const { currentWallet } = useWalrusProtocol();
   
-  // Staking options with APY percentages
   const stakingOptions: StakingOption[] = [
     { periodDays: 30, apy: 12 },
     { periodDays: 90, apy: 18 },
@@ -43,7 +41,6 @@ export function StakingForm({ className }: StakingFormProps) {
     { periodDays: 365, apy: 32 }
   ];
   
-  // Find the selected option
   const selectedOption = stakingOptions.find(option => option.periodDays === selectedPeriod) || stakingOptions[0];
   
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,19 +98,25 @@ export function StakingForm({ className }: StakingFormProps) {
     setIsStaking(true);
     
     try {
-      await stakeTokensMutation.mutateAsync({
-        walletAddress: currentWallet.address,
-        amount: stakeAmount,
-        periodDays: selectedOption.periodDays
+      const response = await fetch('/api/staking/stake', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          walletAddress: currentWallet.address,
+          amount: stakeAmount,
+          periodDays: selectedOption.periodDays
+        })
       });
+
+      if (!response.ok) throw new Error('Failed to stake tokens');
       
       toast({
         title: 'Tokens Staked Successfully',
         description: `You have staked ${stakeAmount} SBETS for ${selectedOption.periodDays} days.`,
-        variant: 'default',
       });
       
-      // Reset the form
       setStakeAmount(100);
     } catch (error) {
       console.error('Error staking tokens:', error);

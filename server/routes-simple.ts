@@ -11,6 +11,7 @@ import { EnvValidationService } from "./services/envValidationService";
 import monitoringService from "./services/monitoringService";
 import notificationService from "./services/notificationService";
 import balanceService from "./services/balanceService";
+import antiCheatService from "./services/smartContractAntiCheatService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
 import WebSocket from 'ws';
@@ -526,18 +527,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         parlay
       );
 
-      // Store on Walrus
-      try {
-        await new WalrusProtocolService().storeBetOnWalrus({
-          betId: parlayId,
-          walletAddress: `${userId}-parlay`,
-          eventId: 'parlay',
-          odds: parlayOdds,
-          amount: betAmount
-        });
-      } catch (e) {
-        console.warn('Walrus parlay storage failed (non-critical):', e);
-      }
 
       // Log to monitoring
       monitoringService.logBet({
@@ -629,24 +618,33 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const platformFee = settlement.payout > 0 ? settlement.payout * 0.01 : 0;
       const netPayout = settlement.payout - platformFee;
       
+      // ANTI-CHEAT: Sign settlement with oracle key
+      const outcome = settlement.status === 'won' ? 'won' : settlement.status === 'lost' ? 'lost' : 'void';
+      const settlementData = {
+        betId,
+        eventId: mockBet.eventId,
+        outcome: outcome as 'won' | 'lost' | 'void',
+        payout: settlement.payout,
+        timestamp: Date.now()
+      };
+
+      // Validate settlement logic to detect manipulation
+      const validationCheck = antiCheatService.validateSettlementLogic(settlementData, eventResult);
+      if (!validationCheck.valid) {
+        console.error(`🚨 ANTI-CHEAT REJECTION: ${validationCheck.reason}`);
+        return res.status(400).json({ message: `Settlement validation failed: ${validationCheck.reason}` });
+      }
+
+      // Sign settlement data cryptographically
+      const signedSettlement = antiCheatService.signSettlementData(settlementData);
+      const onChainProof = antiCheatService.generateOnChainProof(signedSettlement);
+
       // Update bet status
       await storage.updateBetStatus(betId, settlement.status, settlement.payout);
 
-      // Notify user of settlement
-      const outcome = settlement.status === 'won' ? 'won' : settlement.status === 'lost' ? 'lost' : 'void';
+      // Notify user of settlement with proof
       notificationService.notifyBetSettled(mockBet.userId, mockBet, outcome);
 
-      // Store settlement on Walrus
-      try {
-        await new WalrusProtocolService().storeSettlementOnWalrus({
-          betId,
-          settlementId: `settlement-${betId}-${Date.now()}`,
-          outcome: settlement.status,
-          payout: settlement.payout
-        });
-      } catch (e) {
-        console.warn('Walrus settlement storage failed (non-critical):', e);
-      }
 
       // Log settlement
       monitoringService.logSettlement({
@@ -669,6 +667,13 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           platformFee: platformFee,
           netPayout: netPayout,
           settledAt: Date.now()
+        },
+        antiCheat: {
+          signed: true,
+          signature: onChainProof.signature,
+          dataHash: onChainProof.dataHash,
+          oraclePublicKey: onChainProof.oraclePublicKey,
+          message: 'Settlement cryptographically verified and ready for Sui Move contract verification'
         }
       });
     } catch (error) {
@@ -811,95 +816,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         success: true,
         walrus: betBlob,
         message: `Bet ${betId} stored immutably on Walrus protocol`
-      });
-    } catch (error) {
-      console.error("Walrus storage error:", error);
-      res.status(500).json({ message: "Failed to store bet on Walrus" });
-    }
-  });
-
-  // Walrus Protocol endpoint - Store settlement on blockchain
-  app.post("/api/walrus/store-settlement", async (req: Request, res: Response) => {
-    try {
-      const { betId, settlementId, outcome, payout } = req.body;
-
-      if (!betId || !settlementId || !outcome || payout === undefined) {
-        return res.status(400).json({ message: "All settlement fields required" });
-      }
-
-      const walrusService = new WalrusProtocolService();
-      const settlementBlob = await walrusService.storeSettlementOnWalrus({
-        betId,
-        settlementId,
-        outcome,
-        payout
-      });
-
-      console.log(`✅ SETTLEMENT STORED ON WALRUS: ${settlementId}`);
-
-      res.json({
-        success: true,
-        walrus: settlementBlob,
-        message: `Settlement ${settlementId} stored immutably on Walrus protocol`
-      });
-    } catch (error) {
-      console.error("Walrus settlement error:", error);
-      res.status(500).json({ message: "Failed to store settlement on Walrus" });
-    }
-  });
-
-  // Move transaction generation endpoint
-  app.post("/api/sui/generate-bet-transaction", async (req: Request, res: Response) => {
-    try {
-      const { eventId, odds, amount, walletAddress } = req.body;
-
-      if (!eventId || !odds || !amount || !walletAddress) {
-        return res.status(400).json({ message: "All transaction fields required" });
-      }
-
-      const walrusService = new WalrusProtocolService();
-      const transaction = walrusService.createBetTransaction({
-        eventId,
-        odds,
-        amount,
-        walletAddress
-      });
-
-      console.log(`🔗 MOVE TRANSACTION GENERATED for bet`);
-
-      res.json({
-        success: true,
-        transaction,
-        message: "Sui Move transaction ready for wallet signing"
-      });
-    } catch (error) {
-      console.error("Transaction generation error:", error);
-      res.status(500).json({ message: "Failed to generate transaction" });
-    }
-  });
-
-  // WebSocket endpoint for live updates
-  const httpServer = createServer(app);
-  const wss = new WebSocket.Server({ server: httpServer, path: '/ws' });
-
-  // Track connected clients
-  let connectedClients = new Set<WebSocket>();
-  let broadcastInterval: NodeJS.Timeout;
-
-  wss.on('connection', (ws: WebSocket) => {
-    console.log('✅ WebSocket client connected');
-    connectedClients.add(ws);
-
-    ws.on('message', (data: string) => {
-      try {
-        const message = JSON.parse(data);
-        
-        if (message.type === 'ping') {
-          ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
-        } else if (message.type === 'subscribe') {
-          console.log(`Subscribed to sports: ${message.sports?.join(', ')}`);
-        }
-      } catch (error) {
         console.error('WebSocket message error:', error);
       }
     });

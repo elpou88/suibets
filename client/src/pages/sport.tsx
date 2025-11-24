@@ -542,19 +542,33 @@ export default function Sport() {
           </Tabs>
         </div>
         
-        {/* Bet slip sidebar */}
-        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f]">
-          {/* BetSlip */}
+        {/* Right sidebar - BetSlip and Hero Image */}
+        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] flex flex-col max-h-screen overflow-y-auto">
+          {/* BetSlip Container */}
           <div className="p-4">
             <BetSlip />
           </div>
           
-          {/* Hero Image below BetSlip - fixed visible height */}
-          <div className="px-4 py-3 bg-gradient-to-b from-[#061118] to-[#0a0e14]">
+          {/* Divider */}
+          <div className="h-px bg-gradient-to-r from-transparent via-cyan-500/30 to-transparent mx-2" />
+          
+          {/* Hero Image - Always Visible */}
+          <div className="flex-shrink-0 p-4">
             <img 
               src={suiBetsHero} 
-              alt="SuiBets" 
-              style={{ width: '100%', height: '280px', borderRadius: '8px', objectFit: 'cover' }}
+              alt="SuiBets Platform" 
+              style={{
+                width: '100%',
+                height: '320px',
+                borderRadius: '12px',
+                objectFit: 'cover',
+                boxShadow: '0 4px 20px rgba(0, 200, 255, 0.2)',
+                display: 'block'
+              }}
+              onError={(e) => {
+                console.error('Image failed to load:', suiBetsHero);
+                (e.target as HTMLImageElement).style.background = 'linear-gradient(135deg, #112225, #061118)';
+              }}
             />
           </div>
         </div>

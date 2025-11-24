@@ -13,46 +13,56 @@
   }
 }
 
-@keyframes slideBounce {
-  0% { transform: translateY(10px); opacity: 0; }
+@keyframes slideDown {
+  0% { transform: translateY(20px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeInScale {
+  0% { transform: scale(0.95); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes pulseNeon {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+  50% { opacity: 0.8; }
 }
 
-@keyframes shimmerNeon {
+@keyframes shimmerFlow {
   0% { background-position: -1000px 0; }
   100% { background-position: 1000px 0; }
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes floatUp {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
 }
 
 @layer base {
   :root {
     --background: 15 23% 6%;
     --foreground: 210 40% 98%;
-    
     --primary: 280 100% 50%;
     --primary-foreground: 0 0% 100%;
-    
     --secondary: 180 100% 50%;
     --secondary-foreground: 15 23% 6%;
-    
     --accent: 280 100% 50%;
     --accent-foreground: 0 0% 100%;
-    
     --card: 20 25% 12%;
     --card-foreground: 210 40% 98%;
-    
     --border: 220 30% 20%;
     --input: 220 30% 15%;
     --ring: 280 100% 50%;
-    
     --success: 120 100% 50%;
     --warning: 40 100% 50%;
     --danger: 0 100% 50%;
-    
     --radius: 0.75rem;
   }
 
@@ -75,7 +85,6 @@
     min-height: 100vh;
   }
 
-  /* Neon Scrollbar */
   ::-webkit-scrollbar {
     width: 10px;
     height: 10px;
@@ -99,147 +108,168 @@
 }
 
 @layer components {
-  /* Neon Card */
   .neon-card {
-    @apply relative overflow-hidden rounded-xl border border-purple-500/30 bg-gradient-to-br from-purple-950/50 to-slate-950/50 backdrop-blur-sm transition-all duration-300;
-    box-shadow: 0 0 20px rgba(138, 43, 226, 0.2), inset 0 0 20px rgba(138, 43, 226, 0.1);
+    @apply relative overflow-hidden rounded-2xl border-2 bg-clip-padding backdrop-blur-xl transition-all duration-500;
+    border-color: rgba(138, 43, 226, 0.3);
+    background: linear-gradient(135deg, rgba(10, 14, 20, 0.9), rgba(26, 10, 46, 0.7));
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .neon-card:hover {
-    @apply border-purple-500/60 shadow-lg;
-    box-shadow: 0 0 40px rgba(138, 43, 226, 0.4), inset 0 0 20px rgba(138, 43, 226, 0.15);
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 60px rgba(138, 43, 226, 0.4), 0 0 80px rgba(0, 255, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
   }
 
-  /* Neon Button */
   .neon-btn {
-    @apply px-6 py-3 rounded-lg font-bold text-white relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95;
+    @apply px-8 py-4 rounded-xl font-bold text-white relative overflow-hidden transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 border;
     background: linear-gradient(135deg, #8a2be2 0%, #5c1fa0 100%);
-    box-shadow: 0 0 20px rgba(138, 43, 226, 0.4);
-    border: 1px solid rgba(138, 43, 226, 0.6);
+    border-color: rgba(138, 43, 226, 0.8);
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
   }
 
   .neon-btn:hover {
-    box-shadow: 0 0 40px rgba(138, 43, 226, 0.8), 0 0 60px rgba(0, 255, 255, 0.3);
+    box-shadow: 0 0 60px rgba(138, 43, 226, 0.8), 0 0 80px rgba(0, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
-  /* Neon Button Cyan */
   .neon-btn-cyan {
-    @apply px-6 py-3 rounded-lg font-bold text-slate-900 relative overflow-hidden transition-all duration-300 hover:scale-105 active:scale-95;
+    @apply px-8 py-3 rounded-xl font-bold text-slate-900 relative overflow-hidden transition-all duration-300 cursor-pointer hover:scale-105 active:scale-95 border;
     background: linear-gradient(135deg, #00ffff 0%, #00d9ff 100%);
-    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
-    border: 1px solid rgba(0, 255, 255, 0.8);
+    border-color: rgba(0, 255, 255, 0.9);
+    box-shadow: 0 0 30px rgba(0, 255, 255, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   }
 
   .neon-btn-cyan:hover {
-    box-shadow: 0 0 40px rgba(0, 255, 255, 0.8), 0 0 60px rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 60px rgba(0, 255, 255, 0.8), 0 0 80px rgba(138, 43, 226, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.5);
   }
 
-  /* Odds Container */
   .odds-box {
-    @apply rounded-lg border-2 border-purple-500/40 bg-gradient-to-br from-purple-950/40 to-slate-900/40 p-4 transition-all duration-300;
-    box-shadow: 0 0 15px rgba(138, 43, 226, 0.2);
+    @apply rounded-2xl border-2 p-5 transition-all duration-300 cursor-pointer bg-gradient-to-br from-purple-950/60 to-slate-900/60;
+    border-color: rgba(138, 43, 226, 0.4);
+    box-shadow: 0 0 25px rgba(138, 43, 226, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .odds-box:hover {
-    @apply border-cyan-500/60;
-    box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 50px rgba(0, 255, 255, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15);
   }
 
   .odds-value {
-    @apply text-2xl font-bold bg-gradient-to-r from-purple-400 to-cyan-400 bg-clip-text text-transparent;
-    animation: pulseNeon 2s ease-in-out infinite;
-  }
-
-  /* Success Box */
-  .success-glow {
-    @apply rounded-lg border border-green-500/50 bg-gradient-to-br from-green-950/30 to-slate-900/50 p-4;
-    box-shadow: 0 0 20px rgba(34, 197, 94, 0.3);
-  }
-
-  .success-glow:hover {
-    box-shadow: 0 0 40px rgba(34, 197, 94, 0.5);
-  }
-
-  /* Balance Display */
-  .balance-display {
-    @apply text-3xl font-bold bg-gradient-to-r from-cyan-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent;
+    @apply text-2xl font-black bg-gradient-to-r from-cyan-300 via-purple-300 to-cyan-300 bg-clip-text text-transparent;
     animation: pulseNeon 2.5s ease-in-out infinite;
   }
 
-  /* Event Card */
+  .success-glow {
+    @apply rounded-2xl border-2 border-green-500/50 bg-gradient-to-br from-green-950/40 to-slate-900/60 p-5;
+    box-shadow: 0 0 30px rgba(34, 197, 94, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  .success-glow:hover {
+    box-shadow: 0 0 60px rgba(34, 197, 94, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  }
+
+  .balance-display {
+    @apply text-4xl font-black bg-gradient-to-r from-cyan-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent;
+    animation: gradientShift 8s ease infinite;
+    background-size: 200% 200%;
+  }
+
   .event-card {
-    @apply group relative rounded-xl border border-purple-500/20 bg-gradient-to-br from-slate-900/60 to-purple-900/40 p-4 transition-all duration-300;
-    box-shadow: 0 0 15px rgba(138, 43, 226, 0.1);
+    @apply group relative rounded-2xl border-2 bg-gradient-to-br from-slate-900/70 to-purple-900/50 p-5 transition-all duration-500 cursor-pointer;
+    border-color: rgba(138, 43, 226, 0.3);
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .event-card:hover {
-    @apply border-purple-500/50;
-    box-shadow: 0 0 35px rgba(138, 43, 226, 0.3), 0 0 60px rgba(0, 255, 255, 0.1);
-    transform: translateY(-2px);
+    border-color: rgba(0, 255, 255, 0.6);
+    box-shadow: 0 0 50px rgba(138, 43, 226, 0.4), 0 0 70px rgba(0, 255, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    transform: translateY(-4px);
   }
 
-  /* Market Badge */
   .market-badge {
-    @apply inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-purple-600/60 to-cyan-600/40 px-4 py-2 text-sm font-semibold text-white border border-purple-400/40;
-    box-shadow: 0 0 15px rgba(138, 43, 226, 0.2);
+    @apply inline-flex items-center gap-3 rounded-full bg-gradient-to-r from-purple-600/70 to-cyan-600/50 px-5 py-2 text-sm font-bold text-white border-2 border-purple-400/50 backdrop-blur-sm;
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.25);
   }
 
-  /* Bet Slip */
   .bet-slip {
-    @apply rounded-2xl border-2 border-purple-500/30 bg-gradient-to-br from-purple-950/60 to-slate-950/60 p-6 backdrop-blur;
-    box-shadow: 0 0 30px rgba(138, 43, 226, 0.25);
+    @apply rounded-2xl border-2 bg-gradient-to-br from-purple-950/70 to-slate-950/70 p-6 backdrop-blur-xl;
+    border-color: rgba(138, 43, 226, 0.4);
+    box-shadow: 0 0 40px rgba(138, 43, 226, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
-  /* Loading Spinner */
   .neon-spinner {
     animation: spin 2s linear infinite;
   }
 
-  /* Slide down animation */
   .slide-down {
-    animation: slideBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: slideDown 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .fade-scale {
+    animation: fadeInScale 0.5s ease-out;
+  }
+
+  .float-up {
+    animation: floatUp 3s ease-in-out infinite;
+  }
+
+  .shimmer {
+    animation: shimmerFlow 3s linear infinite;
+    background-size: 1000px 100%;
   }
 }
 
 @layer utilities {
   .text-glow {
     @apply text-white;
-    text-shadow: 0 0 10px rgba(138, 43, 226, 0.5), 0 0 20px rgba(0, 255, 255, 0.3);
+    letter-spacing: 0.5px;
+  }
+
+  .text-glow-cyan {
+    @apply text-cyan-300;
   }
 
   .glass-effect {
-    @apply backdrop-blur-md bg-white/5 border border-white/10 rounded-lg;
+    @apply backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl;
   }
 
   .neon-border {
-    @apply border-2 border-transparent bg-clip-padding;
-    background-image: linear-gradient(#0a0e14, #0a0e14), linear-gradient(135deg, #8a2be2, #00ffff);
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
+    @apply border-2 border-purple-500;
   }
 
   .grid-responsive {
-    @apply grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+    @apply grid gap-5 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
   }
 
   .container-padding {
-    @apply px-4 py-6 sm:px-6 lg:px-8;
+    @apply px-6 py-8 sm:px-8 lg:px-10;
   }
 
-  /* Mobile optimizations */
+  .premium-header {
+    @apply text-5xl font-black tracking-tight text-white;
+  }
+
+  .premium-subheader {
+    @apply text-2xl font-bold text-cyan-300;
+  }
+
   @media (max-width: 640px) {
     body {
       font-size: 14px;
     }
 
     .neon-btn {
-      @apply px-4 py-2 text-sm;
+      @apply px-5 py-3 text-base;
+      min-height: 50px;
+    }
+
+    .neon-btn-cyan {
+      @apply px-4 py-2.5 text-sm;
       min-height: 48px;
-      min-width: 48px;
     }
 
     .odds-box {
-      @apply p-3;
+      @apply p-4;
     }
 
     .odds-value {
@@ -247,23 +277,31 @@
     }
 
     .balance-display {
-      @apply text-2xl;
+      @apply text-3xl;
     }
 
     .event-card {
-      @apply p-3;
+      @apply p-4;
     }
 
     .bet-slip {
-      @apply p-4 sticky bottom-0 rounded-t-2xl;
+      @apply p-4 sticky bottom-0 rounded-t-2xl z-50;
     }
 
     .grid-responsive {
-      @apply grid-cols-1 gap-3;
+      @apply grid-cols-1 gap-4;
     }
 
     .container-padding {
-      @apply px-3 py-4;
+      @apply px-4 py-5;
+    }
+
+    .premium-header {
+      @apply text-3xl;
+    }
+
+    .premium-subheader {
+      @apply text-xl;
     }
 
     h1 {
@@ -275,7 +313,6 @@
     }
   }
 
-  /* Tablet optimizations */
   @media (min-width: 641px) and (max-width: 1024px) {
     .grid-responsive {
       @apply grid-cols-2;

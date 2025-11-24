@@ -19,10 +19,15 @@ export default function LiveReal() {
         
         {/* Main content */}
         <div className="flex-1 container-padding">
-          <div className="mb-8 slide-down">
-            <div className="flex items-center mb-6">
-              <Activity className="h-7 w-7 text-red-500 animate-pulse" />
-              <h1 className="text-4xl font-bold text-glow ml-3">🔴 LIVE BETTING</h1>
+          <div className="mb-8 slide-down fade-scale">
+            <div className="flex items-center mb-8">
+              <div className="relative">
+                <Activity className="h-8 w-8 text-red-500 animate-pulse" />
+                <div className="absolute inset-0 animate-pulse opacity-50">
+                  <Activity className="h-8 w-8 text-red-400" />
+                </div>
+              </div>
+              <h1 className="premium-header ml-4">LIVE BETTING</h1>
             </div>
             
             {/* Use our new LiveBettingMarkets component */}

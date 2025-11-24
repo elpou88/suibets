@@ -224,7 +224,7 @@ export default function HomeReal() {
           {/* Featured Content Section */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="text-4xl font-bold text-glow">🎲 Featured Events</h1>
+              <h1 className="premium-header">✨ Featured Events</h1>
               <button 
                 className="neon-btn-cyan text-sm"
                 onClick={() => setLocation('/live-real')}
@@ -236,9 +236,10 @@ export default function HomeReal() {
             {/* Featured Live Events */}
             {(liveEvents.length > 0 || liveEventsLoading) && (
               <div className="mb-8 slide-down">
-                <h2 className="text-2xl font-bold text-glow mb-4 flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-red-500 mr-2 animate-pulse"></div>
-                  🔴 LIVE NOW
+                <h2 className="premium-subheader mb-6 flex items-center gap-3">
+                  <div className="w-4 h-4 rounded-full bg-gradient-to-r from-red-500 to-pink-500 mr-2 animate-pulse shadow-lg shadow-red-500/50"></div>
+                  LIVE MATCHES
+                  <span className="text-xs font-semibold bg-red-500/30 text-red-300 px-3 py-1 rounded-full">NOW</span>
                 </h2>
                 
                 <div className="grid-responsive">

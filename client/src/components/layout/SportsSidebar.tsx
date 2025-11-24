@@ -425,8 +425,8 @@ export default function SportsSidebar() {
                   variant="ghost"
                   className={`w-full justify-start px-3 py-2 rounded-lg transition-all ${
                     isHovered 
-                      ? 'bg-blue-600/50 text-cyan-100 shadow-lg shadow-blue-500/40 border-l-2 border-blue-500' 
-                      : 'bg-blue-950/30 text-cyan-300 hover:bg-blue-900/50 hover:text-cyan-100'
+                      ? 'bg-cyan-500/30 text-cyan-50 shadow-lg shadow-cyan-500/50 border-l-2 border-cyan-500' 
+                      : 'text-white hover:text-cyan-200 hover:bg-cyan-500/20'
                   }`}
                   onClick={() => handleSportClick(sport)}
                   onMouseEnter={() => setHoveredSportId(sport.id)}

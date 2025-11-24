@@ -47,19 +47,19 @@
 
 @layer base {
   :root {
-    --background: 210 15% 6%;
+    --background: 200 30% 3%;
     --foreground: 210 40% 98%;
-    --primary: 210 100% 50%;
+    --primary: 200 100% 50%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 200 100% 45%;
-    --secondary-foreground: 15 23% 6%;
+    --secondary: 180 100% 50%;
+    --secondary-foreground: 0 0% 0%;
     --accent: 190 100% 50%;
-    --accent-foreground: 0 0% 100%;
-    --card: 210 25% 12%;
+    --accent-foreground: 0 0% 0%;
+    --card: 200 25% 8%;
     --card-foreground: 210 40% 98%;
-    --border: 210 30% 20%;
-    --input: 210 30% 15%;
-    --ring: 210 100% 50%;
+    --border: 200 30% 15%;
+    --input: 200 30% 10%;
+    --ring: 200 100% 50%;
     --success: 120 100% 50%;
     --warning: 40 100% 50%;
     --danger: 0 100% 50%;
@@ -81,7 +81,7 @@
 
   body {
     @apply font-sans antialiased bg-background text-foreground;
-    background: linear-gradient(135deg, #001a33 0%, #003366 50%, #001f4d 100%);
+    background: linear-gradient(135deg, #0a0e14 0%, #0d1520 50%, #061118 100%);
     min-height: 100vh;
   }
 
@@ -110,9 +110,9 @@
 @layer components {
   .neon-card {
     @apply relative overflow-hidden rounded-2xl border-2 bg-clip-padding backdrop-blur-xl transition-all duration-500;
-    border-color: rgba(0, 150, 255, 0.3);
-    background: linear-gradient(135deg, rgba(0, 25, 50, 0.9), rgba(0, 50, 100, 0.7));
-    box-shadow: 0 0 30px rgba(0, 150, 255, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    border-color: rgba(0, 200, 255, 0.4);
+    background: linear-gradient(135deg, rgba(10, 14, 20, 0.95), rgba(13, 21, 32, 0.85));
+    box-shadow: 0 0 30px rgba(0, 200, 255, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .neon-card:hover {

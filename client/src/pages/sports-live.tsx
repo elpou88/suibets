@@ -10,6 +10,7 @@ import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import { Clock, Calendar } from 'lucide-react';
+import suiBetsHero from "@assets/image_1764014704063.png";
 
 /**
  * Sport page that displays events for a specific sport with real-time data
@@ -233,7 +234,7 @@ export default function SportsLive() {
           <div className="p-4">
             <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
               <img 
-                src="/assets/image_1764014704063.png" 
+                src={suiBetsHero} 
                 alt="SuiBets" 
                 className="w-full h-auto object-cover max-h-40"
               />

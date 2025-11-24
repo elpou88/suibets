@@ -7,6 +7,7 @@ import { BetSlip } from "@/components/betting/BetSlip";
 import { useBetting } from "@/context/BettingContext";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import suiBetsHero from "@assets/image_1764014704063.png";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -286,7 +287,7 @@ export default function Home() {
           <div className="p-4">
             <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
               <img 
-                src="/assets/image_1764014704063.png" 
+                src={suiBetsHero} 
                 alt="SuiBets" 
                 className="w-full h-auto object-cover max-h-40"
               />

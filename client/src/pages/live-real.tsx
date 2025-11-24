@@ -4,6 +4,7 @@ import SportsSidebar from '@/components/layout/SportsSidebar';
 import LiveBettingMarkets from '@/components/betting/LiveBettingMarkets';
 import { AIBettingAdvisor } from '@/components/betting/AIBettingAdvisor';
 import { Activity } from 'lucide-react';
+import suiBetsHero from "@assets/image_1764014704063.png";
 
 /**
  * Live page that shows real-time live events with HTML/CSS components
@@ -58,7 +59,7 @@ export default function LiveReal() {
           <div className="p-4">
             <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
               <img 
-                src="/assets/image_1764014704063.png" 
+                src={suiBetsHero} 
                 alt="SuiBets" 
                 className="w-full h-auto object-cover max-h-40"
               />

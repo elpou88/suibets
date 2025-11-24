@@ -257,7 +257,7 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Team names with neon scores */}
-                      <div className="px-4 py-3 bg-gradient-to-b from-slate-900/50 to-purple-900/30">
+                      <div className="px-4 py-3 bg-gradient-to-b from-slate-900/50 to-blue-900/30">
                         <div className="grid grid-cols-1 gap-2">
                           <div className="flex items-center justify-between">
                             <div className="text-white font-bold truncate max-w-[70%]">{event.homeTeam}</div>

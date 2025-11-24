@@ -144,7 +144,7 @@ export function TransactionHistory({ className }: TransactionHistoryProps) {
       case 'stake':
         return <Wallet className="h-5 w-5 text-blue-400" />;
       case 'unstake':
-        return <ArrowDownRight className="h-5 w-5 text-purple-400" />;
+        return <ArrowDownRight className="h-5 w-5 text-blue-400" />;
       case 'claim':
         return <CheckCircle className="h-5 w-5 text-green-400" />;
       case 'dividend':

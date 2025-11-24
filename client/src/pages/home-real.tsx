@@ -224,27 +224,26 @@ export default function HomeReal() {
           {/* Featured Content Section */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="text-2xl font-bold text-white">Featured Events</h1>
-              <Button 
-                variant="outline" 
-                className="bg-[#00ffff] text-black border-transparent hover:bg-[#00d8d8]"
+              <h1 className="text-4xl font-bold text-glow">🎲 Featured Events</h1>
+              <button 
+                className="neon-btn-cyan text-sm"
                 onClick={() => setLocation('/live-real')}
               >
-                View All Live Events
-              </Button>
+                ⚡ View All Live
+              </button>
             </div>
             
             {/* Featured Live Events */}
             {(liveEvents.length > 0 || liveEventsLoading) && (
-              <div className="mb-8">
-                <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
+              <div className="mb-8 slide-down">
+                <h2 className="text-2xl font-bold text-glow mb-4 flex items-center">
                   <div className="w-3 h-3 rounded-full bg-red-500 mr-2 animate-pulse"></div>
-                  Live Events
+                  🔴 LIVE NOW
                 </h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                <div className="grid-responsive">
                   {liveEvents.slice(0, 9).map((event: any) => (
-                    <div key={event.id} className="bg-[#0b1618] border border-[#1e3a3f] rounded-md overflow-hidden hover:border-cyan-800">
+                    <div key={event.id} className="neon-card">
                       {/* Sport and Live indicator */}
                       <div className="px-3 py-2 flex justify-between items-center bg-[#0b1618] border-b border-[#1e3a3f]">
                         <div className="flex items-center space-x-2">
@@ -256,19 +255,19 @@ export default function HomeReal() {
                         </div>
                       </div>
                       
-                      {/* Team names in full display - stacked to avoid squashing */}
-                      <div className="px-3 py-0 bg-[#112225]">
-                        <div className="grid grid-cols-1 gap-0">
-                          <div className="flex items-center justify-between h-5">
-                            <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.homeTeam}</div>
-                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{
+                      {/* Team names with neon scores */}
+                      <div className="px-4 py-3 bg-gradient-to-b from-slate-900/50 to-purple-900/30">
+                        <div className="grid grid-cols-1 gap-2">
+                          <div className="flex items-center justify-between">
+                            <div className="text-white font-bold truncate max-w-[70%]">{event.homeTeam}</div>
+                            <div className="odds-value text-lg">{
                               typeof event.score === 'string' ? event.score.split(' - ')[0] : 
                               event.score?.home || event.homeScore || "0"
                             }</div>
                           </div>
-                          <div className="flex items-center justify-between h-5">
-                            <div className="text-white text-xs font-semibold truncate max-w-[75%]">{event.awayTeam}</div>
-                            <div className="text-[#00ffff] ml-2 font-bold text-right text-xs">{
+                          <div className="flex items-center justify-between">
+                            <div className="text-white font-bold truncate max-w-[70%]">{event.awayTeam}</div>
+                            <div className="odds-value text-lg">{
                               typeof event.score === 'string' ? event.score.split(' - ')[1] : 
                               event.score?.away || event.awayScore || "0"
                             }</div>

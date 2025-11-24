@@ -18,11 +18,11 @@ export default function LiveReal() {
         </div>
         
         {/* Main content */}
-        <div className="flex-1 p-4">
-          <div className="mb-6">
+        <div className="flex-1 container-padding">
+          <div className="mb-8 slide-down">
             <div className="flex items-center mb-6">
-              <Activity className="h-6 w-6 text-red-500 animate-pulse" />
-              <h1 className="text-2xl font-bold text-white ml-2">Live Betting</h1>
+              <Activity className="h-7 w-7 text-red-500 animate-pulse" />
+              <h1 className="text-4xl font-bold text-glow ml-3">🔴 LIVE BETTING</h1>
             </div>
             
             {/* Use our new LiveBettingMarkets component */}

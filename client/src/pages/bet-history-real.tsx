@@ -143,35 +143,39 @@ export default function BetHistoryReal() {
             {filteredBets && filteredBets.length > 0 ? (
               <div className="space-y-3">
                 {filteredBets.map((bet) => (
-                  <Card key={bet.id} className="overflow-hidden bg-gray-900 border-gray-700">
-                    <CardContent className="p-0">
-                      <div className="p-4 border-b border-gray-800">
-                        <div className="flex justify-between items-center">
-                          <div>
-                            <h3 className="font-medium">{bet.eventName}</h3>
-                            <p className="text-sm text-gray-400">{bet.marketName}</p>
-                          </div>
-                          <Badge className={getStatusColor(bet.status)}>
-                            {bet.status.charAt(0).toUpperCase() + bet.status.slice(1).replace('_', ' ')}
-                          </Badge>
+                  <div key={bet.id} className="neon-card overflow-hidden slide-down">
+                    <div className="p-4 border-b border-purple-500/30">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <h3 className="font-bold text-cyan-400">{bet.eventName}</h3>
+                          <p className="text-sm text-purple-300">{bet.marketName}</p>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          bet.status === 'won' ? 'bg-green-500/30 text-green-300' :
+                          bet.status === 'lost' ? 'bg-red-500/30 text-red-300' :
+                          bet.status === 'pending' ? 'bg-yellow-500/30 text-yellow-300' :
+                          'bg-blue-500/30 text-blue-300'
+                        }`}>
+                          {bet.status.charAt(0).toUpperCase() + bet.status.slice(1).replace('_', ' ')}
                         </div>
                       </div>
+                    </div>
                       <div className="p-4 flex flex-col gap-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Prediction</span>
-                          <span>{bet.prediction}</span>
+                          <span className="text-purple-300">Prediction</span>
+                          <span className="text-cyan-400 font-bold">{bet.prediction}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Odds</span>
-                          <span>{formatOdds(bet.odds)}</span>
+                          <span className="text-purple-300">Odds</span>
+                          <span className="odds-value text-base">{formatOdds(bet.odds)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Stake</span>
-                          <span>{bet.betAmount} {bet.currency}</span>
+                          <span className="text-purple-300">Stake</span>
+                          <span className="text-white font-bold">{bet.betAmount} {bet.currency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-400">Potential Payout</span>
-                          <span>{bet.potentialPayout.toFixed(2)} {bet.currency}</span>
+                          <span className="text-purple-300">Potential Payout</span>
+                          <span className="odds-value text-base">{bet.potentialPayout.toFixed(2)} {bet.currency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-400">Placed</span>
@@ -192,12 +196,11 @@ export default function BetHistoryReal() {
                         )}
                       </div>
                       {bet.status === 'pending' && (
-                        <div className="p-4 border-t border-gray-800">
-                          <Button variant="default" className="w-full">Cash Out</Button>
+                        <div className="p-4 border-t border-purple-500/30">
+                          <button className="neon-btn w-full">💸 Cash Out Now</button>
                         </div>
                       )}
-                    </CardContent>
-                  </Card>
+                    </div>
                 ))}
               </div>
             ) : (

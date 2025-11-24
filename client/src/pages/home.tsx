@@ -277,18 +277,18 @@ export default function Home() {
 
         {/* Right sidebar with BetSlip and Hero Image */}
         <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] flex flex-col max-h-screen overflow-y-auto">
-          {/* Hero Image in sidebar */}
-          <div className="relative overflow-hidden border-b border-[#1e3a3f] shadow-lg shadow-cyan-500/20">
+          {/* BetSlip */}
+          <div className="p-4 flex-shrink-0">
+            <BetSlip />
+          </div>
+
+          {/* Hero Image below BetSlip */}
+          <div className="relative overflow-hidden shadow-lg shadow-cyan-500/20 flex-shrink-0">
             <img 
               src="/assets/image_1764014704063.png" 
               alt="SuiBets" 
-              className="w-full h-auto object-cover max-h-32"
+              className="w-full h-auto object-cover max-h-48"
             />
-          </div>
-
-          {/* BetSlip */}
-          <div className="flex-1 p-4 overflow-y-auto">
-            <BetSlip />
           </div>
         </div>
       </div>

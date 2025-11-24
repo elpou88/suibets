@@ -211,13 +211,12 @@ export function BetSlip() {
       
       <CardContent className="pb-2 relative z-10">
         {selectedBets.length === 0 ? (
-          <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
-            <img 
-              src="/assets/image_1764014704063.png" 
-              alt="SuiBets" 
-              className="w-full h-auto object-cover max-h-96"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#0b1618] via-transparent to-transparent pointer-events-none" />
+          <div className="py-10 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#112225] to-[#0b1618] border border-[#1e3a3f] flex items-center justify-center">
+              <CoinsIcon className="h-8 w-8 text-cyan-400/60" />
+            </div>
+            <p className="text-cyan-200">No bets selected</p>
+            <p className="text-sm mt-2 text-cyan-300/60">Click on odds to add selections</p>
           </div>
         ) : (
           <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">

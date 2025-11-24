@@ -231,12 +231,12 @@ export default function SportsLive() {
           </div>
 
           {/* Hero Image below BetSlip */}
-          <div className="p-4">
-            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/30">
+          <div className="p-4 flex-1">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/30 h-full min-h-64">
               <img 
                 src={suiBetsHero} 
                 alt="SuiBets" 
-                className="w-full h-auto object-cover max-h-40"
+                className="w-full h-full object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-600/20 to-[#061118] pointer-events-none" />
             </div>

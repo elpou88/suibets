@@ -1,5 +1,5 @@
 import Layout from '@/components/layout/Layout';
-import { HeroBetSlip } from '@/components/betting/HeroBetSlip';
+import { BetSlip } from '@/components/betting/BetSlip';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import LiveBettingMarkets from '@/components/betting/LiveBettingMarkets';
 import { AIBettingAdvisor } from '@/components/betting/AIBettingAdvisor';
@@ -47,9 +47,9 @@ export default function LiveReal() {
           </div>
         </div>
         
-        {/* Right sidebar with hero image and bet slip */}
-        <div className="w-80">
-          <HeroBetSlip />
+        {/* Right sidebar with bet slip */}
+        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] p-4">
+          <BetSlip />
         </div>
       </div>
     </Layout>

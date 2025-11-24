@@ -246,9 +246,18 @@ export default function Home() {
   }, [events]);
 
   return (
-    <div className="w-full min-h-screen flex flex-col">
+    <div className="w-full min-h-screen flex flex-col bg-[#0a0e14]">
+      {/* SuiBets Hero Image */}
+      <div className="w-full overflow-hidden border-b border-[#1e3a3f] shadow-lg shadow-cyan-500/20">
+        <img 
+          src="/assets/image_1764014704063.png" 
+          alt="SuiBets" 
+          className="w-full h-auto object-cover max-h-48"
+        />
+      </div>
+
       <div 
-        className="relative w-full cursor-pointer" 
+        className="relative w-full flex-1 cursor-pointer" 
         onClick={handleImageClick}
       >
         <img 

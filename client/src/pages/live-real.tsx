@@ -27,7 +27,10 @@ export default function LiveReal() {
                   <Activity className="h-8 w-8 text-red-400" />
                 </div>
               </div>
-              <h1 className="premium-header ml-4">LIVE BETTING</h1>
+              <h1 className="premium-header ml-4 flex items-center gap-3">
+                LIVE BETTING
+                <span className="text-sm font-bold bg-gradient-to-r from-blue-500 to-cyan-400 px-3 py-1 rounded-full text-white">AI POWERED</span>
+              </h1>
             </div>
             
             {/* Use our new LiveBettingMarkets component */}

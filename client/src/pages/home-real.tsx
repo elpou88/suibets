@@ -224,7 +224,7 @@ export default function HomeReal() {
           {/* Featured Content Section */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-4">
-              <h1 className="premium-header">✨ Featured Events</h1>
+              <h1 className="premium-header">Featured Events</h1>
               <button 
                 className="neon-btn-cyan text-sm"
                 onClick={() => setLocation('/live-real')}

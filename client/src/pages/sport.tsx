@@ -545,7 +545,7 @@ export default function Sport() {
         {/* Bet slip sidebar */}
         <div className="w-80 bg-[#061118] flex flex-col min-h-screen">
           {/* BetSlip - scrollable container */}
-          <div className="p-4 flex-shrink-0">
+          <div className="p-4 flex-shrink-0 max-h-96 overflow-y-auto">
             <BetSlip />
           </div>
           

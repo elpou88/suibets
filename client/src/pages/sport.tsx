@@ -542,8 +542,20 @@ export default function Sport() {
         </div>
         
         {/* Bet slip sidebar */}
-        <div className="md:w-80">
+        <div className="md:w-80 flex flex-col">
           <BetSlip />
+          
+          {/* Hero Image below BetSlip */}
+          <div className="mt-4">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
+              <img 
+                src="/assets/image_1764014704063.png" 
+                alt="SuiBets" 
+                className="w-full h-auto object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+            </div>
+          </div>
           
           <Card className="mt-6 bg-[#112225] border border-[#1e3a3f]">
             <CardHeader className="pb-2 bg-[#0b1618]">

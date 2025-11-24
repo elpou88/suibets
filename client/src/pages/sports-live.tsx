@@ -222,9 +222,23 @@ export default function SportsLive() {
           </div>
         </div>
         
-        {/* Right sidebar with bet slip */}
-        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4">
-          <BetSlip />
+        {/* Right sidebar with bet slip and hero image */}
+        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] flex flex-col">
+          <div className="p-4">
+            <BetSlip />
+          </div>
+
+          {/* Hero Image below BetSlip */}
+          <div className="px-4 pb-4">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
+              <img 
+                src="/assets/image_1764014704063.png" 
+                alt="SuiBets" 
+                className="w-full h-auto object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+            </div>
+          </div>
         </div>
       </div>
     </Layout>

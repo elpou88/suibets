@@ -550,11 +550,11 @@ export default function Sport() {
           </div>
           
           {/* Hero Image below BetSlip - fixed visible height */}
-          <div className="p-4 h-80">
+          <div className="px-4 py-3 bg-gradient-to-b from-[#061118] to-[#0a0e14]">
             <img 
               src={suiBetsHero} 
               alt="SuiBets" 
-              className="w-full h-full object-cover rounded-lg"
+              style={{ width: '100%', height: '280px', borderRadius: '8px', objectFit: 'cover' }}
             />
           </div>
         </div>

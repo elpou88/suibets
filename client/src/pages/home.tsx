@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import sportImages from '@/data/sportImages';
 import SportsSidebar from "@/components/layout/SportsSidebar";
+import { BetSlip } from "@/components/betting/BetSlip";
 import { useBetting } from "@/context/BettingContext";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -247,27 +248,49 @@ export default function Home() {
 
   return (
     <div className="w-full min-h-screen flex flex-col bg-[#0a0e14]">
-      {/* SuiBets Hero Image */}
-      <div className="w-full overflow-hidden border-b border-[#1e3a3f] shadow-lg shadow-cyan-500/20">
-        <img 
-          src="/assets/image_1764014704063.png" 
-          alt="SuiBets" 
-          className="w-full h-auto object-cover max-h-48"
-        />
-      </div>
+      <div className="flex flex-1 min-h-screen">
+        {/* Main content area */}
+        <div className="flex-1 flex flex-col">
+          {/* SuiBets Hero Image */}
+          <div className="w-full overflow-hidden border-b border-[#1e3a3f] shadow-lg shadow-cyan-500/20">
+            <img 
+              src="/assets/image_1764014704063.png" 
+              alt="SuiBets" 
+              className="w-full h-auto object-cover max-h-48"
+            />
+          </div>
 
-      <div 
-        className="relative w-full flex-1 cursor-pointer" 
-        onClick={handleImageClick}
-      >
-        <img 
-          src="/images/Sports 2 (2).png" 
-          alt="Sports Home" 
-          className="w-full h-full object-contain pointer-events-none"
-        />
-        
-        {/* Overlay the sports sidebar on top of the image */}
-        <SportsSidebar />
+          <div 
+            className="relative flex-1 cursor-pointer" 
+            onClick={handleImageClick}
+          >
+            <img 
+              src="/images/Sports 2 (2).png" 
+              alt="Sports Home" 
+              className="w-full h-full object-contain pointer-events-none"
+            />
+            
+            {/* Overlay the sports sidebar on top of the image */}
+            <SportsSidebar />
+          </div>
+        </div>
+
+        {/* Right sidebar with BetSlip and Hero Image */}
+        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] flex flex-col max-h-screen overflow-y-auto">
+          {/* Hero Image in sidebar */}
+          <div className="relative overflow-hidden border-b border-[#1e3a3f] shadow-lg shadow-cyan-500/20">
+            <img 
+              src="/assets/image_1764014704063.png" 
+              alt="SuiBets" 
+              className="w-full h-auto object-cover max-h-32"
+            />
+          </div>
+
+          {/* BetSlip */}
+          <div className="flex-1 p-4 overflow-y-auto">
+            <BetSlip />
+          </div>
+        </div>
       </div>
       
       <ConnectWalletModal 

@@ -213,9 +213,9 @@ export default function HomeReal() {
   
   return (
     <Layout>
-      <div className="flex min-h-screen bg-[#112225]">
+      <div className="flex min-h-screen bg-[#003366]">
         {/* Left sidebar */}
-        <div className="w-64 bg-[#0b1618] border-r border-[#1e3a3f] min-h-screen">
+        <div className="w-64 bg-[#001a33] border-r border-[#1a4d66] min-h-screen">
           <SportsSidebar />
         </div>
         
@@ -246,7 +246,7 @@ export default function HomeReal() {
                   {liveEvents.slice(0, 9).map((event: any) => (
                     <div key={event.id} className="neon-card">
                       {/* Sport and Live indicator */}
-                      <div className="px-3 py-2 flex justify-between items-center bg-[#0b1618] border-b border-[#1e3a3f]">
+                      <div className="px-3 py-2 flex justify-between items-center bg-[#001a33] border-b border-[#1a4d66]">
                         <div className="flex items-center space-x-2">
                           <span className="inline-block w-2 h-2 bg-red-600 rounded-full animate-pulse"></span>
                           <span className="text-xs font-bold text-red-500">LIVE</span>
@@ -277,7 +277,7 @@ export default function HomeReal() {
                       </div>
                       
                       {/* Betting options with better visibility and consistent sizing */}
-                      <div className="p-0 m-0 bg-[#112225]">
+                      <div className="p-0 m-0 bg-[#003366]">
                         <div className="flex w-full my-0">
                         {event.markets && event.markets[0]?.outcomes ? (
                           event.markets[0].outcomes.map((outcome: any, idx: number) => (
@@ -340,8 +340,8 @@ export default function HomeReal() {
                     if (sportEvents.length === 0) return null;
                     
                     return (
-                      <div key={sport.id} className="border border-[#1e3a3f] rounded-md overflow-hidden">
-                        <div className="bg-[#0b1618] px-4 py-3 flex justify-between items-center">
+                      <div key={sport.id} className="border border-[#1a4d66] rounded-md overflow-hidden">
+                        <div className="bg-[#001a33] px-4 py-3 flex justify-between items-center">
                           <h3 className="font-semibold text-white">{sport.name}</h3>
                           <Button 
                             variant="link" 
@@ -356,11 +356,11 @@ export default function HomeReal() {
                           </Button>
                         </div>
                         
-                        <div className="divide-y divide-[#1e3a3f]">
+                        <div className="divide-y divide-[#1a4d66]">
                           {sportEvents.slice(0, 3).map((event: any) => (
-                            <div key={event.id} className="bg-[#0b1618] border-b border-[#1e3a3f] hover:bg-[#081214]">
+                            <div key={event.id} className="bg-[#001a33] border-b border-[#1a4d66] hover:bg-[#000d1a]">
                               {/* Header with time and league */}
-                              <div className="px-3 py-2 flex justify-between items-center bg-[#0b1618] border-b border-[#1e3a3f]">
+                              <div className="px-3 py-2 flex justify-between items-center bg-[#001a33] border-b border-[#1a4d66]">
                                 <div className="flex items-center space-x-2">
                                   <span className="text-xs font-medium text-cyan-300">
                                     {format(new Date(event.startTime), 'dd MMM HH:mm')}
@@ -372,7 +372,7 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Team names with FULL visibility */}
-                              <div className="px-3 py-0 bg-[#112225]">
+                              <div className="px-3 py-0 bg-[#003366]">
                                 <div className="grid grid-cols-1 gap-0">
                                   <div className="w-full h-5">
                                     <div className="text-white text-xs font-semibold truncate max-w-[90%]">{event.homeTeam}</div>
@@ -384,7 +384,7 @@ export default function HomeReal() {
                               </div>
                               
                               {/* Betting options with better visibility and sizing */}
-                              <div className="p-0 m-0 bg-[#112225]">
+                              <div className="p-0 m-0 bg-[#003366]">
                                 <div className="flex w-full my-0">
                                 {event.markets && event.markets[0]?.outcomes ? (
                                   event.markets[0].outcomes.map((outcome: any, idx: number) => (
@@ -442,7 +442,7 @@ export default function HomeReal() {
         </div>
         
         {/* Right sidebar with bet slip */}
-        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4 flex flex-col gap-4">
+        <div className="w-80 bg-[#001a33] border-l border-[#1a4d66] p-4 flex flex-col gap-4">
           {/* Bet Slip */}
           <BetSlip />
         </div>

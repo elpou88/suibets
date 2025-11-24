@@ -12,9 +12,9 @@ import { Activity } from 'lucide-react';
 export default function LiveReal() {
   return (
     <Layout>
-      <div className="flex min-h-screen bg-[#112225]">
+      <div className="flex min-h-screen bg-[#003366]">
         {/* Left sidebar */}
-        <div className="w-64 bg-[#0b1618] border-r border-[#1e3a3f] min-h-screen">
+        <div className="w-64 bg-[#001a33] border-r border-[#1a4d66] min-h-screen">
           <SportsSidebar />
         </div>
         
@@ -48,7 +48,7 @@ export default function LiveReal() {
         </div>
         
         {/* Right sidebar with bet slip */}
-        <div className="w-80 bg-[#0b1618] border-l border-[#1e3a3f] p-4">
+        <div className="w-80 bg-[#001a33] border-l border-[#1a4d66] p-4">
           <BetSlip />
         </div>
       </div>

@@ -62,7 +62,7 @@ export default function PromotionsReal() {
   return (
     <Layout showBackButton title="Promotions">
       {/* Referral Banner */}
-      <div className="w-full bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg overflow-hidden mb-6">
+      <div className="w-full bg-gradient-to-r from-blue-900 to-blue-800 rounded-lg overflow-hidden mb-6">
         <Link href="/promotions/referral">
           <div className="block relative">
             <div className="w-full h-32 md:h-48 relative">
@@ -105,7 +105,7 @@ export default function PromotionsReal() {
               }`}
               onClick={() => setActivePromo(promo)}
             >
-              <div className="h-40 bg-gradient-to-r from-purple-900 to-blue-900 relative">
+              <div className="h-40 bg-gradient-to-r from-blue-900 to-blue-800 relative">
                 {promo.type === 'sign-up-bonus' && (
                   <div className="absolute top-2 right-2 bg-emerald-600 text-white text-xs px-2 py-1 rounded-full">
                     SIGN-UP

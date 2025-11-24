@@ -144,11 +144,11 @@ export default function BetHistoryReal() {
               <div className="space-y-3">
                 {filteredBets.map((bet) => (
                   <div key={bet.id} className="neon-card overflow-hidden slide-down">
-                    <div className="p-4 border-b border-purple-500/30">
+                    <div className="p-4 border-b border-blue-500/30">
                       <div className="flex justify-between items-center">
                         <div>
                           <h3 className="font-bold text-cyan-400">{bet.eventName}</h3>
-                          <p className="text-sm text-purple-300">{bet.marketName}</p>
+                          <p className="text-sm text-blue-300">{bet.marketName}</p>
                         </div>
                         <div className={`px-3 py-1 rounded-full text-xs font-bold ${
                           bet.status === 'won' ? 'bg-green-500/30 text-green-300' :
@@ -162,19 +162,19 @@ export default function BetHistoryReal() {
                     </div>
                       <div className="p-4 flex flex-col gap-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-purple-300">Prediction</span>
+                          <span className="text-blue-300">Prediction</span>
                           <span className="text-cyan-400 font-bold">{bet.prediction}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-purple-300">Odds</span>
+                          <span className="text-blue-300">Odds</span>
                           <span className="odds-value text-base">{formatOdds(bet.odds)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-purple-300">Stake</span>
+                          <span className="text-blue-300">Stake</span>
                           <span className="text-white font-bold">{bet.betAmount} {bet.currency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-purple-300">Potential Payout</span>
+                          <span className="text-blue-300">Potential Payout</span>
                           <span className="odds-value text-base">{bet.potentialPayout.toFixed(2)} {bet.currency}</span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -196,7 +196,7 @@ export default function BetHistoryReal() {
                         )}
                       </div>
                       {bet.status === 'pending' && (
-                        <div className="p-4 border-t border-purple-500/30">
+                        <div className="p-4 border-t border-blue-500/30">
                           <button className="neon-btn w-full">💸 Cash Out Now</button>
                         </div>
                       )}

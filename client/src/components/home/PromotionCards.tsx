@@ -17,7 +17,7 @@ export function PromotionCards() {
     <div className="mb-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {displayPromotions.map((promotion, index) => (
-          <Card key={promotion.id} className={`overflow-hidden ${promotion.type === 'sign-up' ? 'bg-blue-800' : 'bg-purple-900'}`}>
+          <Card key={promotion.id} className={`overflow-hidden ${promotion.type === 'sign-up' ? 'bg-blue-800' : 'bg-blue-900'}`}>
             <CardContent className="p-6 text-white">
               <h3 className="text-xl md:text-3xl font-bold text-center">{promotion.title}</h3>
               <p className="text-sm mb-4 text-center">{promotion.description}</p>
@@ -34,7 +34,7 @@ export function PromotionCards() {
               </div>
               <div className="mt-4 flex justify-center">
                 <Link href="/join">
-                  <Button className={`${promotion.type === 'sign-up' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-purple-600 hover:bg-purple-700'}`}>
+                  <Button className={`${promotion.type === 'sign-up' ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                     Join Now
                   </Button>
                 </Link>

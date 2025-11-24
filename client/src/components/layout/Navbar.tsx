@@ -113,7 +113,7 @@ export default function Navbar() {
           {/* Promo link - Enhanced */}
           <a 
             href="/promotions-final.html" 
-            className="text-black bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-purple-500/50 transition-all duration-300 transform hover:scale-105"
+            className="text-white bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105"
           >
             Promo
           </a>

@@ -57,13 +57,13 @@ export default function LiveReal() {
 
           {/* Hero Image below BetSlip - Always visible */}
           <div className="p-4">
-            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/30">
               <img 
                 src={suiBetsHero} 
                 alt="SuiBets" 
                 className="w-full h-auto object-cover max-h-40"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-600/20 to-[#061118] pointer-events-none" />
             </div>
           </div>
         </div>

@@ -543,48 +543,20 @@ export default function Sport() {
         </div>
         
         {/* Bet slip sidebar */}
-        <div className="w-80 bg-[#061118] flex flex-col border-l border-[#1e3a3f] h-screen">
+        <div className="w-80 bg-[#061118] flex flex-col border-l border-[#1e3a3f]">
           {/* BetSlip - scrollable container */}
           <div className="p-4 max-h-96 overflow-y-auto">
             <BetSlip />
           </div>
           
           {/* Hero Image below BetSlip */}
-          <div className="p-4 h-64">
+          <div className="p-4">
             <img 
               src={suiBetsHero} 
               alt="SuiBets" 
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full rounded-lg shadow-lg"
             />
           </div>
-          
-          <Card className="m-4 bg-[#112225] border border-[#1e3a3f]">
-            <CardHeader className="pb-2 bg-[#0b1618]">
-              <CardTitle className="text-lg flex items-center text-white">
-                <Star className="w-4 h-4 mr-2 text-primary" />
-                Top {sportTitle} Markets
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="text-white">
-              <ul className="space-y-2">
-                <li>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Match Winner</Button>
-                </li>
-                <li>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Both Teams to Score</Button>
-                </li>
-                <li>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Total Goals/Points</Button>
-                </li>
-                <li>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">Handicap</Button>
-                </li>
-                <li>
-                  <Button variant="ghost" className="w-full justify-start text-white hover:bg-[#1e3a3f] hover:text-white">First Scorer</Button>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </Layout>

@@ -3,7 +3,6 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { ApiSportsService } from "./services/apiSportsService";
 const apiSportsService = new ApiSportsService();
-import { generateBasketballEvents, generateTennisEvents, generateSportEvents, getSportName } from "./services/basketballService";
 import { SettlementService } from "./services/settlementService";
 import { AdminService } from "./services/adminService";
 import errorHandlingService from "./services/errorHandlingService";

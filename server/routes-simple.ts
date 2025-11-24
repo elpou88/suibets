@@ -15,6 +15,7 @@ import antiCheatService from "./services/smartContractAntiCheatService";
 import zkLoginService from "./services/zkLoginService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
+import aiRoutes from "./routes-ai";
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -795,6 +796,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.status(500).json({ message: "Failed to process cash-out" });
     }
   });
+
+  // Register AI betting routes
+  app.use(aiRoutes);
 
   return httpServer;
 }

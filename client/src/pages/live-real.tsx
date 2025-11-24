@@ -2,6 +2,7 @@ import Layout from '@/components/layout/Layout';
 import { BetSlip } from '@/components/betting/BetSlip';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import LiveBettingMarkets from '@/components/betting/LiveBettingMarkets';
+import { AIBettingAdvisor } from '@/components/betting/AIBettingAdvisor';
 import { Activity } from 'lucide-react';
 
 /**
@@ -35,6 +36,14 @@ export default function LiveReal() {
             
             {/* Use our new LiveBettingMarkets component */}
             <LiveBettingMarkets />
+            
+            {/* AI Betting Advisor */}
+            <div className="mt-8">
+              <AIBettingAdvisor 
+                eventName="Live Event Analysis" 
+                sport="Mixed" 
+              />
+            </div>
           </div>
         </div>
         

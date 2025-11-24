@@ -8,6 +8,7 @@ import {
   TrendingDown, Trophy, MenuIcon, MessageCircle
 } from 'lucide-react';
 import { ConnectWalletModal } from '@/components/modals/ConnectWalletModal';
+import suibetsLogo from '@assets/suibets-logo.jpg';
 
 export interface LayoutProps {
   children: ReactNode;
@@ -95,14 +96,10 @@ const Layout: React.FC<LayoutProps> = ({
             ) : (
               <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLocation('/home-real')}>
                 <img 
-                  src="/logo/suibets-logo.png?v=999" 
+                  src={suibetsLogo} 
                   alt="SuiBets Logo" 
-                  className="h-8 w-auto object-contain"
+                  className="h-10 w-auto object-contain drop-shadow-[0_0_10px_rgba(0,255,255,0.4)]"
                   data-testid="logo-image"
-                  onError={(e) => {
-                    console.warn('Logo failed to load, showing text fallback');
-                    e.currentTarget.style.display = 'none';
-                  }}
                 />
               </div>
             )}

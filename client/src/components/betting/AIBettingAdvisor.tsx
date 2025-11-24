@@ -47,35 +47,23 @@ export function AIBettingAdvisor({ eventName, sport, teams }: AIBettingAdvisorPr
           <Sparkles className="w-5 h-5 text-blue-400" />
           AI Advisor
         </h3>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedProvider}
-            onChange={(e) => setSelectedProvider(e.target.value as AIProvider)}
-            disabled={isPending}
-            className="px-3 py-1 text-sm bg-blue-900/50 text-cyan-200 border border-blue-500/40 rounded-lg hover:bg-blue-900/70 disabled:opacity-50"
-          >
-            <option value="openai">GPT-4 Mini</option>
-            <option value="anthropic">Claude</option>
-            <option value="gemini">Gemini</option>
-          </select>
-          <button
-            onClick={() => getAISuggestion()}
-            disabled={isPending}
-            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-lg text-sm transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
-          >
-            {isPending ? (
-              <>
-                <Loader className="w-4 h-4 animate-spin" />
-                Analyzing...
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                Analyze
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={() => getAISuggestion()}
+          disabled={isPending}
+          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-lg text-sm transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+        >
+          {isPending ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" />
+              Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" />
+              Analyze
+            </>
+          )}
+        </button>
       </div>
 
       {suggestions.length > 0 && (

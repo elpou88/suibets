@@ -543,18 +543,18 @@ export default function Sport() {
         </div>
         
         {/* Bet slip sidebar */}
-        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] overflow-y-auto max-h-screen">
+        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f]">
           {/* BetSlip */}
           <div className="p-4">
             <BetSlip />
           </div>
           
-          {/* Hero Image below BetSlip */}
-          <div className="p-4">
+          {/* Hero Image below BetSlip - fixed visible height */}
+          <div className="p-4 h-80">
             <img 
               src={suiBetsHero} 
               alt="SuiBets" 
-              className="w-full rounded-lg shadow-lg"
+              className="w-full h-full object-cover rounded-lg"
             />
           </div>
         </div>

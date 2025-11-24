@@ -276,18 +276,22 @@ export default function Home() {
         </div>
 
         {/* Right sidebar with BetSlip and Hero Image */}
-        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] p-4 flex flex-col gap-4 overflow-y-auto">
-          {/* BetSlip */}
-          <BetSlip />
+        <div className="w-80 bg-[#061118] border-l border-[#1e3a3f] flex flex-col">
+          {/* BetSlip - scrollable container */}
+          <div className="p-4 max-h-96 overflow-y-auto">
+            <BetSlip />
+          </div>
 
           {/* Hero Image below BetSlip - Always visible */}
-          <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20 flex-shrink-0">
-            <img 
-              src="/assets/image_1764014704063.png" 
-              alt="SuiBets" 
-              className="w-full h-auto object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+          <div className="p-4">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
+              <img 
+                src="/assets/image_1764014704063.png" 
+                alt="SuiBets" 
+                className="w-full h-auto object-cover max-h-40"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+            </div>
           </div>
         </div>
       </div>

@@ -542,20 +542,25 @@ export default function Sport() {
         </div>
         
         {/* Bet slip sidebar */}
-        <div className="md:w-80 p-4 flex flex-col gap-4 bg-[#061118] overflow-y-auto max-h-screen">
-          <BetSlip />
-          
-          {/* Hero Image below BetSlip */}
-          <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20 flex-shrink-0">
-            <img 
-              src="/assets/image_1764014704063.png" 
-              alt="SuiBets" 
-              className="w-full h-auto object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+        <div className="md:w-80 bg-[#061118] flex flex-col">
+          {/* BetSlip - scrollable container */}
+          <div className="p-4 max-h-96 overflow-y-auto">
+            <BetSlip />
           </div>
           
-          <Card className="bg-[#112225] border border-[#1e3a3f]">
+          {/* Hero Image below BetSlip */}
+          <div className="p-4">
+            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/20">
+              <img 
+                src="/assets/image_1764014704063.png" 
+                alt="SuiBets" 
+                className="w-full h-auto object-cover max-h-40"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#061118] via-transparent to-transparent pointer-events-none" />
+            </div>
+          </div>
+          
+          <Card className="m-4 bg-[#112225] border border-[#1e3a3f]">
             <CardHeader className="pb-2 bg-[#0b1618]">
               <CardTitle className="text-lg flex items-center text-white">
                 <Star className="w-4 h-4 mr-2 text-primary" />

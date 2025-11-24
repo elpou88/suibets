@@ -1,0 +1,51 @@
+===================================
+RAILWAY ENVIRONMENT VARIABLES
+===================================
+
+Copy these to Railway Dashboard → Project Settings → Variables:
+
+NODE_ENV=production
+PORT=3000
+HOST=0.0.0.0
+VITE_API_URL=https://your-railway-domain.up.railway.app
+
+SBETS_TOKEN_ADDRESS=0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS
+ADMIN_WALLET_ADDRESS=<your_admin_wallet_address>
+REVENUE_WALLET_ADDRESS=<your_revenue_wallet_address>
+
+API_SPORTS_KEY=3ec255b133882788e32f6349eff77b21
+AI_INTEGRATIONS_OPENAI_API_KEY=<your_openai_key>
+
+CORS_ORIGIN=https://your-railway-domain.up.railway.app
+
+DATABASE_URL=<Auto-filled by Railway PostgreSQL Plugin>
+
+===================================
+SETUP STEPS:
+===================================
+
+1. Create railway.json in project root (use RAILWAY_CONFIG.json content)
+
+2. Push to GitHub
+
+3. On Railway.app:
+   - Click "Create New"
+   - Select "Deploy from GitHub"
+   - Choose your repo
+   - Click "Create"
+
+4. Add PostgreSQL Plugin:
+   - Click "+ Add"
+   - Select "PostgreSQL"
+   - Click "Create"
+   - The DATABASE_URL will auto-populate
+
+5. Set Environment Variables:
+   - Go to "Variables"
+   - Add each variable from this file
+   - Copy-paste the values
+
+6. Deploy:
+   - Click "Deploy"
+   - Wait for build to complete
+   - Check /health endpoint when done

@@ -550,11 +550,11 @@ export default function Sport() {
           </div>
           
           {/* Hero Image below BetSlip */}
-          <div className="p-4 flex-1 h-0">
+          <div className="p-4 h-64">
             <img 
               src={suiBetsHero} 
               alt="SuiBets" 
-              className="w-full h-full object-cover rounded-lg shadow-lg shadow-cyan-500/30"
+              className="w-full h-full object-cover rounded-lg"
             />
           </div>
           

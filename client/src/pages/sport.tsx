@@ -543,22 +543,19 @@ export default function Sport() {
         </div>
         
         {/* Bet slip sidebar */}
-        <div className="w-80 bg-[#061118] flex flex-col overflow-hidden border-l border-[#1e3a3f]">
+        <div className="w-80 bg-[#061118] flex flex-col border-l border-[#1e3a3f] min-h-screen">
           {/* BetSlip - scrollable container */}
-          <div className="p-4 max-h-80 overflow-y-auto flex-shrink-0">
+          <div className="p-4 max-h-96 overflow-y-auto">
             <BetSlip />
           </div>
           
-          {/* Hero Image below BetSlip - takes all remaining space */}
-          <div className="p-4 flex-1 min-h-0">
-            <div className="relative overflow-hidden rounded-lg shadow-lg shadow-cyan-500/30 h-full w-full">
-              <img 
-                src={suiBetsHero} 
-                alt="SuiBets" 
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-br from-cyan-500/10 via-blue-600/20 to-[#061118] pointer-events-none" />
-            </div>
+          {/* Hero Image below BetSlip */}
+          <div className="p-4 flex-1">
+            <img 
+              src={suiBetsHero} 
+              alt="SuiBets" 
+              className="w-full h-full object-cover rounded-lg shadow-lg shadow-cyan-500/30"
+            />
           </div>
           
           <Card className="m-4 bg-[#112225] border border-[#1e3a3f]">

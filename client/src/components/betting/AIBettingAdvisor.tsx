@@ -15,8 +15,11 @@ interface AIBettingAdvisorProps {
   teams?: { home: string; away: string };
 }
 
+type AIProvider = 'openai' | 'anthropic' | 'gemini';
+
 export function AIBettingAdvisor({ eventName, sport, teams }: AIBettingAdvisorProps) {
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
+  const [selectedProvider, setSelectedProvider] = useState<AIProvider>('openai');
 
   const { mutate: getAISuggestion, isPending } = useMutation({
     mutationFn: async () => {
@@ -28,6 +31,7 @@ export function AIBettingAdvisor({ eventName, sport, teams }: AIBettingAdvisorPr
           sport,
           homeTeam: teams?.home,
           awayTeam: teams?.away,
+          provider: selectedProvider,
         }),
       });
       if (!response.ok) throw new Error('Failed to get AI suggestion');
@@ -38,28 +42,40 @@ export function AIBettingAdvisor({ eventName, sport, teams }: AIBettingAdvisorPr
 
   return (
     <div className="bg-gradient-to-br from-blue-950/40 to-slate-900/60 rounded-2xl border-2 border-blue-500/40 p-5 backdrop-blur-sm">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4 gap-3">
         <h3 className="flex items-center gap-2 text-lg font-bold text-blue-300">
           <Sparkles className="w-5 h-5 text-blue-400" />
-          AI Betting Advisor
+          AI Advisor
         </h3>
-        <button
-          onClick={() => getAISuggestion()}
-          disabled={isPending}
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-lg text-sm transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2"
-        >
-          {isPending ? (
-            <>
-              <Loader className="w-4 h-4 animate-spin" />
-              Analyzing...
-            </>
-          ) : (
-            <>
-              <Sparkles className="w-4 h-4" />
-              Get Advice
-            </>
-          )}
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedProvider}
+            onChange={(e) => setSelectedProvider(e.target.value as AIProvider)}
+            disabled={isPending}
+            className="px-3 py-1 text-sm bg-blue-900/50 text-cyan-200 border border-blue-500/40 rounded-lg hover:bg-blue-900/70 disabled:opacity-50"
+          >
+            <option value="openai">GPT-4 Mini</option>
+            <option value="anthropic">Claude</option>
+            <option value="gemini">Gemini</option>
+          </select>
+          <button
+            onClick={() => getAISuggestion()}
+            disabled={isPending}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white font-semibold rounded-lg text-sm transition-all hover:scale-105 disabled:opacity-50 flex items-center gap-2 whitespace-nowrap"
+          >
+            {isPending ? (
+              <>
+                <Loader className="w-4 h-4 animate-spin" />
+                Analyzing...
+              </>
+            ) : (
+              <>
+                <Sparkles className="w-4 h-4" />
+                Analyze
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {suggestions.length > 0 && (

@@ -121,7 +121,8 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
-- December 29, 2025: Fixed routing issues - removed legacy pages that redirected to old promotions page
+- December 29, 2025: Fixed tennis API error - tennis API (v1.tennis.api-sports.io) doesn't exist, now returns empty array cleanly
+- Fixed routing issues - removed legacy pages that redirected to old promotions page
 - Deleted obsolete pages: home.tsx, promotions.tsx, promotions-real.tsx, Live-new.tsx, live-exact.tsx, sports-exact.tsx, connect-wallet.tsx, redirect-to-promotions.tsx, live/index.tsx
 - Updated data refresh intervals: 15 seconds for live events, 30 seconds for upcoming events (was 60 seconds)
 - Increased event limit from 50 to 100 per sport for better match coverage
@@ -129,6 +130,21 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - Unified routing through App.tsx with modern pages only (clean-home, live-events, bet-history, etc.)
 - PostgreSQL database for bets with proper wurlusBetId field
 - Zero tolerance for mock data - only genuine API responses with verified live status indicators
+
+## Working API-Sports Endpoints
+- Football: v3.football.api-sports.io ✅
+- Basketball: v1.basketball.api-sports.io ✅ (Free tier)
+- MMA/UFC: v1.mma.api-sports.io ✅
+- Baseball: v1.baseball.api-sports.io ✅
+- Hockey: v1.hockey.api-sports.io ✅
+- Rugby: v1.rugby.api-sports.io ✅
+- Handball: v1.handball.api-sports.io ✅
+- Volleyball: v1.volleyball.api-sports.io ✅
+- Formula 1: v1.formula-1.api-sports.io ✅
+- American Football: v1.american-football.api-sports.io ✅
+
+## Non-existent APIs (fall back to football or return empty)
+- Tennis, Cricket, Golf, Boxing, Cycling, Snooker, Darts, Table Tennis, Badminton, Motorsport, Esports, Netball, Aussie Rules
 
 ## User Preferences
 

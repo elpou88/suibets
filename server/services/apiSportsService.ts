@@ -17,7 +17,7 @@ export class ApiSportsService {
   private cacheExpiry: number = 30 * 1000; // Default cache expiry - 30 seconds for frequent updates
   
   // Cache version to force refresh when code changes
-  private cacheVersionKey: string = "v5"; // Increment this when making changes to force cache refresh
+  private cacheVersionKey: string = "v6"; // Increment this when making changes to force cache refresh
   
   /**
    * Update the API key 
@@ -131,10 +131,10 @@ export class ApiSportsService {
       // Try to verify at least the football API connection first
       await this.verifyApiConnection('football');
       
-      // Try other important sports APIs in parallel
+      // Try other important sports APIs in parallel (only ones that exist)
+      // Note: tennis, cricket, golf, boxing, cycling APIs don't exist
       Promise.all([
         this.verifyApiConnection('basketball'),
-        this.verifyApiConnection('tennis'),
         this.verifyApiConnection('mma-ufc')
       ]).catch(error => {
         console.warn(`[ApiSportsService] Some sport APIs may not be available: ${error.message}`);
@@ -371,11 +371,12 @@ export class ApiSportsService {
       // Use a shorter cache expiry for live events
       const cacheKey = `live_events_${sport}`;
       
-      // Get data from the cache or fetch it fresh - Use short expiry for live events
+      // Get data from the cache or fetch it fresh - Use short expiry (15 seconds) for live events
       const events = await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching live events for ${sport}`);
         
         // Try to use the sport-specific API endpoint if available
+        // Note: tennis, cricket, golf, boxing, cycling APIs don't exist - they will fall through to football
         const sportEndpoints: Record<string, string> = {
           football: 'https://v3.football.api-sports.io/fixtures',
           soccer: 'https://v3.football.api-sports.io/fixtures',
@@ -384,57 +385,42 @@ export class ApiSportsService {
           hockey: 'https://v1.hockey.api-sports.io/games',
           rugby: 'https://v1.rugby.api-sports.io/games',
           american_football: 'https://v1.american-football.api-sports.io/games',
-          tennis: 'https://v1.tennis.api-sports.io/matches', // Fixed - should be matches, not games
-          cricket: 'https://v1.cricket.api-sports.io/fixtures',
+          'american-football': 'https://v1.american-football.api-sports.io/games',
           handball: 'https://v1.handball.api-sports.io/games',
           volleyball: 'https://v1.volleyball.api-sports.io/games',
           mma: 'https://v1.mma.api-sports.io/fights',
-          'mma-ufc': 'https://v1.mma.api-sports.io/fights', // Added specific key for mma-ufc
-          boxing: 'https://v1.boxing.api-sports.io/fights',
-          golf: 'https://v1.golf.api-sports.io/tournaments',
+          'mma-ufc': 'https://v1.mma.api-sports.io/fights',
           formula_1: 'https://v1.formula-1.api-sports.io/races',
-          cycling: 'https://v1.cycling.api-sports.io/races'
+          'formula-1': 'https://v1.formula-1.api-sports.io/races'
         };
         
         // Create params based on API endpoint format
-        // Different APIs may use different parameter names
+        // Only include params for APIs that actually exist
         const getParams = (endpoint: string): Record<string, string> => {
           if (endpoint.includes('football')) {
             return { live: 'all' };
           } else if (endpoint.includes('basketball')) {
-            // Basketball requires today's date and status for live games
-            const today = new Date().toISOString().split('T')[0]; // Format as YYYY-MM-DD
+            const today = new Date().toISOString().split('T')[0];
             return { 
               date: today,
               timezone: 'UTC',
-              status: 'NS-1Q-2Q-3Q-4Q-OT-BT-HT'  // All possible in-game statuses
+              status: 'NS-1Q-2Q-3Q-4Q-OT-BT-HT'
             };
-          } else if (endpoint.includes('boxing')) {
-            return { status: 'live' };
           } else if (endpoint.includes('mma')) {
             return { status: 'live' };
-          } else if (endpoint.includes('golf')) {
-            return { status: 'inplay' };
-          } else if (endpoint.includes('formula-1') || endpoint.includes('motorsport') || endpoint.includes('motogp')) {
+          } else if (endpoint.includes('formula-1')) {
             return { status: 'live' };
-          } else if (endpoint.includes('cycling')) {
-            return { status: 'inprogress' };
-          } else if (endpoint.includes('snooker') || endpoint.includes('darts')) {
-            return { status: 'live' };
-          } else if (endpoint.includes('handball') || endpoint.includes('volleyball') || endpoint.includes('beach-volleyball')) {
+          } else if (endpoint.includes('handball') || endpoint.includes('volleyball')) {
             return { live: 'true' };
           } else if (endpoint.includes('rugby')) {
-            return { status: 'LIVE' }; // Rugby may use uppercase status codes
-          } else if (endpoint.includes('winter-sports') || endpoint.includes('skiing')) {
-            return { status: 'live' };
-          } else if (endpoint.includes('cricket')) {
-            return { live: 'true', status: 'live' }; // Try both formats for cricket
-          } else if (endpoint.includes('table-tennis') || endpoint.includes('badminton')) {
-            return { status: 'live' };
-          } else if (endpoint.includes('esports')) {
-            return { status: 'live' };
+            return { status: 'LIVE' };
+          } else if (endpoint.includes('american-football')) {
+            return { live: 'true' };
+          } else if (endpoint.includes('baseball')) {
+            return { live: 'true' };
+          } else if (endpoint.includes('hockey')) {
+            return { live: 'true' };
           } else {
-            // Most other sport APIs use this format
             return { live: 'true' };
           }
         };
@@ -495,7 +481,7 @@ export class ApiSportsService {
           console.log(`[ApiSportsService] API unavailable for ${sport} - returning empty array`);
           return [];
         }
-      });
+      }, this.shortCacheExpiry); // Use 15-second cache for live events
       
       // Transform to our format with the right sportId based on requested sport
       const transformedEvents = this.transformEventsData(events, sport, true);
@@ -547,53 +533,12 @@ export class ApiSportsService {
   
   /**
    * Get live tennis events specifically
-   * This handles the case when the tennis API is not accessible
+   * Note: The tennis API (v1.tennis.api-sports.io) does not exist, so return empty array
    */
   private async getTennisLiveEvents(): Promise<SportEvent[]> {
-    console.log(`[ApiSportsService] Getting genuine tennis-specific live events`);
-    
-    const sportId = 3; // Tennis
-    const cacheKey = 'live_events_tennis';
-    
-    // Get data from the cache or fetch it fresh
-    const events = await this.getCachedOrFetch(cacheKey, async () => {
-      // Try accessing the dedicated tennis API first
-      console.log(`[ApiSportsService] Trying tennis-specific API`);
-      try {
-        const response = await axios.get('https://v1.tennis.api-sports.io/matches', {
-          params: { live: 'true' },
-          headers: {
-            'x-apisports-key': this.apiKey,
-            'Accept': 'application/json'
-          }
-        });
-        
-        if (response.data && response.data.response) {
-          const rawEvents = response.data.response;
-          console.log(`[ApiSportsService] Found ${rawEvents.length} raw live tennis events!`);
-          
-          return rawEvents.map((event: any) => ({
-            ...event,
-            _sportId: sportId,
-            _sportName: 'tennis'
-          }));
-        }
-      } catch (tennisApiError) {
-        console.error(`[ApiSportsService] Tennis API error:`, tennisApiError);
-      }
-      
-      // Since the tennis API is not accessible, we'll inform the user
-      console.log(`[ApiSportsService] Tennis API is not accessible. Unable to retrieve tennis data from the API.`);
-      
-      // Return empty array - we won't use mock data per user requirements
-      return [];
-    });
-    
-    // Transform the events to our SportEvent format (if any)
-    const sportEvents = this.transformEventsData(events, 'tennis', true);
-    console.log(`[ApiSportsService] Transformed ${events.length} tennis events into ${sportEvents.length} SportEvents`);
-    
-    return sportEvents;
+    // Tennis API doesn't exist - return empty array without making API call
+    console.log(`[ApiSportsService] Tennis API not available - returning empty array`);
+    return [];
   }
   
 
@@ -717,14 +662,6 @@ export class ApiSportsService {
               season: new Date().getFullYear()
             };
             break;
-          case 'afl':
-            apiUrl = 'https://v1.aussie-rules.api-sports.io/games';
-            params = {
-              date: fromDate,
-              status: 'NS', // Not Started games only
-              season: new Date().getFullYear()
-            };
-            break;
           case 'mma-ufc':
             apiUrl = 'https://v1.mma.api-sports.io/fights';
             // For MMA, search for scheduled events
@@ -732,16 +669,15 @@ export class ApiSportsService {
               status: 'scheduled'
             };
             break;
-          case 'boxing':
-            apiUrl = 'https://v1.boxing.api-sports.io/fights';
-            // For boxing, search for scheduled events
+          case 'mma':
+            apiUrl = 'https://v1.mma.api-sports.io/fights';
             params = {
               status: 'scheduled'
             };
-            console.log('[ApiSportsService] Using boxing-specific endpoint for retrieving upcoming boxing events');
             break;
           default:
-            // Default to football API for other sports
+            // For all other sports (tennis, cricket, golf, boxing, cycling, snooker, darts, etc.),
+            // fall back to football API as they don't have dedicated API-Sports endpoints
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
               next: '200', // Default to next 200 fixtures for comprehensive coverage

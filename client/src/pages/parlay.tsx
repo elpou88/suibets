@@ -1,19 +1,18 @@
 import { useState } from 'react';
-import Layout from '@/components/layout/Layout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/hooks/use-toast';
+import { Link } from 'wouter';
 import { useBetting } from '@/context/BettingContext';
+import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useToast } from '@/hooks/use-toast';
+import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   Layers, 
   Plus, 
   Trash2, 
   Calculator,
-  TrendingUp,
-  AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Wallet,
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 interface ParlayLeg {
@@ -26,7 +25,9 @@ interface ParlayLeg {
 export default function ParlayPage() {
   const { toast } = useToast();
   const { selectedBets, removeBet, clearBets } = useBetting();
+  const { currentWallet } = useWalrusProtocolContext();
   const [stake, setStake] = useState('10');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const parlayLegs: ParlayLeg[] = selectedBets.map((bet: any) => ({
     id: bet.id,
@@ -40,190 +41,215 @@ export default function ParlayPage() {
 
   const handleRemoveLeg = (id: string) => {
     removeBet(id);
-    toast({
-      title: 'Leg Removed',
-      description: 'Selection removed from parlay',
-    });
+    toast({ title: 'Removed', description: 'Selection removed from parlay' });
   };
 
   const handlePlaceParlay = () => {
     if (parlayLegs.length < 2) {
-      toast({
-        title: 'Not Enough Selections',
-        description: 'A parlay requires at least 2 selections',
-        variant: 'destructive',
-      });
+      toast({ title: 'Not Enough Selections', description: 'A parlay requires at least 2 selections', variant: 'destructive' });
       return;
     }
-    
-    toast({
-      title: 'Parlay Placed!',
-      description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI`,
-    });
+    if (!currentWallet?.address) {
+      window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+      return;
+    }
+    toast({ title: 'Parlay Placed!', description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI` });
     clearBets();
     setStake('10');
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      window.location.reload();
+    }, 500);
+  };
+
+  const handleConnectWallet = () => {
+    window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
   return (
-    <Layout title="Parlay Builder">
-      <div className="min-h-screen bg-[#0b1618] p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <Layers className="h-8 w-8 text-cyan-400" />
-            <div>
-              <h1 className="text-3xl font-bold text-white">Parlay Builder</h1>
-              <p className="text-gray-400">Combine multiple selections for bigger payouts</p>
+    <div className="min-h-screen bg-black" data-testid="parlay-page">
+      {/* Navigation */}
+      <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/">
+            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
+            <Link href="/parlay" className="text-cyan-400 text-sm font-medium">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+            {currentWallet?.address ? (
+              <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
+            ) : (
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <Wallet size={16} />
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="p-3 bg-purple-500/20 rounded-xl">
+            <Layers className="h-8 w-8 text-purple-400" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-white">Parlay Builder</h1>
+            <p className="text-gray-400">Combine multiple selections for bigger payouts</p>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6">
+          {/* Selections */}
+          <div className="lg:col-span-2">
+            <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-white">Your Selections</h3>
+                <span className="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-sm font-medium">
+                  {parlayLegs.length} Legs
+                </span>
+              </div>
+
+              {parlayLegs.length === 0 ? (
+                <div className="text-center py-16">
+                  <Layers className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400 text-lg mb-2">No selections yet</p>
+                  <p className="text-gray-500 text-sm mb-6">Add bets from the sports pages to build your parlay</p>
+                  <Link href="/">
+                    <button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-3 rounded-xl transition-colors" data-testid="btn-browse">
+                      <Plus className="h-5 w-5 inline mr-2" />
+                      Browse Sports
+                    </button>
+                  </Link>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {parlayLegs.map((leg, index) => (
+                    <div 
+                      key={leg.id}
+                      className="flex items-center justify-between p-4 bg-black/50 rounded-xl border border-cyan-900/20"
+                      data-testid={`leg-${index}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center text-purple-400 font-bold">
+                          {index + 1}
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{leg.eventName}</p>
+                          <p className="text-cyan-400 text-sm">{leg.selection}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-green-400 font-bold text-lg">{leg.odds.toFixed(2)}</span>
+                        <button
+                          onClick={() => handleRemoveLeg(leg.id)}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                          data-testid={`btn-remove-${index}`}
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Parlay Rules */}
+            <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6 mt-6">
+              <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 text-yellow-400" />
+                Parlay Rules
+              </h3>
+              <ul className="text-gray-400 text-sm space-y-2">
+                <li>• Minimum 2 selections required for a parlay</li>
+                <li>• Maximum 10 selections per parlay</li>
+                <li>• All selections must win for the parlay to pay out</li>
+                <li>• Odds are multiplied together for final payout</li>
+                <li>• Live events can be included in parlays</li>
+              </ul>
             </div>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-2">
-              <Card className="bg-[#112225] border-cyan-900/30">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center justify-between">
-                    <span>Your Selections</span>
-                    <Badge className="bg-cyan-500/20 text-cyan-400">
-                      {parlayLegs.length} Legs
-                    </Badge>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {parlayLegs.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Layers className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                      <p className="text-gray-400">No selections yet</p>
-                      <p className="text-sm text-gray-500 mt-2">
-                        Add bets from the sports pages to build your parlay
-                      </p>
-                      <Button 
-                        className="mt-4 bg-cyan-600 hover:bg-cyan-700"
-                        onClick={() => window.location.href = '/'}
-                        data-testid="button-browse-sports"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Browse Sports
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {parlayLegs.map((leg, index) => (
-                        <div 
-                          key={leg.id}
-                          className="flex items-center justify-between p-4 bg-[#0b1618] rounded-lg border border-cyan-900/20"
-                          data-testid={`parlay-leg-${index}`}
-                        >
-                          <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-full bg-cyan-500/20 flex items-center justify-center text-cyan-400 font-bold">
-                              {index + 1}
-                            </div>
-                            <div>
-                              <p className="text-white font-medium">{leg.eventName}</p>
-                              <p className="text-sm text-cyan-400">{leg.selection}</p>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <Badge className="bg-green-500/20 text-green-400">
-                              {leg.odds.toFixed(2)}
-                            </Badge>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => handleRemoveLeg(leg.id)}
-                              className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                              data-testid={`button-remove-leg-${index}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+          {/* Bet Slip */}
+          <div>
+            <div className="bg-[#111111] border border-cyan-500/30 rounded-2xl p-6 sticky top-6">
+              <h3 className="text-lg font-bold text-cyan-400 mb-6 flex items-center gap-2">
+                <Calculator className="h-5 w-5" />
+                Bet Summary
+              </h3>
 
-              <Card className="bg-[#112225] border-cyan-900/30 mt-6">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-yellow-400" />
-                    Parlay Rules
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="text-gray-400 text-sm space-y-2">
-                  <p>• Minimum 2 selections required for a parlay</p>
-                  <p>• Maximum 10 selections per parlay</p>
-                  <p>• All selections must win for the parlay to pay out</p>
-                  <p>• Odds are multiplied together for final payout</p>
-                  <p>• Live events can be included in parlays</p>
-                </CardContent>
-              </Card>
-            </div>
+              <div className="space-y-4 mb-6">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Selections:</span>
+                  <span className="text-white font-medium">{parlayLegs.length}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Combined Odds:</span>
+                  <span className="text-green-400 font-bold text-lg">{totalOdds.toFixed(2)}</span>
+                </div>
+              </div>
 
-            <div>
-              <Card className="bg-[#112225] border-cyan-900/30 sticky top-6">
-                <CardHeader>
-                  <CardTitle className="text-cyan-400 flex items-center gap-2">
-                    <Calculator className="h-5 w-5" />
-                    Bet Summary
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between text-gray-400">
-                    <span>Selections:</span>
-                    <span className="text-white">{parlayLegs.length}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-400">
-                    <span>Combined Odds:</span>
-                    <span className="text-green-400 font-bold">{totalOdds.toFixed(2)}</span>
-                  </div>
-                  
-                  <div className="border-t border-cyan-900/30 pt-4">
-                    <label className="text-sm text-gray-400 mb-2 block">Stake (SUI)</label>
-                    <Input
-                      type="number"
-                      value={stake}
-                      onChange={(e) => setStake(e.target.value)}
-                      className="bg-[#0b1618] border-cyan-900/30 text-white text-lg"
-                      data-testid="input-parlay-stake"
-                    />
-                  </div>
+              <div className="border-t border-cyan-900/30 pt-6 mb-6">
+                <label className="text-gray-400 text-sm mb-2 block">Stake (SUI)</label>
+                <input
+                  type="number"
+                  value={stake}
+                  onChange={(e) => setStake(e.target.value)}
+                  className="w-full bg-black/50 border border-cyan-900/30 rounded-xl p-4 text-white text-xl font-bold focus:outline-none focus:border-cyan-500"
+                  data-testid="input-stake"
+                />
+              </div>
 
-                  <div className="bg-[#0b1618] p-4 rounded-lg">
-                    <div className="flex justify-between text-gray-400 mb-2">
-                      <span>Potential Payout:</span>
-                    </div>
-                    <p className="text-3xl font-bold text-cyan-400">
-                      {potentialPayout.toFixed(2)} SUI
-                    </p>
-                  </div>
+              <div className="bg-black/50 border border-cyan-500/30 rounded-xl p-4 mb-6">
+                <p className="text-gray-400 text-sm mb-1">Potential Payout</p>
+                <p className="text-3xl font-bold text-cyan-400">{potentialPayout.toFixed(2)} SUI</p>
+              </div>
 
-                  <Button
-                    onClick={handlePlaceParlay}
-                    disabled={parlayLegs.length < 2}
-                    className="w-full bg-cyan-600 hover:bg-cyan-700 text-white py-6 text-lg"
-                    data-testid="button-place-parlay"
-                  >
-                    <CheckCircle className="h-5 w-5 mr-2" />
-                    Place Parlay
-                  </Button>
+              <button
+                onClick={handlePlaceParlay}
+                disabled={parlayLegs.length < 2}
+                className={`w-full py-4 rounded-xl font-bold text-lg transition-colors ${
+                  parlayLegs.length < 2
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-cyan-500 hover:bg-cyan-600 text-black'
+                }`}
+                data-testid="btn-place-parlay"
+              >
+                <CheckCircle className="h-5 w-5 inline mr-2" />
+                Place Parlay
+              </button>
 
-                  {parlayLegs.length > 0 && (
-                    <Button
-                      variant="outline"
-                      onClick={clearBets}
-                      className="w-full border-red-500/30 text-red-400 hover:bg-red-500/10"
-                      data-testid="button-clear-parlay"
-                    >
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Clear All
-                    </Button>
-                  )}
-                </CardContent>
-              </Card>
+              {parlayLegs.length > 0 && (
+                <button
+                  onClick={clearBets}
+                  className="w-full mt-3 py-3 rounded-xl font-medium text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors"
+                  data-testid="btn-clear-all"
+                >
+                  <Trash2 className="h-4 w-4 inline mr-2" />
+                  Clear All
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }

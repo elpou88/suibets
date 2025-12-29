@@ -1,391 +1,314 @@
-import { useEffect } from 'react';
-import { useLocation } from 'wouter';
+import { useState } from 'react';
+import { Link } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
-import Layout from '@/components/layout/Layout';
-import { WalletConnector } from '@/components/wallet/WalletConnector';
-import { DividendsPanel } from '@/components/dividends/DividendsPanel';
-import { StakingForm } from '@/components/staking/StakingForm';
-import { TransactionHistory } from '@/components/transactions/TransactionHistory';
-import { WalrusBetSlip } from '@/components/betting/WalrusBetSlip';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { useBetting } from '@/context/BettingContext';
+import { useToast } from '@/hooks/use-toast';
+import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   Wallet, 
-  Coins, 
-  TrendingUp, 
-  History, 
-  TicketIcon, 
   Copy, 
-  ExternalLink,
-  ArrowRightLeft
+  ExternalLink, 
+  TrendingUp, 
+  TrendingDown,
+  DollarSign,
+  Activity,
+  Clock,
+  CheckCircle,
+  XCircle,
+  LogOut,
+  RefreshCw,
+  ArrowDownLeft,
+  ArrowUpRight,
+  Layers,
+  Settings,
+  FileText
 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 
 export default function WalletDashboardPage() {
-  const [, navigate] = useLocation();
   const { toast } = useToast();
   const { currentWallet } = useWalrusProtocolContext();
+  const { selectedBets } = useBetting();
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // Fetch real bets from API
   const { data: betsData } = useQuery({
-    queryKey: ['/api/bets', { userId: 'user1', status: 'pending' }],
+    queryKey: ['/api/bets', { status: 'all' }],
     enabled: !!currentWallet?.address
   });
   
-  // Fetch real balance from API
   const { data: balanceData } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
-    queryKey: ['/api/user/balance', { userId: 'user1' }],
+    queryKey: ['/api/user/balance'],
     enabled: !!currentWallet?.address
   });
   
-  const userBets = (betsData || []) as any[];
+  const userBets = Array.isArray(betsData) ? betsData : [];
+  const pendingBets = userBets.filter((b: any) => b.status === 'pending').length;
+  const wonBets = userBets.filter((b: any) => b.status === 'won').length;
+  const lostBets = userBets.filter((b: any) => b.status === 'lost').length;
   
-  // No redirect - show connect wallet UI directly on this page
-  
-  // Copy wallet address to clipboard
-  const copyAddressToClipboard = () => {
+  const copyAddress = () => {
     if (currentWallet?.address) {
       navigator.clipboard.writeText(currentWallet.address);
-      toast({
-        title: 'Address Copied',
-        description: 'Wallet address copied to clipboard',
-        variant: 'default',
-      });
+      toast({ title: 'Address Copied', description: 'Wallet address copied to clipboard' });
     }
   };
-  
-  // Open wallet address in Sui Explorer
-  const openInExplorer = () => {
-    if (currentWallet?.address) {
-      window.open(`https://explorer.sui.io/address/${currentWallet.address}`, '_blank');
-    }
-  };
-  
-  // Format wallet address for display
-  const formatWalletAddress = (address: string) => {
+
+  const formatAddress = (address: string) => {
     if (!address) return '';
-    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+    return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
-  
-  if (!currentWallet?.address) {
-    return (
-      <Layout title="Connect Wallet">
-        <div className="container mx-auto px-4 py-8">
-          <div className="max-w-md mx-auto">
-            <h1 className="text-3xl font-bold mb-6 text-white text-center">Connect Your Wallet</h1>
-            <WalletConnector />
-          </div>
-        </div>
-      </Layout>
-    );
-  }
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      window.location.reload();
+    }, 500);
+  };
+
+  const handleConnectWallet = () => {
+    window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
   
   return (
-    <Layout title="Dashboard">
-      <div className="container mx-auto px-4 py-8">
-      <div className="flex flex-col md:flex-row justify-between items-start mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-white">Wallet Dashboard</h1>
-          <p className="text-gray-400 mt-1">Manage your wallet, bets, and earnings</p>
-        </div>
-        
-        <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-3 mt-4 md:mt-0 w-full md:w-auto">
-          <div className="flex items-center">
-            <div>
-              <p className="text-gray-400 text-xs">Connected Wallet</p>
-              <p className="text-white font-mono">{formatWalletAddress(currentWallet.address)}</p>
-            </div>
-            <div className="ml-4 flex">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-gray-400 hover:text-white hover:bg-[#1e3a3f]"
-                onClick={copyAddressToClipboard}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="h-8 w-8 text-gray-400 hover:text-white hover:bg-[#1e3a3f]"
-                onClick={openInExplorer}
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
+    <div className="min-h-screen bg-black" data-testid="dashboard-page">
+      {/* Navigation */}
+      <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/">
+            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
+            <Link href="/dashboard" className="text-cyan-400 text-sm font-medium">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
           </div>
-          
-          <div className="grid grid-cols-2 gap-3 mt-3">
-            <div>
-              <p className="text-xs text-gray-400">SUI Balance</p>
-              <p className="text-[#00ffff] font-medium">{(balanceData?.suiBalance || 0).toFixed(2)} SUI</p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-400">SBETS Balance</p>
-              <p className="text-[#00ffff] font-medium">{(balanceData?.sbetsBalance || 0).toFixed(2)} SBETS</p>
-            </div>
-          </div>
-          
-          <div className="mt-3">
-            <details className="group">
-              <summary className="w-full bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] flex justify-center items-center py-1.5 px-3 rounded-md text-sm font-medium cursor-pointer">
-                <ArrowRightLeft className="h-4 w-4 mr-2" />
-                Swap Tokens
-              </summary>
-              <div className="mt-3 p-3 bg-[#0b1618] border border-[#1e3a3f] rounded-lg">
-                <div className="mb-3">
-                  <label className="text-xs text-gray-400 mb-1 block">From</label>
-                  <div className="flex">
-                    <input 
-                      type="number" 
-                      defaultValue="100" 
-                      className="flex-1 bg-[#112225] border-[#1e3a3f] text-white rounded-l-md px-3 py-1 text-sm"
-                    />
-                    <select className="bg-[#1e3a3f] text-white rounded-r-md px-2 py-1 text-sm">
-                      <option value="SUI">SUI</option>
-                      <option value="SBETS">SBETS</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="mb-3">
-                  <label className="text-xs text-gray-400 mb-1 block">To (Estimated)</label>
-                  <div className="flex">
-                    <input 
-                      type="number" 
-                      readOnly 
-                      value="1230" 
-                      className="flex-1 bg-[#112225] border-[#1e3a3f] text-white rounded-l-md px-3 py-1 text-sm"
-                    />
-                    <select className="bg-[#1e3a3f] text-white rounded-r-md px-2 py-1 text-sm">
-                      <option value="SBETS">SBETS</option>
-                      <option value="SUI">SUI</option>
-                    </select>
-                  </div>
-                  <div className="flex justify-between items-center mt-1">
-                    <span className="text-xs text-gray-400">Rate: 1 SUI = 12.3 SBETS</span>
-                    <span className="text-xs text-gray-400">Fee: 0.3%</span>
-                  </div>
-                </div>
-                <Button
-                  className="w-full bg-[#00ffff] text-[#112225] hover:bg-cyan-300"
-                  size="sm"
-                >
-                  Swap Now
-                </Button>
+          <div className="flex items-center gap-4">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+            {currentWallet?.address ? (
+              <div className="flex items-center gap-3">
+                <span className="text-cyan-400 text-sm">{formatAddress(currentWallet.address)}</span>
+                <button onClick={copyAddress} className="text-gray-400 hover:text-white">
+                  <Copy size={16} />
+                </button>
               </div>
-            </details>
+            ) : (
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <Wallet size={16} />
+                Connect
+              </button>
+            )}
           </div>
         </div>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Tabs defaultValue="betting">
-            <TabsList className="bg-[#0b1618] border-b border-[#1e3a3f]">
-              <TabsTrigger 
-                value="betting" 
-                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {!currentWallet?.address ? (
+          <div className="text-center py-20">
+            <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-12 max-w-md mx-auto">
+              <Wallet className="h-16 w-16 text-cyan-400 mx-auto mb-6" />
+              <h2 className="text-2xl font-bold text-white mb-4">Connect Your Wallet</h2>
+              <p className="text-gray-400 mb-8">Connect your Sui wallet to access your dashboard, view your bets, and manage your account.</p>
+              <button 
+                onClick={handleConnectWallet}
+                className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-4 rounded-xl transition-colors text-lg"
+                data-testid="btn-connect-dashboard"
               >
-                <TicketIcon className="h-4 w-4 mr-2" />
-                Betting
-              </TabsTrigger>
-              <TabsTrigger 
-                value="dividends" 
-                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
-              >
-                <Coins className="h-4 w-4 mr-2" />
-                Dividends
-              </TabsTrigger>
-              <TabsTrigger 
-                value="staking" 
-                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
-              >
-                <TrendingUp className="h-4 w-4 mr-2" />
-                Staking
-              </TabsTrigger>
-              <TabsTrigger 
-                value="transactions" 
-                className="data-[state=active]:bg-[#1e3a3f] data-[state=active]:text-[#00ffff]"
-              >
-                <History className="h-4 w-4 mr-2" />
-                History
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="betting" className="pt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h2 className="text-xl font-semibold text-white mb-4 flex items-center">
-                    <TicketIcon className="h-5 w-5 mr-2 text-[#00ffff]" />
-                    Active Bets
-                    <Badge className="ml-2 bg-[#1e3a3f] text-[#00ffff]">2</Badge>
-                  </h2>
-                  
-                  <div className="space-y-3">
-                    <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium text-white">Barcelona vs Real Madrid</p>
-                          <p className="text-sm text-gray-400">Match Winner: Barcelona</p>
-                        </div>
-                        <Badge className="bg-yellow-900/20 text-yellow-400 border-none">In Progress</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-white">
-                          <span className="text-gray-400">Amount:</span> 50 SUI
-                        </div>
-                        <div className="text-sm text-white">
-                          <span className="text-gray-400">Potential Win:</span> 92.5 SUI
-                        </div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-[#1e3a3f] flex justify-between items-center">
-                        <div className="text-xs text-gray-400">
-                          Transaction: 0x4df5...e72a
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 bg-transparent border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f] text-xs"
-                        >
-                          Cash Out (75.5 SUI)
-                        </Button>
-                      </div>
+                Connect Wallet
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Header */}
+            <div className="mb-8">
+              <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
+              <p className="text-gray-400">Manage your wallet, bets, and earnings</p>
+            </div>
+
+            {/* Balance Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-cyan-500/20 rounded-lg">
+                    <DollarSign className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <span className="text-gray-400 text-sm">SUI Balance</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{(balanceData?.suiBalance || 0).toFixed(2)}</p>
+                <p className="text-cyan-400 text-sm mt-1">SUI</p>
+              </div>
+
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-purple-500/20 rounded-lg">
+                    <Layers className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <span className="text-gray-400 text-sm">SBETS Balance</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{(balanceData?.sbetsBalance || 0).toFixed(2)}</p>
+                <p className="text-purple-400 text-sm mt-1">SBETS</p>
+              </div>
+
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-green-500/20 rounded-lg">
+                    <TrendingUp className="h-5 w-5 text-green-400" />
+                  </div>
+                  <span className="text-gray-400 text-sm">Total Winnings</span>
+                </div>
+                <p className="text-3xl font-bold text-green-400">+245.50</p>
+                <p className="text-gray-500 text-sm mt-1">SUI</p>
+              </div>
+
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-orange-500/20 rounded-lg">
+                    <Activity className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <span className="text-gray-400 text-sm">Active Bets</span>
+                </div>
+                <p className="text-3xl font-bold text-white">{pendingBets}</p>
+                <p className="text-gray-500 text-sm mt-1">In Progress</p>
+              </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+                <ArrowDownLeft className="h-8 w-8 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-white font-medium">Deposit</p>
+              </Link>
+              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+                <ArrowUpRight className="h-8 w-8 text-orange-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-white font-medium">Withdraw</p>
+              </Link>
+              <Link href="/parlay" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+                <Layers className="h-8 w-8 text-purple-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-white font-medium">Parlays</p>
+              </Link>
+              <Link href="/bet-history" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+                <FileText className="h-8 w-8 text-cyan-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
+                <p className="text-white font-medium">Bet History</p>
+              </Link>
+            </div>
+
+            {/* Betting Stats */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Betting Statistics</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <CheckCircle className="h-5 w-5 text-green-400" />
+                      <span className="text-gray-300">Won</span>
                     </div>
-                    
-                    <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-3">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <p className="font-medium text-white">Lakers vs Bulls</p>
-                          <p className="text-sm text-gray-400">Total Points: Over 198.5</p>
-                        </div>
-                        <Badge className="bg-yellow-900/20 text-yellow-400 border-none">In Progress</Badge>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <div className="text-sm text-white">
-                          <span className="text-gray-400">Amount:</span> 25 SBETS
-                        </div>
-                        <div className="text-sm text-white">
-                          <span className="text-gray-400">Potential Win:</span> 47.5 SBETS
-                        </div>
-                      </div>
-                      <div className="mt-2 pt-2 border-t border-[#1e3a3f] flex justify-between items-center">
-                        <div className="text-xs text-gray-400">
-                          Transaction: 0x7abc...f91b
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 bg-transparent border-[#1e3a3f] text-[#00ffff] hover:bg-[#1e3a3f] text-xs"
-                        >
-                          Cash Out (33.2 SBETS)
-                        </Button>
-                      </div>
+                    <span className="text-2xl font-bold text-green-400">{wonBets}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <XCircle className="h-5 w-5 text-red-400" />
+                      <span className="text-gray-300">Lost</span>
+                    </div>
+                    <span className="text-2xl font-bold text-red-400">{lostBets}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                      <Clock className="h-5 w-5 text-yellow-400" />
+                      <span className="text-gray-300">Pending</span>
+                    </div>
+                    <span className="text-2xl font-bold text-yellow-400">{pendingBets}</span>
+                  </div>
+                  <div className="border-t border-cyan-900/30 pt-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Win Rate</span>
+                      <span className="text-xl font-bold text-cyan-400">
+                        {wonBets + lostBets > 0 ? ((wonBets / (wonBets + lostBets)) * 100).toFixed(0) : 0}%
+                      </span>
                     </div>
                   </div>
                 </div>
-                
-                <div>
-                  <h2 className="text-xl font-semibold text-white mb-4">New Bet</h2>
-                  <WalrusBetSlip 
-                    bets={userBets}
-                    onRemoveBet={() => {}}
-                    onClearAll={() => {}}
-                  />
+              </div>
+
+              <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4">Wallet Details</h3>
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-gray-500 text-sm mb-1">Address</p>
+                    <div className="flex items-center gap-2">
+                      <code className="text-cyan-400 bg-black/50 px-3 py-2 rounded-lg text-sm flex-1 overflow-hidden">
+                        {currentWallet.address}
+                      </code>
+                      <button onClick={copyAddress} className="p-2 bg-cyan-500/20 rounded-lg hover:bg-cyan-500/30">
+                        <Copy className="h-4 w-4 text-cyan-400" />
+                      </button>
+                      <a 
+                        href={`https://explorer.sui.io/address/${currentWallet.address}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 bg-cyan-500/20 rounded-lg hover:bg-cyan-500/30"
+                      >
+                        <ExternalLink className="h-4 w-4 text-cyan-400" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-cyan-900/30">
+                    <div>
+                      <p className="text-gray-500 text-sm mb-1">Network</p>
+                      <p className="text-white font-medium">Sui Mainnet</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-sm mb-1">Status</p>
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                        <span className="text-green-400 font-medium">Connected</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </TabsContent>
-            
-            <TabsContent value="dividends" className="pt-4">
-              <DividendsPanel />
-            </TabsContent>
-            
-            <TabsContent value="staking" className="pt-4">
-              <StakingForm />
-            </TabsContent>
-            
-            <TabsContent value="transactions" className="pt-4">
-              <TransactionHistory />
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        <div className="space-y-6">
-          <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-2 gap-3">
-              <Button 
-                className="bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] h-auto py-6 flex flex-col items-center justify-center"
-                onClick={() => navigate('/sport/football')}
-              >
-                <TicketIcon className="h-6 w-6 mb-2" />
-                <span>Place Bet</span>
-              </Button>
-              <Button 
-                className="bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] h-auto py-6 flex flex-col items-center justify-center"
-                onClick={() => navigate('/live')}
-              >
-                <History className="h-6 w-6 mb-2" />
-                <span>Live Events</span>
-              </Button>
-              <Button 
-                className="bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] h-auto py-6 flex flex-col items-center justify-center"
-                onClick={() => navigate('/dividends')}
-              >
-                <Coins className="h-6 w-6 mb-2" />
-                <span>Claim Dividends</span>
-              </Button>
-              <Button 
-                className="bg-[#1e3a3f] text-[#00ffff] hover:bg-[#254a50] h-auto py-6 flex flex-col items-center justify-center"
-                onClick={() => navigate('/defi-staking')}
-              >
-                <TrendingUp className="h-6 w-6 mb-2" />
-                <span>Stake Tokens</span>
-              </Button>
             </div>
-          </div>
-          
-          <div>
-            <h2 className="text-xl font-semibold text-white mb-4">Rewards Summary</h2>
-            <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-lg p-4">
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-400 mb-1">Total Earnings (All Time)</p>
-                  <p className="text-2xl font-semibold text-[#00ffff]">1,487.65 SBETS</p>
+
+            {/* Current Bet Slip */}
+            {selectedBets.length > 0 && (
+              <div className="bg-[#111111] border border-cyan-500/30 rounded-xl p-6">
+                <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                  <Layers className="h-5 w-5 text-cyan-400" />
+                  Current Bet Slip
+                  <span className="bg-cyan-500 text-black text-xs font-bold px-2 py-1 rounded-full ml-2">
+                    {selectedBets.length}
+                  </span>
+                </h3>
+                <div className="space-y-3">
+                  {selectedBets.slice(0, 3).map((bet: any, index: number) => (
+                    <div key={bet.id || index} className="flex justify-between items-center p-3 bg-black/50 rounded-lg">
+                      <div>
+                        <p className="text-white text-sm font-medium">{bet.eventName || 'Unknown Event'}</p>
+                        <p className="text-cyan-400 text-xs">{bet.selectionName || 'Unknown Selection'}</p>
+                      </div>
+                      <span className="text-green-400 font-bold">{(bet.odds || 1.5).toFixed(2)}</span>
+                    </div>
+                  ))}
+                  {selectedBets.length > 3 && (
+                    <p className="text-gray-400 text-sm text-center">+{selectedBets.length - 3} more selections</p>
+                  )}
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">From Betting</p>
-                    <p className="text-lg font-medium text-white">954.20 SBETS</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">From Staking</p>
-                    <p className="text-lg font-medium text-white">378.45 SBETS</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">From Dividends</p>
-                    <p className="text-lg font-medium text-white">155.00 SBETS</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400 mb-1">This Month</p>
-                    <p className="text-lg font-medium text-green-400">+241.35 SBETS</p>
-                  </div>
-                </div>
-                
-                <Button
-                  className="w-full bg-[#00ffff] text-[#112225] hover:bg-cyan-300"
-                  onClick={() => navigate('/bet-history')}
-                >
-                  View Complete Bet History
-                </Button>
+                <Link href="/parlay" className="block mt-4">
+                  <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 rounded-xl transition-colors">
+                    View Full Bet Slip
+                  </button>
+                </Link>
               </div>
-            </div>
-          </div>
-        </div>
+            )}
+          </>
+        )}
       </div>
     </div>
-    </Layout>
   );
 }

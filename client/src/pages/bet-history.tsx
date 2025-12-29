@@ -1,63 +1,244 @@
-import Layout from '@/components/layout/Layout';
-import { BetHistory } from '@/components/betting/BetHistory';
-import { useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { useLocation } from 'wouter';
+import { Link } from 'wouter';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import suibetsLogo from "@assets/image_1767008967633.png";
+import { 
+  FileText, 
+  CheckCircle, 
+  XCircle, 
+  Clock, 
+  Wallet,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  ExternalLink,
+  Filter
+} from 'lucide-react';
 
-/**
- * Bet History page that displays a user's betting history and allows
- * them to manage active bets, cash out, and withdraw winnings
- */
+interface Bet {
+  id: string;
+  eventName: string;
+  selection: string;
+  odds: number;
+  stake: number;
+  potentialWin: number;
+  status: 'pending' | 'won' | 'lost';
+  placedAt: string;
+  settledAt?: string;
+  txHash?: string;
+}
+
 export default function BetHistoryPage() {
-  const { user, isAuthenticated } = useAuth();
-  const [, setLocation] = useLocation();
+  const { currentWallet } = useWalrusProtocolContext();
+  const [filter, setFilter] = useState<string>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
-  // If not authenticated, redirect to auth page
-  useEffect(() => {
-    if (!isAuthenticated && !user) {
-      // You could redirect to login, but for now we'll just go to home
-      // setLocation('/auth');
+  const { data: rawBets } = useQuery({
+    queryKey: ['/api/bets'],
+    refetchInterval: 30000,
+  });
+  
+  const bets: Bet[] = Array.isArray(rawBets) ? rawBets : [];
+  
+  const filteredBets = filter === 'all' ? bets : bets.filter(b => b.status === filter);
+
+  const stats = {
+    total: bets.length,
+    won: bets.filter(b => b.status === 'won').length,
+    lost: bets.filter(b => b.status === 'lost').length,
+    pending: bets.filter(b => b.status === 'pending').length,
+    totalStaked: bets.reduce((acc, b) => acc + b.stake, 0),
+    totalWon: bets.filter(b => b.status === 'won').reduce((acc, b) => acc + b.potentialWin, 0),
+  };
+
+  const winRate = stats.won + stats.lost > 0 ? ((stats.won / (stats.won + stats.lost)) * 100).toFixed(0) : 0;
+
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      window.location.reload();
+    }, 500);
+  };
+
+  const handleConnectWallet = () => {
+    window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'won': return <CheckCircle className="h-5 w-5 text-green-400" />;
+      case 'lost': return <XCircle className="h-5 w-5 text-red-400" />;
+      case 'pending': return <Clock className="h-5 w-5 text-yellow-400" />;
+      default: return null;
     }
-  }, [isAuthenticated, user, setLocation]);
+  };
 
   return (
-    <Layout>
-      <div className="min-h-screen bg-[#112225] p-6">
-        <div className="max-w-4xl mx-auto">
-          <h1 className="text-3xl font-bold text-white mb-6">Bet History</h1>
-          
-          <div className="space-y-6">
-            <BetHistory />
-            
-            {/* Additional bet stats or information could go here */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-md p-4 text-white">
-                <h3 className="text-lg font-medium text-cyan-400 mb-2">Win Rate</h3>
-                <div className="text-3xl font-bold">
-                  {user ? '64%' : '—'}
-                </div>
-                <p className="text-gray-400 text-sm mt-1">Based on your betting history</p>
-              </div>
-              
-              <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-md p-4 text-white">
-                <h3 className="text-lg font-medium text-cyan-400 mb-2">Total Winnings</h3>
-                <div className="text-3xl font-bold">
-                  {user ? '245.50 SUI' : '—'}
-                </div>
-                <p className="text-gray-400 text-sm mt-1">Across all settled bets</p>
-              </div>
-              
-              <div className="bg-[#0b1618] border border-[#1e3a3f] rounded-md p-4 text-white">
-                <h3 className="text-lg font-medium text-cyan-400 mb-2">Active Bets</h3>
-                <div className="text-3xl font-bold">
-                  {user ? '3' : '—'}
-                </div>
-                <p className="text-gray-400 text-sm mt-1">Currently in progress</p>
-              </div>
-            </div>
+    <div className="min-h-screen bg-black" data-testid="bet-history-page">
+      {/* Navigation */}
+      <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/">
+            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
+            <Link href="/bet-history" className="text-cyan-400 text-sm font-medium">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+            {currentWallet?.address ? (
+              <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
+            ) : (
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <Wallet size={16} />
+                Connect
+              </button>
+            )}
           </div>
         </div>
+      </nav>
+
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className="p-3 bg-cyan-500/20 rounded-xl">
+              <FileText className="h-8 w-8 text-cyan-400" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">Bet History</h1>
+              <p className="text-gray-400">Track your betting performance</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-400" />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="bg-[#111111] border border-cyan-900/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500"
+              data-testid="select-filter"
+            >
+              <option value="all">All Bets</option>
+              <option value="pending">Pending</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Stats Grid */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingUp className="h-5 w-5 text-cyan-400" />
+              <span className="text-gray-400 text-sm">Win Rate</span>
+            </div>
+            <p className="text-3xl font-bold text-cyan-400">{winRate}%</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <CheckCircle className="h-5 w-5 text-green-400" />
+              <span className="text-gray-400 text-sm">Won</span>
+            </div>
+            <p className="text-3xl font-bold text-green-400">{stats.won}</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <TrendingDown className="h-5 w-5 text-green-400" />
+              <span className="text-gray-400 text-sm">Total Won</span>
+            </div>
+            <p className="text-3xl font-bold text-green-400">+{stats.totalWon.toFixed(2)}</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Clock className="h-5 w-5 text-yellow-400" />
+              <span className="text-gray-400 text-sm">Pending</span>
+            </div>
+            <p className="text-3xl font-bold text-yellow-400">{stats.pending}</p>
+          </div>
+        </div>
+
+        {/* Bet List */}
+        <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-white mb-6">Your Bets</h3>
+          
+          {filteredBets.length === 0 ? (
+            <div className="text-center py-16">
+              <FileText className="h-16 w-16 text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-400 text-lg mb-2">No bets yet</p>
+              <p className="text-gray-500 text-sm mb-6">Place your first bet to see it here</p>
+              <Link href="/">
+                <button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-3 rounded-xl transition-colors" data-testid="btn-place-bet">
+                  Place a Bet
+                </button>
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredBets.map((bet) => (
+                <div 
+                  key={bet.id}
+                  className="flex items-center justify-between p-4 bg-black/50 rounded-xl border border-cyan-900/20 hover:border-cyan-500/30 transition-colors"
+                  data-testid={`bet-${bet.id}`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${
+                      bet.status === 'won' ? 'bg-green-500/20' :
+                      bet.status === 'lost' ? 'bg-red-500/20' :
+                      'bg-yellow-500/20'
+                    }`}>
+                      {getStatusIcon(bet.status)}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{bet.eventName}</p>
+                      <p className="text-cyan-400 text-sm">{bet.selection}</p>
+                      <p className="text-gray-500 text-xs mt-1">{new Date(bet.placedAt).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="flex items-center gap-2 justify-end mb-1">
+                      <span className="text-gray-400 text-sm">Stake:</span>
+                      <span className="text-white font-medium">{bet.stake} SUI</span>
+                    </div>
+                    <div className="flex items-center gap-2 justify-end mb-1">
+                      <span className="text-gray-400 text-sm">Odds:</span>
+                      <span className="text-green-400 font-bold">{bet.odds.toFixed(2)}</span>
+                    </div>
+                    <p className={`font-bold text-lg ${
+                      bet.status === 'won' ? 'text-green-400' :
+                      bet.status === 'lost' ? 'text-red-400' :
+                      'text-yellow-400'
+                    }`}>
+                      {bet.status === 'won' ? '+' : bet.status === 'pending' ? '' : '-'}{bet.potentialWin.toFixed(2)} SUI
+                    </p>
+                    {bet.txHash && (
+                      <a 
+                        href={`https://explorer.sui.io/tx/${bet.txHash}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1 justify-end mt-1"
+                      >
+                        View on Explorer
+                        <ExternalLink className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-    </Layout>
+    </div>
   );
 }

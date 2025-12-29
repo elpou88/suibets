@@ -1,7 +1,8 @@
-import Layout from '@/components/layout/Layout';
+import { Link } from 'wouter';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   Activity as ActivityIcon, 
   TrendingUp, 
@@ -10,7 +11,10 @@ import {
   CheckCircle, 
   XCircle,
   ArrowUpRight,
-  ArrowDownLeft
+  ArrowDownLeft,
+  Wallet,
+  RefreshCw,
+  Filter
 } from 'lucide-react';
 
 interface ActivityItem {
@@ -25,13 +29,20 @@ interface ActivityItem {
 }
 
 export default function ActivityPage() {
-  const { data: rawActivities, isLoading } = useQuery({
+  const { currentWallet } = useWalrusProtocolContext();
+  const [filter, setFilter] = useState<string>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  
+  const { data: rawActivities } = useQuery({
     queryKey: ['/api/activity'],
     refetchInterval: 30000,
   });
   
-  // Ensure activities is always an array
   const activities: ActivityItem[] = Array.isArray(rawActivities) ? rawActivities : [];
+  
+  const filteredActivities = filter === 'all' 
+    ? activities 
+    : activities.filter(a => a.type.includes(filter));
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -46,75 +57,163 @@ export default function ActivityPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed': return <Badge className="bg-green-500/20 text-green-400">Completed</Badge>;
-      case 'pending': return <Badge className="bg-yellow-500/20 text-yellow-400">Pending</Badge>;
-      case 'failed': return <Badge className="bg-red-500/20 text-red-400">Failed</Badge>;
-      default: return null;
+  const getIconBg = (type: string) => {
+    switch (type) {
+      case 'bet_placed': return 'bg-cyan-500/20';
+      case 'bet_won': return 'bg-green-500/20';
+      case 'bet_lost': return 'bg-red-500/20';
+      case 'deposit': return 'bg-green-500/20';
+      case 'withdrawal': return 'bg-orange-500/20';
+      case 'stake': return 'bg-purple-500/20';
+      case 'unstake': return 'bg-yellow-500/20';
+      default: return 'bg-gray-500/20';
     }
   };
 
-  const formatTime = (timestamp: string) => {
-    const date = new Date(timestamp);
-    return date.toLocaleString();
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    setTimeout(() => {
+      setIsRefreshing(false);
+      window.location.reload();
+    }, 500);
   };
 
+  const handleConnectWallet = () => {
+    window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+  
   return (
-    <Layout title="Activity">
-      <div className="min-h-screen bg-[#0b1618] p-6">
-        <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <ActivityIcon className="h-8 w-8 text-cyan-400" />
-            <h1 className="text-3xl font-bold text-white">Activity</h1>
+    <div className="min-h-screen bg-black" data-testid="activity-page">
+      {/* Navigation */}
+      <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <Link href="/">
+            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+          </Link>
+          <div className="hidden md:flex items-center gap-6">
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
+            <Link href="/activity" className="text-cyan-400 text-sm font-medium">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
           </div>
+          <div className="flex items-center gap-4">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+              <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
+            </button>
+            {currentWallet?.address ? (
+              <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
+            ) : (
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+                <Wallet size={16} />
+                Connect
+              </button>
+            )}
+          </div>
+        </div>
+      </nav>
 
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-400"></div>
+      <div className="max-w-4xl mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Activity</h1>
+            <p className="text-gray-400">Track all your betting and transaction activity</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-5 w-5 text-gray-400" />
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="bg-[#111111] border border-cyan-900/30 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-cyan-500"
+              data-testid="select-filter"
+            >
+              <option value="all">All Activity</option>
+              <option value="bet">Bets Only</option>
+              <option value="deposit">Deposits</option>
+              <option value="withdrawal">Withdrawals</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Activity Summary */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
+            <TrendingUp className="h-6 w-6 text-cyan-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'bet_placed').length}</p>
+            <p className="text-gray-400 text-xs">Bets Placed</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
+            <CheckCircle className="h-6 w-6 text-green-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-green-400">{activities.filter(a => a.type === 'bet_won').length}</p>
+            <p className="text-gray-400 text-xs">Bets Won</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
+            <ArrowDownLeft className="h-6 w-6 text-green-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'deposit').length}</p>
+            <p className="text-gray-400 text-xs">Deposits</p>
+          </div>
+          <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
+            <ArrowUpRight className="h-6 w-6 text-orange-400 mx-auto mb-2" />
+            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'withdrawal').length}</p>
+            <p className="text-gray-400 text-xs">Withdrawals</p>
+          </div>
+        </div>
+
+        {/* Activity List */}
+        <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-white mb-6">Recent Activity</h3>
+          
+          {filteredActivities.length === 0 ? (
+            <div className="text-center py-12">
+              <ActivityIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+              <p className="text-gray-400">No activity yet</p>
+              <p className="text-gray-500 text-sm">Your betting and transaction activity will appear here</p>
             </div>
-          ) : activities.length === 0 ? (
-            <Card className="bg-[#112225] border-cyan-900/30">
-              <CardContent className="py-12 text-center">
-                <ActivityIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400">No activity yet</p>
-                <p className="text-sm text-gray-500 mt-2">Your betting and transaction activity will appear here</p>
-              </CardContent>
-            </Card>
           ) : (
             <div className="space-y-3">
-              {activities.map((activity) => (
-                <Card 
+              {filteredActivities.map((activity) => (
+                <div 
                   key={activity.id}
-                  className="bg-[#112225] border-cyan-900/30 hover:border-cyan-500/30 transition-colors"
-                  data-testid={`activity-item-${activity.id}`}
+                  className="flex items-center justify-between p-4 bg-black/50 rounded-xl border border-cyan-900/20 hover:border-cyan-500/30 transition-colors"
+                  data-testid={`activity-${activity.id}`}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-2 rounded-full bg-[#0b1618]">
-                          {getIcon(activity.type)}
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">{activity.title}</p>
-                          <p className="text-sm text-gray-400">{activity.description}</p>
-                          <p className="text-xs text-gray-500 mt-1">{formatTime(activity.timestamp)}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`font-bold ${activity.type.includes('won') || activity.type === 'deposit' ? 'text-green-400' : activity.type.includes('lost') || activity.type === 'withdrawal' ? 'text-red-400' : 'text-cyan-400'}`}>
-                          {activity.type === 'deposit' || activity.type.includes('won') ? '+' : '-'}{activity.amount} {activity.currency}
-                        </p>
-                        {getStatusBadge(activity.status)}
-                      </div>
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${getIconBg(activity.type)}`}>
+                      {getIcon(activity.type)}
                     </div>
-                  </CardContent>
-                </Card>
+                    <div>
+                      <p className="text-white font-medium">{activity.title}</p>
+                      <p className="text-gray-400 text-sm">{activity.description}</p>
+                      <p className="text-gray-500 text-xs mt-1">{new Date(activity.timestamp).toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-bold text-lg ${
+                      activity.type.includes('won') || activity.type === 'deposit' 
+                        ? 'text-green-400' 
+                        : activity.type.includes('lost') || activity.type === 'withdrawal' 
+                          ? 'text-red-400' 
+                          : 'text-cyan-400'
+                    }`}>
+                      {activity.type === 'deposit' || activity.type.includes('won') ? '+' : '-'}{activity.amount} {activity.currency}
+                    </p>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      activity.status === 'completed' ? 'bg-green-500/20 text-green-400' :
+                      activity.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
+                      'bg-red-500/20 text-red-400'
+                    }`}>
+                      {activity.status}
+                    </span>
+                  </div>
+                </div>
               ))}
             </div>
           )}
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }

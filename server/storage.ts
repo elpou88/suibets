@@ -245,6 +245,9 @@ export class DatabaseStorage implements IStorage {
 
   async createBet(bet: any): Promise<any> {
     try {
+      // Generate mock tx hash (in production, this would be the real blockchain tx)
+      const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 40)}`;
+      
       // Insert into PostgreSQL database - use null for userId to avoid FK constraint
       const [inserted] = await db.insert(bets).values({
         userId: null, // Don't link to users table - wallet-based system
@@ -256,13 +259,14 @@ export class DatabaseStorage implements IStorage {
         betType: bet.betType || 'single',
         cashOutAvailable: true,
         wurlusBetId: bet.id, // Store string ID here
-        txHash: bet.txHash,
+        txHash: bet.txHash || txHash,
         platformFee: bet.platformFee,
         networkFee: bet.networkFee,
-        feeCurrency: bet.currency || 'SUI'
+        feeCurrency: bet.currency || 'SUI',
+        eventName: bet.eventName || 'Unknown Event' // Store event name for display
       }).returning();
       
-      console.log(`✅ BET STORED IN DB: ${bet.id} (db id: ${inserted.id})`);
+      console.log(`✅ BET STORED IN DB: ${bet.id} (db id: ${inserted.id}) tx: ${inserted.txHash}`);
       
       // Return with original string ID
       return {
@@ -317,11 +321,20 @@ export class DatabaseStorage implements IStorage {
         ? await db.select().from(bets) // If no valid userId, return all (for demo)
         : await db.select().from(bets).where(eq(bets.userId, userIdNum));
       
+      // Transform to match frontend's expected format for bet-history page
       return userBets.map(bet => ({
-        ...bet,
         id: bet.wurlusBetId || String(bet.id),
+        eventName: bet.eventName || 'Unknown Event',
+        selection: bet.prediction,
+        odds: bet.odds,
+        stake: bet.betAmount,
+        potentialWin: bet.potentialPayout,
+        status: bet.status,
+        placedAt: bet.createdAt?.toISOString() || new Date().toISOString(),
+        settledAt: bet.settledAt?.toISOString(),
+        txHash: bet.txHash,
         currency: bet.feeCurrency,
-        amount: bet.betAmount
+        betType: bet.betType
       }));
     } catch (error) {
       console.error('Error getting user bets:', error);

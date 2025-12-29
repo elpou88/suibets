@@ -171,6 +171,7 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
           userId: user.id,
           walletAddress: user.walletAddress,
           eventId: bet.eventId,
+          eventName: bet.eventName,
           marketId: bet.marketId,
           outcomeId: bet.outcomeId,
           odds: bet.odds,

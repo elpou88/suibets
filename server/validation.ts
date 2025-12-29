@@ -20,6 +20,7 @@ export const OddsSchema = z.number()
 export const PlaceBetSchema = z.object({
   userId: z.string().optional().default('user1'),
   eventId: z.string().min(1, 'Event ID required'),
+  eventName: z.string().optional(), // Event name for bet history display
   marketId: z.string().min(1, 'Market ID required'),
   outcomeId: z.string().min(1, 'Outcome ID required'),
   odds: OddsSchema,

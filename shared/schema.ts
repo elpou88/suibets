@@ -139,7 +139,9 @@ export const bets = pgTable("bets", {
   txHash: text("tx_hash"), // Transaction hash for bet placement
   platformFee: real("platform_fee"), // Platform fee in SUI
   networkFee: real("network_fee"), // Network fee in SUI
-  feeCurrency: text("fee_currency").default("SUI") // Currency of fees
+  feeCurrency: text("fee_currency").default("SUI"), // Currency of fees
+  // Event display name for bet history
+  eventName: text("event_name") // Store event name for display in bet history
 });
 
 // Parlay bets (combines multiple bets into one wager)

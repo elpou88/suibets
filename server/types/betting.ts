@@ -12,6 +12,9 @@ export interface SportEvent {
   startTime: string;
   status: 'scheduled' | 'live' | 'finished' | 'upcoming';
   score?: string;
+  minute?: number | null; // Elapsed minutes for live events
+  homeScore?: number; // Home team score for live events
+  awayScore?: number; // Away team score for live events
   markets: MarketData[];
   isLive: boolean;
   dataSource?: string; // Added to track data source for data quality purposes

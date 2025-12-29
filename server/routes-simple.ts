@@ -401,7 +401,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      const { userId, eventId, marketId, outcomeId, odds, betAmount, prediction, feeCurrency } = validation.data!;
+      const { userId, eventId, eventName, marketId, outcomeId, odds, betAmount, prediction, feeCurrency } = validation.data!;
       
       // Determine currency (default to SUI)
       const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
@@ -431,6 +431,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         id: betId,
         userId,
         eventId,
+        eventName: eventName || 'Sports Event',
         marketId,
         outcomeId,
         odds,

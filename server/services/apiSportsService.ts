@@ -1744,6 +1744,9 @@ export class ApiSportsService {
       }
     }
     
+    // Extract elapsed minutes from the API response
+    const elapsedMinutes = event.fixture?.status?.elapsed || null;
+    
     return {
       id: eventId,
       sportId: sportId, // Use the correct sport ID
@@ -1753,6 +1756,9 @@ export class ApiSportsService {
       startTime: new Date(event.fixture?.date || Date.now()).toISOString(),
       status: (isLive ? 'live' : (status || 'scheduled')) as 'scheduled' | 'live' | 'finished' | 'upcoming',
       score: isLive ? `${event.goals?.home || 0} - ${event.goals?.away || 0}` : undefined,
+      minute: elapsedMinutes, // Include elapsed time for live events
+      homeScore: event.goals?.home || 0,
+      awayScore: event.goals?.away || 0,
       markets: marketsData,
       isLive
     };

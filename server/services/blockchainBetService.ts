@@ -31,7 +31,7 @@ export class BlockchainBetService {
   private network: 'mainnet' | 'testnet' | 'devnet';
 
   constructor() {
-    this.network = (process.env.SUI_NETWORK as 'mainnet' | 'testnet' | 'devnet') || 'testnet';
+    this.network = (process.env.SUI_NETWORK as 'mainnet' | 'testnet' | 'devnet') || 'mainnet';
     this.client = new SuiClient({ url: getFullnodeUrl(this.network) });
     console.log(`BlockchainBetService initialized on ${this.network}`);
   }

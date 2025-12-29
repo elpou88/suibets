@@ -1,5 +1,5 @@
-const WALRUS_AGGREGATOR = process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus-testnet.walrus.space';
-const WALRUS_PUBLISHER = process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus-testnet.walrus.space';
+const WALRUS_AGGREGATOR = process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus.space';
+const WALRUS_PUBLISHER = process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus.space';
 
 export interface WalrusBetData {
   betId: string;
@@ -29,7 +29,7 @@ export class WalrusService {
   private useRealWalrus: boolean;
 
   constructor() {
-    this.useRealWalrus = process.env.USE_REAL_WALRUS === 'true';
+    this.useRealWalrus = process.env.USE_REAL_WALRUS !== 'false'; // Default to true for mainnet
     console.log(`WalrusService initialized (Real API: ${this.useRealWalrus})`);
   }
 

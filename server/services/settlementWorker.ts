@@ -123,7 +123,7 @@ class SettlementWorkerService {
   private async fetchFinishedForSport(sport: string): Promise<FinishedMatch[]> {
     const finished: FinishedMatch[] = [];
 
-    const apiKey = process.env.SPORTSDATA_API_KEY || process.env.APISPORTS_KEY || '';
+    const apiKey = process.env.API_SPORTS_KEY || process.env.SPORTSDATA_API_KEY || process.env.APISPORTS_KEY || '';
     if (!apiKey) return [];
 
     const today = new Date().toISOString().split('T')[0];

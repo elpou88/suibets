@@ -692,7 +692,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.json({
         success: true,
         transaction: txPayload,
-        network: process.env.SUI_NETWORK || 'testnet',
+        network: process.env.SUI_NETWORK || 'mainnet',
         instructions: 'Use this payload with your Sui wallet to sign and submit the transaction'
       });
     } catch (error: any) {
@@ -706,10 +706,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     res.json({
       packageId: blockchainBetService.getPackageId(),
       platformId: blockchainBetService.getBettingPlatformId(),
-      network: process.env.SUI_NETWORK || 'testnet',
+      network: process.env.SUI_NETWORK || 'mainnet',
       revenueWallet: blockchainBetService.getRevenueWallet(),
-      walrusAggregator: process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus-testnet.walrus.space',
-      walrusPublisher: process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus-testnet.walrus.space'
+      walrusAggregator: process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus.space',
+      walrusPublisher: process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus.space'
     });
   });
 

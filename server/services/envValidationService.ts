@@ -44,7 +44,7 @@ export class EnvValidationService {
     const config = {
       databaseUrl: !!process.env.DATABASE_URL,
       apiSportsKey: !!process.env.API_SPORTS_KEY,
-      suiNetwork: process.env.SUI_NETWORK || 'testnet',
+      suiNetwork: process.env.SUI_NETWORK || 'mainnet',
       adminWallet: !!process.env.ADMIN_WALLET_ADDRESS,
       sessionSecret: !!process.env.SESSION_SECRET,
       sbetsToken: !!process.env.SBETS_TOKEN_ADDRESS
@@ -86,7 +86,7 @@ export class EnvValidationService {
 
     // Check network validity
     const validNetworks = ['mainnet', 'testnet', 'devnet'];
-    if (!validNetworks.includes(process.env.SUI_NETWORK || 'testnet')) {
+    if (!validNetworks.includes(process.env.SUI_NETWORK || 'mainnet')) {
       warnings.push(`⚠️ Unknown SUI_NETWORK: ${process.env.SUI_NETWORK}`);
     }
 
@@ -156,7 +156,7 @@ export class EnvValidationService {
   static getSafeEnvSummary(): any {
     return {
       nodeEnv: process.env.NODE_ENV || 'development',
-      suiNetwork: process.env.SUI_NETWORK || 'testnet',
+      suiNetwork: process.env.SUI_NETWORK || 'mainnet',
       hasApiSportsKey: !!process.env.API_SPORTS_KEY,
       hasDatabase: !!process.env.DATABASE_URL,
       hasAdminPassword: !!process.env.ADMIN_PASSWORD,

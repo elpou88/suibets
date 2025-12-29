@@ -71,7 +71,7 @@ class SuiMetadataService {
   
   constructor() {
     // Initialize the SuiClient with the network from config
-    const network = config.blockchain.defaultNetwork || 'testnet';
+    const network = config.blockchain.defaultNetwork || 'mainnet';
     const networkUrl = this.getNetworkUrl(network);
     this.provider = new SuiClient({ url: networkUrl });
     
@@ -101,7 +101,7 @@ class SuiMetadataService {
       case 'localnet':
         return 'http://127.0.0.1:9000';
       default:
-        return 'https://fullnode.testnet.sui.io:443';
+        return 'https://fullnode.mainnet.sui.io:443';
     }
   }
   

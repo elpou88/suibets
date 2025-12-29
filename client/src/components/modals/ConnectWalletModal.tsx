@@ -113,37 +113,106 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       if (walletId === 'NIGHTLY') {
         console.log('User selected Nightly wallet - trying direct connection');
         try {
-          // @ts-ignore - Nightly injects window.nightly
-          if (typeof window.nightly !== 'undefined' && window.nightly?.sui) {
-            console.log('Nightly wallet detected, connecting via sui adapter...');
-            // @ts-ignore
-            const response = await window.nightly.sui.connect();
-            console.log('Nightly connection response:', response);
-            
-            if (response && (response.publicKey || response.address)) {
-              const walletAddress = response.publicKey || response.address;
-              console.log('Connected to Nightly wallet:', walletAddress);
-              
-              if (connectWallet) {
-                await connectWallet(walletAddress, 'nightly');
-              }
-              
-              toast({
-                title: "Wallet Connected",
-                description: `Connected to Nightly Wallet`,
-              });
-              
-              setConnecting(false);
-              onClose();
-              return;
-            }
-          } else {
-            console.log('Nightly wallet not detected in window object');
-            setError("Nightly wallet extension not found. Please install it from nightly.app");
+          // @ts-ignore - Check multiple ways Nightly might inject itself
+          const nightlyProvider = (window as any).nightly;
+          const nightlySui = nightlyProvider?.sui;
+          
+          console.log('Nightly detection:', { 
+            hasNightly: !!nightlyProvider, 
+            hasSui: !!nightlySui,
+            nightlyKeys: nightlyProvider ? Object.keys(nightlyProvider) : []
+          });
+          
+          if (!nightlyProvider) {
+            // Open Nightly install page
+            window.open('https://nightly.app/', '_blank');
+            setError("Nightly wallet not detected. Please install it and refresh the page.");
             setConnecting(false);
             setConnectionStep('selecting');
             return;
           }
+          
+          if (nightlySui) {
+            console.log('Nightly Sui adapter found, connecting...');
+            // Use the Sui-specific connect
+            // @ts-ignore
+            const features = nightlySui.features || {};
+            console.log('Nightly Sui features:', Object.keys(features));
+            
+            // Try standard:connect feature first
+            if (features['standard:connect']) {
+              // @ts-ignore
+              const result = await features['standard:connect'].connect();
+              console.log('Nightly standard:connect result:', result);
+              if (result?.accounts?.[0]?.address) {
+                const walletAddress = result.accounts[0].address;
+                if (connectWallet) {
+                  await connectWallet(walletAddress, 'nightly');
+                }
+                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
+                setConnecting(false);
+                onClose();
+                return;
+              }
+            }
+            
+            // Try direct connect method
+            // @ts-ignore
+            if (typeof nightlySui.connect === 'function') {
+              // @ts-ignore
+              const response = await nightlySui.connect();
+              console.log('Nightly sui.connect response:', response);
+              
+              const walletAddress = response?.accounts?.[0]?.address || 
+                                    response?.address || 
+                                    response?.publicKey;
+              
+              if (walletAddress) {
+                console.log('Connected to Nightly wallet:', walletAddress);
+                if (connectWallet) {
+                  await connectWallet(walletAddress, 'nightly');
+                }
+                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
+                setConnecting(false);
+                onClose();
+                return;
+              }
+            }
+          }
+          
+          // Fallback: Try using wallet standard
+          console.log('Trying wallet standard detection for Nightly...');
+          const { getWallets } = await import('@wallet-standard/core');
+          const wallets = getWallets().get();
+          const nightlyWallet = wallets.find((w: any) => 
+            w.name?.toLowerCase().includes('nightly')
+          );
+          
+          if (nightlyWallet) {
+            console.log('Found Nightly via wallet standard:', nightlyWallet.name);
+            // @ts-ignore
+            const connectFeature = nightlyWallet.features?.['standard:connect'];
+            if (connectFeature) {
+              // @ts-ignore
+              const result = await connectFeature.connect();
+              if (result?.accounts?.[0]?.address) {
+                const walletAddress = result.accounts[0].address;
+                if (connectWallet) {
+                  await connectWallet(walletAddress, 'nightly');
+                }
+                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
+                setConnecting(false);
+                onClose();
+                return;
+              }
+            }
+          }
+          
+          setError("Could not connect to Nightly. Please make sure it's unlocked and try again.");
+          setConnecting(false);
+          setConnectionStep('selecting');
+          return;
+          
         } catch (nightlyError: any) {
           console.error('Nightly wallet connection error:', nightlyError);
           setError(nightlyError?.message || "Failed to connect to Nightly wallet. Please try again.");

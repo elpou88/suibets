@@ -5,6 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1" />
     <title>SuiBets - Crypto Sports Betting Platform</title>
     <link rel="icon" type="image/png" href="/logo/suibets-logo.png" />
+    
+    <!-- ULTRA-EARLY: Block MetaMask/Ethereum errors BEFORE anything else loads -->
+    <script>
+      // This runs FIRST before any extensions can inject
+      (function() {
+        // Block ethereum injection from showing errors
+        Object.defineProperty(window, 'ethereum', {
+          get: function() { return undefined; },
+          set: function() { return true; },
+          configurable: true
+        });
+        
+        // Early error handler
+        window.onerror = function(msg) {
+          if (msg && (
+            msg.includes('MetaMask') || 
+            msg.includes('ethereum') || 
+            msg.includes('inpage') ||
+            msg.includes('chrome-extension')
+          )) {
+            return true; // Suppress
+          }
+        };
+      })();
+    </script>
+    
     <script src="/debug-script.js"></script>
     <!-- CRITICAL: Disable Vite HMR completely to prevent WebSocket errors in Replit -->
     <script>

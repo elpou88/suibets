@@ -41,7 +41,7 @@ import DividendsReal from "@/pages/dividends-real";
 import SportPage from "@/pages/sports-live/[sport]";
 import StoragePage from "@/pages/storage";
 import LiveScoresPage from "@/pages/live-scores";
-import { ParlayPage } from "@/components/parlay/ParlayPage";
+import ParlayPageNew from "@/pages/parlay";
 import Layout from "@/components/layout/Layout";
 import JoinPage from "@/pages/join";
 import LiveEventsPage from "@/pages/live-events";
@@ -138,13 +138,7 @@ function App() {
                           {/* Sports Pages */}
                           <Route path="/sports-live" component={SportsLive} />
                           <Route path="/sports-live/:sport" component={SportPage} />
-                          <Route path="/parlay">
-                            {() => (
-                              <Layout>
-                                <ParlayPage />
-                              </Layout>
-                            )}
-                          </Route>
+                          <Route path="/parlay" component={ParlayPageNew} />
                           
                           {/* Legacy redirects to main pages */}
                           <Route path="/goto-sports" component={CleanHome} />

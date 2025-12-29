@@ -34,10 +34,13 @@ export default function DepositsWithdrawalsPage() {
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
 
-  const { data: transactions = [], isLoading } = useQuery<Transaction[]>({
+  const { data: rawTransactions, isLoading } = useQuery({
     queryKey: ['/api/transactions'],
     refetchInterval: 30000,
   });
+  
+  // Ensure transactions is always an array
+  const transactions: Transaction[] = Array.isArray(rawTransactions) ? rawTransactions : [];
 
   const { data: balance } = useQuery({
     queryKey: ['/api/wallet/balance'],

@@ -25,10 +25,13 @@ interface ActivityItem {
 }
 
 export default function ActivityPage() {
-  const { data: activities = [], isLoading } = useQuery<ActivityItem[]>({
+  const { data: rawActivities, isLoading } = useQuery({
     queryKey: ['/api/activity'],
     refetchInterval: 30000,
   });
+  
+  // Ensure activities is always an array
+  const activities: ActivityItem[] = Array.isArray(rawActivities) ? rawActivities : [];
 
   const getIcon = (type: string) => {
     switch (type) {

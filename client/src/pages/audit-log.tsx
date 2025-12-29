@@ -26,10 +26,13 @@ interface AuditEntry {
 }
 
 export default function AuditLogPage() {
-  const { data: auditLogs = [], isLoading } = useQuery<AuditEntry[]>({
+  const { data: rawAuditLogs, isLoading } = useQuery({
     queryKey: ['/api/audit-log'],
     refetchInterval: 60000,
   });
+  
+  // Ensure auditLogs is always an array
+  const auditLogs: AuditEntry[] = Array.isArray(rawAuditLogs) ? rawAuditLogs : [];
 
   const getIcon = (category: string) => {
     switch (category) {

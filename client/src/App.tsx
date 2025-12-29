@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import React, { useEffect } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
+// Clean fresh design pages
+import CleanHome from "@/pages/clean-home";
+
 // Legacy image-based pages
 import Home from "@/pages/home";
 import Match from "@/pages/match";
@@ -113,9 +116,9 @@ function App() {
                         <div className="root-container">
                           <UniversalClickHandler />
                           <Switch>
-                          {/* Main Routes - Use real data pages as the default */}
-                          <Route path="/" component={HomeReal} />
-                          <Route path="/sports" component={HomeReal} />
+                          {/* Main Routes - Use clean fresh design as the default */}
+                          <Route path="/" component={CleanHome} />
+                          <Route path="/sports" component={CleanHome} />
                           <Route path="/sport/:slug*" component={SportsLive} />
                           <Route path="/match/:id" component={Match} />
                           <Route path="/match-detail/:id" component={MatchDetail} />

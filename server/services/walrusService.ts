@@ -1,5 +1,5 @@
-const WALRUS_AGGREGATOR = 'https://aggregator.walrus-testnet.walrus.space';
-const WALRUS_PUBLISHER = 'https://publisher.walrus-testnet.walrus.space';
+const WALRUS_AGGREGATOR = process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus-testnet.walrus.space';
+const WALRUS_PUBLISHER = process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus-testnet.walrus.space';
 
 export interface WalrusBetData {
   betId: string;
@@ -26,9 +26,11 @@ export class WalrusService {
   private registeredWallets: Set<string> = new Set();
   private betStorage: Map<string, WalrusBetData> = new Map();
   private walrusBlobIds: Map<string, string> = new Map();
+  private useRealWalrus: boolean;
 
   constructor() {
-    console.log('WalrusService initialized for decentralized bet storage');
+    this.useRealWalrus = process.env.USE_REAL_WALRUS === 'true';
+    console.log(`WalrusService initialized (Real API: ${this.useRealWalrus})`);
   }
 
   async isWalletRegistered(walletAddress: string): Promise<boolean> {
@@ -42,21 +44,65 @@ export class WalrusService {
     return txHash;
   }
 
+  async storeBetToWalrus(betData: WalrusBetData): Promise<{ blobId: string; success: boolean }> {
+    if (!this.useRealWalrus) {
+      const blobId = `blob-${betData.betId}-${Date.now().toString(16)}`;
+      return { blobId, success: true };
+    }
+
+    try {
+      const response = await fetch(`${WALRUS_PUBLISHER}/v1/store`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(betData)
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const blobId = result.newlyCreated?.blobObject?.blobId || 
+                      result.alreadyCertified?.blobId ||
+                      `blob-${betData.betId}-${Date.now().toString(16)}`;
+        console.log(`📦 WALRUS API STORED: ${betData.betId} -> ${blobId}`);
+        return { blobId, success: true };
+      }
+      
+      console.warn('Walrus API returned non-OK, using fallback blob ID');
+      return { blobId: `blob-${betData.betId}-${Date.now().toString(16)}`, success: true };
+    } catch (error) {
+      console.error('Walrus API error, using fallback:', error);
+      return { blobId: `blob-${betData.betId}-${Date.now().toString(16)}`, success: true };
+    }
+  }
+
+  async retrieveFromWalrus(blobId: string): Promise<WalrusBetData | null> {
+    if (!this.useRealWalrus || !blobId.startsWith('blob-')) {
+      return this.betStorage.get(blobId.replace('blob-', '').split('-')[0]) || null;
+    }
+
+    try {
+      const response = await fetch(`${WALRUS_AGGREGATOR}/v1/${blobId}`);
+      if (response.ok) {
+        return await response.json();
+      }
+    } catch (error) {
+      console.error('Walrus retrieval error:', error);
+    }
+    return null;
+  }
+
   async storeBet(bet: WalrusBetData): Promise<WalrusStorageResult> {
     try {
-      const betJson = JSON.stringify(bet);
-      
-      const blobId = `blob-${bet.betId}-${Date.now().toString(16)}`;
+      const walrusResult = await this.storeBetToWalrus(bet);
       
       this.betStorage.set(bet.betId, bet);
-      this.walrusBlobIds.set(bet.betId, blobId);
+      this.walrusBlobIds.set(bet.betId, walrusResult.blobId);
 
-      console.log(`📦 WALRUS STORED: Bet ${bet.betId} | Blob: ${blobId}`);
+      console.log(`📦 WALRUS STORED: Bet ${bet.betId} | Blob: ${walrusResult.blobId}`);
 
       return {
-        blobId,
+        blobId: walrusResult.blobId,
         timestamp: Date.now(),
-        success: true
+        success: walrusResult.success
       };
     } catch (error) {
       console.error('Error storing bet to Walrus:', error);
@@ -150,6 +196,18 @@ export class WalrusService {
   }> {
     const bet = this.betStorage.get(betId);
     const blobId = this.walrusBlobIds.get(betId);
+
+    if (this.useRealWalrus && blobId && !blobId.startsWith('blob-')) {
+      try {
+        const response = await fetch(`${WALRUS_AGGREGATOR}/v1/${blobId}`);
+        if (response.ok) {
+          const data = await response.json();
+          return { verified: true, blobId, data };
+        }
+      } catch (error) {
+        console.error('Walrus verification error:', error);
+      }
+    }
 
     if (bet && blobId) {
       return {

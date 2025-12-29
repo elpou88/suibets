@@ -1,6 +1,8 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 
 const SBETS_PACKAGE_ID = process.env.SBETS_TOKEN_ADDRESS?.split('::')[0] || '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285';
+const BETTING_PACKAGE_ID = process.env.BETTING_PACKAGE_ID || SBETS_PACKAGE_ID;
+const BETTING_PLATFORM_ID = process.env.BETTING_PLATFORM_ID || '';
 const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || '0x2046d57743f3cd8d7036671fdc1cbf3e45a8bc52bae473530266cd76b7cf7592';
 const REVENUE_WALLET = process.env.REVENUE_WALLET_ADDRESS || '0x2046d57743f3cd8d7036671fdc1cbf3e45a8bc52bae473530266cd76b7cf7592';
 
@@ -39,40 +41,98 @@ export class BlockchainBetService {
     eventId: string,
     prediction: string,
     betAmount: number,
-    odds: number
+    odds: number,
+    marketId: string = 'match_winner',
+    walrusBlobId: string = ''
   ): Promise<TransactionPayload> {
-    const potentialPayout = betAmount * odds;
-    const platformFee = betAmount * 0.01;
+    const oddsInBps = Math.floor(odds * 100);
 
     return {
-      target: `${SBETS_PACKAGE_ID}::betting::place_bet`,
+      target: `${BETTING_PACKAGE_ID}::betting::place_bet`,
       arguments: [
-        eventId,
-        prediction,
-        Math.floor(betAmount * 1e9),
-        Math.floor(odds * 1000),
-        Math.floor(potentialPayout * 1e9),
-        Math.floor(platformFee * 1e9),
-        REVENUE_WALLET
+        BETTING_PLATFORM_ID,
+        Array.from(new TextEncoder().encode(eventId)),
+        Array.from(new TextEncoder().encode(marketId)),
+        Array.from(new TextEncoder().encode(prediction)),
+        oddsInBps,
+        Array.from(new TextEncoder().encode(walrusBlobId)),
       ],
-      typeArguments: ['0x2::sui::SUI']
+      typeArguments: []
+    };
+  }
+
+  buildClientTransaction(
+    eventId: string,
+    prediction: string,
+    betAmountMist: number,
+    odds: number,
+    marketId: string,
+    walrusBlobId: string
+  ): {
+    packageId: string;
+    module: string;
+    function: string;
+    platformId: string;
+    betAmountMist: number;
+    clockObjectId: string;
+    moveCallArgs: {
+      platform: string;
+      eventId: number[];
+      marketId: number[];
+      prediction: number[];
+      oddsBps: number;
+      walrusBlobId: number[];
+    };
+    instructions: string;
+  } {
+    return {
+      packageId: BETTING_PACKAGE_ID,
+      module: 'betting',
+      function: 'place_bet',
+      platformId: BETTING_PLATFORM_ID,
+      betAmountMist,
+      clockObjectId: '0x6',
+      moveCallArgs: {
+        platform: BETTING_PLATFORM_ID,
+        eventId: Array.from(new TextEncoder().encode(eventId)),
+        marketId: Array.from(new TextEncoder().encode(marketId)),
+        prediction: Array.from(new TextEncoder().encode(prediction)),
+        oddsBps: Math.floor(odds * 100),
+        walrusBlobId: Array.from(new TextEncoder().encode(walrusBlobId)),
+      },
+      instructions: `
+        1. Split ${betAmountMist} MIST from your SUI coins
+        2. Call ${BETTING_PACKAGE_ID}::betting::place_bet with:
+           - platform: ${BETTING_PLATFORM_ID} (shared object)
+           - payment: [split coin]
+           - event_id: [encoded bytes]
+           - market_id: [encoded bytes]
+           - prediction: [encoded bytes]
+           - odds: ${Math.floor(odds * 100)} (in basis points)
+           - walrus_blob_id: [encoded bytes]
+           - clock: 0x6
+      `.trim()
     };
   }
 
   async buildSettlementTransaction(
     betId: string,
-    winnerAddress: string,
-    payoutAmount: number
+    betObjectId: string,
+    won: boolean
   ): Promise<TransactionPayload> {
     return {
-      target: `${SBETS_PACKAGE_ID}::betting::settle_bet`,
+      target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
       arguments: [
-        betId,
-        winnerAddress,
-        Math.floor(payoutAmount * 1e9)
+        BETTING_PLATFORM_ID,
+        betObjectId,
+        won
       ],
-      typeArguments: ['0x2::sui::SUI']
+      typeArguments: []
     };
+  }
+
+  getBettingPlatformId(): string {
+    return BETTING_PLATFORM_ID;
   }
 
   async verifyTransaction(txHash: string): Promise<{

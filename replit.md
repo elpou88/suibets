@@ -121,6 +121,16 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
+- December 29, 2025: Added full on-chain betting infrastructure
+  - Created Move smart contract (sui_contracts/suibets/sources/betting.move) with place_bet, settle_bet, void_bet functions
+  - BlockchainBetService builds transaction payloads for frontend wallet signing
+  - WalrusService supports real HTTP API calls to Walrus aggregator/publisher (set USE_REAL_WALRUS=true)
+  - New /api/bets/build-transaction endpoint returns transaction payload for wallet signing
+  - New /api/contract/info endpoint returns package ID, platform ID, network config
+  - New /api/bets/:id/verify endpoint verifies bet status across database/Walrus/blockchain
+  - Bet response includes onChain object with status, txHash, walrusBlobId, packageId
+  - Contract uses 1% fee model consistent with platform (100 basis points)
+  - To enable: deploy contract, set BETTING_PLATFORM_ID env var to the shared object ID
 - December 29, 2025: Fixed critical bet payout routing bug
   - Added walletAddress column to bets table for correct settlement payouts
   - Bets now store the wallet address of the bettor for settlement

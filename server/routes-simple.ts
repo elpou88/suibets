@@ -669,6 +669,50 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Build transaction payload for frontend wallet signing
+  app.post("/api/bets/build-transaction", async (req: Request, res: Response) => {
+    try {
+      const { eventId, prediction, betAmount, odds, marketId, walrusBlobId } = req.body;
+
+      if (!eventId || !prediction || !betAmount || !odds) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const betAmountMist = Math.floor(betAmount * 1e9);
+      
+      const txPayload = blockchainBetService.buildClientTransaction(
+        eventId,
+        prediction,
+        betAmountMist,
+        odds,
+        marketId || 'match_winner',
+        walrusBlobId || ''
+      );
+
+      res.json({
+        success: true,
+        transaction: txPayload,
+        network: process.env.SUI_NETWORK || 'testnet',
+        instructions: 'Use this payload with your Sui wallet to sign and submit the transaction'
+      });
+    } catch (error: any) {
+      console.error("Transaction build error:", error);
+      res.status(500).json({ message: error.message || "Failed to build transaction" });
+    }
+  });
+
+  // Get contract info for frontend
+  app.get("/api/contract/info", async (_req: Request, res: Response) => {
+    res.json({
+      packageId: blockchainBetService.getPackageId(),
+      platformId: blockchainBetService.getBettingPlatformId(),
+      network: process.env.SUI_NETWORK || 'testnet',
+      revenueWallet: blockchainBetService.getRevenueWallet(),
+      walrusAggregator: process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus-testnet.walrus.space',
+      walrusPublisher: process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus-testnet.walrus.space'
+    });
+  });
+
   // Place a parlay bet (multiple selections)
   app.post("/api/bets/parlay", async (req: Request, res: Response) => {
     try {

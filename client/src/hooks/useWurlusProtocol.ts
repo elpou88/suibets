@@ -205,7 +205,7 @@ export function useWurlusProtocol() {
       // Invalidate bets query cache to refresh bet list
       if (user?.id) {
         queryClient.invalidateQueries({
-          queryKey: ['/api/bets/user', user.id],
+          predicate: (query) => String(query.queryKey[0]).includes('/api/bets'),
         });
       }
       
@@ -269,7 +269,7 @@ export function useWurlusProtocol() {
       
       // Invalidate bets query cache to refresh bet list
       queryClient.invalidateQueries({
-        queryKey: ['/api/bets/user', user.id],
+        predicate: (query) => String(query.queryKey[0]).includes('/api/bets'),
       });
       
       return data.txHash;
@@ -287,12 +287,13 @@ export function useWurlusProtocol() {
    * @returns Promise resolving to array of bets
    */
   const getUserBets = async (): Promise<WurlusBet[]> => {
-    if (!user?.id) {
+    const walletId = user?.walletAddress || user?.id;
+    if (!walletId) {
       return [];
     }
     
     try {
-      const response = await fetch(`/api/bets/user/${user.id}`, {
+      const response = await fetch(`/api/bets?wallet=${walletId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });

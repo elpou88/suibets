@@ -126,7 +126,9 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
   - All balance operations (deposits, bets, winnings, revenue) persist to database
   - Balances survive server restarts - critical for settlement reliability
   - Settlement worker correctly processes and persists all winnings/revenue
-  - Bet history and activity pages now correctly include wallet address for proper data fetching
+  - All pages (bet-history, activity, wallet-dashboard, audit-log) now include wallet address for proper data fetching
+  - Fixed useWurlusProtocol hook to use correct API endpoints
+  - Removed all references to non-existent /api/bets/user endpoint
 - December 29, 2025: Fixed critical duplicate payment issues
   - Deposit endpoint now requires txHash and blocks duplicate deposits
   - Settlement worker now processes ALL users' bets (not just user1)

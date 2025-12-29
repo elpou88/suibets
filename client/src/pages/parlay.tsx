@@ -61,9 +61,9 @@ export default function ParlayPage() {
       toast({ title: 'Parlay Placed!', description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI` });
       clearBets();
       setStake('10');
-      queryClient.invalidateQueries({ queryKey: ['/api/bets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/activity'] });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/bets') });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/user/balance') });
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/activity') });
     },
     onError: () => {
       toast({ title: 'Bet Failed', description: 'Please try again', variant: 'destructive' });

@@ -107,9 +107,9 @@ export default function ActivityPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['/api/activity'] }),
-      queryClient.invalidateQueries({ queryKey: ['/api/bets'] }),
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/activity') }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/bets') }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/transactions') }),
       refetch()
     ]);
     toast({ title: 'Refreshed', description: 'Activity updated' });

@@ -33,13 +33,17 @@ export default function WalletDashboardPage() {
   const { selectedBets } = useBetting();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  const walletAddress = currentWallet?.address;
+  
   const { data: betsData, refetch: refetchBets } = useQuery({
-    queryKey: ['/api/bets'],
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 10000,
   });
   
   const { data: balanceData, refetch: refetchBalance } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
-    queryKey: ['/api/user/balance'],
+    queryKey: [`/api/user/balance?userId=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 15000,
   });
   

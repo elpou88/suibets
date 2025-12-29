@@ -52,10 +52,12 @@ export default function BetHistoryReal() {
   const [statusFilter, setStatusFilter] = useState<BetStatus>("all");
   const [activeTab, setActiveTab] = useState<"bets" | "parlays">("bets");
 
-  // Fetch user bet history
+  // Fetch user bet history using wallet address
+  const walletAddress = user?.walletAddress || user?.id;
+  
   const { data: bets, isLoading } = useQuery<Bet[]>({
-    queryKey: ['/api/bets/user', user?.id],
-    enabled: !!user?.id,
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
   });
 
   // Filter bets based on search term and status

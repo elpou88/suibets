@@ -36,18 +36,16 @@ export function BetHistory() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('all');
 
-  // Fetch user's bets
-  const { data: userBets = [], isLoading, refetch } = useQuery({
-    queryKey: ['/api/bets/user', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return [];
-      
-      const response = await apiRequest('GET', `/api/bets/user/${user.id}`);
-      return response.json();
-    },
-    enabled: !!user?.id,
+  // Fetch user's bets using wallet address
+  const walletAddress = user?.walletAddress || user?.id;
+  
+  const { data: userBetsData = [], isLoading, refetch } = useQuery<any[]>({
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 30000, // Refresh every 30 seconds
   });
+  
+  const userBets = Array.isArray(userBetsData) ? userBetsData : [];
 
   // Filter bets based on active tab
   const filteredBets = userBets.filter((bet: any) => {

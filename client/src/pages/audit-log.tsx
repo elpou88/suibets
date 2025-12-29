@@ -36,13 +36,17 @@ export default function AuditLogPage() {
   const { currentWallet } = useWalrusProtocolContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  const walletAddress = currentWallet?.address;
+  
   const { data: rawAuditLogs, refetch } = useQuery({
-    queryKey: ['/api/audit-log'],
+    queryKey: [`/api/audit-log?wallet=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 30000,
   });
 
   const { data: rawBets } = useQuery({
-    queryKey: ['/api/bets'],
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 30000,
   });
   
@@ -86,8 +90,8 @@ export default function AuditLogPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['/api/audit-log'] }),
-      queryClient.invalidateQueries({ queryKey: ['/api/bets'] }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/audit-log') }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/bets') }),
       refetch()
     ]);
     toast({ title: 'Refreshed', description: 'Audit log updated' });

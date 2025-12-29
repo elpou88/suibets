@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Trash2, AlertCircle, CheckCircle2, Wallet, ArrowRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
-import { useLocation } from 'wouter';
 
 interface Bet {
   id: string;
@@ -30,13 +29,12 @@ interface WalrusBetSlipProps {
 
 export function WalrusBetSlip({ bets, onRemoveBet, onClearAll }: WalrusBetSlipProps) {
   const { toast } = useToast();
-  const [, navigate] = useLocation();
   const [betAmount, setBetAmount] = useState<number>(10);
   const [tokenType, setTokenType] = useState<'SUI' | 'SBETS'>('SUI');
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [activeTab, setActiveTab] = useState('single');
   
-  const { currentWallet, placeBetMutation } = useWalrusProtocolContext();
+  const { currentWallet, placeBet } = useWalrusProtocolContext();
   
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseFloat(e.target.value);
@@ -69,7 +67,9 @@ export function WalrusBetSlip({ bets, onRemoveBet, onClearAll }: WalrusBetSlipPr
         description: 'Please connect your wallet to place a bet.',
         variant: 'destructive',
       });
-      navigate('/connect-wallet');
+      // Trigger wallet connect event instead of navigating away
+      const event = new CustomEvent('suibets:connect-wallet-required');
+      window.dispatchEvent(event);
       return;
     }
     
@@ -98,7 +98,7 @@ export function WalrusBetSlip({ bets, onRemoveBet, onClearAll }: WalrusBetSlipPr
       // In a full implementation, we would handle parlays differently
       const bet = bets[0];
       
-      await placeBetMutation.mutateAsync({
+      await placeBet({
         walletAddress: currentWallet.address,
         eventId: bet.eventId,
         marketId: bet.marketId,
@@ -305,7 +305,10 @@ export function WalrusBetSlip({ bets, onRemoveBet, onClearAll }: WalrusBetSlipPr
                 <Button
                   variant="link"
                   className="h-auto p-0 ml-1 text-xs text-[#00ffff]"
-                  onClick={() => navigate('/connect-wallet')}
+                  onClick={() => {
+                    const event = new CustomEvent('suibets:connect-wallet-required');
+                    window.dispatchEvent(event);
+                  }}
                 >
                   Connect now
                 </Button>

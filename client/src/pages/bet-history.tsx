@@ -38,8 +38,12 @@ export default function BetHistoryPage() {
   const [filter, setFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Only fetch data when wallet is connected - prevents mock data
+  const walletAddress = currentWallet?.address;
+  
   const { data: rawBets, refetch } = useQuery({
-    queryKey: ['/api/bets'],
+    queryKey: ['/api/bets', walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 10000,
   });
   
@@ -70,7 +74,11 @@ export default function BetHistoryPage() {
   };
 
   const handleBack = () => {
-    setLocation('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation('/');
+    }
   };
 
   const getStatusIcon = (status: string) => {

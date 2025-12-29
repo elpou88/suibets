@@ -38,29 +38,37 @@ export default function ActivityPage() {
   const [filter, setFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
+  // Only fetch data when wallet is connected - prevents mock data
+  const walletAddress = currentWallet?.address;
+  
   const { data: rawActivities, refetch } = useQuery({
-    queryKey: ['/api/activity'],
+    queryKey: ['/api/activity', walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 10000,
   });
 
   const { data: rawBets } = useQuery({
-    queryKey: ['/api/bets'],
+    queryKey: ['/api/bets', walletAddress],
+    enabled: !!walletAddress,
     refetchInterval: 10000,
   });
   
   const activities: ActivityItem[] = Array.isArray(rawActivities) ? rawActivities : [];
   const bets = Array.isArray(rawBets) ? rawBets : [];
 
-  const betActivities: ActivityItem[] = bets.map((bet: any) => ({
-    id: `bet-${bet.id}`,
-    type: bet.status === 'won' ? 'bet_won' : bet.status === 'lost' ? 'bet_lost' : 'bet_placed',
-    title: bet.status === 'won' ? 'Bet Won!' : bet.status === 'lost' ? 'Bet Lost' : 'Bet Placed',
-    description: `${bet.eventName || 'Unknown Event'} - ${bet.selection || 'Unknown Selection'}`,
-    amount: bet.status === 'won' ? bet.potentialWin : bet.stake,
-    currency: 'SUI',
-    timestamp: bet.placedAt || bet.createdAt || new Date().toISOString(),
-    status: 'completed'
-  }));
+  // Only include bets that have valid timestamps - no fabricated data
+  const betActivities: ActivityItem[] = bets
+    .filter((bet: any) => bet.placedAt || bet.createdAt)
+    .map((bet: any) => ({
+      id: `bet-${bet.id}`,
+      type: bet.status === 'won' ? 'bet_won' : bet.status === 'lost' ? 'bet_lost' : 'bet_placed',
+      title: bet.status === 'won' ? 'Bet Won!' : bet.status === 'lost' ? 'Bet Lost' : 'Bet Placed',
+      description: `${bet.eventName || 'Unknown Event'} - ${bet.selection || 'Unknown Selection'}`,
+      amount: bet.status === 'won' ? bet.potentialWin : bet.stake,
+      currency: 'SUI',
+      timestamp: bet.placedAt || bet.createdAt,
+      status: 'completed'
+    }));
 
   const allActivities = [...activities, ...betActivities].sort(
     (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -113,7 +121,11 @@ export default function ActivityPage() {
   };
 
   const handleBack = () => {
-    setLocation('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation('/');
+    }
   };
   
   return (

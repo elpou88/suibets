@@ -99,7 +99,11 @@ export default function AuditLogPage() {
   };
 
   const handleBack = () => {
-    setLocation('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation('/');
+    }
   };
 
   return (

@@ -740,13 +740,20 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Get user's bets
+  // Get user's bets - requires wallet address, returns empty if not provided
   app.get("/api/bets", async (req: Request, res: Response) => {
     try {
-      const userId = req.query.userId as string || 'user1';
+      const wallet = req.query.wallet as string;
+      const userId = req.query.userId as string;
       const status = req.query.status as string | undefined;
       
-      const bets = await storage.getUserBets(userId);
+      // No mock data - require a wallet or userId
+      if (!wallet && !userId) {
+        return res.json([]);
+      }
+      
+      const lookupId = wallet || userId;
+      const bets = await storage.getUserBets(lookupId);
       const filtered = status ? bets.filter(b => b.status === status) : bets;
       
       res.json(filtered);

@@ -74,7 +74,11 @@ export default function WalletDashboardPage() {
   };
 
   const handleBack = () => {
-    setLocation('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation('/');
+    }
   };
   
   return (

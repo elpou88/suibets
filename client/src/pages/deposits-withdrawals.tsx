@@ -140,7 +140,11 @@ export default function DepositsWithdrawalsPage() {
   };
 
   const handleBack = () => {
-    setLocation('/');
+    if (window.history.length > 1) {
+      window.history.back();
+    } else {
+      setLocation('/');
+    }
   };
 
   const getStatusIcon = (status: string) => {

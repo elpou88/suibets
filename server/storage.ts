@@ -1,6 +1,6 @@
 import { db } from './db';
-import { users, sports, events, markets, bets, promotions, type User, type InsertUser, type Sport, type Event, type Market } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { users, sports, events, markets, bets, promotions, wurlus_wallet_operations, type User, type InsertUser, type Sport, type Event, type Market } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
 import pg from 'pg';
@@ -37,6 +37,16 @@ export interface IStorage {
   
   // Session store
   sessionStore: any;
+  
+  // Balance methods (persistent)
+  getUserBalance(walletAddress: string): Promise<{ suiBalance: number; sbetsBalance: number } | undefined>;
+  updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<void>;
+  setUserBalance(walletAddress: string, suiBalance: number, sbetsBalance: number): Promise<void>;
+  recordWalletOperation(walletAddress: string, operationType: string, amount: number, txHash: string, metadata?: any): Promise<void>;
+  getWalletOperations(walletAddress: string, limit?: number): Promise<any[]>;
+  isTransactionProcessed(txHash: string): Promise<boolean>;
+  getPlatformRevenue(): Promise<{ suiRevenue: number; sbetsRevenue: number }>;
+  addPlatformRevenue(amount: number, currency: 'SUI' | 'SBETS'): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -449,6 +459,185 @@ export class DatabaseStorage implements IStorage {
       console.error('Error updating bet cash out:', error);
       // Log the action even if database update fails
       console.log(`Cashing out bet ${betId}`);
+    }
+  }
+
+  // === PERSISTENT BALANCE METHODS ===
+  
+  async getUserBalance(walletAddress: string): Promise<{ suiBalance: number; sbetsBalance: number } | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      if (!user) return undefined;
+      return {
+        suiBalance: user.suiBalance || 0,
+        sbetsBalance: user.sbetsBalance || 0
+      };
+    } catch (error) {
+      console.error('Error getting user balance:', error);
+      return undefined;
+    }
+  }
+
+  async updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<void> {
+    try {
+      // Get current balance
+      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      
+      if (!user) {
+        // Create new user with wallet address if doesn't exist
+        await db.insert(users).values({
+          username: `wallet_${walletAddress.slice(0, 8)}`,
+          password: '',
+          walletAddress,
+          suiBalance: Math.max(0, suiDelta),
+          sbetsBalance: Math.max(0, sbetsDelta)
+        });
+        console.log(`📝 Created new user for wallet ${walletAddress.slice(0, 8)}... with balance ${suiDelta} SUI, ${sbetsDelta} SBETS`);
+        return;
+      }
+
+      // Update existing user's balance
+      const newSuiBalance = Math.max(0, (user.suiBalance || 0) + suiDelta);
+      const newSbetsBalance = Math.max(0, (user.sbetsBalance || 0) + sbetsDelta);
+      
+      await db.update(users)
+        .set({ 
+          suiBalance: newSuiBalance,
+          sbetsBalance: newSbetsBalance
+        })
+        .where(eq(users.walletAddress, walletAddress));
+      
+      console.log(`💰 DB BALANCE UPDATE: ${walletAddress.slice(0, 8)}... | SUI: ${user.suiBalance || 0} -> ${newSuiBalance} | SBETS: ${user.sbetsBalance || 0} -> ${newSbetsBalance}`);
+    } catch (error) {
+      console.error('Error updating user balance:', error);
+    }
+  }
+
+  async setUserBalance(walletAddress: string, suiBalance: number, sbetsBalance: number): Promise<void> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      
+      if (!user) {
+        // Create new user with wallet address
+        await db.insert(users).values({
+          username: `wallet_${walletAddress.slice(0, 8)}`,
+          password: '',
+          walletAddress,
+          suiBalance,
+          sbetsBalance
+        });
+        console.log(`📝 Created new user for wallet ${walletAddress.slice(0, 8)}... with balance ${suiBalance} SUI, ${sbetsBalance} SBETS`);
+        return;
+      }
+
+      await db.update(users)
+        .set({ suiBalance, sbetsBalance })
+        .where(eq(users.walletAddress, walletAddress));
+      
+      console.log(`💰 DB BALANCE SET: ${walletAddress.slice(0, 8)}... | SUI: ${suiBalance} | SBETS: ${sbetsBalance}`);
+    } catch (error) {
+      console.error('Error setting user balance:', error);
+    }
+  }
+
+  async recordWalletOperation(walletAddress: string, operationType: string, amount: number, txHash: string, metadata?: any): Promise<void> {
+    try {
+      await db.insert(wurlus_wallet_operations).values({
+        walletAddress,
+        operationType,
+        amount,
+        txHash,
+        status: 'completed',
+        metadata: metadata || {}
+      });
+      console.log(`📋 WALLET OP RECORDED: ${operationType} | ${amount} | ${walletAddress.slice(0, 8)}... | tx: ${txHash.slice(0, 16)}...`);
+    } catch (error) {
+      console.error('Error recording wallet operation:', error);
+    }
+  }
+
+  async getWalletOperations(walletAddress: string, limit: number = 50): Promise<any[]> {
+    try {
+      const operations = await db.select()
+        .from(wurlus_wallet_operations)
+        .where(eq(wurlus_wallet_operations.walletAddress, walletAddress))
+        .orderBy(desc(wurlus_wallet_operations.timestamp))
+        .limit(limit);
+      
+      return operations.map(op => ({
+        type: op.operationType,
+        amount: op.amount,
+        txHash: op.txHash,
+        status: op.status,
+        timestamp: op.timestamp,
+        metadata: op.metadata
+      }));
+    } catch (error) {
+      console.error('Error getting wallet operations:', error);
+      return [];
+    }
+  }
+
+  async isTransactionProcessed(txHash: string): Promise<boolean> {
+    try {
+      const [existing] = await db.select()
+        .from(wurlus_wallet_operations)
+        .where(eq(wurlus_wallet_operations.txHash, txHash));
+      return !!existing;
+    } catch (error) {
+      console.error('Error checking transaction:', error);
+      return false;
+    }
+  }
+
+  async getPlatformRevenue(): Promise<{ suiRevenue: number; sbetsRevenue: number }> {
+    try {
+      // Platform revenue is stored in a special user with wallet address 'platform_revenue'
+      const [platform] = await db.select().from(users).where(eq(users.walletAddress, 'platform_revenue'));
+      if (!platform) {
+        return { suiRevenue: 0, sbetsRevenue: 0 };
+      }
+      return {
+        suiRevenue: platform.suiBalance || 0,
+        sbetsRevenue: platform.sbetsBalance || 0
+      };
+    } catch (error) {
+      console.error('Error getting platform revenue:', error);
+      return { suiRevenue: 0, sbetsRevenue: 0 };
+    }
+  }
+
+  async addPlatformRevenue(amount: number, currency: 'SUI' | 'SBETS'): Promise<void> {
+    try {
+      const platformWallet = 'platform_revenue';
+      let [platform] = await db.select().from(users).where(eq(users.walletAddress, platformWallet));
+      
+      if (!platform) {
+        // Create platform revenue account
+        await db.insert(users).values({
+          username: 'platform_revenue',
+          password: '',
+          walletAddress: platformWallet,
+          suiBalance: currency === 'SUI' ? amount : 0,
+          sbetsBalance: currency === 'SBETS' ? amount : 0
+        });
+        console.log(`📊 PLATFORM REVENUE CREATED: ${amount} ${currency}`);
+        return;
+      }
+
+      if (currency === 'SUI') {
+        await db.update(users)
+          .set({ suiBalance: (platform.suiBalance || 0) + amount })
+          .where(eq(users.walletAddress, platformWallet));
+        console.log(`📊 PLATFORM REVENUE: +${amount} SUI | Total: ${(platform.suiBalance || 0) + amount} SUI`);
+      } else {
+        await db.update(users)
+          .set({ sbetsBalance: (platform.sbetsBalance || 0) + amount })
+          .where(eq(users.walletAddress, platformWallet));
+        console.log(`📊 PLATFORM REVENUE: +${amount} SBETS | Total: ${(platform.sbetsBalance || 0) + amount} SBETS`);
+      }
+    } catch (error) {
+      console.error('Error adding platform revenue:', error);
     }
   }
 }

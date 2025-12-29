@@ -6,6 +6,7 @@ import { useBetting } from "@/context/BettingContext";
 import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
+import Footer from "@/components/layout/Footer";
 import suibetsLogo from "@assets/image_1767008967633.png";
 import suibetsHeroBg from "@assets/image_1767021435938.png";
 
@@ -306,6 +307,9 @@ export default function CleanHome() {
         isOpen={isWalletModalOpen} 
         onClose={() => setIsWalletModalOpen(false)} 
       />
+      
+      {/* Footer */}
+      <Footer />
     </div>
   );
 }

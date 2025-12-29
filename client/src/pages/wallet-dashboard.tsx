@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { WalletConnector } from '@/components/wallet/WalletConnector';
 import { DividendsPanel } from '@/components/dividends/DividendsPanel';
 import { StakingForm } from '@/components/staking/StakingForm';
@@ -26,20 +27,19 @@ export default function WalletDashboardPage() {
   const { toast } = useToast();
   const { currentWallet } = useWalrusProtocolContext();
   
-  // Mock bet data for visual display
-  const mockBets = [
-    {
-      id: 'bet1',
-      eventId: 'event1',
-      marketId: 'market1',
-      outcomeId: 'outcome1',
-      eventName: 'Barcelona vs Real Madrid',
-      marketName: 'Match Winner',
-      outcomeName: 'Barcelona',
-      odds: 1.85,
-      status: 'pending' as const
-    }
-  ];
+  // Fetch real bets from API
+  const { data: betsData } = useQuery({
+    queryKey: ['/api/bets', { userId: 'user1', status: 'pending' }],
+    enabled: !!currentWallet?.address
+  });
+  
+  // Fetch real balance from API
+  const { data: balanceData } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
+    queryKey: ['/api/user/balance', { userId: 'user1' }],
+    enabled: !!currentWallet?.address
+  });
+  
+  const userBets = (betsData || []) as any[];
   
   // Redirect to connect wallet if not connected
   useEffect(() => {
@@ -121,11 +121,11 @@ export default function WalletDashboardPage() {
           <div className="grid grid-cols-2 gap-3 mt-3">
             <div>
               <p className="text-xs text-gray-400">SUI Balance</p>
-              <p className="text-[#00ffff] font-medium">1,245.78 SUI</p>
+              <p className="text-[#00ffff] font-medium">{(balanceData?.suiBalance || 0).toFixed(2)} SUI</p>
             </div>
             <div>
               <p className="text-xs text-gray-400">SBETS Balance</p>
-              <p className="text-[#00ffff] font-medium">5,678.90 SBETS</p>
+              <p className="text-[#00ffff] font-medium">{(balanceData?.sbetsBalance || 0).toFixed(2)} SBETS</p>
             </div>
           </div>
           
@@ -290,7 +290,7 @@ export default function WalletDashboardPage() {
                 <div>
                   <h2 className="text-xl font-semibold text-white mb-4">New Bet</h2>
                   <WalrusBetSlip 
-                    bets={mockBets as any[]}
+                    bets={userBets}
                     onRemoveBet={() => {}}
                     onClearAll={() => {}}
                   />

@@ -35,33 +35,8 @@ export function DividendsPanel({ className }: DividendsPanelProps) {
     currentWallet?.address
   );
   
-  // Mock dividends for visual display
-  // In production, these would come from the API
-  const mockDividends: Dividend[] = [
-    {
-      id: 'div_123456',
-      amount: 1.25,
-      timestamp: Date.now() - 86400000 * 2, // 2 days ago
-      status: 'claimable',
-      source: 'bet'
-    },
-    {
-      id: 'div_234567',
-      amount: 0.75,
-      timestamp: Date.now() - 86400000 * 5, // 5 days ago
-      status: 'claimable',
-      source: 'stake'
-    },
-    {
-      id: 'div_345678',
-      amount: 0.5,
-      timestamp: Date.now() - 86400000 * 10, // 10 days ago
-      status: 'claimed',
-      source: 'bet'
-    }
-  ];
-  
-  const dividends = dividendsData?.dividends || mockDividends;
+  // Use real dividends from API (empty array as fallback - no mock data)
+  const dividends = dividendsData?.dividends || [];
   
   // Calculate total claimable dividends
   const totalClaimableDividends = dividends

@@ -635,7 +635,7 @@ export class ApiSportsService {
             // Football API works differently - need to use 'next' parameter instead of dates
             params = { 
               // Use next parameter instead of date ranges
-              next: '20', // Get next 20 fixtures
+              next: '50', // Get next 50 fixtures
               timezone: 'UTC'
             };
             break;
@@ -744,7 +744,7 @@ export class ApiSportsService {
             // Default to football API for other sports
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
-              next: '20', // Default to next 20 fixtures for generic sports
+              next: '50', // Default to next 50 fixtures for generic sports
               timezone: 'UTC'
             };
         }

@@ -13,42 +13,9 @@ interface Promotion {
 export default function PromotionsPage() {
   const [, setLocation] = useLocation();
   
-  // Mock promotions data
-  const mockPromotions: Promotion[] = [
-    { 
-      id: 1, 
-      title: "Welcome Bonus", 
-      description: "Get 100% bonus up to 1000 SUI on your first deposit", 
-      endDate: "2025-05-15",
-      category: "welcome"
-    },
-    { 
-      id: 2, 
-      title: "Referral Bonus", 
-      description: "Earn 50 SBETS for each friend you refer", 
-      endDate: "2025-12-31",
-      category: "referral"
-    },
-    { 
-      id: 3, 
-      title: "NBA Finals Special", 
-      description: "Get 20% cashback on all NBA Finals bets", 
-      endDate: "2025-06-20",
-      category: "sport"
-    },
-    { 
-      id: 4, 
-      title: "Champions League Parlay Boost", 
-      description: "10% odds boost on Champions League parlays", 
-      endDate: "2025-05-29",
-      category: "sport"
-    },
-  ];
-  
-  // Fetch promotions data
-  const { data: promotions = mockPromotions, isLoading } = useQuery<Promotion[]>({
+  // Fetch promotions data from API (no mock data)
+  const { data: promotions = [], isLoading } = useQuery<Promotion[]>({
     queryKey: ['/api/promotions'],
-    // If no data is returned or an error occurs, fallback to mock data
   });
   
   return (

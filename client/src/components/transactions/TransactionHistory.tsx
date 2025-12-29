@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,62 +52,23 @@ export function TransactionHistory({ className }: TransactionHistoryProps) {
   
   const { currentWallet } = useWalrusProtocolContext();
   
-  // Mock transactions for visual display
-  // In production, these would come from the blockchain via an API
-  const mockTransactions: Transaction[] = [
-    {
-      id: 'tx_123456',
-      type: 'bet',
-      amount: 50,
-      tokenType: 'SUI',
-      timestamp: Date.now() - 1000 * 60 * 15, // 15 minutes ago
-      status: 'confirmed',
-      hash: '0x1a2b3c4d5e6f7g8h9i0j',
-      description: 'Bet on Barcelona vs Real Madrid'
-    },
-    {
-      id: 'tx_234567',
-      type: 'win',
-      amount: 95,
-      tokenType: 'SUI',
-      timestamp: Date.now() - 1000 * 60 * 10, // 10 minutes ago
-      status: 'confirmed',
-      hash: '0x2b3c4d5e6f7g8h9i0j1a',
-      description: 'Win from Barcelona vs Real Madrid'
-    },
-    {
-      id: 'tx_345678',
-      type: 'stake',
-      amount: 200,
-      tokenType: 'SBETS',
-      timestamp: Date.now() - 1000 * 60 * 60 * 2, // 2 hours ago
-      status: 'confirmed',
-      hash: '0x3c4d5e6f7g8h9i0j1a2b',
-      description: 'Staked for 30 days'
-    },
-    {
-      id: 'tx_456789',
-      type: 'dividend',
-      amount: 12.5,
-      tokenType: 'SBETS',
-      timestamp: Date.now() - 1000 * 60 * 60 * 24, // 1 day ago
-      status: 'confirmed',
-      hash: '0x4d5e6f7g8h9i0j1a2b3c',
-      description: 'Weekly platform dividends'
-    },
-    {
-      id: 'tx_567890',
-      type: 'bet',
-      amount: 25,
-      tokenType: 'SBETS',
-      timestamp: Date.now() - 1000 * 60 * 60 * 28, // 28 hours ago
-      status: 'pending',
-      hash: '0x5e6f7g8h9i0j1a2b3c4d',
-      description: 'Bet on Lakers vs Bulls'
-    }
-  ];
+  // Fetch real transactions from API
+  const { data: apiTransactions = [], refetch } = useQuery<any[]>({
+    queryKey: ['/api/user/transactions', { userId: 'user1' }],
+    enabled: !!currentWallet?.address
+  });
   
-  const transactions = mockTransactions;
+  // Transform API transactions to component format
+  const transactions: Transaction[] = apiTransactions.map((tx: any, index: number) => ({
+    id: tx.id || `tx_${index}`,
+    type: tx.type === 'bet_placed' ? 'bet' : tx.type === 'bet_won' ? 'win' : tx.type === 'withdrawal' ? 'withdraw' : tx.type === 'deposit' ? 'deposit' : 'bet',
+    amount: tx.amount || 0,
+    tokenType: tx.currency || 'SUI',
+    timestamp: tx.timestamp || Date.now(),
+    status: 'confirmed',
+    hash: tx.txHash || `0x${Math.random().toString(16).slice(2, 18)}`,
+    description: tx.reason || `${tx.type} transaction`
+  }));
   
   // Filter transactions based on active tab and search query
   const filteredTransactions = transactions.filter(tx => {
@@ -120,18 +82,25 @@ export function TransactionHistory({ className }: TransactionHistoryProps) {
   });
   
   // Handle refresh button click
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
     
-    // Simulate refresh
-    setTimeout(() => {
+    try {
+      await refetch();
       toast({
         title: 'Transactions Refreshed',
         description: 'Your transaction history has been updated.',
         variant: 'default',
       });
+    } catch (error) {
+      toast({
+        title: 'Refresh Failed',
+        description: 'Could not refresh transactions.',
+        variant: 'destructive',
+      });
+    } finally {
       setIsRefreshing(false);
-    }, 1500);
+    }
   };
   
   // Get icon for transaction type

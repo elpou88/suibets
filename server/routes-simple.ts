@@ -812,32 +812,50 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   
       }
 
-      // Mock bet for demo
-      const mockBet = {
-        id: betId,
-        userId: 'user1',
-        eventId: '1',
-        marketId: 'match-winner',
-        outcomeId: 'home',
-        odds: 2.0,
-        betAmount: 100,
-        status: 'pending' as const,
-        prediction: 'home',
-        placedAt: Date.now(),
-        potentialPayout: 200
+      // Fetch actual bet from storage
+      const storedBet = await storage.getBet(betId);
+      
+      if (!storedBet) {
+        return res.status(404).json({ message: "Bet not found" });
+      }
+      
+      const bet = {
+        id: storedBet.id,
+        userId: storedBet.userId || 'user1',
+        eventId: storedBet.eventId,
+        marketId: storedBet.marketId || 'match-winner',
+        outcomeId: storedBet.outcomeId || 'home',
+        odds: storedBet.odds || 2.0,
+        betAmount: storedBet.betAmount || 100,
+        currency: (storedBet as any).currency || 'SUI' as 'SUI' | 'SBETS',
+        status: storedBet.status as 'pending' | 'won' | 'lost' | 'void' | 'cashed_out',
+        prediction: storedBet.prediction || 'home',
+        placedAt: storedBet.placedAt || Date.now(),
+        potentialPayout: storedBet.potentialPayout || (storedBet.betAmount || 100) * (storedBet.odds || 2.0)
       };
+      
+      if (bet.status !== 'pending') {
+        return res.status(400).json({ message: "Only pending bets can be cashed out" });
+      }
 
-      const cashOutValue = SettlementService.calculateCashOut(mockBet, currentOdds, percentageWinning);
+      const cashOutValue = SettlementService.calculateCashOut(bet, currentOdds, percentageWinning);
       const platformFee = cashOutValue * 0.01; // 1% cash-out fee
       const netCashOut = cashOutValue - platformFee;
 
-      console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue}, Fee: ${platformFee}, Net: ${netCashOut}`);
+      // Add cash out amount to user balance in the correct currency
+      balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
+      
+      // Update bet status
+      await storage.updateBetStatus(betId, 'cashed_out', netCashOut);
+
+      console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue} ${bet.currency}, Fee: ${platformFee} ${bet.currency}, Net: ${netCashOut} ${bet.currency}`);
 
       res.json({
         success: true,
         betId,
         cashOut: {
-          originalStake: mockBet.betAmount,
+          originalStake: bet.betAmount,
+          currency: bet.currency,
           cashOutValue: cashOutValue,
           platformFee: platformFee,
           netAmount: netCashOut,

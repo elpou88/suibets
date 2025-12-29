@@ -450,8 +450,22 @@ function EventCard({ event, onClick }: EventCardProps) {
           >
             ✓ Bet
           </button>
-          <button className="text-gray-500 text-sm ml-4">
-            + Select team
+          <button 
+            className={`text-sm ml-4 transition-all ${selectedOutcome ? 'text-cyan-400' : 'text-gray-500 hover:text-cyan-400'}`}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!selectedOutcome) {
+                toast({
+                  title: "Select a team first",
+                  description: "Click on Home, Draw, or Away odds above to select your pick",
+                });
+              } else {
+                handleBetClick(e);
+              }
+            }}
+            data-testid={`btn-select-team-${event.id}`}
+          >
+            {selectedOutcome ? '+ Add to slip' : '+ Select team'}
           </button>
         </div>
 

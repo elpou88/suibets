@@ -111,7 +111,7 @@ const SportEventCard: React.FC<SportEventCardProps> = ({ event, sportId }) => {
         {primaryMarket && (
           <div className="mt-4">
             <p className="text-xs text-gray-400 mb-2 text-center">{primaryMarket.name}</p>
-            <div className="grid grid-cols-2 gap-1">
+            <div className="grid grid-cols-2 gap-1 relative z-20">
               {primaryMarket.outcomes.slice(0, 2).map((outcome, i) => (
                 <Button
                   key={i}
@@ -134,7 +134,7 @@ const SportEventCard: React.FC<SportEventCardProps> = ({ event, sportId }) => {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full h-10 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white"
+                  className="w-full h-10 bg-[#1e3a3f] hover:bg-cyan-800 border-[#2a4c55] text-cyan-300 hover:text-white relative z-20"
                   onClick={(e) => handleAddBet(e, primaryMarket.outcomes[2].name, primaryMarket.outcomes[2].odds)}
                 >
                   <div className="flex flex-col">
@@ -146,12 +146,12 @@ const SportEventCard: React.FC<SportEventCardProps> = ({ event, sportId }) => {
             )}
           </div>
         )}
-        
-        {/* Link to event details page */}
-        <Link href={`/match/${event.id}`}>
-          <span className="absolute inset-0 z-10 cursor-pointer"></span>
-        </Link>
       </CardContent>
+      
+      {/* Link to event details page - placed after content so betting buttons work */}
+      <Link href={`/match/${event.id}`}>
+        <span className="absolute inset-0 z-0 cursor-pointer"></span>
+      </Link>
     </Card>
   );
 };

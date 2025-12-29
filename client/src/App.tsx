@@ -54,6 +54,15 @@ import AuditLogPage from "@/pages/audit-log";
 import WhitepaperPage from "@/pages/whitepaper";
 import AdminPanel from "@/pages/admin-panel";
 
+// Informational Pages
+import PrivacyPolicy from "@/pages/privacy";
+import FAQPage from "@/pages/faq";
+import ResponsibleGambling from "@/pages/responsible";
+import RulesPage from "@/pages/rules";
+import IntegrityPage from "@/pages/integrity";
+import AffiliatePage from "@/pages/affiliate";
+import BlogPage from "@/pages/blog";
+
 function App() {
   console.log("Starting React application");
   
@@ -136,6 +145,13 @@ function App() {
                           <Route path="/info" component={Info} />
                           <Route path="/community" component={Community} />
                           <Route path="/contact" component={Contact} />
+                          <Route path="/privacy" component={PrivacyPolicy} />
+                          <Route path="/faq" component={FAQPage} />
+                          <Route path="/responsible" component={ResponsibleGambling} />
+                          <Route path="/rules" component={RulesPage} />
+                          <Route path="/integrity" component={IntegrityPage} />
+                          <Route path="/affiliate" component={AffiliatePage} />
+                          <Route path="/blog" component={BlogPage} />
                           
                           {/* Sports Pages */}
                           <Route path="/sports-live" component={SportsLive} />

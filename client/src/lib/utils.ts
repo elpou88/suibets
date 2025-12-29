@@ -248,6 +248,7 @@ export function calculateTransactionFees(amount: number): {
 
 // Wallet types for UI display - as array for mapping
 export const WALLET_TYPES = [
+  { key: 'NIGHTLY', name: 'Nightly Wallet' },
   { key: 'SUI', name: 'Sui Wallet' },
   { key: 'ETHOS', name: 'Ethos Wallet' },
   { key: 'MARTIAN', name: 'Martian Wallet' },

@@ -342,6 +342,14 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               </p>
               <div className="mt-2 grid grid-cols-2 gap-1">
                 <a 
+                  href="https://nightly.app/" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline font-bold"
+                >
+                  • Nightly Wallet (Recommended)
+                </a>
+                <a 
                   href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
                   target="_blank" 
                   rel="noopener noreferrer"

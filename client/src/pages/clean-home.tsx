@@ -4,6 +4,8 @@ import { Link, useLocation } from "wouter";
 import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
 import { useBetting } from "@/context/BettingContext";
 import { useToast } from "@/hooks/use-toast";
+import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import suibetsLogo from "@assets/image_1767008967633.png";
 import suibetsHeroBg from "@assets/image_1767021435938.png";
 
@@ -70,8 +72,10 @@ export default function CleanHome() {
   const [, setLocation] = useLocation();
   const [selectedSport, setSelectedSport] = useState<number | null>(1);
   const [activeTab, setActiveTab] = useState<"live" | "upcoming">("live");
-  const [walletAddress, setWalletAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState<number>(0);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  
+  // Use real wallet adapter instead of fake state
+  const { address: walletAddress, isConnected, balances, connect, disconnect } = useWalletAdapter();
 
   const liveQueryUrl = selectedSport 
     ? `/api/events?isLive=true&sportId=${selectedSport}` 
@@ -103,13 +107,12 @@ export default function CleanHome() {
   };
 
   const handleConnectWallet = () => {
-    setWalletAddress("0xc40a...8653");
-    setBalance(0);
+    // Open the wallet connection modal
+    setIsWalletModalOpen(true);
   };
 
   const handleDisconnect = () => {
-    setWalletAddress(null);
-    setBalance(0);
+    disconnect();
   };
 
   return (
@@ -141,26 +144,28 @@ export default function CleanHome() {
             <button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors" data-testid="btn-buy-now">
               Buy Now
             </button>
-            <div className="text-right">
-              <div className="text-cyan-400 text-xs">0 SUI</div>
-              <div className="text-gray-500 text-xs">{walletAddress || "Not connected"}</div>
-            </div>
-            <button 
-              onClick={() => window.location.reload()} 
-              className="text-gray-400 hover:text-white p-2"
-              data-testid="btn-refresh"
-            >
-              <RefreshCw size={18} />
-            </button>
-            {walletAddress ? (
-              <button 
-                onClick={handleDisconnect}
-                className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm"
-                data-testid="btn-disconnect"
-              >
-                <LogOut size={16} />
-                Disconnect
-              </button>
+            {isConnected && walletAddress ? (
+              <>
+                <div className="text-right">
+                  <div className="text-cyan-400 text-xs">{balances.SUI.toFixed(2)} SUI</div>
+                  <div className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</div>
+                </div>
+                <button 
+                  onClick={() => window.location.reload()} 
+                  className="text-gray-400 hover:text-white p-2"
+                  data-testid="btn-refresh"
+                >
+                  <RefreshCw size={18} />
+                </button>
+                <button 
+                  onClick={handleDisconnect}
+                  className="flex items-center gap-2 text-red-400 hover:text-red-300 text-sm"
+                  data-testid="btn-disconnect"
+                >
+                  <LogOut size={16} />
+                  Disconnect
+                </button>
+              </>
             ) : (
               <button 
                 onClick={handleConnectWallet}
@@ -168,7 +173,7 @@ export default function CleanHome() {
                 data-testid="btn-connect-wallet"
               >
                 <Wallet size={16} />
-                Connect
+                Connect Wallet
               </button>
             )}
           </div>
@@ -291,6 +296,12 @@ export default function CleanHome() {
           )}
         </div>
       </div>
+      
+      {/* Wallet Connection Modal */}
+      <ConnectWalletModal 
+        isOpen={isWalletModalOpen} 
+        onClose={() => setIsWalletModalOpen(false)} 
+      />
     </div>
   );
 }

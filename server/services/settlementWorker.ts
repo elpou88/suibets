@@ -207,9 +207,10 @@ class SettlementWorkerService {
 
   private async getUnsettledBets(): Promise<UnsettledBet[]> {
     try {
-      const allBets = await storage.getUserBets('user1');
+      // Get ALL unsettled bets from all users - not just one user
+      const allBets = await storage.getAllBets('pending');
       return allBets
-        .filter(bet => bet.status === 'pending' && !this.settledBetIds.has(bet.id))
+        .filter(bet => !this.settledBetIds.has(bet.id))
         .map(bet => ({
           id: bet.id,
           eventId: bet.eventId || '',
@@ -217,7 +218,7 @@ class SettlementWorkerService {
           odds: bet.odds,
           stake: bet.stake || bet.betAmount,
           potentialWin: bet.potentialWin || bet.potentialPayout,
-          userId: bet.userId || 'user1',
+          userId: bet.walletAddress || bet.userId || 'unknown',
           currency: bet.currency || 'SUI'
         }));
     } catch (error) {

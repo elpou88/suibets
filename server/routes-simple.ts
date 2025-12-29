@@ -914,9 +914,22 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (amount <= 0) {
         return res.status(400).json({ message: "Amount must be positive" });
       }
+
+      if (!txHash) {
+        return res.status(400).json({ message: "Transaction hash is required for deposits" });
+      }
       
-      // Add deposit to user balance
-      balanceService.deposit(userId, amount, `Deposit from wallet${txHash ? ` (tx: ${txHash.slice(0, 10)}...)` : ''}`);
+      // DUPLICATE PREVENTION: Use txHash deduplication in balanceService
+      const depositResult = balanceService.deposit(userId, amount, txHash, 'Wallet deposit');
+      
+      if (!depositResult.success) {
+        console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: ${txHash} for ${userId}`);
+        return res.status(409).json({ 
+          success: false, 
+          message: depositResult.message,
+          duplicate: true
+        });
+      }
       
       // Notify user of deposit
       notificationService.createNotification(
@@ -927,14 +940,14 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         { amount, currency, txHash }
       );
 
-      console.log(`✅ DEPOSIT PROCESSED: ${userId} - ${amount} ${currency}${txHash ? ` (tx: ${txHash})` : ''}`);
+      console.log(`✅ DEPOSIT PROCESSED: ${userId} - ${amount} ${currency} (tx: ${txHash})`);
       
       res.json({
         success: true,
         deposit: {
           amount,
           currency,
-          txHash: txHash || `deposit-${Date.now()}`,
+          txHash,
           status: 'completed',
           timestamp: Date.now()
         },

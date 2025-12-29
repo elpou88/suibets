@@ -15,22 +15,37 @@ export interface UserBalance {
 export class BalanceService {
   private balances: Map<string, UserBalance> = new Map();
   private transactionHistory: Map<string, any[]> = new Map();
+  private processedTxHashes: Set<string> = new Set(); // Prevent duplicate deposits
 
   /**
-   * Get user balance
+   * Get user balance - starts at 0 for new users (no mock balances)
    */
   getBalance(userId: string): UserBalance {
     if (!this.balances.has(userId)) {
       this.balances.set(userId, {
         userId,
-        suiBalance: 100, // Default 100 SUI for new users
-        sbetsBalance: 1000, // Default 1000 SBETS for new users
+        suiBalance: 0, // New users start with 0 - must deposit real funds
+        sbetsBalance: 0, // New users start with 0 - must deposit real funds
         totalBetAmount: 0,
         totalWinnings: 0,
         lastUpdated: Date.now()
       });
     }
     return this.balances.get(userId)!;
+  }
+
+  /**
+   * Check if a transaction hash has already been processed
+   */
+  isTxProcessed(txHash: string): boolean {
+    return this.processedTxHashes.has(txHash);
+  }
+
+  /**
+   * Mark a transaction hash as processed
+   */
+  markTxProcessed(txHash: string): void {
+    this.processedTxHashes.add(txHash);
   }
 
   /**
@@ -145,22 +160,36 @@ export class BalanceService {
   }
 
   /**
-   * Deposit SUI to account (admin only)
+   * Deposit SUI to account with txHash deduplication
+   * Returns false if txHash was already processed (prevents double-crediting)
    */
-  deposit(userId: string, amount: number, reason: string = 'Manual deposit'): void {
+  deposit(userId: string, amount: number, txHash?: string, reason: string = 'Wallet deposit'): { success: boolean; message: string } {
+    // DUPLICATE PREVENTION: Check if this txHash was already processed
+    if (txHash && this.processedTxHashes.has(txHash)) {
+      console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: txHash ${txHash} already processed`);
+      return { success: false, message: 'Transaction already processed' };
+    }
+
     const balance = this.getBalance(userId);
     balance.suiBalance += amount;
     balance.lastUpdated = Date.now();
 
+    // Mark txHash as processed to prevent replay
+    if (txHash) {
+      this.processedTxHashes.add(txHash);
+    }
+
     this.addTransaction(userId, {
       type: 'deposit',
       amount,
+      txHash,
       reason,
       balance: balance.suiBalance,
       timestamp: Date.now()
     });
 
-    console.log(`💳 DEPOSIT ADDED: ${userId} - ${amount} SUI (${reason}) | Balance: ${balance.suiBalance} SUI`);
+    console.log(`💳 DEPOSIT ADDED: ${userId} - ${amount} SUI (${reason}) txHash: ${txHash} | Balance: ${balance.suiBalance} SUI`);
+    return { success: true, message: `Deposited ${amount} SUI` };
   }
 
   /**

@@ -45,14 +45,35 @@
         }
       }, true);
       
-      // Suppress console errors related to WebSocket/HMR
+      // Suppress console errors related to WebSocket/HMR/MetaMask
       const originalError = console.error;
       console.error = function(...args) {
         const msg = String(args[0] || '');
-        if (!msg.includes('WebSocket') && !msg.includes('HMR')) {
+        if (!msg.includes('WebSocket') && !msg.includes('HMR') && !msg.includes('MetaMask') && !msg.includes('ethereum')) {
           originalError.apply(console, args);
         }
       };
+      
+      // EARLY: Suppress MetaMask and other Ethereum wallet errors
+      // This is a Sui dApp - we don't use Ethereum wallets
+      window.addEventListener('error', function(event) {
+        const msg = event.message || '';
+        const stack = event.error?.stack || '';
+        if (msg.includes('MetaMask') || msg.includes('ethereum') || 
+            stack.includes('chrome-extension') || stack.includes('inpage.js')) {
+          event.preventDefault();
+          event.stopPropagation();
+          event.stopImmediatePropagation();
+          console.log('[EXTENSION-SUPPRESSED] Browser extension error blocked');
+          return false;
+        }
+      }, true);
+      
+      // Clear stale wallet data on every page load
+      try {
+        localStorage.removeItem('wallet_address');
+        localStorage.removeItem('wallet_type');
+      } catch(e) {}
     </script>
   </head>
   <body>

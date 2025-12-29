@@ -2,26 +2,43 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-// Suppress MetaMask errors - this is a Sui dApp, not Ethereum
-// MetaMask extension may try to inject itself and throw errors
+// Clear any stale wallet data on app load - user must explicitly connect
+localStorage.removeItem('wallet_address');
+localStorage.removeItem('wallet_type');
+
+// Suppress MetaMask and other non-Sui wallet errors
+// This is a Sui dApp - MetaMask/Ethereum extensions will throw errors
+const suppressedErrorPatterns = ['MetaMask', 'ethereum', 'inpage.js', 'Failed to connect to MetaMask'];
+
 window.addEventListener('error', (event) => {
-  if (event.message?.includes('MetaMask') || 
-      event.message?.includes('ethereum') ||
-      event.error?.message?.includes('MetaMask')) {
+  const isExtensionError = suppressedErrorPatterns.some(pattern => 
+    event.message?.includes(pattern) || 
+    event.error?.message?.includes(pattern) ||
+    event.error?.stack?.includes(pattern) ||
+    event.filename?.includes('chrome-extension')
+  );
+  
+  if (isExtensionError) {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Suppressed MetaMask error - this is a Sui dApp');
-    return true;
+    event.stopImmediatePropagation();
+    console.log('Suppressed browser extension error - this is a Sui dApp');
+    return false;
   }
-});
+}, true); // Use capture phase to catch early
 
 window.addEventListener('unhandledrejection', (event) => {
-  if (event.reason?.message?.includes('MetaMask') ||
-      event.reason?.message?.includes('ethereum')) {
+  const isExtensionError = suppressedErrorPatterns.some(pattern =>
+    event.reason?.message?.includes(pattern) ||
+    event.reason?.stack?.includes(pattern)
+  );
+  
+  if (isExtensionError) {
     event.preventDefault();
-    console.log('Suppressed MetaMask promise rejection - this is a Sui dApp');
+    event.stopPropagation();
+    console.log('Suppressed browser extension promise rejection');
   }
-});
+}, true);
 
 // Add a debug script to the document body
 const debugScript = document.createElement('script');

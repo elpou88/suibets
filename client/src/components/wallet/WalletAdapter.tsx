@@ -178,6 +178,17 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       
       console.log('Starting wallet connection process in WalletAdapter...');
       
+      // Clear any stale localStorage data before attempting connection
+      // This ensures we don't auto-connect to wrong wallet
+      localStorage.removeItem('wallet_address');
+      localStorage.removeItem('wallet_type');
+      
+      // Reset state to ensure clean connection
+      setAccount(null);
+      setAddress(null);
+      setConnected(false);
+      setIsConnected(false);
+      
       // Real wallet mode is the only option - no mock wallets
       
       try {
@@ -418,6 +429,62 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           }
         } catch (e) {
           console.error('Martian wallet error:', e);
+        }
+        
+        // 6. Try Nightly wallet - popular Sui wallet
+        try {
+          // @ts-ignore
+          if (typeof window.nightly !== 'undefined') {
+            console.log('Trying Nightly wallet connection...');
+            // @ts-ignore
+            const nightly = window.nightly;
+            
+            // Try Sui-specific connection
+            if (nightly.sui) {
+              // @ts-ignore
+              const response = await nightly.sui.connect();
+              if (response && response.publicKey) {
+                const walletAddress = response.publicKey;
+                
+                console.log('Connected to Nightly wallet (Sui):', walletAddress);
+                
+                // Update connection state
+                await updateConnectionState(walletAddress, 'nightly');
+                
+                toast({
+                  title: 'Wallet Connected',
+                  description: 'Connected to Nightly Wallet',
+                });
+                
+                setConnecting(false);
+                return true;
+              }
+            }
+            
+            // Fallback - try generic connect
+            // @ts-ignore
+            if (nightly.connect) {
+              const response = await nightly.connect();
+              if (response && (response.publicKey || response.address)) {
+                const walletAddress = response.publicKey || response.address;
+                
+                console.log('Connected to Nightly wallet:', walletAddress);
+                
+                // Update connection state
+                await updateConnectionState(walletAddress, 'nightly');
+                
+                toast({
+                  title: 'Wallet Connected',
+                  description: 'Connected to Nightly Wallet',
+                });
+                
+                setConnecting(false);
+                return true;
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Nightly wallet error:', e);
         }
       } catch (error) {
         console.error('Error connecting to wallet:', error);
@@ -673,22 +740,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   };
 
-  // Sync with wallet connection status and check saved wallet on mount
+  // Only sync when wallet connection is explicitly made by user
+  // DO NOT auto-connect from localStorage - user must click Connect Wallet
   useEffect(() => {
     if (connected && account?.address) {
       updateConnectionState(account.address);
     }
-    
-    // Check for saved wallet on mount
-    const checkSavedWallet = async () => {
-      const savedAddress = localStorage.getItem('wallet_address');
-      if (savedAddress && !isConnected && !address) {
-        console.log('Found saved wallet, reconnecting:', savedAddress);
-        updateConnectionState(savedAddress);
-      }
-    };
-    
-    checkSavedWallet();
+    // Removed auto-reconnect from localStorage - user must explicitly connect
+    console.log('No saved wallet data found or wallet already connected');
   }, [connected, account]);
 
   return (

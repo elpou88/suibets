@@ -61,6 +61,8 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Utility function to update connection state consistently
   const updateConnectionState = async (walletAddress: string, walletType: string = 'sui') => {
+    console.log('Manually updating connection state for:', walletAddress);
+    
     // Set local state
     setAccount({ address: walletAddress });
     setAddress(walletAddress);
@@ -71,37 +73,14 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('wallet_address', walletAddress);
     localStorage.setItem('wallet_type', walletType);
     
-    // Connect wallet on server if not already connected
-    if (!isConnected) {
-      try {
-        // First register the wallet with the server
-        const response = await apiRequest('POST', '/api/wallet/connect', {
-          address: walletAddress,
-          walletType: walletType
-        });
-        
-        if (response.ok) {
-          const userData = await response.json();
-          console.log('Wallet registered with server:', userData);
-          
-          // Create user account if it doesn't exist
-          if (!userData.id) {
-            const userResponse = await apiRequest('POST', '/api/users', {
-              username: `user_${walletAddress.substring(0, 8)}`,
-              walletAddress: walletAddress,
-              walletType: walletType
-            });
-            
-            if (userResponse.ok) {
-              console.log('User account created for wallet');
-            }
-          }
-        } else {
-          console.error('Failed to register wallet with server:', response.status);
-        }
-      } catch (error) {
-        console.error('Error connecting wallet to server:', error);
-      }
+    // Notify server
+    try {
+      await apiRequest('POST', '/api/wallet/connect', {
+        address: walletAddress,
+        walletType: walletType
+      });
+    } catch (error) {
+      console.error('Error connecting wallet to server:', error);
     }
   };
   

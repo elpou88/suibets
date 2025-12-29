@@ -37,28 +37,24 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   // Update UI if wallet connection state changes
   useEffect(() => {
     if (isConnected && address) {
-      // Handle successful connection from wallet adapter
+      console.log('Wallet detected as connected:', address);
+      
+      // Auto-close modal and notify user
       toast({
         title: "Wallet Connected",
         description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
       });
       
+      // Sync with auth context
       if (connectWallet) {
-        // Sync the wallet connection with auth context
-        connectWallet(address, 'sui')
-          .then(() => {
-            console.log('Wallet synced with auth context');
-          })
-          .catch((syncError) => {
-            console.error('Error syncing wallet with auth:', syncError);
-          });
+        connectWallet(address, 'sui');
       }
       
       setConnecting(false);
       setConnectionStep('selecting');
       onClose();
     }
-  }, [isConnected, address, connectWallet, onClose]);
+  }, [isConnected, address, connectWallet, onClose, toast]);
   
   // Update UI if there's an error from the wallet adapter
   useEffect(() => {

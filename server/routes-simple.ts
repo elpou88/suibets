@@ -15,6 +15,7 @@ import zkLoginService from "./services/zkLoginService";
 import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
 import aiRoutes from "./routes-ai";
+import { settlementWorker } from "./services/settlementWorker";
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -23,6 +24,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Validate environment on startup
   const envValidation = EnvValidationService.validateEnvironment();
   EnvValidationService.printValidationResults(envValidation);
+
+  // Start the settlement worker for automatic bet settlement
+  settlementWorker.start();
+  console.log('🔄 Settlement worker started - will automatically settle bets when matches finish');
 
   // Create HTTP server
   const httpServer = createServer(app);

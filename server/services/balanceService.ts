@@ -164,6 +164,30 @@ export class BalanceService {
   }
 
   /**
+   * Add revenue from lost bets to platform wallet
+   */
+  addRevenue(amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): void {
+    const platformBalance = this.getBalance('platform_revenue');
+    
+    if (currency === 'SBETS') {
+      platformBalance.sbetsBalance += amount;
+      console.log(`📊 REVENUE ADDED: ${amount} SBETS to platform | Total: ${platformBalance.sbetsBalance} SBETS`);
+    } else {
+      platformBalance.suiBalance += amount;
+      console.log(`📊 REVENUE ADDED: ${amount} SUI to platform | Total: ${platformBalance.suiBalance} SUI`);
+    }
+    
+    platformBalance.lastUpdated = Date.now();
+  }
+
+  /**
+   * Get platform revenue
+   */
+  getPlatformRevenue(): UserBalance {
+    return this.getBalance('platform_revenue');
+  }
+
+  /**
    * Get transaction history
    */
   getTransactionHistory(userId: string, limit: number = 50): any[] {

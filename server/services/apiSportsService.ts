@@ -11,7 +11,7 @@ export class ApiSportsService {
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
   // Cache settings - optimized for real-time updates
-  private shortCacheExpiry: number = 15 * 1000; // 15 seconds for live events - real-time updates
+  private shortCacheExpiry: number = 10 * 1000; // 10 seconds for live events - real-time minute updates
   private mediumCacheExpiry: number = 2 * 60 * 1000; // 2 minutes for medium-priority data
   private longCacheExpiry: number = 10 * 60 * 1000; // 10 minutes for stable data
   private cacheExpiry: number = 30 * 1000; // Default cache expiry - 30 seconds for frequent updates
@@ -368,10 +368,10 @@ export class ApiSportsService {
       const sportId = this.getSportId(sport);
       console.log(`[ApiSportsService] Sport ID for ${sport} is ${sportId}`);
       
-      // Use a shorter cache expiry for live events
+      // Use a shorter cache expiry for live events - MUST pass expiry override!
       const cacheKey = `live_events_${sport}`;
       
-      // Get data from the cache or fetch it fresh - Use short expiry (15 seconds) for live events
+      // Get data from the cache or fetch it fresh - Use 10 second expiry for live events to get real-time updates
       const events = await this.getCachedOrFetch(cacheKey, async () => {
         console.log(`[ApiSportsService] Fetching live events for ${sport}`);
         
@@ -598,10 +598,15 @@ export class ApiSportsService {
             };
             break;
           case 'tennis':
-            apiUrl = 'https://v1.tennis.api-sports.io/matches';
-            // For tennis, try a search for scheduled matches
+            // Tennis API doesn't exist - return empty array immediately
+            console.log(`[ApiSportsService] Tennis API not available for upcoming events - returning empty array`);
+            return [];
+          case 'american-football':
+            apiUrl = 'https://v1.american-football.api-sports.io/games';
             params = {
-              date: 'upcoming'
+              date: fromDate,
+              status: 'NS', // Not Started games only
+              season: new Date().getFullYear()
             };
             break;
           case 'baseball':

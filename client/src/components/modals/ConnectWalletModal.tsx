@@ -102,74 +102,64 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('Initiating wallet connection for:', walletId);
       
-      // Handle Nightly wallet specifically when user clicks it
+      // Handle Nightly wallet specifically
       if (walletId === 'NIGHTLY') {
-        console.log('User selected Nightly wallet - trying direct connection');
         try {
-          const nightlyProvider = (window as any).nightly;
-          const nightlySui = nightlyProvider?.sui;
+          const nightlySui = (window as any).nightly?.sui;
           
-          if (!nightlyProvider) {
+          if (!nightlySui) {
             window.open('https://nightly.app/', '_blank');
-            setError("Nightly wallet not detected. Please install it and refresh the page.");
             setConnecting(false);
             setConnectionStep('selecting');
+            setError("Nightly not detected. Please install and refresh.");
             return;
           }
-          
-          if (nightlySui) {
-            const connect = async () => {
-              // Try direct connect method first
-              if (typeof nightlySui.connect === 'function') {
-                return await nightlySui.connect();
-              }
-              // Fallback to feature set
-              const features = nightlySui.features || {};
-              if (features['standard:connect']) {
-                return await features['standard:connect'].connect();
-              }
-              throw new Error("No connect method found");
-            };
 
-            const response = await connect();
-            const walletAddress = response?.accounts?.[0]?.address || response?.address || response?.publicKey;
+          // Force a direct connection attempt
+          const response = await (nightlySui.connect?.() || nightlySui.features?.['standard:connect']?.connect?.());
+          const addr = response?.accounts?.[0]?.address || response?.address || response?.publicKey;
+          
+          if (addr) {
+            console.log('Success connecting Nightly:', addr);
+            // Update BOTH contexts immediately and close
+            await updateConnectionState(addr, 'nightly');
+            if (connectWallet) await connectWallet(addr, 'nightly');
             
-            if (walletAddress) {
-              await updateConnectionState(walletAddress, 'nightly');
-              if (connectWallet) {
-                await connectWallet(walletAddress, 'nightly');
-              }
-              
-              setConnecting(false);
-              onClose();
-              
-              toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
-              return;
-            }
+            // TERMINATE CONNECTING STATE IMMEDIATELY
+            setConnecting(false);
+            setConnectionStep('selecting');
+            onClose();
+            
+            toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
+            return;
           }
-        } catch (nightlyError: any) {
-          console.error('Nightly connection error:', nightlyError);
-          setError(nightlyError?.message || "Failed to connect to Nightly");
+        } catch (err: any) {
+          console.error('Nightly error:', err);
+          setError(err?.message || "Failed to connect");
           setConnecting(false);
           setConnectionStep('selecting');
           return;
         }
       }
       
-      // Default adapter path
-      await connectAdapter();
+      // Generic adapter for other wallets
+      const success = await connectAdapter();
+      if (success) onClose();
       
-      // Safety timeout
+      // Fail-safe timeout
       setTimeout(() => {
-        if (!address && !isConnected && connecting) {
-          setConnecting(false);
-          setConnectionStep('selecting');
-          setError("Connection timed out. Please try again.");
-        }
-      }, 10000);
+        setConnecting(prev => {
+          if (prev) {
+            setConnectionStep('selecting');
+            setError("Timed out");
+            return false;
+          }
+          return false;
+        });
+      }, 15000);
       
     } catch (err: any) {
-      setError(err?.message || "Connection failed");
+      setError("Connection failed");
       setConnecting(false);
       setConnectionStep('selecting');
     }

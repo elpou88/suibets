@@ -14,6 +14,7 @@ import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
 import { WalletDetector } from "@/components/wallet/WalletDetector";
 import { MystenWalletConnect } from "@/components/wallet/MystenWalletConnect";
 import { ConnectButton as MystenConnectButton, useWalletKit } from '@mysten/wallet-kit';
+import { ConnectButton as DappKitConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -88,9 +89,53 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
     }
   }, [suietWallet.connected, suietWallet.address, connectWallet, onClose, toast]);
 
-  // Handle Mysten Wallet Kit connection - THIS IS THE PRIMARY CONNECTION PATH
+  // Get dapp-kit account (the newer, more reliable connection)
+  const dappKitAccount = useCurrentAccount();
+  
+  // Handle dapp-kit connection (Nightly uses this)
+  useEffect(() => {
+    console.log('Dapp-kit account state:', { address: dappKitAccount?.address || 'none' });
+    
+    if (dappKitAccount?.address) {
+      console.log('SUCCESS: Dapp-kit wallet connected with address:', dappKitAccount.address);
+      
+      try {
+        toast({
+          title: "Wallet Connected",
+          description: `Connected to ${dappKitAccount.address.substring(0, 8)}...${dappKitAccount.address.substring(dappKitAccount.address.length - 6)}`,
+        });
+        
+        // Update adapter state
+        console.log('Updating adapter state from dapp-kit...');
+        updateConnectionState(dappKitAccount.address, 'sui');
+        
+        // Sync with auth context
+        if (connectWallet) {
+          console.log('Syncing dapp-kit with auth context...');
+          connectWallet(dappKitAccount.address, 'sui')
+            .then(() => {
+              console.log('Dapp-kit auth sync complete');
+              onClose();
+            })
+            .catch((err) => {
+              console.error('Dapp-kit auth sync error:', err);
+              onClose();
+            });
+        } else {
+          onClose();
+        }
+      } catch (err) {
+        console.error('Error in dapp-kit connection handler:', err);
+      }
+    }
+  }, [dappKitAccount, connectWallet, updateConnectionState, onClose, toast]);
+
+  // Handle Mysten Wallet Kit connection - LEGACY FALLBACK
   useEffect(() => {
     console.log('Mysten wallet state:', { isMystenConnected, currentAccount: currentAccount?.address || 'none' });
+    
+    // Only process if dapp-kit didn't already handle it
+    if (dappKitAccount?.address) return;
     
     if (isMystenConnected && currentAccount?.address) {
       console.log('SUCCESS: Mysten wallet connected with address:', currentAccount.address);
@@ -251,16 +296,16 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* PRIMARY: Official Mysten Connect Button - Most reliable method */}
+            {/* PRIMARY: Dapp-Kit Connect Button - Works best with Nightly */}
             <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
               <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
-                Click the Button Below to Connect
+                Click to Connect Your Wallet
               </h3>
               <div className="flex justify-center [&_button]:!bg-[#00FFFF] [&_button]:!text-black [&_button]:!font-bold [&_button]:!py-3 [&_button]:!px-6 [&_button]:!rounded-lg [&_button]:!text-lg">
-                <MystenConnectButton />
+                <DappKitConnectButton />
               </div>
               <p className="text-xs text-gray-400 text-center mt-2">
-                This button will detect all installed Sui wallets (Sui Wallet, Suiet, Nightly, etc.)
+                Detects all Sui wallets including Nightly, Sui Wallet, Suiet, etc.
               </p>
             </div>
             

@@ -182,11 +182,7 @@ export default function CleanHome() {
           style={{ backgroundImage: `url(${suibetsHeroBg})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black"></div>
-          <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
-              <span className="text-cyan-400" style={{ fontFamily: 'cursive', fontStyle: 'italic' }}>Sui</span>
-              <span className="text-white">Bets</span>
-            </h1>
+          <div className="relative h-full flex flex-col items-center justify-end text-center px-4 pb-8">
             <p className="text-gray-300 text-lg md:text-xl max-w-2xl mb-6">
               The Future of Sports Betting on Sui Blockchain
             </p>

@@ -296,17 +296,94 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* PRIMARY: Dapp-Kit Connect Button - Works best with Nightly */}
+            {/* PRIMARY: Direct Nightly Connection Button */}
             <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
               <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
-                Click to Connect Your Wallet
+                Connect Your Wallet
               </h3>
-              <div className="flex justify-center [&_button]:!bg-[#00FFFF] [&_button]:!text-black [&_button]:!font-bold [&_button]:!py-3 [&_button]:!px-6 [&_button]:!rounded-lg [&_button]:!text-lg">
+              <Button
+                onClick={async () => {
+                  try {
+                    setConnecting(true);
+                    setError(null);
+                    console.log('Direct Nightly connection attempt...');
+                    
+                    // Try wallet standard first
+                    const walletStandard = (window as any).navigator?.wallets || (window as any).walletStandard?.wallets;
+                    console.log('Wallet standard:', walletStandard);
+                    
+                    // Try Nightly direct
+                    const nightly = (window as any).nightly;
+                    console.log('Nightly object:', nightly);
+                    
+                    if (nightly?.sui) {
+                      console.log('Found Nightly.sui, connecting...');
+                      const result = await nightly.sui.connect();
+                      console.log('Nightly connect result:', result);
+                      
+                      const addr = result?.accounts?.[0]?.address || result?.address || result?.publicKey;
+                      if (addr) {
+                        console.log('Got address:', addr);
+                        updateConnectionState(addr, 'nightly');
+                        if (connectWallet) await connectWallet(addr, 'nightly');
+                        toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
+                        setConnecting(false);
+                        onClose();
+                        return;
+                      }
+                    }
+                    
+                    // Fallback to sui wallet
+                    const suiWallet = (window as any).suiWallet;
+                    if (suiWallet) {
+                      console.log('Found suiWallet, connecting...');
+                      const result = await suiWallet.requestPermissions();
+                      const accounts = await suiWallet.getAccounts();
+                      if (accounts?.[0]) {
+                        updateConnectionState(accounts[0], 'sui');
+                        if (connectWallet) await connectWallet(accounts[0], 'sui');
+                        toast({ title: "Wallet Connected", description: `Connected to ${accounts[0].substring(0, 8)}...` });
+                        setConnecting(false);
+                        onClose();
+                        return;
+                      }
+                    }
+                    
+                    setError("No wallet detected. Please install Nightly or Sui Wallet extension.");
+                    setConnecting(false);
+                  } catch (err: any) {
+                    console.error('Direct connect error:', err);
+                    setError(err?.message || "Connection failed");
+                    setConnecting(false);
+                  }
+                }}
+                disabled={connecting}
+                className="w-full bg-[#00FFFF] hover:bg-[#00DDDD] text-black font-bold py-4 text-lg"
+                data-testid="button-direct-connect"
+              >
+                {connecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <WalletIcon className="mr-2 h-5 w-5" />
+                    Connect Nightly / Sui Wallet
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                Direct connection - bypasses wallet provider issues
+              </p>
+            </div>
+            
+            {/* Secondary: Dapp-Kit button as fallback */}
+            <div className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-600/30">
+              <p className="text-sm text-gray-400 mb-2 text-center">Alternative connection:</p>
+              <div className="flex justify-center [&_button]:!bg-gray-700 [&_button]:!text-white [&_button]:!py-2 [&_button]:!px-4 [&_button]:!rounded">
                 <DappKitConnectButton />
               </div>
-              <p className="text-xs text-gray-400 text-center mt-2">
-                Detects all Sui wallets including Nightly, Sui Wallet, Suiet, etc.
-              </p>
             </div>
             
             {error && (

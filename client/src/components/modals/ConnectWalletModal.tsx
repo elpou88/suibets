@@ -102,25 +102,14 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('Initiating wallet connection for:', walletId);
       
-      // Try wallet-specific connection first based on user's selection
-      let connectionSuccessful = false;
-      
       // Handle Nightly wallet specifically when user clicks it
       if (walletId === 'NIGHTLY') {
         console.log('User selected Nightly wallet - trying direct connection');
         try {
-          // @ts-ignore - Check multiple ways Nightly might inject itself
           const nightlyProvider = (window as any).nightly;
           const nightlySui = nightlyProvider?.sui;
           
-          console.log('Nightly detection:', { 
-            hasNightly: !!nightlyProvider, 
-            hasSui: !!nightlySui,
-            nightlyKeys: nightlyProvider ? Object.keys(nightlyProvider) : []
-          });
-          
           if (!nightlyProvider) {
-            // Open Nightly install page
             window.open('https://nightly.app/', '_blank');
             setError("Nightly wallet not detected. Please install it and refresh the page.");
             setConnecting(false);
@@ -129,131 +118,58 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
           }
           
           if (nightlySui) {
-            console.log('Nightly Sui adapter found, connecting...');
-            // Use the Sui-specific connect
-            // @ts-ignore
-            const features = nightlySui.features || {};
-            console.log('Nightly Sui features:', Object.keys(features));
-            
-            // Try standard:connect feature first
-            if (features['standard:connect']) {
-              // @ts-ignore
-              const result = await features['standard:connect'].connect();
-              console.log('Nightly standard:connect result:', result);
-              if (result?.accounts?.[0]?.address) {
-                const walletAddress = result.accounts[0].address;
-                // Update BOTH contexts so UI reflects connection
-                await updateConnectionState(walletAddress, 'nightly');
-                if (connectWallet) {
-                  await connectWallet(walletAddress, 'nightly');
-                }
-                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
-                setConnecting(false);
-                onClose();
-                return;
+            const connect = async () => {
+              // Try direct connect method first
+              if (typeof nightlySui.connect === 'function') {
+                return await nightlySui.connect();
               }
-            }
-            
-            // Try direct connect method
-            // @ts-ignore
-            if (typeof nightlySui.connect === 'function') {
-              // @ts-ignore
-              const response = await nightlySui.connect();
-              console.log('Nightly sui.connect response:', response);
-              
-              const walletAddress = response?.accounts?.[0]?.address || 
-                                    response?.address || 
-                                    response?.publicKey;
-              
-              if (walletAddress) {
-                console.log('Connected to Nightly wallet:', walletAddress);
-                // Update BOTH contexts so UI reflects connection
-                await updateConnectionState(walletAddress, 'nightly');
-                if (connectWallet) {
-                  await connectWallet(walletAddress, 'nightly');
-                }
-                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
-                setConnecting(false);
-                onClose();
-                return;
+              // Fallback to feature set
+              const features = nightlySui.features || {};
+              if (features['standard:connect']) {
+                return await features['standard:connect'].connect();
               }
+              throw new Error("No connect method found");
+            };
+
+            const response = await connect();
+            const walletAddress = response?.accounts?.[0]?.address || response?.address || response?.publicKey;
+            
+            if (walletAddress) {
+              await updateConnectionState(walletAddress, 'nightly');
+              if (connectWallet) {
+                await connectWallet(walletAddress, 'nightly');
+              }
+              
+              setConnecting(false);
+              onClose();
+              
+              toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
+              return;
             }
           }
-          
-          // Fallback: Try using wallet standard
-          console.log('Trying wallet standard detection for Nightly...');
-          const { getWallets } = await import('@wallet-standard/core');
-          const wallets = getWallets().get();
-          const nightlyWallet = wallets.find((w: any) => 
-            w.name?.toLowerCase().includes('nightly')
-          );
-          
-          if (nightlyWallet) {
-            console.log('Found Nightly via wallet standard:', nightlyWallet.name);
-            // @ts-ignore
-            const connectFeature = nightlyWallet.features?.['standard:connect'];
-            if (connectFeature) {
-              // @ts-ignore
-              const result = await connectFeature.connect();
-              if (result?.accounts?.[0]?.address) {
-                const walletAddress = result.accounts[0].address;
-                // Update BOTH contexts so UI reflects connection
-                await updateConnectionState(walletAddress, 'nightly');
-                if (connectWallet) {
-                  await connectWallet(walletAddress, 'nightly');
-                }
-                toast({ title: "Wallet Connected", description: "Connected to Nightly Wallet" });
-                setConnecting(false);
-                onClose();
-                return;
-              }
-            }
-          }
-          
-          setError("Could not connect to Nightly. Please make sure it's unlocked and try again.");
-          setConnecting(false);
-          setConnectionStep('selecting');
-          return;
-          
         } catch (nightlyError: any) {
-          console.error('Nightly wallet connection error:', nightlyError);
-          setError(nightlyError?.message || "Failed to connect to Nightly wallet. Please try again.");
+          console.error('Nightly connection error:', nightlyError);
+          setError(nightlyError?.message || "Failed to connect to Nightly");
           setConnecting(false);
           setConnectionStep('selecting');
           return;
         }
       }
       
-      // For other wallets, use the generic adapter
-      console.log('Using generic wallet adapter for:', walletId);
-      connectionSuccessful = await connectAdapter();
+      // Default adapter path
+      await connectAdapter();
       
-      console.log('connectAdapter() completed, success:', connectionSuccessful);
-      
-      // If still no address, wait for user interaction
-      if (!address && !isConnected) {
-        console.log('Connection in progress - waiting for wallet interaction...');
-        setTimeout(() => {
-          if (!address && !isConnected) {
-            setTimeout(() => {
-              if (!address && !isConnected) {
-                setError("Wallet connection timed out. Please try again and ensure you approve the connection in your wallet.");
-                setConnecting(false);
-                setConnectionStep('selecting');
-              }
-            }, 5000);
-          }
-        }, 2000);
-      }
+      // Safety timeout
+      setTimeout(() => {
+        if (!address && !isConnected && connecting) {
+          setConnecting(false);
+          setConnectionStep('selecting');
+          setError("Connection timed out. Please try again.");
+        }
+      }, 10000);
       
     } catch (err: any) {
-      console.error("Error connecting wallet:", err);
-      setError(err?.message || walrusError || "Failed to connect wallet. Please try again.");
-      toast({
-        title: "Connection Failed",
-        description: err?.message || walrusError || "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
+      setError(err?.message || "Connection failed");
       setConnecting(false);
       setConnectionStep('selecting');
     }

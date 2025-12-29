@@ -42,13 +42,13 @@ export default function ActivityPage() {
   const walletAddress = currentWallet?.address;
   
   const { data: rawActivities, refetch } = useQuery({
-    queryKey: ['/api/activity', walletAddress],
+    queryKey: [`/api/activity?wallet=${walletAddress}`, walletAddress],
     enabled: !!walletAddress,
     refetchInterval: 10000,
   });
 
   const { data: rawBets } = useQuery({
-    queryKey: ['/api/bets', walletAddress],
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
     enabled: !!walletAddress,
     refetchInterval: 10000,
   });

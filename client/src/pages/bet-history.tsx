@@ -42,7 +42,7 @@ export default function BetHistoryPage() {
   const walletAddress = currentWallet?.address;
   
   const { data: rawBets, refetch } = useQuery({
-    queryKey: ['/api/bets', walletAddress],
+    queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
     enabled: !!walletAddress,
     refetchInterval: 10000,
   });

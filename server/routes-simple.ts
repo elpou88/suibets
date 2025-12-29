@@ -555,8 +555,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Determine currency (default to SUI)
       const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
 
-      // Check user balance
-      const balance = balanceService.getBalance(userId);
+      // Check user balance (using async for accurate DB read)
+      const balance = await balanceService.getBalanceAsync(userId);
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
@@ -651,8 +651,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Determine currency (default to SUI)
       const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
 
-      // Check user balance
-      const balance = balanceService.getBalance(userId);
+      // Check user balance (using async for accurate DB read)
+      const balance = await balanceService.getBalanceAsync(userId);
       
       // Calculate parlay odds (multiply all odds)
       const parlayOdds = selections.reduce((acc: number, sel: any) => acc * sel.odds, 1);
@@ -897,11 +897,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Get user balance
+  // Get user balance (from database for accuracy)
   app.get("/api/user/balance", async (req: Request, res: Response) => {
     try {
       const userId = req.query.userId as string || 'user1';
-      const balance = balanceService.getBalance(userId);
+      const balance = await balanceService.getBalanceAsync(userId);
       res.json(balance);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch balance" });
@@ -957,7 +957,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           status: 'completed',
           timestamp: Date.now()
         },
-        newBalance: balanceService.getBalance(userId)
+        newBalance: await balanceService.getBalanceAsync(userId)
       });
     } catch (error: any) {
       console.error("Deposit error:", error);

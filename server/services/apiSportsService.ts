@@ -10,14 +10,14 @@ export class ApiSportsService {
   private apiKey: string;
   private cache: Map<string, { data: any; timestamp: number }> = new Map();
   
-  // Cache settings
-  private shortCacheExpiry: number = 1 * 60 * 1000; // 1 minute for live events
-  private mediumCacheExpiry: number = 5 * 60 * 1000; // 5 minutes for medium-priority data
-  private longCacheExpiry: number = 30 * 60 * 1000; // 30 minutes for stable data
-  private cacheExpiry: number = 1 * 60 * 1000; // Default cache expiry - reduced to 1 minute for more frequent updates
+  // Cache settings - optimized for real-time updates
+  private shortCacheExpiry: number = 15 * 1000; // 15 seconds for live events - real-time updates
+  private mediumCacheExpiry: number = 2 * 60 * 1000; // 2 minutes for medium-priority data
+  private longCacheExpiry: number = 10 * 60 * 1000; // 10 minutes for stable data
+  private cacheExpiry: number = 30 * 1000; // Default cache expiry - 30 seconds for frequent updates
   
   // Cache version to force refresh when code changes
-  private cacheVersionKey: string = "v4"; // Increment this when making changes to force cache refresh
+  private cacheVersionKey: string = "v5"; // Increment this when making changes to force cache refresh
   
   /**
    * Update the API key 
@@ -635,7 +635,7 @@ export class ApiSportsService {
             // Football API works differently - need to use 'next' parameter instead of dates
             params = { 
               // Use next parameter instead of date ranges
-              next: '50', // Get next 50 fixtures
+              next: '200', // Get next 200 fixtures for comprehensive coverage
               timezone: 'UTC'
             };
             break;
@@ -744,7 +744,7 @@ export class ApiSportsService {
             // Default to football API for other sports
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
             params = { 
-              next: '50', // Default to next 50 fixtures for generic sports
+              next: '200', // Default to next 200 fixtures for comprehensive coverage
               timezone: 'UTC'
             };
         }

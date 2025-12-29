@@ -46,7 +46,7 @@ export default function SportsLive() {
       return response.json();
     },
     enabled: !!currentSport?.id,
-    refetchInterval: 20000 // Refresh every 20 seconds
+    refetchInterval: 5000 // Refresh every 5 seconds for real-time updates
   });
   
   // Filter events based on the active tab

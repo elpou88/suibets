@@ -60,14 +60,14 @@ const Layout: React.FC<LayoutProps> = ({
   };
   
   const topNavItems = [
-    { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/home-real' },
-    { label: 'Live', i18nKey: 'live', icon: <TrendingDown />, href: '/live-real' },
+    { label: 'Sports', i18nKey: 'sports', icon: <TrendingUp />, href: '/' },
+    { label: 'Live', i18nKey: 'live', icon: <TrendingDown />, href: '/live-events' },
     { label: 'Results', i18nKey: 'results', icon: <Trophy />, href: '/results' },
   ];
 
   const bottomNavItems = [
-    { label: 'Home', i18nKey: 'home', icon: <Home />, href: '/home-real' },
-    { label: 'Live', i18nKey: 'live', icon: <TrendingUp />, href: '/live-real' },
+    { label: 'Home', i18nKey: 'home', icon: <Home />, href: '/' },
+    { label: 'Live', i18nKey: 'live', icon: <TrendingUp />, href: '/live-events' },
     { label: 'History', i18nKey: 'bet_history', icon: <Clock />, href: '/bet-history' },
     { label: 'Settings', i18nKey: 'settings', icon: <Settings />, href: '/settings' },
   ];
@@ -94,7 +94,7 @@ const Layout: React.FC<LayoutProps> = ({
                 Back
               </Button>
             ) : (
-              <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLocation('/home-real')}>
+              <div className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setLocation('/')}>
                 <img 
                   src={suibetsLogo} 
                   alt="SuiBets Logo" 

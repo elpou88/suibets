@@ -82,12 +82,12 @@ export default function CleanHome() {
 
   const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useQuery<Event[]>({
     queryKey: [liveQueryUrl],
-    refetchInterval: 15000, // Refresh every 15 seconds for live
+    refetchInterval: 5000, // Refresh every 5 seconds for real-time live updates
   });
 
   const { data: upcomingEvents = [], isLoading: upcomingLoading, refetch: refetchUpcoming } = useQuery<Event[]>({
     queryKey: [upcomingQueryUrl],
-    refetchInterval: 30000, // Refresh every 30 seconds for upcoming
+    refetchInterval: 15000, // Refresh every 15 seconds for upcoming
   });
 
   const events = activeTab === "live" ? liveEvents : upcomingEvents;
@@ -124,15 +124,15 @@ export default function CleanHome() {
           {/* Center Navigation */}
           <div className="hidden md:flex items-center gap-6">
             <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium" data-testid="nav-bets">Bets</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
             <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-activity">Activity</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-withdrawals">Withdrawals</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-withdrawals">Withdrawals</Link>
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
-            <Link href="/storage" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-audit">Audit Log</Link>
+            <Link href="/audit-log" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-audit">Audit Log</Link>
             <Link href="/settings" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-settings">Settings</Link>
-            <Link href="/info" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-whitepaper">Whitepaper</Link>
+            <Link href="/whitepaper" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-whitepaper">Whitepaper</Link>
           </div>
 
           {/* Right Side - Wallet */}

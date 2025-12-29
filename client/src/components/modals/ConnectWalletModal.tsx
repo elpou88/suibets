@@ -22,7 +22,7 @@ interface ConnectWalletModalProps {
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
   const { user, connectWallet } = useAuth();
-  const { connect: connectAdapter, address, isConnected, error: walletError } = useWalletAdapter();
+  const { connect: connectAdapter, address, isConnected, error: walletError, updateConnectionState } = useWalletAdapter();
   const { connectToWurlusProtocol, checkRegistrationStatus, error: walrusError } = useWalrusProtocol();
   const { toast } = useToast();
   // Get Suiet wallet connection state
@@ -146,6 +146,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               console.log('Nightly standard:connect result:', result);
               if (result?.accounts?.[0]?.address) {
                 const walletAddress = result.accounts[0].address;
+                // Update BOTH contexts so UI reflects connection
+                await updateConnectionState(walletAddress, 'nightly');
                 if (connectWallet) {
                   await connectWallet(walletAddress, 'nightly');
                 }
@@ -169,6 +171,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               
               if (walletAddress) {
                 console.log('Connected to Nightly wallet:', walletAddress);
+                // Update BOTH contexts so UI reflects connection
+                await updateConnectionState(walletAddress, 'nightly');
                 if (connectWallet) {
                   await connectWallet(walletAddress, 'nightly');
                 }
@@ -197,6 +201,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
               const result = await connectFeature.connect();
               if (result?.accounts?.[0]?.address) {
                 const walletAddress = result.accounts[0].address;
+                // Update BOTH contexts so UI reflects connection
+                await updateConnectionState(walletAddress, 'nightly');
                 if (connectWallet) {
                   await connectWallet(walletAddress, 'nightly');
                 }

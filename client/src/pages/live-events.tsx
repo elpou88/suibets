@@ -27,6 +27,8 @@ export default function LiveEventsPage() {
       return Array.isArray(data) ? data : [];
     },
     refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
+    staleTime: 4000, // Consider data fresh for 4 seconds
+    placeholderData: (previousData: any) => previousData, // Keep showing previous data while refreshing
   });
 
   // Get unique sports from events

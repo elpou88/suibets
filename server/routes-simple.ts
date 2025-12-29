@@ -17,7 +17,6 @@ import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from ".
 import aiRoutes from "./routes-ai";
 import { settlementWorker } from "./services/settlementWorker";
 import blockchainBetService from "./services/blockchainBetService";
-import walrusService from "./services/walrusService";
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -610,21 +609,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         txHash: storedBet?.txHash || ''
       });
 
-      // Store bet data in Walrus for decentralized storage
-      const walrusResult = await walrusService.storeBet({
-        betId,
-        walletAddress: userId,
-        eventId: String(eventId),
-        eventName: eventName || 'Sports Event',
-        prediction,
-        betAmount,
-        odds,
-        potentialPayout,
-        timestamp: Date.now(),
-        txHash: storedBet?.txHash,
-        status: 'pending'
-      });
-
       // Notify user of bet placement
       notificationService.notifyBetPlaced(userId, {
         ...bet,
@@ -643,8 +627,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         timestamp: Date.now()
       });
 
-      console.log(`✅ BET PLACED (ON-CHAIN + WALRUS): ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
-      console.log(`   📦 Walrus Blob: ${walrusResult.blobId} | On-chain status: ${onChainBet.status}`);
+      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
 
       res.json({
         success: true,
@@ -659,7 +642,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         onChain: {
           status: onChainBet.status,
           txHash: storedBet?.txHash,
-          walrusBlobId: walrusResult.blobId,
           packageId: blockchainBetService.getPackageId()
         }
       });
@@ -672,7 +654,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Build transaction payload for frontend wallet signing
   app.post("/api/bets/build-transaction", async (req: Request, res: Response) => {
     try {
-      const { eventId, prediction, betAmount, odds, marketId, walrusBlobId } = req.body;
+      const { eventId, prediction, betAmount, odds, marketId } = req.body;
 
       if (!eventId || !prediction || !betAmount || !odds) {
         return res.status(400).json({ message: "Missing required fields" });
@@ -686,7 +668,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         betAmountMist,
         odds,
         marketId || 'match_winner',
-        walrusBlobId || ''
+        ''
       );
 
       res.json({
@@ -707,9 +689,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       packageId: blockchainBetService.getPackageId(),
       platformId: blockchainBetService.getBettingPlatformId(),
       network: process.env.SUI_NETWORK || 'mainnet',
-      revenueWallet: blockchainBetService.getRevenueWallet(),
-      walrusAggregator: process.env.WALRUS_AGGREGATOR_URL || 'https://aggregator.walrus.space',
-      walrusPublisher: process.env.WALRUS_PUBLISHER_URL || 'https://publisher.walrus.space'
+      revenueWallet: blockchainBetService.getRevenueWallet()
     });
   });
 
@@ -856,7 +836,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Verify bet on-chain and Walrus
+  // Verify bet in database and on-chain
   app.get("/api/bets/:id/verify", async (req: Request, res: Response) => {
     try {
       const betId = req.params.id;
@@ -866,9 +846,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (!bet) {
         return res.status(404).json({ message: "Bet not found" });
       }
-
-      // Verify on Walrus
-      const walrusVerification = await walrusService.verifyBetOnWalrus(betId);
 
       // Verify on-chain if txHash exists
       let onChainVerification = { confirmed: false, blockHeight: 0 };
@@ -882,10 +859,6 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           found: true,
           status: bet.status,
           txHash: bet.txHash
-        },
-        walrus: {
-          verified: walrusVerification.verified,
-          blobId: walrusVerification.blobId
         },
         onChain: {
           verified: onChainVerification.confirmed,

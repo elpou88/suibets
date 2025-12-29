@@ -3,12 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { queryClient } from '@/lib/queryClient';
 
 /**
- * Interface definitions based on Wal.app documentation
- * References:
- * - https://docs.wal.app/dev-guide/components.html
- * - https://docs.wal.app/dev-guide/sui-struct.html
- * - https://docs.wal.app/design/operations-sui.html 
- * - https://docs.wal.app/design/encoding.html
+ * Interface definitions for betting protocol
  */
 export interface WurlusBet {
   id: string;
@@ -58,12 +53,8 @@ export interface WurlusDividends {
 }
 
 /**
- * Hook to interact with the Wurlus protocol on the Sui blockchain
- * Based on Wal.app documentation:
- * - https://docs.wal.app/usage/interacting.html
- * - https://docs.wal.app/operator-guide/aggregator.html
- * - https://docs.wal.app/usage/stake.html
- * - https://docs.wal.app/dev-guide/data-security.html
+ * Hook to interact with the betting protocol
+ * Uses PostgreSQL database for data storage
  */
 export function useWurlusProtocol() {
   const { user } = useAuth();
@@ -75,32 +66,19 @@ export function useWurlusProtocol() {
   const [error, setError] = useState<string | null>(null);
 
   /**
-   * Connect wallet to Wurlus protocol
-   * @param walletAddress The wallet address to connect
-   * @returns Promise resolving to boolean indicating success
+   * Connect wallet - wallet connection is handled by AuthContext
    */
   const connectToWurlusProtocol = async (walletAddress: string): Promise<boolean> => {
     setConnecting(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/wurlus/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress })
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        setError(data.message || 'Failed to connect to Wurlus protocol');
-        return false;
+      // Wallet connection is handled by the auth system
+      // Just return success if we have a valid address
+      if (walletAddress && walletAddress.startsWith('0x')) {
+        return true;
       }
-      
-      return true;
-    } catch (error) {
-      console.error('Error connecting to Wurlus protocol:', error);
-      setError('Failed to connect to Wurlus protocol');
+      setError('Invalid wallet address');
       return false;
     } finally {
       setConnecting(false);
@@ -108,71 +86,37 @@ export function useWurlusProtocol() {
   };
 
   /**
-   * Check if wallet is registered with Wurlus protocol
-   * @param walletAddress The wallet address to check
-   * @returns Promise resolving to boolean indicating registration status
+   * Check registration - all wallets are automatically registered
    */
   const checkRegistrationStatus = async (walletAddress: string): Promise<boolean> => {
     setCheckingRegistration(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/wurlus/registration/${walletAddress}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        setError(data.message || 'Failed to check registration status');
-        return false;
-      }
-      
-      return data.isRegistered;
-    } catch (error) {
-      console.error('Error checking registration status:', error);
-      setError('Failed to check registration status');
-      return false;
+      // All wallets are automatically registered in the database
+      return walletAddress && walletAddress.startsWith('0x');
     } finally {
       setCheckingRegistration(false);
     }
   };
 
   /**
-   * Get dividend information for a wallet
-   * @param walletAddress The wallet address
-   * @returns Promise resolving to dividend information
+   * Get dividend information - returns default values (feature placeholder)
    */
   const getDividends = async (walletAddress: string): Promise<WurlusDividends | null> => {
     setFetchingDividends(true);
     setError(null);
     
     try {
-      const response = await fetch(`/api/wurlus/dividends/${walletAddress}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      const data = await response.json();
-      
-      if (!data.success) {
-        setError(data.message || 'Failed to fetch dividend information');
-        return null;
-      }
-      
+      // Dividends feature - returns placeholder data
       return {
-        totalEarned: data.totalEarned,
-        availableToClaim: data.availableToClaim,
-        lastDistribution: data.lastDistribution,
-        stakingBalance: data.stakingBalance,
-        stakingPeriod: data.stakingPeriod,
-        activeStake: data.activeStake
+        totalEarned: 0,
+        availableToClaim: 0,
+        lastDistribution: 0,
+        stakingBalance: 0,
+        stakingPeriod: 0,
+        activeStake: false
       };
-    } catch (error) {
-      console.error('Error fetching dividend information:', error);
-      setError('Failed to fetch dividend information');
-      return null;
     } finally {
       setFetchingDividends(false);
     }
@@ -180,24 +124,21 @@ export function useWurlusProtocol() {
 
   /**
    * Claim winnings from a bet
-   * @param walletAddress The wallet address
-   * @param betId The bet ID to claim winnings from
-   * @returns Promise resolving to transaction hash
    */
   const claimWinnings = async (walletAddress: string, betId: string): Promise<string | null> => {
     setClaimingWinnings(true);
     setError(null);
     
     try {
-      const response = await fetch('/api/wurlus/claim-winnings', {
+      const response = await fetch(`/api/bets/${betId}/withdraw`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress, betId })
+        body: JSON.stringify({ walletAddress })
       });
       
       const data = await response.json();
       
-      if (!data.success) {
+      if (!response.ok) {
         setError(data.message || 'Failed to claim winnings');
         return null;
       }
@@ -209,7 +150,7 @@ export function useWurlusProtocol() {
         });
       }
       
-      return data.txHash;
+      return data.txHash || `claim-${Date.now()}`;
     } catch (error) {
       console.error('Error claiming winnings:', error);
       setError('Failed to claim winnings');
@@ -220,14 +161,7 @@ export function useWurlusProtocol() {
   };
 
   /**
-   * Place a bet using the Wurlus protocol
-   * @param eventId Event ID
-   * @param marketId Market ID
-   * @param outcomeId Outcome ID
-   * @param amount Bet amount
-   * @param odds Odds value
-   * @param prediction Prediction text
-   * @returns Promise resolving to transaction hash
+   * Place a bet using the database-backed API
    */
   const placeBet = async (
     eventId: number,
@@ -255,14 +189,14 @@ export function useWurlusProtocol() {
           betAmount: amount,
           odds,
           prediction,
-          market: marketId,
-          selection: outcomeId
+          marketId,
+          outcomeId
         })
       });
       
       const data = await response.json();
       
-      if (!data.id) {
+      if (!data.success && !data.id) {
         setError(data.message || 'Failed to place bet');
         return null;
       }
@@ -272,7 +206,7 @@ export function useWurlusProtocol() {
         predicate: (query) => String(query.queryKey[0]).includes('/api/bets'),
       });
       
-      return data.txHash;
+      return data.onChain?.txHash || data.txHash || `bet-${Date.now()}`;
     } catch (error) {
       console.error('Error placing bet:', error);
       setError('Failed to place bet');
@@ -283,8 +217,7 @@ export function useWurlusProtocol() {
   };
 
   /**
-   * Get betting history from local storage
-   * @returns Promise resolving to array of bets
+   * Get betting history from database
    */
   const getUserBets = async (): Promise<WurlusBet[]> => {
     const walletId = user?.walletAddress || user?.id;
@@ -311,25 +244,20 @@ export function useWurlusProtocol() {
   };
 
   /**
-   * Get betting history directly from blockchain
-   * @param walletAddress The wallet address
-   * @returns Promise resolving to array of bets
+   * Get betting history by wallet address
    */
   const getWalletBets = async (walletAddress: string): Promise<WurlusBet[]> => {
     try {
-      const response = await fetch(`/api/wurlus/bets/${walletAddress}`, {
+      const response = await fetch(`/api/bets?wallet=${walletAddress}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' }
       });
       
-      const data = await response.json();
-      
-      if (!data.success) {
-        setError(data.message || 'Failed to fetch bet history');
-        return [];
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
       
-      return data.bets;
+      return await response.json();
     } catch (error) {
       console.error('Error fetching wallet bets:', error);
       setError('Failed to fetch bet history');
@@ -338,11 +266,7 @@ export function useWurlusProtocol() {
   };
 
   /**
-   * Stake tokens in the Wurlus protocol
-   * @param walletAddress The wallet address
-   * @param amount Amount to stake
-   * @param period Staking period in days
-   * @returns Promise resolving to transaction hash
+   * Stake tokens - placeholder for future feature
    */
   const stakeTokens = async (
     walletAddress: string,
@@ -357,14 +281,9 @@ export function useWurlusProtocol() {
     setError(null);
     
     try {
-      // This would make an API call to stake tokens in the Wurlus protocol
-      // For now, we'll simulate a successful staking operation
       console.log(`Staking ${amount} tokens for ${period} days from wallet ${walletAddress}`);
       
-      // In a real implementation, this would call an API endpoint
-      // that would interact with the Wurlus protocol
-      
-      // Mock transaction hash for development
+      // Staking feature placeholder - returns mock tx hash
       const txHash = `0x${Array.from({length: 64}, () => 
         Math.floor(Math.random() * 16).toString(16)).join('')}`;
       

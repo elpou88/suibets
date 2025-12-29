@@ -2,7 +2,7 @@
 
 ## Overview
 
-SuiBets is a comprehensive crypto sports betting platform built on the Sui blockchain. The platform integrates multiple sports APIs to provide real-time betting opportunities across 30+ sports, featuring automated event tracking, live score updates, and blockchain-based transactions using the Walrus protocol for decentralized storage.
+SuiBets is a comprehensive crypto sports betting platform built on the Sui blockchain. The platform integrates multiple sports APIs to provide real-time betting opportunities across 30+ sports, featuring automated event tracking, live score updates, and blockchain-based transactions with PostgreSQL database for data persistence.
 
 ## System Architecture
 
@@ -23,8 +23,7 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Session-based authentication** with optional blockchain authentication
 
 ### Data Storage Solutions
-- **PostgreSQL** database with Drizzle ORM (optional, with blockchain fallback)
-- **Blockchain storage** using Walrus protocol on Sui network
+- **PostgreSQL** database with Drizzle ORM (Railway hosted)
 - **In-memory caching** for frequently accessed data
 - **Session storage** for user authentication state
 
@@ -40,7 +39,6 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 ### Blockchain Integration
 - **Sui blockchain** integration for secure transactions
 - **SBETS token** (0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS)
-- **Walrus protocol** for decentralized data storage
 - **Smart contracts** written in Move language for betting operations
 - **Multiple wallet support** including Sui Wallet and Suiet
 

@@ -57,11 +57,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Clean up expired sessions periodically
   setInterval(() => {
     const now = Date.now();
-    for (const [token, session] of adminSessions.entries()) {
+    Array.from(adminSessions.entries()).forEach(([token, session]) => {
       if (now > session.expiresAt) {
         adminSessions.delete(token);
       }
-    }
+    });
   }, 5 * 60 * 1000); // Every 5 minutes
 
   // Health check endpoint
@@ -531,8 +531,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Return the promotions from storage
   app.get("/api/promotions", async (req: Request, res: Response) => {
     try {
-      const isActive = req.query.isActive ? req.query.isActive === 'true' : true;
-      const promotions = await storage.getPromotions(isActive);
+      const promotions = await storage.getPromotions();
       res.json(promotions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch promotions" });

@@ -332,7 +332,7 @@ export class DatabaseStorage implements IStorage {
         : await db.select().from(bets).where(eq(bets.userId, userIdNum));
       
       // Transform to match frontend's expected format for bet-history page
-      return userBets.map(bet => ({
+      return userBets.map((bet: any) => ({
         id: bet.wurlusBetId || String(bet.id),
         eventName: bet.eventName || 'Unknown Event',
         selection: bet.prediction,
@@ -362,7 +362,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       // Transform to match admin panel format with user info
-      return allBets.map(bet => ({
+      return allBets.map((bet: any) => ({
         id: bet.wurlusBetId || String(bet.id),
         dbId: bet.id,
         userId: bet.userId,

@@ -108,54 +108,73 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
           const nightly = (window as any).nightly;
           const nightlySui = nightly?.sui;
           
+          console.log('Nightly check:', { nightly: !!nightly, nightlySui: !!nightlySui });
+          
           if (!nightlySui) {
             window.open('https://nightly.app/', '_blank');
             setConnecting(false);
             setConnectionStep('selecting');
-            setError("Nightly not detected. Please install and refresh.");
+            setError("Nightly wallet not detected. Please install the extension and refresh the page.");
             return;
           }
 
-          // Try multiple connection paths with a timeout
-          console.log('Nightly detected, calling connect with 10s timeout...');
+          console.log('Nightly wallet detected! Requesting connection...');
           
-          const connectionPromise = (async () => {
-            if (nightlySui.connect) {
-              return await nightlySui.connect();
-            } else if (nightlySui.features?.['standard:connect']?.connect) {
-              return await nightlySui.features['standard:connect'].connect();
+          // Simple direct connection with timeout
+          let response: any;
+          try {
+            const connectFn = nightlySui.connect || nightlySui.features?.['standard:connect']?.connect;
+            if (!connectFn) {
+              throw new Error("Nightly wallet has no connect method");
             }
-            throw new Error("No connection method");
-          })();
+            
+            response = await Promise.race([
+              connectFn(),
+              new Promise((_, reject) => setTimeout(() => reject(new Error("Connection timed out after 20s")), 20000))
+            ]);
+          } catch (connectErr: any) {
+            console.error('Connection attempt failed:', connectErr);
+            // Check for user rejection
+            if (connectErr?.message?.toLowerCase().includes('reject') || 
+                connectErr?.message?.toLowerCase().includes('cancel') ||
+                connectErr?.message?.toLowerCase().includes('denied')) {
+              setError("Connection rejected. Please approve in your wallet.");
+            } else {
+              setError(connectErr?.message || "Wallet connection failed");
+            }
+            setConnecting(false);
+            setConnectionStep('selecting');
+            return;
+          }
 
-          const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error("Wallet request timed out")), 15000)
-          );
-
-          const response: any = await Promise.race([connectionPromise, timeoutPromise]);
+          console.log('Nightly response:', response);
           const addr = response?.accounts?.[0]?.address || response?.address || response?.publicKey;
           
           if (addr) {
-            console.log('Nightly address received:', addr);
-            // TERMINATE UI STATE IMMEDIATELY
+            console.log('Got wallet address:', addr);
+            // Update state and close
             setConnecting(false);
             setConnectionStep('selecting');
             onClose();
             
-            // Background sync
-            updateConnectionState(addr, 'nightly').catch(e => console.error('Adapter sync failed', e));
+            // Sync contexts
+            updateConnectionState(addr, 'nightly').catch(e => console.error('Adapter sync error:', e));
             if (connectWallet) {
-              connectWallet(addr, 'nightly').catch(e => console.error('Auth sync failed', e));
+              connectWallet(addr, 'nightly').catch(e => console.error('Auth sync error:', e));
             }
             
-            toast({ title: "Wallet Connected", description: "Sui wallet ready" });
+            toast({ title: "Wallet Connected", description: "Nightly wallet ready" });
             return;
           } else {
-            throw new Error("No address returned");
+            console.error('No address in response:', response);
+            setError("Connected but no address received. Please try again.");
+            setConnecting(false);
+            setConnectionStep('selecting');
+            return;
           }
         } catch (err: any) {
-          console.error('Nightly connection flow failed:', err);
-          setError(err?.message || "Failed to connect to Nightly");
+          console.error('Nightly connection error:', err);
+          setError(err?.message || "Connection failed. Please try again.");
           setConnecting(false);
           setConnectionStep('selecting');
           return;

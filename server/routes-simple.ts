@@ -902,6 +902,50 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Deposit SUI to account (for on-chain wallet deposits)
+  app.post("/api/user/deposit", async (req: Request, res: Response) => {
+    try {
+      const { userId, amount, txHash, currency = 'SUI' } = req.body;
+      
+      if (!userId || !amount) {
+        return res.status(400).json({ message: "Missing required fields: userId, amount" });
+      }
+      
+      if (amount <= 0) {
+        return res.status(400).json({ message: "Amount must be positive" });
+      }
+      
+      // Add deposit to user balance
+      balanceService.deposit(userId, amount, `Deposit from wallet${txHash ? ` (tx: ${txHash.slice(0, 10)}...)` : ''}`);
+      
+      // Notify user of deposit
+      notificationService.createNotification(
+        userId,
+        'deposit',
+        '💰 Deposit Received',
+        `Successfully deposited ${amount} ${currency} to your account`,
+        { amount, currency, txHash }
+      );
+
+      console.log(`✅ DEPOSIT PROCESSED: ${userId} - ${amount} ${currency}${txHash ? ` (tx: ${txHash})` : ''}`);
+      
+      res.json({
+        success: true,
+        deposit: {
+          amount,
+          currency,
+          txHash: txHash || `deposit-${Date.now()}`,
+          status: 'completed',
+          timestamp: Date.now()
+        },
+        newBalance: balanceService.getBalance(userId)
+      });
+    } catch (error: any) {
+      console.error("Deposit error:", error);
+      res.status(500).json({ message: error.message || "Failed to process deposit" });
+    }
+  });
+
   // Withdraw SUI to wallet
   app.post("/api/user/withdraw", async (req: Request, res: Response) => {
     try {

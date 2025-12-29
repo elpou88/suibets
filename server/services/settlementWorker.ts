@@ -203,19 +203,23 @@ class SettlementWorkerService {
     return finished;
   }
 
+  private settledBetIds = new Set<string>(); // Track settled bet IDs to prevent duplicates
+
   private async getUnsettledBets(): Promise<UnsettledBet[]> {
     try {
       const allBets = await storage.getUserBets('user1');
-      return allBets.filter(bet => bet.status === 'pending').map(bet => ({
-        id: bet.id,
-        eventId: bet.eventId || '',
-        prediction: bet.selection || bet.prediction || '',
-        odds: bet.odds,
-        stake: bet.stake || bet.betAmount,
-        potentialWin: bet.potentialWin || bet.potentialPayout,
-        userId: bet.userId || 'user1',
-        currency: bet.currency || 'SUI'
-      }));
+      return allBets
+        .filter(bet => bet.status === 'pending' && !this.settledBetIds.has(bet.id))
+        .map(bet => ({
+          id: bet.id,
+          eventId: bet.eventId || '',
+          prediction: bet.selection || bet.prediction || '',
+          odds: bet.odds,
+          stake: bet.stake || bet.betAmount,
+          potentialWin: bet.potentialWin || bet.potentialPayout,
+          userId: bet.userId || 'user1',
+          currency: bet.currency || 'SUI'
+        }));
     } catch (error) {
       console.error('Error getting unsettled bets:', error);
       return [];
@@ -224,6 +228,12 @@ class SettlementWorkerService {
 
   private async settleBetsForMatch(match: FinishedMatch, bets: UnsettledBet[]) {
     for (const bet of bets) {
+      // DUPLICATE SETTLEMENT PREVENTION: Skip if already settled this session
+      if (this.settledBetIds.has(bet.id)) {
+        console.log(`⚠️ SKIPPING: Bet ${bet.id} already processed this session`);
+        continue;
+      }
+      
       try {
         const isWinner = this.determineBetOutcome(bet, match);
         const status = isWinner ? 'won' : 'lost';
@@ -239,6 +249,8 @@ class SettlementWorkerService {
           console.log(`📉 LOST: ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
         }
 
+        // Mark bet as settled to prevent duplicate processing
+        this.settledBetIds.add(bet.id);
         console.log(`✅ Settled bet ${bet.id}: ${status} (${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam})`);
       } catch (error) {
         console.error(`❌ Error settling bet ${bet.id}:`, error);

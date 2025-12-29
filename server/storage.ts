@@ -246,6 +246,15 @@ export class DatabaseStorage implements IStorage {
 
   async createBet(bet: any): Promise<any> {
     try {
+      // DUPLICATE PREVENTION: Check if bet with same ID already exists
+      if (bet.id) {
+        const existing = await db.select().from(bets).where(eq(bets.wurlusBetId, bet.id));
+        if (existing.length > 0) {
+          console.log(`⚠️ DUPLICATE BET PREVENTION: Bet ${bet.id} already exists`);
+          return { ...existing[0], id: bet.id, duplicate: true };
+        }
+      }
+      
       // Generate mock tx hash (in production, this would be the real blockchain tx)
       const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 40)}`;
       
@@ -381,6 +390,16 @@ export class DatabaseStorage implements IStorage {
 
   async updateBetStatus(betId: string, status: string, payout?: number): Promise<void> {
     try {
+      // DUPLICATE SETTLEMENT PREVENTION: Check if bet is already settled
+      const existing = await db.select().from(bets).where(eq(bets.wurlusBetId, betId));
+      if (existing.length > 0) {
+        const currentStatus = existing[0].status;
+        if (currentStatus === 'won' || currentStatus === 'lost' || currentStatus === 'cashed_out' || currentStatus === 'void') {
+          console.log(`⚠️ DUPLICATE SETTLEMENT BLOCKED: Bet ${betId} already settled as ${currentStatus}`);
+          return; // Don't update already settled bets
+        }
+      }
+      
       const updateData: any = { status };
       if (payout !== undefined) {
         updateData.payout = payout;

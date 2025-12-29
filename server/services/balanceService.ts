@@ -34,50 +34,79 @@ export class BalanceService {
   }
 
   /**
-   * Deduct bet amount from user balance
+   * Deduct bet amount from user balance (supports SUI or SBETS)
    */
-  deductForBet(userId: string, amount: number, fee: number): boolean {
+  deductForBet(userId: string, amount: number, fee: number, currency: 'SUI' | 'SBETS' = 'SUI'): boolean {
     const balance = this.getBalance(userId);
     const totalDebit = amount + fee;
 
-    if (balance.suiBalance < totalDebit) {
-      console.warn(`❌ Insufficient balance for ${userId}: ${balance.suiBalance} SUI < ${totalDebit} SUI needed`);
-      return false;
+    if (currency === 'SBETS') {
+      if (balance.sbetsBalance < totalDebit) {
+        console.warn(`❌ Insufficient SBETS for ${userId}: ${balance.sbetsBalance} SBETS < ${totalDebit} SBETS needed`);
+        return false;
+      }
+      balance.sbetsBalance -= totalDebit;
+      this.addTransaction(userId, {
+        type: 'bet_placed',
+        currency: 'SBETS',
+        amount,
+        fee,
+        balance: balance.sbetsBalance,
+        timestamp: Date.now()
+      });
+      console.log(`💰 BET DEDUCTED: ${userId} - ${amount} SBETS (Fee: ${fee} SBETS) | Balance: ${balance.sbetsBalance} SBETS`);
+    } else {
+      if (balance.suiBalance < totalDebit) {
+        console.warn(`❌ Insufficient balance for ${userId}: ${balance.suiBalance} SUI < ${totalDebit} SUI needed`);
+        return false;
+      }
+      balance.suiBalance -= totalDebit;
+      this.addTransaction(userId, {
+        type: 'bet_placed',
+        currency: 'SUI',
+        amount,
+        fee,
+        balance: balance.suiBalance,
+        timestamp: Date.now()
+      });
+      console.log(`💰 BET DEDUCTED: ${userId} - ${amount} SUI (Fee: ${fee} SUI) | Balance: ${balance.suiBalance} SUI`);
     }
 
-    balance.suiBalance -= totalDebit;
     balance.totalBetAmount += amount;
     balance.lastUpdated = Date.now();
-
-    this.addTransaction(userId, {
-      type: 'bet_placed',
-      amount,
-      fee,
-      balance: balance.suiBalance,
-      timestamp: Date.now()
-    });
-
-    console.log(`💰 BET DEDUCTED: ${userId} - ${amount} SUI (Fee: ${fee} SUI) | Balance: ${balance.suiBalance} SUI`);
     return true;
   }
 
   /**
-   * Add winnings to user balance
+   * Add winnings to user balance (supports SUI or SBETS)
    */
-  addWinnings(userId: string, amount: number): void {
+  addWinnings(userId: string, amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): void {
     const balance = this.getBalance(userId);
-    balance.suiBalance += amount;
+    
+    if (currency === 'SBETS') {
+      balance.sbetsBalance += amount;
+      this.addTransaction(userId, {
+        type: 'bet_won',
+        currency: 'SBETS',
+        amount,
+        balance: balance.sbetsBalance,
+        timestamp: Date.now()
+      });
+      console.log(`🎉 WINNINGS ADDED: ${userId} - ${amount} SBETS | New Balance: ${balance.sbetsBalance} SBETS`);
+    } else {
+      balance.suiBalance += amount;
+      this.addTransaction(userId, {
+        type: 'bet_won',
+        currency: 'SUI',
+        amount,
+        balance: balance.suiBalance,
+        timestamp: Date.now()
+      });
+      console.log(`🎉 WINNINGS ADDED: ${userId} - ${amount} SUI | New Balance: ${balance.suiBalance} SUI`);
+    }
+    
     balance.totalWinnings += amount;
     balance.lastUpdated = Date.now();
-
-    this.addTransaction(userId, {
-      type: 'bet_won',
-      amount,
-      balance: balance.suiBalance,
-      timestamp: Date.now()
-    });
-
-    console.log(`🎉 WINNINGS ADDED: ${userId} - ${amount} SUI | New Balance: ${balance.suiBalance} SUI`);
   }
 
   /**

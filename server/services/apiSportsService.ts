@@ -773,8 +773,8 @@ export class ApiSportsService {
               sportName: sport
             }));
             
-            // Increase the limit for better results
-            return eventsWithSportInfo.slice(0, Math.max(limit, 20));
+            // Increase the limit for better results - show more paid API events
+            return eventsWithSportInfo.slice(0, Math.max(limit, 50));
           } else {
             // Log more details about the response structure
             console.log(`[ApiSportsService] Response structure unexpected for ${sport}:`, 
@@ -823,7 +823,7 @@ export class ApiSportsService {
                 sportName: sport
               }));
               
-              return eventsWithSportInfo.slice(0, Math.max(limit, 20));
+              return eventsWithSportInfo.slice(0, Math.max(limit, 50));
             }
           }
           
@@ -870,7 +870,7 @@ export class ApiSportsService {
                   }));
                 
                 console.log(`[ApiSportsService] Found ${futureEvents.length} future events for ${sport}`);
-                return futureEvents.slice(0, Math.max(limit, 20));
+                return futureEvents.slice(0, Math.max(limit, 50));
               }
             } catch (genericError) {
               console.error(`[ApiSportsService] Generic approach also failed for ${sport}:`, genericError);

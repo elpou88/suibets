@@ -228,9 +228,18 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           );
           
           const sportResults = await Promise.all(sportPromises);
-          const allLiveEvents = sportResults.flat();
+          const allLiveEventsRaw = sportResults.flat();
           
-          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} total PAID API-Sports live events (${sportsToFetch.length} sports, zero tolerance policy)`);
+          // Deduplicate events by ID to prevent repeated matches
+          const seenLiveIds = new Set<string>();
+          const allLiveEvents = allLiveEventsRaw.filter(event => {
+            const eventId = String(event.id);
+            if (seenLiveIds.has(eventId)) return false;
+            seenLiveIds.add(eventId);
+            return true;
+          });
+          
+          console.log(`✅ LIVE: Fetched ${allLiveEvents.length} unique events (${allLiveEventsRaw.length} before dedup, ${sportsToFetch.length} sports)`);
           
           // Filter by sport if requested
           if (reqSportId && allLiveEvents.length > 0) {
@@ -261,9 +270,18 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         );
         
         const sportResults = await Promise.all(sportPromises);
-        const allUpcomingEvents = sportResults.flat();
+        const allUpcomingEventsRaw = sportResults.flat();
         
-        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} total PAID API-Sports upcoming events (${sportsToFetch.length} sports, zero tolerance policy)`);
+        // Deduplicate events by ID to prevent repeated matches
+        const seenUpcomingIds = new Set<string>();
+        const allUpcomingEvents = allUpcomingEventsRaw.filter(event => {
+          const eventId = String(event.id);
+          if (seenUpcomingIds.has(eventId)) return false;
+          seenUpcomingIds.add(eventId);
+          return true;
+        });
+        
+        console.log(`✅ UPCOMING: Fetched ${allUpcomingEvents.length} unique events (${allUpcomingEventsRaw.length} before dedup, ${sportsToFetch.length} sports)`);
         
         // Filter by sport if requested
         if (reqSportId && allUpcomingEvents.length > 0) {
@@ -383,21 +401,25 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      const { userId, eventId, marketId, outcomeId, odds, betAmount, prediction } = validation.data!;
+      const { userId, eventId, marketId, outcomeId, odds, betAmount, prediction, feeCurrency } = validation.data!;
+      
+      // Determine currency (default to SUI)
+      const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
 
       // Check user balance
       const balance = balanceService.getBalance(userId);
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
-      if (balance.suiBalance < totalDebit) {
+      const availableBalance = currency === 'SBETS' ? balance.sbetsBalance : balance.suiBalance;
+      if (availableBalance < totalDebit) {
         return res.status(400).json({ 
-          message: `Insufficient balance. Required: ${totalDebit} SUI, Available: ${balance.suiBalance} SUI`
+          message: `Insufficient balance. Required: ${totalDebit} ${currency}, Available: ${availableBalance} ${currency}`
         });
       }
 
-      // Deduct bet from balance
-      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee);
+      // Deduct bet from balance (with currency support)
+      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee, currency);
       if (!deductSuccess) {
         return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
       }
@@ -413,6 +435,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         outcomeId,
         odds,
         betAmount,
+        currency,
         status: 'pending' as const,
         prediction,
         placedAt: Date.now(),
@@ -442,7 +465,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         timestamp: Date.now()
       });
 
-      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`);
+      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
 
       res.json({
         success: true,
@@ -473,7 +496,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      const { userId, selections, betAmount } = validation.data!;
+      const { userId, selections, betAmount, feeCurrency } = validation.data!;
+      
+      // Determine currency (default to SUI)
+      const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
 
       // Check user balance
       const balance = balanceService.getBalance(userId);
@@ -488,14 +514,15 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
-      if (balance.suiBalance < totalDebit) {
+      const availableBalance = currency === 'SBETS' ? balance.sbetsBalance : balance.suiBalance;
+      if (availableBalance < totalDebit) {
         return res.status(400).json({ 
-          message: `Insufficient balance. Required: ${totalDebit} SUI, Available: ${balance.suiBalance} SUI`
+          message: `Insufficient balance. Required: ${totalDebit} ${currency}, Available: ${availableBalance} ${currency}`
         });
       }
 
-      // Deduct bet from balance
-      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee);
+      // Deduct bet from balance (with currency support)
+      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee, currency);
       if (!deductSuccess) {
         return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
       }
@@ -510,6 +537,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         selections,
         odds: parlayOdds,
         betAmount,
+        currency,
         status: 'pending' as const,
         placedAt: Date.now(),
         potentialPayout,
@@ -526,7 +554,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         userId,
         'bet_placed',
         `🔥 Parlay Placed: ${selections.length} Selections`,
-        `${selections.length}-leg parlay @ ${parlayOdds.toFixed(2)} odds. Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`,
+        `${selections.length}-leg parlay @ ${parlayOdds.toFixed(2)} odds. Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`,
         parlay
       );
 
@@ -541,7 +569,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         timestamp: Date.now()
       });
 
-      console.log(`🔥 PARLAY PLACED: ${parlayId} - ${selections.length} selections @ ${parlayOdds.toFixed(2)} odds, Stake: ${betAmount} SUI, Potential: ${potentialPayout} SUI`);
+      console.log(`🔥 PARLAY PLACED: ${parlayId} - ${selections.length} selections @ ${parlayOdds.toFixed(2)} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
 
       res.json({
         success: true,
@@ -602,8 +630,24 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ message: "Event result required" });
       }
 
-      // Mock settlement for now - in production, fetch actual bet from database
-      const mockBet = {
+      // Fetch actual bet from storage
+      const storedBet = await storage.getBet(betId);
+      
+      // Use stored bet or fallback to mock for testing
+      const bet = storedBet ? {
+        id: storedBet.id,
+        userId: storedBet.userId || 'user1',
+        eventId: storedBet.eventId,
+        marketId: storedBet.marketId || 'match-winner',
+        outcomeId: storedBet.outcomeId || 'home',
+        odds: storedBet.odds || 2.0,
+        betAmount: storedBet.betAmount || 100,
+        currency: (storedBet as any).currency || 'SUI' as 'SUI' | 'SBETS',
+        status: 'pending' as const,
+        prediction: storedBet.prediction || eventResult.result || 'home',
+        placedAt: storedBet.placedAt || Date.now(),
+        potentialPayout: storedBet.potentialPayout || (storedBet.betAmount || 100) * (storedBet.odds || 2.0)
+      } : {
         id: betId,
         userId: 'user1',
         eventId: eventResult.eventId || '1',
@@ -611,13 +655,14 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         outcomeId: 'home',
         odds: 2.0,
         betAmount: 100,
+        currency: 'SUI' as 'SUI' | 'SBETS',
         status: 'pending' as const,
         prediction: eventResult.result || 'home',
         placedAt: Date.now(),
         potentialPayout: 200
       };
 
-      const settlement = SettlementService.settleBet(mockBet, eventResult);
+      const settlement = SettlementService.settleBet(bet, eventResult);
       const platformFee = settlement.payout > 0 ? settlement.payout * 0.01 : 0;
       const netPayout = settlement.payout - platformFee;
       
@@ -625,7 +670,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const outcome = settlement.status === 'won' ? 'won' : settlement.status === 'lost' ? 'lost' : 'void';
       const settlementData = {
         betId,
-        eventId: mockBet.eventId,
+        eventId: bet.eventId,
         outcome: outcome as 'won' | 'lost' | 'void',
         payout: settlement.payout,
         timestamp: Date.now()
@@ -644,9 +689,19 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       // Update bet status
       await storage.updateBetStatus(betId, settlement.status, settlement.payout);
+      
+      // AUTO-PAYOUT: Add winnings to user balance using the bet's currency
+      if (settlement.status === 'won' && netPayout > 0) {
+        balanceService.addWinnings(bet.userId, netPayout, bet.currency);
+        console.log(`💰 AUTO-PAYOUT: ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
+      } else if (settlement.status === 'void') {
+        // Refund stake on void using the bet's currency
+        balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
+        console.log(`🔄 STAKE REFUNDED: ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
+      }
 
       // Notify user of settlement with proof
-      notificationService.notifyBetSettled(mockBet.userId, mockBet, outcome);
+      notificationService.notifyBetSettled(bet.userId, bet, outcome);
 
 
       // Log settlement
@@ -659,7 +714,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         fees: platformFee
       });
 
-      console.log(`✅ BET SETTLED: ${betId} - Status: ${settlement.status}, Payout: ${settlement.payout}, Fee: ${platformFee}, Net: ${netPayout}`);
+      console.log(`✅ BET SETTLED: ${betId} - Status: ${settlement.status}, Payout: ${settlement.payout} ${bet.currency}, Fee: ${platformFee} ${bet.currency}, Net: ${netPayout} ${bet.currency}`);
       
       res.json({
         success: true,

@@ -248,9 +248,9 @@ export default function CleanHome() {
               <p className="text-gray-500 text-sm">Check back later for more events</p>
             </div>
           ) : (
-            events.map((event) => (
+            events.map((event, index) => (
               <EventCard 
-                key={event.id} 
+                key={`${event.sportId}-${event.id}-${index}`} 
                 event={event} 
                 onClick={() => handleEventClick(event.id)} 
               />

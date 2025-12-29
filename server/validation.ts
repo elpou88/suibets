@@ -24,7 +24,8 @@ export const PlaceBetSchema = z.object({
   outcomeId: z.string().min(1, 'Outcome ID required'),
   odds: OddsSchema,
   betAmount: BetAmountSchema,
-  prediction: z.string().min(1, 'Prediction required')
+  prediction: z.string().min(1, 'Prediction required'),
+  feeCurrency: z.enum(['SUI', 'SBETS']).optional().default('SUI')
 });
 
 // Parlay schema
@@ -37,7 +38,8 @@ export const ParlaySchema = z.object({
       prediction: z.string()
     })
   ).min(2, 'Parlay requires at least 2 selections').max(10, 'Maximum 10 selections per parlay'),
-  betAmount: BetAmountSchema
+  betAmount: BetAmountSchema,
+  feeCurrency: z.enum(['SUI', 'SBETS']).optional().default('SUI')
 });
 
 // Withdrawal schema

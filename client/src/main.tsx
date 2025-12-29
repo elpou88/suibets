@@ -9,11 +9,23 @@ localStorage.removeItem('wallet_type');
 // Aggressively suppress MetaMask and other non-Sui wallet errors
 // This is a Sui dApp - MetaMask/Ethereum extensions throw confusing errors
 const suppressedErrorPatterns = [
-  'MetaMask', 'ethereum', 'inpage.js', 'contentscript', 
+  'MetaMask', 'metamask', 'ethereum', 'inpage.js', 'contentscript', 
   'Failed to connect to MetaMask', 'window.ethereum',
   'provider.request', 'eth_', 'Ethereum', 'web3',
-  'chrome-extension', 'moz-extension', 'ms-browser-extension'
+  'chrome-extension', 'moz-extension', 'ms-browser-extension',
+  'EIP-1193', 'injected provider', 'wallet_', 'ethProvider',
+  'Cannot read properties of undefined', 'reading \'request\'',
+  'NetworkError', 'net::ERR', 'extension error'
 ];
+
+// Block window.ethereum to prevent MetaMask from injecting
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'ethereum', {
+    get: () => undefined,
+    set: () => {},
+    configurable: false
+  });
+}
 
 const isExtensionRelatedError = (str: string | undefined): boolean => {
   if (!str) return false;

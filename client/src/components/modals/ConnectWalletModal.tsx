@@ -106,43 +106,74 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       
       console.log('Initiating wallet connection for:', walletId);
       
-      // IMPORTANT: Skip the wallet detection check since it may be unreliable
-      // We'll just proceed with the connection attempt and let the wallet's
-      // own error handling systems report any real issues
+      // Try wallet-specific connection first based on user's selection
+      let connectionSuccessful = false;
       
-      console.log('Proceeding with wallet connection attempt without pre-checks');
+      // Handle Nightly wallet specifically when user clicks it
+      if (walletId === 'NIGHTLY') {
+        console.log('User selected Nightly wallet - trying direct connection');
+        try {
+          // @ts-ignore - Nightly injects window.nightly
+          if (typeof window.nightly !== 'undefined' && window.nightly?.sui) {
+            console.log('Nightly wallet detected, connecting via sui adapter...');
+            // @ts-ignore
+            const response = await window.nightly.sui.connect();
+            console.log('Nightly connection response:', response);
+            
+            if (response && (response.publicKey || response.address)) {
+              const walletAddress = response.publicKey || response.address;
+              console.log('Connected to Nightly wallet:', walletAddress);
+              
+              if (connectWallet) {
+                await connectWallet(walletAddress, 'nightly');
+              }
+              
+              toast({
+                title: "Wallet Connected",
+                description: `Connected to Nightly Wallet`,
+              });
+              
+              setConnecting(false);
+              onClose();
+              return;
+            }
+          } else {
+            console.log('Nightly wallet not detected in window object');
+            setError("Nightly wallet extension not found. Please install it from nightly.app");
+            setConnecting(false);
+            setConnectionStep('selecting');
+            return;
+          }
+        } catch (nightlyError: any) {
+          console.error('Nightly wallet connection error:', nightlyError);
+          setError(nightlyError?.message || "Failed to connect to Nightly wallet. Please try again.");
+          setConnecting(false);
+          setConnectionStep('selecting');
+          return;
+        }
+      }
       
-      // Log before wallet connection
-      console.log('About to call connectAdapter() in modal');
+      // For other wallets, use the generic adapter
+      console.log('Using generic wallet adapter for:', walletId);
+      connectionSuccessful = await connectAdapter();
       
-      // Connect using the wallet adapter and handle the returned boolean
-      const connectionSuccessful = await connectAdapter();
+      console.log('connectAdapter() completed, success:', connectionSuccessful);
       
-      console.log('connectAdapter() completed in modal, success:', connectionSuccessful, 'address:', address);
-      
-      // If still no address, continue waiting - don't show error yet
-      // User may still be interacting with their wallet extension
+      // If still no address, wait for user interaction
       if (!address && !isConnected) {
         console.log('Connection in progress - waiting for wallet interaction...');
         setTimeout(() => {
-          // Re-check after a short delay
           if (!address && !isConnected) {
-            console.log('Connection still pending after 2s - continuing to wait...');
-            
-            // Wait longer before showing an error, as some wallets take time to respond
             setTimeout(() => {
               if (!address && !isConnected) {
                 setError("Wallet connection timed out. Please try again and ensure you approve the connection in your wallet.");
                 setConnecting(false);
                 setConnectionStep('selecting');
               }
-            }, 5000); // Wait 5 more seconds
+            }, 5000);
           }
         }, 2000);
       }
-      
-      // The rest of the connection process is handled by the useEffect hooks above
-      // that monitor the wallet adapter state changes
       
     } catch (err: any) {
       console.error("Error connecting wallet:", err);

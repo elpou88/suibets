@@ -6,37 +6,56 @@ import "./index.css";
 localStorage.removeItem('wallet_address');
 localStorage.removeItem('wallet_type');
 
-// Suppress MetaMask and other non-Sui wallet errors
-// This is a Sui dApp - MetaMask/Ethereum extensions will throw errors
-const suppressedErrorPatterns = ['MetaMask', 'ethereum', 'inpage.js', 'Failed to connect to MetaMask'];
+// Aggressively suppress MetaMask and other non-Sui wallet errors
+// This is a Sui dApp - MetaMask/Ethereum extensions throw confusing errors
+const suppressedErrorPatterns = [
+  'MetaMask', 'ethereum', 'inpage.js', 'contentscript', 
+  'Failed to connect to MetaMask', 'window.ethereum',
+  'provider.request', 'eth_', 'Ethereum', 'web3',
+  'chrome-extension', 'moz-extension', 'ms-browser-extension'
+];
+
+const isExtensionRelatedError = (str: string | undefined): boolean => {
+  if (!str) return false;
+  return suppressedErrorPatterns.some(pattern => 
+    str.toLowerCase().includes(pattern.toLowerCase())
+  );
+};
+
+// Override console.error early to suppress extension errors in console
+const originalConsoleError = console.error;
+console.error = (...args) => {
+  const errorStr = args.map(a => String(a)).join(' ');
+  if (isExtensionRelatedError(errorStr)) {
+    return; // Silently suppress
+  }
+  originalConsoleError.apply(console, args);
+};
 
 window.addEventListener('error', (event) => {
-  const isExtensionError = suppressedErrorPatterns.some(pattern => 
-    event.message?.includes(pattern) || 
-    event.error?.message?.includes(pattern) ||
-    event.error?.stack?.includes(pattern) ||
-    event.filename?.includes('chrome-extension')
-  );
+  const isExtensionError = 
+    isExtensionRelatedError(event.message) ||
+    isExtensionRelatedError(event.error?.message) ||
+    isExtensionRelatedError(event.error?.stack) ||
+    isExtensionRelatedError(event.filename);
   
   if (isExtensionError) {
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
-    console.log('Suppressed browser extension error - this is a Sui dApp');
     return false;
   }
-}, true); // Use capture phase to catch early
+}, true);
 
 window.addEventListener('unhandledrejection', (event) => {
-  const isExtensionError = suppressedErrorPatterns.some(pattern =>
-    event.reason?.message?.includes(pattern) ||
-    event.reason?.stack?.includes(pattern)
-  );
+  const isExtensionError = 
+    isExtensionRelatedError(event.reason?.message) ||
+    isExtensionRelatedError(event.reason?.stack) ||
+    isExtensionRelatedError(String(event.reason));
   
   if (isExtensionError) {
     event.preventDefault();
     event.stopPropagation();
-    console.log('Suppressed browser extension promise rejection');
   }
 }, true);
 

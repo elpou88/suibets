@@ -49,6 +49,9 @@ module suibets::betting {
         paused: bool,
         min_bet: u64,
         max_bet: u64,
+        // Liability tracking for solvency
+        total_potential_liability: u64, // Sum of all pending bet potential payouts
+        accrued_fees: u64, // Platform fees collected (withdrawable)
     }
 
     // Individual bet object owned by bettor
@@ -143,6 +146,8 @@ module suibets::betting {
             paused: false,
             min_bet: DEFAULT_MIN_BET,
             max_bet: DEFAULT_MAX_BET,
+            total_potential_liability: 0,
+            accrued_fees: 0,
         };
 
         event::emit(PlatformCreated {
@@ -155,6 +160,7 @@ module suibets::betting {
     }
 
     // Place a bet - callable by any user with SUI tokens
+    // Fee model: 1% charged on PROFIT only (when bet wins), not on stake
     public entry fun place_bet(
         platform: &mut BettingPlatform,
         payment: Coin<SUI>,
@@ -175,25 +181,32 @@ module suibets::betting {
         assert!(stake <= platform.max_bet, EExceedsMaxBet);
         assert!(odds >= 100, EInvalidOdds); // Minimum 1.00x odds
 
-        // Calculate platform fee (1%)
-        let fee = (stake * platform.platform_fee_bps) / BPS_DENOMINATOR;
-        let net_stake = stake - fee;
-        
         // Calculate potential payout: stake * (odds / 100)
-        let potential_payout = (net_stake * odds) / 100;
+        // No fee on stake - fee is only on profit when bet wins
+        let potential_payout = (stake * odds) / 100;
+        
+        // SOLVENCY CHECK: Ensure treasury can cover potential liability
+        // Available balance = treasury - existing liabilities
+        let current_treasury = balance::value(&platform.treasury);
+        let required_for_payout = potential_payout - stake; // Net new liability (profit portion)
+        assert!(
+            current_treasury + stake >= platform.total_potential_liability + potential_payout,
+            EInsufficientBalance
+        );
 
         // Take payment into platform treasury
         let payment_balance = coin::into_balance(payment);
         balance::join(&mut platform.treasury, payment_balance);
 
-        // Update platform stats
+        // Update platform stats and liability tracking
         platform.total_bets = platform.total_bets + 1;
         platform.total_volume = platform.total_volume + stake;
+        platform.total_potential_liability = platform.total_potential_liability + potential_payout;
 
         let bettor = tx_context::sender(ctx);
         let timestamp = clock::timestamp_ms(clock);
 
-        // Create bet object
+        // Create bet object (no fee stored - fee calculated on win settlement)
         let bet = Bet {
             id: object::new(ctx),
             bettor,
@@ -201,9 +214,9 @@ module suibets::betting {
             market_id,
             prediction,
             odds,
-            stake: net_stake,
+            stake,
             potential_payout,
-            platform_fee: fee,
+            platform_fee: 0, // Fee calculated at settlement on profit only
             status: STATUS_PENDING,
             placed_at: timestamp,
             settled_at: 0,
@@ -218,7 +231,7 @@ module suibets::betting {
             event_id: bet.event_id,
             prediction: bet.prediction,
             odds,
-            stake: net_stake,
+            stake,
             potential_payout,
             timestamp,
         });
@@ -228,6 +241,7 @@ module suibets::betting {
     }
 
     // Settle a bet - only callable by authorized oracle
+    // Fee model: 1% charged on PROFIT only (payout - stake)
     public entry fun settle_bet(
         platform: &mut BettingPlatform,
         bet: &mut Bet,
@@ -248,13 +262,21 @@ module suibets::betting {
 
         let timestamp = clock::timestamp_ms(clock);
         bet.settled_at = timestamp;
+        
+        // Reduce liability regardless of outcome
+        platform.total_potential_liability = platform.total_potential_liability - bet.potential_payout;
 
         if (won) {
             bet.status = STATUS_WON;
             
-            // Calculate payout with 1% fee on winnings
-            let win_fee = (bet.potential_payout * platform.platform_fee_bps) / BPS_DENOMINATOR;
+            // Calculate 1% fee on PROFIT only (not on stake return)
+            let profit = bet.potential_payout - bet.stake;
+            let win_fee = (profit * platform.platform_fee_bps) / BPS_DENOMINATOR;
             let net_payout = bet.potential_payout - win_fee;
+            
+            // Track accrued fees
+            platform.accrued_fees = platform.accrued_fees + win_fee;
+            bet.platform_fee = win_fee;
             
             // Ensure treasury has enough balance
             assert!(balance::value(&platform.treasury) >= net_payout, EInsufficientBalance);
@@ -273,7 +295,8 @@ module suibets::betting {
             });
         } else {
             bet.status = STATUS_LOST;
-            // Lost stake stays in treasury as platform revenue
+            // Lost stake becomes platform revenue (add to accrued fees)
+            platform.accrued_fees = platform.accrued_fees + bet.stake;
 
             event::emit(BetSettled {
                 bet_id: object::id(bet),
@@ -285,7 +308,7 @@ module suibets::betting {
         }
     }
 
-    // Void a bet - refund to bettor
+    // Void a bet - refund to bettor (no fee on void)
     public entry fun void_bet(
         platform: &mut BettingPlatform,
         bet: &mut Bet,
@@ -294,15 +317,21 @@ module suibets::betting {
     ) {
         let caller = tx_context::sender(ctx);
         
-        // Only admin can void bets
-        assert!(caller == platform.admin, EUnauthorized);
+        // Only admin or oracles can void bets
+        assert!(
+            caller == platform.admin || table::contains(&platform.oracles, caller),
+            EUnauthorized
+        );
         assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
 
         bet.status = STATUS_VOID;
         bet.settled_at = clock::timestamp_ms(clock);
+        
+        // Reduce liability
+        platform.total_potential_liability = platform.total_potential_liability - bet.potential_payout;
 
-        // Refund original stake (including fee for voided bets)
-        let refund_amount = bet.stake + bet.platform_fee;
+        // Refund original stake (full refund, no fee for voided bets)
+        let refund_amount = bet.stake;
         
         if (balance::value(&platform.treasury) >= refund_amount) {
             let refund_balance = balance::split(&mut platform.treasury, refund_amount);
@@ -339,7 +368,8 @@ module suibets::betting {
         table::remove(&mut platform.oracles, oracle_address);
     }
 
-    // Withdraw platform fees (admin only)
+    // Withdraw platform fees (admin only) - only withdrawable accrued fees, not bettor collateral
+    // SECURITY: Maintains invariant: treasury >= total_potential_liability at all times
     public entry fun withdraw_fees(
         platform: &mut BettingPlatform,
         amount: u64,
@@ -348,7 +378,30 @@ module suibets::betting {
     ) {
         let caller = tx_context::sender(ctx);
         assert!(caller == platform.admin, EUnauthorized);
-        assert!(balance::value(&platform.treasury) >= amount, EInsufficientBalance);
+        
+        // SOLVENCY GUARD: Calculate maximum safe withdrawal
+        let treasury_value = balance::value(&platform.treasury);
+        let reserved_for_bettors = platform.total_potential_liability;
+        
+        // Surplus is the amount above liabilities that can safely be withdrawn
+        let surplus = if (treasury_value > reserved_for_bettors) {
+            treasury_value - reserved_for_bettors
+        } else {
+            0
+        };
+        
+        // Max withdrawal is the lesser of accrued_fees and surplus
+        let max_withdraw = if (surplus < platform.accrued_fees) {
+            surplus
+        } else {
+            platform.accrued_fees
+        };
+        
+        // SECURITY: Can only withdraw up to max_withdraw
+        assert!(amount <= max_withdraw, EInsufficientBalance);
+        
+        // Reduce accrued fees
+        platform.accrued_fees = platform.accrued_fees - amount;
         
         let withdraw_balance = balance::split(&mut platform.treasury, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
@@ -448,6 +501,7 @@ module suibets::betting {
     }
 
     // Emergency withdrawal - requires platform to be paused (admin only)
+    // SECURITY: Cannot withdraw more than available (treasury - liabilities)
     public entry fun emergency_withdraw(
         platform: &mut BettingPlatform,
         amount: u64,
@@ -457,7 +511,28 @@ module suibets::betting {
         let caller = tx_context::sender(ctx);
         assert!(caller == platform.admin, EUnauthorized);
         assert!(platform.paused, EPlatformPaused); // Must be paused for emergency
-        assert!(balance::value(&platform.treasury) >= amount, EInsufficientBalance);
+        
+        // SOLVENCY GUARD: Can only withdraw excess treasury above liabilities
+        let treasury_value = balance::value(&platform.treasury);
+        let reserved_for_bettors = platform.total_potential_liability;
+        let withdrawable = if (treasury_value > reserved_for_bettors) {
+            treasury_value - reserved_for_bettors
+        } else {
+            0
+        };
+        
+        // Additionally cap to accrued fees for extra safety
+        let max_withdraw = if (withdrawable < platform.accrued_fees) {
+            withdrawable
+        } else {
+            platform.accrued_fees
+        };
+        
+        assert!(amount <= max_withdraw, EInsufficientBalance);
+        assert!(treasury_value >= amount, EInsufficientBalance);
+        
+        // Reduce accrued fees
+        platform.accrued_fees = platform.accrued_fees - amount;
         
         let withdraw_balance = balance::split(&mut platform.treasury, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
@@ -524,6 +599,20 @@ module suibets::betting {
         platform.platform_fee_bps
     }
 
+    public fun get_liabilities(platform: &BettingPlatform): (u64, u64) {
+        (platform.total_potential_liability, platform.accrued_fees)
+    }
+
+    public fun get_available_balance(platform: &BettingPlatform): u64 {
+        let treasury = balance::value(&platform.treasury);
+        let reserved = platform.total_potential_liability;
+        if (treasury > reserved) {
+            treasury - reserved
+        } else {
+            0
+        }
+    }
+
     // For testing - create platform manually
     #[test_only]
     public fun create_platform_for_testing(ctx: &mut TxContext): BettingPlatform {
@@ -540,6 +629,8 @@ module suibets::betting {
             paused: false,
             min_bet: DEFAULT_MIN_BET,
             max_bet: DEFAULT_MAX_BET,
+            total_potential_liability: 0,
+            accrued_fees: 0,
         }
     }
 }

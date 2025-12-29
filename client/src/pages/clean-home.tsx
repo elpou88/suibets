@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
-import { Search, Clock, TrendingUp, Wallet, Settings, FileText, LogOut, RefreshCw } from "lucide-react";
+import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
+import { useBetting } from "@/context/BettingContext";
+import { useToast } from "@/hooks/use-toast";
 
 const SPORTS_LIST = [
   { id: 1, name: "Football", icon: "⚽" },
@@ -29,19 +31,36 @@ const SPORTS_LIST = [
   { id: 23, name: "F1 Racing", icon: "🏁" },
 ];
 
+interface Outcome {
+  id: string;
+  name: string;
+  odds: number;
+  probability?: number;
+}
+
+interface Market {
+  id: string;
+  name: string;
+  outcomes: Outcome[];
+}
+
 interface Event {
-  id: number;
+  id: string | number;
   homeTeam: string;
   awayTeam: string;
-  league: string;
+  leagueName?: string;
+  league?: string;
   startTime: string;
   isLive: boolean;
+  score?: string;
   homeScore?: number;
   awayScore?: number;
   minute?: string;
-  homeOdds: number;
-  drawOdds: number;
-  awayOdds: number;
+  status?: string;
+  markets?: Market[];
+  homeOdds?: number;
+  drawOdds?: number;
+  awayOdds?: number;
   sportId: number;
 }
 
@@ -52,13 +71,21 @@ export default function CleanHome() {
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState<number>(0);
 
+  const liveQueryUrl = selectedSport 
+    ? `/api/events?isLive=true&sportId=${selectedSport}` 
+    : `/api/events?isLive=true`;
+    
+  const upcomingQueryUrl = selectedSport 
+    ? `/api/events?isLive=false&sportId=${selectedSport}` 
+    : `/api/events?isLive=false`;
+
   const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useQuery<Event[]>({
-    queryKey: ["/api/events", { isLive: true, sportId: selectedSport }],
+    queryKey: [liveQueryUrl],
     refetchInterval: 30000,
   });
 
   const { data: upcomingEvents = [], isLoading: upcomingLoading, refetch: refetchUpcoming } = useQuery<Event[]>({
-    queryKey: ["/api/events", { isLive: false, sportId: selectedSport }],
+    queryKey: [upcomingQueryUrl],
   });
 
   const events = activeTab === "live" ? liveEvents : upcomingEvents;
@@ -68,7 +95,7 @@ export default function CleanHome() {
     setSelectedSport(sportId);
   };
 
-  const handleEventClick = (eventId: number) => {
+  const handleEventClick = (eventId: string | number) => {
     setLocation(`/match/${eventId}`);
   };
 
@@ -245,6 +272,44 @@ interface EventCardProps {
 function EventCard({ event, onClick }: EventCardProps) {
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [stake, setStake] = useState<string>("10");
+  const { addBet } = useBetting();
+  const { toast } = useToast();
+
+  const getOddsFromMarkets = () => {
+    const defaultOdds = { home: 2.05, draw: 3.40, away: 3.00 };
+    
+    if (!event.markets || event.markets.length === 0) {
+      return { 
+        home: event.homeOdds || defaultOdds.home, 
+        draw: event.drawOdds || defaultOdds.draw, 
+        away: event.awayOdds || defaultOdds.away 
+      };
+    }
+    
+    const matchWinner = event.markets.find(m => m.name === "Match Result" || m.name === "Match Winner");
+    if (matchWinner && matchWinner.outcomes && matchWinner.outcomes.length > 0) {
+      const homeOutcome = matchWinner.outcomes.find(o => o.name === event.homeTeam);
+      const drawOutcome = matchWinner.outcomes.find(o => o.name === "Draw");
+      const awayOutcome = matchWinner.outcomes.find(o => o.name === event.awayTeam);
+      return {
+        home: (homeOutcome?.odds && !isNaN(homeOutcome.odds)) ? homeOutcome.odds : defaultOdds.home,
+        draw: (drawOutcome?.odds && !isNaN(drawOutcome.odds)) ? drawOutcome.odds : defaultOdds.draw,
+        away: (awayOutcome?.odds && !isNaN(awayOutcome.odds)) ? awayOutcome.odds : defaultOdds.away
+      };
+    }
+    return defaultOdds;
+  };
+
+  const odds = getOddsFromMarkets();
+
+  const getOdds = (outcome: string): number => {
+    switch (outcome) {
+      case "home": return odds.home;
+      case "draw": return odds.draw;
+      case "away": return odds.away;
+      default: return 2.0;
+    }
+  };
 
   const handleOutcomeClick = (outcome: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -254,18 +319,40 @@ function EventCard({ event, onClick }: EventCardProps) {
   const handleBetClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (selectedOutcome) {
-      console.log("Placing bet:", { event: event.id, outcome: selectedOutcome, stake });
+      const selectedOdds = getOdds(selectedOutcome);
+      const selectionName = selectedOutcome === "home" 
+        ? event.homeTeam 
+        : selectedOutcome === "away" 
+          ? event.awayTeam 
+          : "Draw";
+      
+      const betId = `${event.id}-${selectedOutcome}-${Date.now()}`;
+      
+      addBet({
+        id: betId,
+        eventId: String(event.id),
+        eventName: `${event.homeTeam} vs ${event.awayTeam}`,
+        selectionName,
+        odds: selectedOdds,
+        stake: parseFloat(stake) || 10,
+        market: "Match Result",
+        isLive: event.isLive || false,
+      });
+      
+      setSelectedOutcome(null);
     }
   };
 
-  const getOdds = (outcome: string): number => {
-    switch (outcome) {
-      case "home": return event.homeOdds || 2.05;
-      case "draw": return event.drawOdds || 3.40;
-      case "away": return event.awayOdds || 3.00;
-      default: return 2.0;
+  const parseScore = () => {
+    if (event.score) {
+      const parts = event.score.split(" - ");
+      return { home: parseInt(parts[0]) || 0, away: parseInt(parts[1]) || 0 };
     }
+    return { home: event.homeScore || 0, away: event.awayScore || 0 };
   };
+
+  const score = parseScore();
+  const leagueName = event.leagueName || event.league || "League";
 
   const potentialWin = selectedOutcome 
     ? (parseFloat(stake) * getOdds(selectedOutcome)).toFixed(2) 
@@ -280,11 +367,11 @@ function EventCard({ event, onClick }: EventCardProps) {
       {/* League Header */}
       <div className="px-4 py-2 border-b border-purple-900/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-          <span className="text-purple-400 text-sm">{event.league || "League"}</span>
+          {event.isLive && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
+          <span className="text-purple-400 text-sm">{leagueName}</span>
         </div>
         {event.isLive && (
-          <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded">1 LIVE</span>
+          <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded">LIVE</span>
         )}
       </div>
 
@@ -300,11 +387,11 @@ function EventCard({ event, onClick }: EventCardProps) {
             <h3 className="text-white font-semibold text-lg mb-1">
               {event.homeTeam} vs {event.awayTeam}
             </h3>
-            <p className="text-gray-500 text-sm">{event.league}</p>
+            <p className="text-gray-500 text-sm">{leagueName}</p>
             {event.isLive && (
               <div className="mt-2">
                 <span className="text-purple-400 text-2xl font-bold">
-                  {event.homeScore || 0} - {event.awayScore || 0}
+                  {score.home} - {score.away}
                 </span>
                 <span className="text-green-400 text-xs ml-2 bg-green-500/20 px-2 py-1 rounded">
                   LIVE SCORE
@@ -328,7 +415,7 @@ function EventCard({ event, onClick }: EventCardProps) {
               data-testid={`odds-draw-${event.id}`}
             >
               <div className="text-yellow-400 text-xs mb-1">Draw</div>
-              <div className="text-yellow-400 text-xl font-bold">{(event.drawOdds || 3.40).toFixed(2)}</div>
+              <div className="text-yellow-400 text-xl font-bold">{odds.draw.toFixed(2)}</div>
             </div>
             <div 
               className={`bg-[#241d35] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
@@ -338,7 +425,7 @@ function EventCard({ event, onClick }: EventCardProps) {
               data-testid={`odds-home-${event.id}`}
             >
               <div className="text-orange-400 text-xs mb-1">Odds</div>
-              <div className="text-orange-400 text-xl font-bold">{(event.homeOdds || 2.05).toFixed(2)}</div>
+              <div className="text-orange-400 text-xl font-bold">{odds.home.toFixed(2)}</div>
               <div className="text-gray-500 text-xs">{event.homeTeam?.split(' ')[0]}</div>
             </div>
             <div 
@@ -349,7 +436,7 @@ function EventCard({ event, onClick }: EventCardProps) {
               data-testid={`odds-away-${event.id}`}
             >
               <div className="text-purple-400 text-xs mb-1">Odds</div>
-              <div className="text-purple-400 text-xl font-bold">{(event.awayOdds || 3.00).toFixed(2)}</div>
+              <div className="text-purple-400 text-xl font-bold">{odds.away.toFixed(2)}</div>
               <div className="text-gray-500 text-xs">{event.awayTeam?.split(' ')[0]}</div>
             </div>
           </div>

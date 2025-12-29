@@ -90,26 +90,41 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
   // Handle Mysten Wallet Kit connection - THIS IS THE PRIMARY CONNECTION PATH
   useEffect(() => {
+    console.log('Mysten wallet state:', { isMystenConnected, currentAccount: currentAccount?.address || 'none' });
+    
     if (isMystenConnected && currentAccount?.address) {
-      console.log('Mysten wallet kit connected:', currentAccount.address);
+      console.log('SUCCESS: Mysten wallet connected with address:', currentAccount.address);
       
-      toast({
-        title: "Wallet Connected",
-        description: `Connected to ${currentAccount.address.substring(0, 8)}...${currentAccount.address.substring(currentAccount.address.length - 6)}`,
-      });
-      
-      // Update adapter state
-      updateConnectionState(currentAccount.address, 'sui');
-      
-      // Sync with auth context
-      if (connectWallet) {
-        connectWallet(currentAccount.address, 'sui')
-          .then(() => console.log('Mysten wallet synced with auth'))
-          .catch((err) => console.error('Auth sync error:', err));
+      try {
+        toast({
+          title: "Wallet Connected",
+          description: `Connected to ${currentAccount.address.substring(0, 8)}...${currentAccount.address.substring(currentAccount.address.length - 6)}`,
+        });
+        
+        // Update adapter state
+        console.log('Updating adapter state...');
+        updateConnectionState(currentAccount.address, 'sui');
+        
+        // Sync with auth context
+        if (connectWallet) {
+          console.log('Syncing with auth context...');
+          connectWallet(currentAccount.address, 'sui')
+            .then(() => {
+              console.log('Auth sync complete');
+              // Close modal only after sync
+              onClose();
+            })
+            .catch((err) => {
+              console.error('Auth sync error:', err);
+              // Still close modal even if auth sync fails
+              onClose();
+            });
+        } else {
+          onClose();
+        }
+      } catch (err) {
+        console.error('Error in Mysten connection handler:', err);
       }
-      
-      // Close modal
-      onClose();
     }
   }, [isMystenConnected, currentAccount, connectWallet, updateConnectionState, onClose, toast]);
 

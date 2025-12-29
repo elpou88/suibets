@@ -32,6 +32,38 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
 
+  // Admin session tokens (in-memory with 1 hour expiry)
+  const adminSessions = new Map<string, { expiresAt: number }>();
+  const SESSION_DURATION = 60 * 60 * 1000; // 1 hour
+
+  const generateSecureToken = () => {
+    const array = new Uint8Array(32);
+    for (let i = 0; i < 32; i++) {
+      array[i] = Math.floor(Math.random() * 256);
+    }
+    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+  };
+
+  const isValidAdminSession = (token: string): boolean => {
+    const session = adminSessions.get(token);
+    if (!session) return false;
+    if (Date.now() > session.expiresAt) {
+      adminSessions.delete(token);
+      return false;
+    }
+    return true;
+  };
+
+  // Clean up expired sessions periodically
+  setInterval(() => {
+    const now = Date.now();
+    for (const [token, session] of adminSessions.entries()) {
+      if (now > session.expiresAt) {
+        adminSessions.delete(token);
+      }
+    }
+  }, 5 * 60 * 1000); // Every 5 minutes
+
   // Health check endpoint
   app.get("/api/health", async (req: Request, res: Response) => {
     const report = monitoringService.getHealthReport();
@@ -49,35 +81,59 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Admin force-settle endpoint
+  // Admin force-settle endpoint (supports both token and password auth)
   app.post("/api/admin/settle-bet", async (req: Request, res: Response) => {
     try {
       const { betId, outcome, reason, adminPassword } = req.body;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.replace('Bearer ', '');
       
-      if (!betId || !outcome || !adminPassword) {
-        return res.status(400).json({ message: "Missing required fields: betId, outcome, adminPassword" });
+      // Check token-based auth first, then fall back to password auth
+      const hasValidToken = token && isValidAdminSession(token);
+      const actualPassword = process.env.ADMIN_PASSWORD || 'change-me-in-production';
+      const hasValidPassword = adminPassword === actualPassword;
+      
+      if (!hasValidToken && !hasValidPassword) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      if (!betId || !outcome) {
+        return res.status(400).json({ message: "Missing required fields: betId, outcome" });
       }
 
       if (!['won', 'lost', 'void'].includes(outcome)) {
         return res.status(400).json({ message: "Invalid outcome - must be 'won', 'lost', or 'void'" });
       }
 
-      const action = await adminService.forceSettleBet(betId, outcome, reason || 'Admin force settle', adminPassword);
+      // Update bet status directly and handle payouts
+      await storage.updateBetStatus(betId, outcome);
+      const bet = await storage.getBetByStringId(betId);
       
-      if (action) {
-        monitoringService.logSettlement({
-          settlementId: action.id,
-          betId,
-          outcome,
-          payout: action.result?.payout || 0,
-          timestamp: Date.now(),
-          fees: 0
-        });
-        
-        res.json({ success: true, action });
-      } else {
-        res.status(401).json({ message: "Unauthorized" });
+      if (bet && outcome === 'won') {
+        balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+      } else if (bet && outcome === 'lost') {
+        balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
       }
+      
+      const action = {
+        id: `admin-settle-${betId}-${Date.now()}`,
+        betId,
+        outcome,
+        reason: reason || 'Admin force settle',
+        timestamp: Date.now()
+      };
+      
+      monitoringService.logSettlement({
+        settlementId: action.id,
+        betId,
+        outcome,
+        payout: bet?.potentialPayout || 0,
+        timestamp: Date.now(),
+        fees: 0
+      });
+      
+      console.log(`✅ ADMIN: Settled bet ${betId} as ${outcome}`);
+      res.json({ success: true, action });
     } catch (error: any) {
       console.error("Admin settle error:", error);
       res.status(400).json({ message: error.message });
@@ -136,6 +192,95 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.json(logs);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch logs" });
+    }
+  });
+
+  // Admin login endpoint
+  app.post("/api/admin/login", async (req: Request, res: Response) => {
+    try {
+      const { password } = req.body;
+      const adminPassword = process.env.ADMIN_PASSWORD || 'change-me-in-production';
+      
+      if (password === adminPassword) {
+        // Generate a secure session token
+        const sessionToken = generateSecureToken();
+        adminSessions.set(sessionToken, { expiresAt: Date.now() + SESSION_DURATION });
+        console.log('✅ ADMIN: Login successful');
+        res.json({ success: true, token: sessionToken });
+      } else {
+        console.warn('❌ ADMIN: Login failed - invalid password');
+        res.status(401).json({ success: false, message: "Invalid password" });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Login failed" });
+    }
+  });
+
+  // Admin get all bets endpoint
+  app.get("/api/admin/all-bets", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.replace('Bearer ', '');
+      
+      if (!token || !isValidAdminSession(token)) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { status } = req.query;
+      const allBets = await storage.getAllBets(status as string);
+      const stats = {
+        total: allBets.length,
+        pending: allBets.filter(b => b.status === 'pending').length,
+        won: allBets.filter(b => b.status === 'won').length,
+        lost: allBets.filter(b => b.status === 'lost').length,
+        void: allBets.filter(b => b.status === 'void' || b.status === 'cancelled').length,
+        totalStake: allBets.reduce((sum, b) => sum + (b.stake || 0), 0),
+        totalPotentialWin: allBets.reduce((sum, b) => sum + (b.potentialWin || 0), 0)
+      };
+      
+      res.json({ bets: allBets, stats });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch bets" });
+    }
+  });
+
+  // Admin settle all pending bets endpoint
+  app.post("/api/admin/settle-all", async (req: Request, res: Response) => {
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.replace('Bearer ', '');
+      
+      if (!token || !isValidAdminSession(token)) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const { outcome } = req.body;
+      
+      if (!['won', 'lost', 'void'].includes(outcome)) {
+        return res.status(400).json({ message: "Invalid outcome - must be 'won', 'lost', or 'void'" });
+      }
+      
+      const pendingBets = await storage.getAllBets('pending');
+      const results = [];
+      
+      for (const bet of pendingBets) {
+        try {
+          await storage.updateBetStatus(bet.id, outcome);
+          if (outcome === 'won') {
+            balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialWin || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+          } else if (outcome === 'lost') {
+            balanceService.addRevenue(bet.stake || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+          }
+          results.push({ betId: bet.id, status: 'settled', outcome });
+        } catch (err) {
+          results.push({ betId: bet.id, status: 'error', error: String(err) });
+        }
+      }
+      
+      console.log(`✅ ADMIN: Settled ${results.filter(r => r.status === 'settled').length} bets as ${outcome}`);
+      res.json({ success: true, settled: results.length, results });
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
     }
   });
 

@@ -51,6 +51,7 @@ import ActivityPage from "@/pages/activity";
 import DepositsWithdrawalsPage from "@/pages/deposits-withdrawals";
 import AuditLogPage from "@/pages/audit-log";
 import WhitepaperPage from "@/pages/whitepaper";
+import AdminPanel from "@/pages/admin-panel";
 
 function App() {
   console.log("Starting React application");
@@ -145,6 +146,9 @@ function App() {
                           <Route path="/goto-live" component={LiveEventsPage} />
                           <Route path="/home-real" component={CleanHome} />
                           <Route path="/live-real" component={LiveEventsPage} />
+                          
+                          {/* Admin Panel - Password Protected */}
+                          <Route path="/admin" component={AdminPanel} />
                           
                           <Route component={NotFound} />
                         </Switch>

@@ -30,6 +30,7 @@ export interface IStorage {
   createBet(bet: any): Promise<any>;
   createParlay(parlay: any): Promise<any>;
   getUserBets(userId: string): Promise<any[]>;
+  getAllBets(status?: string): Promise<any[]>;
   updateBetStatus(betId: string, status: string, payout?: number): Promise<void>;
   markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void>;
   cashOutSingleBet(betId: number): Promise<void>;
@@ -338,6 +339,42 @@ export class DatabaseStorage implements IStorage {
       }));
     } catch (error) {
       console.error('Error getting user bets:', error);
+      return [];
+    }
+  }
+
+  async getAllBets(status?: string): Promise<any[]> {
+    try {
+      let allBets;
+      if (status && status !== 'all') {
+        allBets = await db.select().from(bets).where(eq(bets.status, status));
+      } else {
+        allBets = await db.select().from(bets);
+      }
+      
+      // Transform to match admin panel format with user info
+      return allBets.map(bet => ({
+        id: bet.wurlusBetId || String(bet.id),
+        dbId: bet.id,
+        userId: bet.userId,
+        walletAddress: bet.walletAddress,
+        eventId: bet.eventId,
+        eventName: bet.eventName || 'Unknown Event',
+        selection: bet.prediction,
+        odds: bet.odds,
+        stake: bet.betAmount,
+        potentialWin: bet.potentialPayout,
+        status: bet.status,
+        placedAt: bet.createdAt?.toISOString() || new Date().toISOString(),
+        settledAt: bet.settledAt?.toISOString(),
+        txHash: bet.txHash,
+        currency: bet.feeCurrency,
+        betType: bet.betType,
+        platformFee: bet.platformFee,
+        networkFee: bet.networkFee
+      }));
+    } catch (error) {
+      console.error('Error getting all bets:', error);
       return [];
     }
   }

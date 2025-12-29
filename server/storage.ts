@@ -1,5 +1,5 @@
 import { db } from './db';
-import { users, sports, events, markets, bets, type User, type InsertUser, type Sport, type Event, type Market } from "@shared/schema";
+import { users, sports, events, markets, bets, promotions, type User, type InsertUser, type Sport, type Event, type Market } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
@@ -196,45 +196,40 @@ export class DatabaseStorage implements IStorage {
     }
   }
   
-  // Get promotions
+  // Get promotions from database
   async getPromotions(): Promise<any[]> {
-    // This is a placeholder implementation
-    // In a real application, you would fetch promotions from a database
-    return [
-      {
-        id: 1,
-        title: 'Welcome Bonus',
-        description: 'Get 100% bonus on your first deposit',
-        image: '/images/promotions/welcome-bonus.png',
-        startDate: new Date('2025-01-01'),
-        endDate: new Date('2025-12-31'),
-        isActive: true
-      },
-      {
-        id: 2,
-        title: 'Refer a Friend',
-        description: 'Get 50 SBETS for each friend you refer',
-        image: '/images/promotions/refer-friend.png',
-        startDate: new Date('2025-01-01'),
-        endDate: new Date('2025-12-31'),
-        isActive: true
+    try {
+      const promoList = await db.select().from(promotions).where(eq(promotions.isActive, true));
+      
+      if (promoList && promoList.length > 0) {
+        return promoList;
       }
-    ];
+      
+      // Return empty array if no promotions exist - no mock data
+      return [];
+    } catch (error) {
+      console.error('Error fetching promotions:', error);
+      return [];
+    }
   }
 
-  // Betting methods implementation with real database queries
+  // Betting methods implementation with PostgreSQL database
   async getBet(betId: number | string): Promise<any | undefined> {
-    if (typeof betId === 'string') {
-      return this.getBetByStringId(betId);
-    }
-    
     try {
-      const [bet] = await db.select().from(bets).where(eq(bets.id, betId));
+      let bet;
+      if (typeof betId === 'number') {
+        [bet] = await db.select().from(bets).where(eq(bets.id, betId));
+      } else {
+        // String ID - search by wurlusBetId field
+        [bet] = await db.select().from(bets).where(eq(bets.wurlusBetId, betId));
+      }
+      
       if (!bet) return undefined;
       
-      // Add computed fields for compatibility
+      // Return with string ID for compatibility
       return {
         ...bet,
+        id: bet.wurlusBetId || String(bet.id),
         winningsWithdrawn: bet.status === 'winnings_withdrawn',
         amount: bet.betAmount
       };
@@ -245,66 +240,89 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getBetByStringId(betId: string): Promise<any | undefined> {
-    // In-memory storage for string-based bet IDs (for non-DB bets)
-    if (!this.betStorage) {
-      this.betStorage = new Map();
-    }
-    return this.betStorage.get(betId);
+    return this.getBet(betId);
   }
 
   async createBet(bet: any): Promise<any> {
     try {
-      // Store in memory for now
-      if (!this.betStorage) {
-        this.betStorage = new Map();
-      }
-      this.betStorage.set(bet.id, {
-        ...bet,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
+      // Insert into PostgreSQL database - use null for userId to avoid FK constraint
+      const [inserted] = await db.insert(bets).values({
+        userId: null, // Don't link to users table - wallet-based system
+        betAmount: bet.betAmount,
+        odds: bet.odds,
+        prediction: bet.prediction,
+        potentialPayout: bet.potentialPayout,
+        status: 'pending',
+        betType: bet.betType || 'single',
+        cashOutAvailable: true,
+        wurlusBetId: bet.id, // Store string ID here
+        txHash: bet.txHash,
+        platformFee: bet.platformFee,
+        networkFee: bet.networkFee,
+        feeCurrency: bet.currency || 'SUI'
+      }).returning();
       
-      console.log(`✅ BET STORED: ${bet.id}`);
-      return this.betStorage.get(bet.id);
+      console.log(`✅ BET STORED IN DB: ${bet.id} (db id: ${inserted.id})`);
+      
+      // Return with original string ID
+      return {
+        ...inserted,
+        id: bet.id,
+        userId: bet.userId, // Keep original userId in response
+        currency: inserted.feeCurrency,
+        amount: inserted.betAmount
+      };
     } catch (error) {
-      console.error('Error creating bet:', error);
-      return bet; // Return the bet anyway
+      console.error('Error creating bet in database:', error);
+      throw error;
     }
   }
 
   async createParlay(parlay: any): Promise<any> {
     try {
-      // Store in memory
-      if (!this.parlayStorage) {
-        this.parlayStorage = new Map();
-      }
-      this.parlayStorage.set(parlay.id, {
-        ...parlay,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
+      // For parlays, we store in DB with a special betType
+      const [inserted] = await db.insert(bets).values({
+        userId: null, // Don't link to users table - wallet-based system
+        betAmount: parlay.totalStake,
+        odds: parlay.combinedOdds,
+        prediction: JSON.stringify(parlay.selections),
+        potentialPayout: parlay.potentialPayout,
+        status: 'pending',
+        betType: 'parlay',
+        cashOutAvailable: true,
+        wurlusBetId: parlay.id,
+        platformFee: parlay.platformFee,
+        networkFee: parlay.networkFee,
+        feeCurrency: parlay.currency || 'SUI'
+      }).returning();
       
-      console.log(`✅ PARLAY STORED: ${parlay.id}`);
-      return this.parlayStorage.get(parlay.id);
+      console.log(`✅ PARLAY STORED IN DB: ${parlay.id} (db id: ${inserted.id})`);
+      
+      return {
+        ...inserted,
+        id: parlay.id,
+        userId: parlay.userId, // Keep original userId in response
+        selections: parlay.selections
+      };
     } catch (error) {
-      console.error('Error creating parlay:', error);
-      return parlay; // Return the parlay anyway
+      console.error('Error creating parlay in database:', error);
+      throw error;
     }
   }
 
   async getUserBets(userId: string): Promise<any[]> {
     try {
-      if (!this.betStorage) {
-        this.betStorage = new Map();
-      }
-      // Filter bets by userId
-      const userBets: any[] = [];
-      this.betStorage.forEach((bet) => {
-        if (bet.userId === userId) {
-          userBets.push(bet);
-        }
-      });
-      return userBets;
+      const userIdNum = parseInt(userId);
+      const userBets = isNaN(userIdNum) 
+        ? await db.select().from(bets) // If no valid userId, return all (for demo)
+        : await db.select().from(bets).where(eq(bets.userId, userIdNum));
+      
+      return userBets.map(bet => ({
+        ...bet,
+        id: bet.wurlusBetId || String(bet.id),
+        currency: bet.feeCurrency,
+        amount: bet.betAmount
+      }));
     } catch (error) {
       console.error('Error getting user bets:', error);
       return [];
@@ -313,27 +331,23 @@ export class DatabaseStorage implements IStorage {
 
   async updateBetStatus(betId: string, status: string, payout?: number): Promise<void> {
     try {
-      if (!this.betStorage) {
-        this.betStorage = new Map();
+      const updateData: any = { status };
+      if (payout !== undefined) {
+        updateData.payout = payout;
       }
-      const bet = this.betStorage.get(betId);
-      if (bet) {
-        bet.status = status;
-        if (payout !== undefined) {
-          bet.actualPayout = payout;
-        }
-        bet.updatedAt = new Date();
-        this.betStorage.set(betId, bet);
-        console.log(`✅ BET STATUS UPDATED: ${betId} -> ${status}`);
+      if (status === 'won' || status === 'lost' || status === 'cashed_out') {
+        updateData.settledAt = new Date();
       }
+      
+      await db.update(bets)
+        .set(updateData)
+        .where(eq(bets.wurlusBetId, betId));
+      
+      console.log(`✅ BET STATUS UPDATED IN DB: ${betId} -> ${status}`);
     } catch (error) {
-      console.error('Error updating bet status:', error);
+      console.error('Error updating bet status in database:', error);
     }
   }
-
-  // Add storage properties
-  private betStorage?: Map<string, any>;
-  private parlayStorage?: Map<string, any>;
 
   async markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void> {
     try {

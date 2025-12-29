@@ -117,6 +117,17 @@ export default function Navbar() {
           >
             Promo
           </a>
+          
+          {/* Buy SBETS link - Enhanced */}
+          <a 
+            href="https://app.turbos.finance/#/trade?input=0x2::sui::SUI&output=0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS" 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-black bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 transform hover:scale-105"
+            data-testid="link-buy-sbets"
+          >
+            Buy SBETS
+          </a>
         </div>
       </div>
       

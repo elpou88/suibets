@@ -182,7 +182,7 @@ export default function CricketPage() {
         return [];
       }
     },
-    refetchInterval: selectedTab === 'live' ? 30000 : 60000,
+    refetchInterval: 60000, // Refresh every minute
     retry: 2,
     retryDelay: 1000,
   });

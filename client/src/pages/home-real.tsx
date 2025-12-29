@@ -173,7 +173,7 @@ export default function HomeReal() {
         return []; // Return empty array on error to avoid breaking the UI
       }
     },
-    refetchInterval: 20000, // Slightly longer interval to reduce server load (20s)
+    refetchInterval: 60000, // Refresh every minute
     retry: 2,       // Fewer retries for faster recovery
     retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });

@@ -26,7 +26,7 @@ export default function LiveEventsPage() {
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 60000, // Refresh every minute
   });
 
   // Get unique sports from events

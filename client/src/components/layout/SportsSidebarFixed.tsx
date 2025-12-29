@@ -128,8 +128,8 @@ export default function SportsSidebarFixed() {
         return [];
       }
     },
-    refetchInterval: 20000,
-    staleTime: 10000,
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000,
     retry: 3,
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000)
   });

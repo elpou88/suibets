@@ -82,11 +82,12 @@ export default function CleanHome() {
 
   const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useQuery<Event[]>({
     queryKey: [liveQueryUrl],
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Refresh every minute
   });
 
   const { data: upcomingEvents = [], isLoading: upcomingLoading, refetch: refetchUpcoming } = useQuery<Event[]>({
     queryKey: [upcomingQueryUrl],
+    refetchInterval: 60000, // Refresh every minute
   });
 
   const events = activeTab === "live" ? liveEvents : upcomingEvents;

@@ -71,7 +71,7 @@ export default function AllSportsFixed() {
         return [];
       }
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000, // Refresh every minute
     retry: 3
   });
 
@@ -89,7 +89,7 @@ export default function AllSportsFixed() {
         return [];
       }
     },
-    refetchInterval: 60000,
+    refetchInterval: 60000, // Refresh every minute
     retry: 3
   });
 

@@ -482,7 +482,7 @@ export default function SportPage() {
       }
     },
     enabled: !!sportId,
-    refetchInterval: selectedTab === 'live' ? 15000 : 60000 // Refresh more frequently for live events
+    refetchInterval: 60000 // Refresh every minute for both live and upcoming
   });
 
   // Debug logging for events data

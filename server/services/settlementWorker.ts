@@ -243,11 +243,11 @@ class SettlementWorkerService {
         await storage.updateBetStatus(bet.id, status, payout);
 
         if (isWinner && payout > 0) {
-          balanceService.addWinnings(bet.userId, payout, bet.currency as 'SUI' | 'SBETS');
-          console.log(`💰 WINNER: ${bet.userId} won ${payout} ${bet.currency} on ${bet.prediction}`);
+          await balanceService.addWinnings(bet.userId, payout, bet.currency as 'SUI' | 'SBETS');
+          console.log(`💰 WINNER (DB): ${bet.userId} won ${payout} ${bet.currency} on ${bet.prediction}`);
         } else {
-          balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
-          console.log(`📉 LOST: ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
+          await balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
+          console.log(`📉 LOST (DB): ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
         }
 
         // Mark bet as settled to prevent duplicate processing
@@ -304,14 +304,14 @@ class SettlementWorkerService {
       await storage.updateBetStatus(betId, outcome, payout);
 
       if (outcome === 'won' && payout > 0) {
-        balanceService.addWinnings(bet.userId || 'user1', payout, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
-        console.log(`💰 MANUAL SETTLE: ${bet.userId} won ${payout} ${bet.feeCurrency}`);
+        await balanceService.addWinnings(bet.userId || 'user1', payout, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
+        console.log(`💰 MANUAL SETTLE (DB): ${bet.userId} won ${payout} ${bet.feeCurrency}`);
       } else if (outcome === 'void') {
-        balanceService.addWinnings(bet.userId || 'user1', payout, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
-        console.log(`🔄 VOIDED: Refunded ${payout} to ${bet.userId}`);
+        await balanceService.addWinnings(bet.userId || 'user1', payout, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
+        console.log(`🔄 VOIDED (DB): Refunded ${payout} to ${bet.userId}`);
       } else {
-        balanceService.addRevenue(bet.betAmount, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
-        console.log(`📉 MANUAL LOSS: Added ${bet.betAmount} to platform revenue`);
+        await balanceService.addRevenue(bet.betAmount, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');
+        console.log(`📉 MANUAL LOSS (DB): Added ${bet.betAmount} to platform revenue`);
       }
 
       return { success: true, betId, outcome, payout };

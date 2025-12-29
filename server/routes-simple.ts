@@ -110,9 +110,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const bet = await storage.getBetByStringId(betId);
       
       if (bet && outcome === 'won') {
-        balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+        await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
       } else if (bet && outcome === 'lost') {
-        balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+        await balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
       }
       
       const action = {
@@ -267,9 +267,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         try {
           await storage.updateBetStatus(bet.id, outcome);
           if (outcome === 'won') {
-            balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialWin || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+            await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialWin || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
           } else if (outcome === 'lost') {
-            balanceService.addRevenue(bet.stake || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+            await balanceService.addRevenue(bet.stake || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
           }
           results.push({ betId: bet.id, status: 'settled', outcome });
         } catch (err) {
@@ -568,7 +568,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       // Deduct bet from balance (with currency support)
-      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee, currency);
+      const deductSuccess = await balanceService.deductForBet(userId, betAmount, platformFee, currency);
       if (!deductSuccess) {
         return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
       }
@@ -672,7 +672,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       // Deduct bet from balance (with currency support)
-      const deductSuccess = balanceService.deductForBet(userId, betAmount, platformFee, currency);
+      const deductSuccess = await balanceService.deductForBet(userId, betAmount, platformFee, currency);
       if (!deductSuccess) {
         return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
       }
@@ -849,12 +849,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       // AUTO-PAYOUT: Add winnings to user balance using the bet's currency
       if (settlement.status === 'won' && netPayout > 0) {
-        balanceService.addWinnings(bet.userId, netPayout, bet.currency);
-        console.log(`💰 AUTO-PAYOUT: ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
+        await balanceService.addWinnings(bet.userId, netPayout, bet.currency);
+        console.log(`💰 AUTO-PAYOUT (DB): ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
       } else if (settlement.status === 'void') {
         // Refund stake on void using the bet's currency
-        balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
-        console.log(`🔄 STAKE REFUNDED: ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
+        await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
+        console.log(`🔄 STAKE REFUNDED (DB): ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
       }
 
       // Notify user of settlement with proof
@@ -926,7 +926,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
       
       // DUPLICATE PREVENTION: Use txHash deduplication in balanceService
-      const depositResult = balanceService.deposit(userId, amount, txHash, 'Wallet deposit');
+      const depositResult = await balanceService.deposit(userId, amount, txHash, 'Wallet deposit');
       
       if (!depositResult.success) {
         console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: ${txHash} for ${userId}`);
@@ -978,7 +978,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       const { userId, amount } = validation.data!;
-      const result = balanceService.withdraw(userId, amount);
+      const result = await balanceService.withdraw(userId, amount);
 
       if (!result.success) {
         return res.status(400).json({ message: result.message });
@@ -1008,7 +1008,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || 'user1';
       const limit = parseInt(req.query.limit as string) || 50;
-      const transactions = balanceService.getTransactionHistory(userId, limit);
+      const transactions = await balanceService.getTransactionHistory(userId, limit);
       res.json(transactions);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch transactions" });
@@ -1057,7 +1057,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const netCashOut = cashOutValue - platformFee;
 
       // Add cash out amount to user balance in the correct currency
-      balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
+      await balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
       
       // Update bet status
       await storage.updateBetStatus(betId, 'cashed_out', netCashOut);

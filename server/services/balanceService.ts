@@ -1,7 +1,10 @@
 /**
- * User Balance Management Service
- * Tracks SUI and SBETS token balances for each user
+ * User Balance Management Service - PERSISTENT DATABASE VERSION
+ * Tracks SUI and SBETS token balances for each user in PostgreSQL
+ * Balances survive server restarts and are reliable for settlement
  */
+
+import { storage } from '../storage';
 
 export interface UserBalance {
   userId: string;
@@ -13,46 +16,71 @@ export interface UserBalance {
 }
 
 export class BalanceService {
-  private balances: Map<string, UserBalance> = new Map();
-  private transactionHistory: Map<string, any[]> = new Map();
-  private processedTxHashes: Set<string> = new Set(); // Prevent duplicate deposits
+  private balanceCache: Map<string, UserBalance> = new Map();
+  private cacheExpiry = 30000; // 30 second cache
 
   /**
-   * Get user balance - starts at 0 for new users (no mock balances)
+   * Get user balance from database (with caching for performance)
+   */
+  async getBalanceAsync(userId: string): Promise<UserBalance> {
+    const cached = this.balanceCache.get(userId);
+    if (cached && Date.now() - cached.lastUpdated < this.cacheExpiry) {
+      return cached;
+    }
+
+    const dbBalance = await storage.getUserBalance(userId);
+    
+    const balance: UserBalance = {
+      userId,
+      suiBalance: dbBalance?.suiBalance || 0,
+      sbetsBalance: dbBalance?.sbetsBalance || 0,
+      totalBetAmount: 0,
+      totalWinnings: 0,
+      lastUpdated: Date.now()
+    };
+
+    this.balanceCache.set(userId, balance);
+    return balance;
+  }
+
+  /**
+   * Synchronous balance getter (uses cache, falls back to 0)
    */
   getBalance(userId: string): UserBalance {
-    if (!this.balances.has(userId)) {
-      this.balances.set(userId, {
-        userId,
-        suiBalance: 0, // New users start with 0 - must deposit real funds
-        sbetsBalance: 0, // New users start with 0 - must deposit real funds
-        totalBetAmount: 0,
-        totalWinnings: 0,
-        lastUpdated: Date.now()
-      });
+    const cached = this.balanceCache.get(userId);
+    if (cached) {
+      return cached;
     }
-    return this.balances.get(userId)!;
+
+    // Return default, async load will populate
+    const balance: UserBalance = {
+      userId,
+      suiBalance: 0,
+      sbetsBalance: 0,
+      totalBetAmount: 0,
+      totalWinnings: 0,
+      lastUpdated: Date.now()
+    };
+
+    // Trigger async load
+    this.getBalanceAsync(userId).catch(console.error);
+    
+    return balance;
   }
 
   /**
    * Check if a transaction hash has already been processed
    */
-  isTxProcessed(txHash: string): boolean {
-    return this.processedTxHashes.has(txHash);
-  }
-
-  /**
-   * Mark a transaction hash as processed
-   */
-  markTxProcessed(txHash: string): void {
-    this.processedTxHashes.add(txHash);
+  async isTxProcessed(txHash: string): Promise<boolean> {
+    return await storage.isTransactionProcessed(txHash);
   }
 
   /**
    * Deduct bet amount from user balance (supports SUI or SBETS)
+   * PERSISTS TO DATABASE
    */
-  deductForBet(userId: string, amount: number, fee: number, currency: 'SUI' | 'SBETS' = 'SUI'): boolean {
-    const balance = this.getBalance(userId);
+  async deductForBet(userId: string, amount: number, fee: number, currency: 'SUI' | 'SBETS' = 'SUI'): Promise<boolean> {
+    const balance = await this.getBalanceAsync(userId);
     const totalDebit = amount + fee;
 
     if (currency === 'SBETS') {
@@ -60,75 +88,75 @@ export class BalanceService {
         console.warn(`❌ Insufficient SBETS for ${userId}: ${balance.sbetsBalance} SBETS < ${totalDebit} SBETS needed`);
         return false;
       }
+      
+      // Update database
+      await storage.updateUserBalance(userId, 0, -totalDebit);
+      await storage.recordWalletOperation(userId, 'bet_placed', totalDebit, `bet-${Date.now()}`, { currency: 'SBETS', fee });
+      
+      // Update cache
       balance.sbetsBalance -= totalDebit;
-      this.addTransaction(userId, {
-        type: 'bet_placed',
-        currency: 'SBETS',
-        amount,
-        fee,
-        balance: balance.sbetsBalance,
-        timestamp: Date.now()
-      });
-      console.log(`💰 BET DEDUCTED: ${userId} - ${amount} SBETS (Fee: ${fee} SBETS) | Balance: ${balance.sbetsBalance} SBETS`);
+      balance.totalBetAmount += amount;
+      balance.lastUpdated = Date.now();
+      
+      console.log(`💰 BET DEDUCTED (DB): ${userId.slice(0, 8)}... - ${amount} SBETS (Fee: ${fee} SBETS) | Balance: ${balance.sbetsBalance} SBETS`);
     } else {
       if (balance.suiBalance < totalDebit) {
         console.warn(`❌ Insufficient balance for ${userId}: ${balance.suiBalance} SUI < ${totalDebit} SUI needed`);
         return false;
       }
+      
+      // Update database
+      await storage.updateUserBalance(userId, -totalDebit, 0);
+      await storage.recordWalletOperation(userId, 'bet_placed', totalDebit, `bet-${Date.now()}`, { currency: 'SUI', fee });
+      
+      // Update cache
       balance.suiBalance -= totalDebit;
-      this.addTransaction(userId, {
-        type: 'bet_placed',
-        currency: 'SUI',
-        amount,
-        fee,
-        balance: balance.suiBalance,
-        timestamp: Date.now()
-      });
-      console.log(`💰 BET DEDUCTED: ${userId} - ${amount} SUI (Fee: ${fee} SUI) | Balance: ${balance.suiBalance} SUI`);
+      balance.totalBetAmount += amount;
+      balance.lastUpdated = Date.now();
+      
+      console.log(`💰 BET DEDUCTED (DB): ${userId.slice(0, 8)}... - ${amount} SUI (Fee: ${fee} SUI) | Balance: ${balance.suiBalance} SUI`);
     }
 
-    balance.totalBetAmount += amount;
-    balance.lastUpdated = Date.now();
     return true;
   }
 
   /**
    * Add winnings to user balance (supports SUI or SBETS)
+   * PERSISTS TO DATABASE
    */
-  addWinnings(userId: string, amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): void {
-    const balance = this.getBalance(userId);
+  async addWinnings(userId: string, amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): Promise<void> {
+    const balance = await this.getBalanceAsync(userId);
     
     if (currency === 'SBETS') {
+      // Update database
+      await storage.updateUserBalance(userId, 0, amount);
+      await storage.recordWalletOperation(userId, 'bet_won', amount, `win-${Date.now()}`, { currency: 'SBETS' });
+      
+      // Update cache
       balance.sbetsBalance += amount;
-      this.addTransaction(userId, {
-        type: 'bet_won',
-        currency: 'SBETS',
-        amount,
-        balance: balance.sbetsBalance,
-        timestamp: Date.now()
-      });
-      console.log(`🎉 WINNINGS ADDED: ${userId} - ${amount} SBETS | New Balance: ${balance.sbetsBalance} SBETS`);
+      balance.totalWinnings += amount;
+      balance.lastUpdated = Date.now();
+      
+      console.log(`🎉 WINNINGS ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SBETS | New Balance: ${balance.sbetsBalance} SBETS`);
     } else {
+      // Update database
+      await storage.updateUserBalance(userId, amount, 0);
+      await storage.recordWalletOperation(userId, 'bet_won', amount, `win-${Date.now()}`, { currency: 'SUI' });
+      
+      // Update cache
       balance.suiBalance += amount;
-      this.addTransaction(userId, {
-        type: 'bet_won',
-        currency: 'SUI',
-        amount,
-        balance: balance.suiBalance,
-        timestamp: Date.now()
-      });
-      console.log(`🎉 WINNINGS ADDED: ${userId} - ${amount} SUI | New Balance: ${balance.suiBalance} SUI`);
+      balance.totalWinnings += amount;
+      balance.lastUpdated = Date.now();
+      
+      console.log(`🎉 WINNINGS ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SUI | New Balance: ${balance.suiBalance} SUI`);
     }
-    
-    balance.totalWinnings += amount;
-    balance.lastUpdated = Date.now();
   }
 
   /**
-   * Withdraw SUI to wallet
+   * Withdraw SUI to wallet - PERSISTS TO DATABASE
    */
-  withdraw(userId: string, amount: number): { success: boolean; txHash?: string; message: string } {
-    const balance = this.getBalance(userId);
+  async withdraw(userId: string, amount: number): Promise<{ success: boolean; txHash?: string; message: string }> {
+    const balance = await this.getBalanceAsync(userId);
 
     if (amount < 0.1) {
       return { success: false, message: 'Minimum withdrawal is 0.1 SUI' };
@@ -138,20 +166,17 @@ export class BalanceService {
       return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI` };
     }
 
-    // Simulate withdrawal
+    const txHash = `tx-${userId.slice(0, 8)}-${Date.now()}`;
+
+    // Update database
+    await storage.updateUserBalance(userId, -amount, 0);
+    await storage.recordWalletOperation(userId, 'withdrawal', amount, txHash, { status: 'completed' });
+
+    // Update cache
     balance.suiBalance -= amount;
-    const txHash = `tx-${userId}-${Date.now()}`;
+    balance.lastUpdated = Date.now();
 
-    this.addTransaction(userId, {
-      type: 'withdrawal',
-      amount,
-      txHash,
-      balance: balance.suiBalance,
-      timestamp: Date.now(),
-      status: 'completed'
-    });
-
-    console.log(`💸 WITHDRAWAL COMPLETED: ${userId} - ${amount} SUI | TX: ${txHash}`);
+    console.log(`💸 WITHDRAWAL COMPLETED (DB): ${userId.slice(0, 8)}... - ${amount} SUI | TX: ${txHash}`);
     return {
       success: true,
       txHash,
@@ -161,83 +186,61 @@ export class BalanceService {
 
   /**
    * Deposit SUI to account with txHash deduplication
-   * Returns false if txHash was already processed (prevents double-crediting)
+   * PERSISTS TO DATABASE - Returns false if txHash was already processed
    */
-  deposit(userId: string, amount: number, txHash?: string, reason: string = 'Wallet deposit'): { success: boolean; message: string } {
+  async deposit(userId: string, amount: number, txHash?: string, reason: string = 'Wallet deposit'): Promise<{ success: boolean; message: string }> {
     // DUPLICATE PREVENTION: Check if this txHash was already processed
-    if (txHash && this.processedTxHashes.has(txHash)) {
-      console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: txHash ${txHash} already processed`);
-      return { success: false, message: 'Transaction already processed' };
+    if (txHash) {
+      const alreadyProcessed = await storage.isTransactionProcessed(txHash);
+      if (alreadyProcessed) {
+        console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: txHash ${txHash} already processed`);
+        return { success: false, message: 'Transaction already processed' };
+      }
     }
 
-    const balance = this.getBalance(userId);
+    // Update database
+    await storage.updateUserBalance(userId, amount, 0);
+    await storage.recordWalletOperation(userId, 'deposit', amount, txHash || `deposit-${Date.now()}`, { reason });
+
+    // Update cache
+    const balance = await this.getBalanceAsync(userId);
     balance.suiBalance += amount;
     balance.lastUpdated = Date.now();
 
-    // Mark txHash as processed to prevent replay
-    if (txHash) {
-      this.processedTxHashes.add(txHash);
-    }
-
-    this.addTransaction(userId, {
-      type: 'deposit',
-      amount,
-      txHash,
-      reason,
-      balance: balance.suiBalance,
-      timestamp: Date.now()
-    });
-
-    console.log(`💳 DEPOSIT ADDED: ${userId} - ${amount} SUI (${reason}) txHash: ${txHash} | Balance: ${balance.suiBalance} SUI`);
+    console.log(`💳 DEPOSIT ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SUI (${reason}) txHash: ${txHash} | Balance: ${balance.suiBalance} SUI`);
     return { success: true, message: `Deposited ${amount} SUI` };
   }
 
   /**
    * Add revenue from lost bets to platform wallet
+   * PERSISTS TO DATABASE
    */
-  addRevenue(amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): void {
-    const platformBalance = this.getBalance('platform_revenue');
+  async addRevenue(amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): Promise<void> {
+    await storage.addPlatformRevenue(amount, currency);
     
     if (currency === 'SBETS') {
-      platformBalance.sbetsBalance += amount;
-      console.log(`📊 REVENUE ADDED: ${amount} SBETS to platform | Total: ${platformBalance.sbetsBalance} SBETS`);
+      console.log(`📊 REVENUE ADDED (DB): ${amount} SBETS to platform`);
     } else {
-      platformBalance.suiBalance += amount;
-      console.log(`📊 REVENUE ADDED: ${amount} SUI to platform | Total: ${platformBalance.suiBalance} SUI`);
+      console.log(`📊 REVENUE ADDED (DB): ${amount} SUI to platform`);
     }
-    
-    platformBalance.lastUpdated = Date.now();
   }
 
   /**
-   * Get platform revenue
+   * Get platform revenue from database
    */
-  getPlatformRevenue(): UserBalance {
-    return this.getBalance('platform_revenue');
+  async getPlatformRevenue(): Promise<{ suiBalance: number; sbetsBalance: number }> {
+    const revenue = await storage.getPlatformRevenue();
+    return {
+      suiBalance: revenue.suiRevenue,
+      sbetsBalance: revenue.sbetsRevenue
+    };
   }
 
   /**
-   * Get transaction history
+   * Get transaction history from database
    */
-  getTransactionHistory(userId: string, limit: number = 50): any[] {
-    const history = this.transactionHistory.get(userId) || [];
-    return history.slice(0, limit);
-  }
-
-  /**
-   * Add transaction to history
-   */
-  private addTransaction(userId: string, transaction: any): void {
-    if (!this.transactionHistory.has(userId)) {
-      this.transactionHistory.set(userId, []);
-    }
-    const history = this.transactionHistory.get(userId)!;
-    history.unshift(transaction); // Add to beginning
-    
-    // Keep last 100 transactions
-    if (history.length > 100) {
-      history.pop();
-    }
+  async getTransactionHistory(userId: string, limit: number = 50): Promise<any[]> {
+    return await storage.getWalletOperations(userId, limit);
   }
 }
 

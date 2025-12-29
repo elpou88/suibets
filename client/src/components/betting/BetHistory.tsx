@@ -46,7 +46,7 @@ export function BetHistory() {
       return response.json();
     },
     enabled: !!user?.id,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Filter bets based on active tab

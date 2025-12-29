@@ -120,7 +120,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     },
     enabled: !!address && isConnected,
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Update balances when data changes

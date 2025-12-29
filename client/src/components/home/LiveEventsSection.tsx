@@ -77,7 +77,7 @@ export function LiveEventsSection() {
         return []; // Return empty array on error
       }
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 15000, // Refresh every 15 seconds for live
     retry: 2, // Fewer retries for faster recovery
     retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });

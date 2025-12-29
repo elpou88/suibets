@@ -121,11 +121,13 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
-- June 24, 2025: Implemented strict no-simulation policy for live events
-- System now returns empty results when no genuine live events are occurring 
-- All simulated/fake live event generation completely removed from codebase
-- ESPN API integration shows only authentic scheduled events (Liverpool vs AFC Bournemouth, Thunder vs Pacers)
-- Live events endpoint returns empty array when no real matches are currently in progress
+- December 29, 2025: Fixed routing issues - removed legacy pages that redirected to old promotions page
+- Deleted obsolete pages: home.tsx, promotions.tsx, promotions-real.tsx, Live-new.tsx, live-exact.tsx, sports-exact.tsx, connect-wallet.tsx, redirect-to-promotions.tsx, live/index.tsx
+- Updated data refresh intervals: 15 seconds for live events, 30 seconds for upcoming events (was 60 seconds)
+- Increased event limit from 50 to 100 per sport for better match coverage
+- All pages now use consistent Layout component with cyan/turquoise theme
+- Unified routing through App.tsx with modern pages only (clean-home, live-events, bet-history, etc.)
+- PostgreSQL database for bets with proper wurlusBetId field
 - Zero tolerance for mock data - only genuine API responses with verified live status indicators
 
 ## User Preferences

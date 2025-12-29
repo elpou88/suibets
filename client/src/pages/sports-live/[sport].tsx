@@ -482,7 +482,7 @@ export default function SportPage() {
       }
     },
     enabled: !!sportId,
-    refetchInterval: 60000 // Refresh every minute for both live and upcoming
+    refetchInterval: 15000 // Refresh every 15 seconds for live, 30s for upcoming
   });
 
   // Debug logging for events data

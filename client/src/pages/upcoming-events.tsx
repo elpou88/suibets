@@ -26,7 +26,7 @@ export default function UpcomingEventsPage() {
       const data = await response.json();
       return Array.isArray(data) ? data.filter(event => !event.isLive) : [];
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 30000, // Refresh every 30 seconds for upcoming
   });
 
   // Get unique sports from events

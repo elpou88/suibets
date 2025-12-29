@@ -27,7 +27,7 @@ const Layout: React.FC<LayoutProps> = ({
   // Fetch upcoming events for the ticker
   const { data: upcomingEvents = [] } = useQuery<any[]>({
     queryKey: ['/api/events', 'upcoming'],
-    refetchInterval: 60000 // Refresh every minute
+    refetchInterval: 30000 // Refresh every 30 seconds
   });
   
   // Format upcoming events for ticker display

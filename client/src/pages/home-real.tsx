@@ -55,7 +55,7 @@ export default function HomeReal() {
         return []; // Return empty array on error
       }
     },
-    refetchInterval: 60000, // Refetch every minute - upcoming events don't change as frequently
+    refetchInterval: 30000, // Refetch every 30 seconds for upcoming
     retry: 3, // Retry up to 3 times if there's an error
     retryDelay: 2000 // Wait 2 seconds between retries
   });
@@ -173,7 +173,7 @@ export default function HomeReal() {
         return []; // Return empty array on error to avoid breaking the UI
       }
     },
-    refetchInterval: 60000, // Refresh every minute
+    refetchInterval: 15000, // Refresh every 15 seconds for live
     retry: 2,       // Fewer retries for faster recovery
     retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
   });

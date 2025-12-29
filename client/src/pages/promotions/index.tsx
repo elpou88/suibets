@@ -19,7 +19,7 @@ export default function PromotionsPage() {
   
   const { data: promotions = [], isLoading } = useQuery<Promotion[]>({
     queryKey: ['/api/promotions'],
-    refetchInterval: 60000,
+    refetchInterval: 30000,
   });
 
   const getIcon = (type: string) => {

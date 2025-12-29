@@ -155,7 +155,7 @@ export default function BlogPage() {
             <a href="#" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-discord-blog">
               Discord
             </a>
-            <a href="#" className="bg-[#0088cc] hover:bg-[#006699] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-telegram-blog">
+            <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="bg-[#0088cc] hover:bg-[#006699] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-telegram-blog">
               Telegram
             </a>
           </div>

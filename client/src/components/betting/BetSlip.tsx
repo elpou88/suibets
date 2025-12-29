@@ -239,6 +239,7 @@ export function BetSlip() {
                       ? 'bg-cyan-500 text-black' 
                       : 'bg-[#1a1a1a] text-gray-400 hover:text-white'
                   }`}
+                  data-testid="btn-currency-sui"
                 >
                   SUI
                 </button>
@@ -249,6 +250,7 @@ export function BetSlip() {
                       ? 'bg-cyan-500 text-black' 
                       : 'bg-[#1a1a1a] text-gray-400 hover:text-white'
                   }`}
+                  data-testid="btn-currency-sbets"
                 >
                   SBETS
                 </button>

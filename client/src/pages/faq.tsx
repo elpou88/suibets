@@ -125,7 +125,7 @@ export default function FAQPage() {
           <h3 className="text-xl font-bold text-white mb-2">Still have questions?</h3>
           <p className="text-gray-400 mb-4">Join our community for support and updates</p>
           <div className="flex justify-center gap-4">
-            <a href="#" className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-telegram-faq">
+            <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-telegram-faq">
               Join Telegram
             </a>
             <a href="#" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-discord-faq">

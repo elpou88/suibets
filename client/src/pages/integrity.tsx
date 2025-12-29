@@ -149,7 +149,7 @@ export default function IntegrityPage() {
               confidentially.
             </p>
             <div className="flex gap-4">
-              <a href="#" className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-report-telegram">
+              <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-report-telegram">
                 Report via Telegram
               </a>
               <a href="#" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-report-discord">

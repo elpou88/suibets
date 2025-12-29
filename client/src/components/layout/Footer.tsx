@@ -30,19 +30,19 @@ export default function Footer() {
           <h3 className="font-medium text-white mb-3">Community</h3>
           <ul className="space-y-2 text-sm text-gray-300">
             <li>
-              <a href="#" className="flex items-center hover:text-primary">
+              <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-primary" data-testid="link-telegram-footer">
                 <MessageSquare className="h-4 w-4 mr-2" />
                 Telegram
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center hover:text-primary">
+              <a href="#" className="flex items-center hover:text-primary" data-testid="link-discord-footer">
                 <MessageSquareIcon className="h-4 w-4 mr-2" />
                 Discord
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center hover:text-primary">
+              <a href="#" className="flex items-center hover:text-primary" data-testid="link-twitter-footer">
                 <TwitterIcon className="h-4 w-4 mr-2" />
                 Twitter
               </a>

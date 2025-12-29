@@ -1,7 +1,8 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useToast } from '@/hooks/use-toast';
 import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   FileText, 
@@ -13,7 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   ExternalLink,
-  Filter
+  Filter,
+  ArrowLeft
 } from 'lucide-react';
 
 interface Bet {
@@ -30,13 +32,15 @@ interface Bet {
 }
 
 export default function BetHistoryPage() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { currentWallet } = useWalrusProtocolContext();
   const [filter, setFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const { data: rawBets } = useQuery({
+  const { data: rawBets, refetch } = useQuery({
     queryKey: ['/api/bets'],
-    refetchInterval: 30000,
+    refetchInterval: 10000,
   });
   
   const bets: Bet[] = Array.isArray(rawBets) ? rawBets : [];
@@ -48,29 +52,32 @@ export default function BetHistoryPage() {
     won: bets.filter(b => b.status === 'won').length,
     lost: bets.filter(b => b.status === 'lost').length,
     pending: bets.filter(b => b.status === 'pending').length,
-    totalStaked: bets.reduce((acc, b) => acc + b.stake, 0),
-    totalWon: bets.filter(b => b.status === 'won').reduce((acc, b) => acc + b.potentialWin, 0),
+    totalStaked: bets.reduce((acc, b) => acc + (b.stake || 0), 0),
+    totalWon: bets.filter(b => b.status === 'won').reduce((acc, b) => acc + (b.potentialWin || 0), 0),
   };
 
   const winRate = stats.won + stats.lost > 0 ? ((stats.won / (stats.won + stats.lost)) * 100).toFixed(0) : 0;
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      window.location.reload();
-    }, 500);
+    await refetch();
+    toast({ title: 'Refreshed', description: 'Bet history updated' });
+    setIsRefreshing(false);
   };
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
   };
 
+  const handleBack = () => {
+    setLocation('/');
+  };
+
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'won': return <CheckCircle className="h-5 w-5 text-green-400" />;
       case 'lost': return <XCircle className="h-5 w-5 text-red-400" />;
-      case 'pending': return <Clock className="h-5 w-5 text-yellow-400" />;
+      case 'pending': return <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />;
       default: return null;
     }
   };
@@ -80,26 +87,35 @@ export default function BetHistoryPage() {
       {/* Navigation */}
       <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+              data-testid="btn-back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <Link href="/" data-testid="link-logo">
+              <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+            </Link>
+          </div>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
-            <Link href="/bet-history" className="text-cyan-400 text-sm font-medium">My Bets</Link>
-            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
-            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
             {currentWallet?.address ? (
               <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
             ) : (
-              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
                 <Wallet size={16} />
                 Connect
               </button>
@@ -117,7 +133,7 @@ export default function BetHistoryPage() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">Bet History</h1>
-              <p className="text-gray-400">Track your betting performance</p>
+              <p className="text-gray-400">Track your betting performance in real-time</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -170,7 +186,10 @@ export default function BetHistoryPage() {
 
         {/* Bet List */}
         <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-6">Your Bets</h3>
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            Your Bets
+            <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full">Live Updates</span>
+          </h3>
           
           {filteredBets.length === 0 ? (
             <div className="text-center py-16">
@@ -227,6 +246,7 @@ export default function BetHistoryPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-cyan-400 hover:text-cyan-300 text-xs flex items-center gap-1 justify-end mt-1"
+                        data-testid={`tx-link-${bet.id}`}
                       >
                         View on Explorer
                         <ExternalLink className="h-3 w-3" />

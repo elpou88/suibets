@@ -1,8 +1,10 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useBetting } from '@/context/BettingContext';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   Layers, 
@@ -12,11 +14,13 @@ import {
   CheckCircle,
   Wallet,
   RefreshCw,
-  AlertCircle
+  AlertCircle,
+  ArrowLeft
 } from 'lucide-react';
 
 interface ParlayLeg {
   id: string;
+  eventId: string;
   eventName: string;
   selection: string;
   odds: number;
@@ -24,13 +28,20 @@ interface ParlayLeg {
 
 export default function ParlayPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { selectedBets, removeBet, clearBets } = useBetting();
   const { currentWallet } = useWalrusProtocolContext();
   const [stake, setStake] = useState('10');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  const { data: balanceData } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
+    queryKey: ['/api/user/balance'],
+    refetchInterval: 15000,
+  });
+
   const parlayLegs: ParlayLeg[] = selectedBets.map((bet: any) => ({
     id: bet.id,
+    eventId: bet.eventId,
     eventName: bet.eventName || 'Unknown Event',
     selection: bet.selectionName || 'Unknown Selection',
     odds: bet.odds || 1.5
@@ -38,6 +49,26 @@ export default function ParlayPage() {
 
   const totalOdds = parlayLegs.reduce((acc, leg) => acc * leg.odds, 1);
   const potentialPayout = parseFloat(stake || '0') * totalOdds;
+
+  const placeBetMutation = useMutation({
+    mutationFn: async (betData: any) => {
+      return apiRequest('/api/bets', {
+        method: 'POST',
+        body: JSON.stringify(betData),
+      });
+    },
+    onSuccess: () => {
+      toast({ title: 'Parlay Placed!', description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI` });
+      clearBets();
+      setStake('10');
+      queryClient.invalidateQueries({ queryKey: ['/api/bets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/activity'] });
+    },
+    onError: () => {
+      toast({ title: 'Bet Failed', description: 'Please try again', variant: 'destructive' });
+    }
+  });
 
   const handleRemoveLeg = (id: string) => {
     removeBet(id);
@@ -53,21 +84,50 @@ export default function ParlayPage() {
       window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
       return;
     }
-    toast({ title: 'Parlay Placed!', description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI` });
-    clearBets();
-    setStake('10');
+    const stakeAmount = parseFloat(stake);
+    if (stakeAmount <= 0) {
+      toast({ title: 'Invalid Stake', description: 'Please enter a valid stake amount', variant: 'destructive' });
+      return;
+    }
+    const balance = balanceData?.suiBalance || 0;
+    if (stakeAmount > balance) {
+      toast({ title: 'Insufficient Balance', description: `You only have ${balance.toFixed(4)} SUI available`, variant: 'destructive' });
+      return;
+    }
+
+    const betData = {
+      type: 'parlay',
+      walletAddress: currentWallet.address,
+      stake: stakeAmount,
+      totalOdds,
+      potentialWin: potentialPayout,
+      legs: parlayLegs.map(leg => ({
+        eventId: leg.eventId,
+        eventName: leg.eventName,
+        selection: leg.selection,
+        odds: leg.odds
+      }))
+    };
+
+    placeBetMutation.mutate(betData);
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      window.location.reload();
-    }, 500);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/bets'] }),
+    ]);
+    toast({ title: 'Refreshed', description: 'Balance updated' });
+    setIsRefreshing(false);
   };
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
+  const handleBack = () => {
+    setLocation('/');
   };
 
   return (
@@ -75,26 +135,38 @@ export default function ParlayPage() {
       {/* Navigation */}
       <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+              data-testid="btn-back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <Link href="/" data-testid="link-logo">
+              <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+            </Link>
+          </div>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
-            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
-            <Link href="/parlay" className="text-cyan-400 text-sm font-medium">Parlays</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/parlay" className="text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
             {currentWallet?.address ? (
-              <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
+              <div className="text-right">
+                <p className="text-cyan-400 text-sm font-medium">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
+                <p className="text-gray-500 text-xs">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</p>
+              </div>
             ) : (
-              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
                 <Wallet size={16} />
                 Connect
               </button>
@@ -183,6 +255,7 @@ export default function ParlayPage() {
                 <li>• All selections must win for the parlay to pay out</li>
                 <li>• Odds are multiplied together for final payout</li>
                 <li>• Live events can be included in parlays</li>
+                <li>• All bets are settled on-chain for transparency</li>
               </ul>
             </div>
           </div>
@@ -204,6 +277,10 @@ export default function ParlayPage() {
                   <span className="text-gray-400">Combined Odds:</span>
                   <span className="text-green-400 font-bold text-lg">{totalOdds.toFixed(2)}</span>
                 </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Your Balance:</span>
+                  <span className="text-cyan-400 font-medium">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</span>
+                </div>
               </div>
 
               <div className="border-t border-cyan-900/30 pt-6 mb-6">
@@ -212,6 +289,8 @@ export default function ParlayPage() {
                   type="number"
                   value={stake}
                   onChange={(e) => setStake(e.target.value)}
+                  min="0"
+                  step="0.1"
                   className="w-full bg-black/50 border border-cyan-900/30 rounded-xl p-4 text-white text-xl font-bold focus:outline-none focus:border-cyan-500"
                   data-testid="input-stake"
                 />
@@ -224,16 +303,20 @@ export default function ParlayPage() {
 
               <button
                 onClick={handlePlaceParlay}
-                disabled={parlayLegs.length < 2}
+                disabled={parlayLegs.length < 2 || placeBetMutation.isPending}
                 className={`w-full py-4 rounded-xl font-bold text-lg transition-colors ${
-                  parlayLegs.length < 2
+                  parlayLegs.length < 2 || placeBetMutation.isPending
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-cyan-500 hover:bg-cyan-600 text-black'
                 }`}
                 data-testid="btn-place-parlay"
               >
-                <CheckCircle className="h-5 w-5 inline mr-2" />
-                Place Parlay
+                {placeBetMutation.isPending ? (
+                  <RefreshCw className="h-5 w-5 inline mr-2 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-5 w-5 inline mr-2" />
+                )}
+                {placeBetMutation.isPending ? 'Placing Bet...' : 'Place Parlay'}
               </button>
 
               {parlayLegs.length > 0 && (

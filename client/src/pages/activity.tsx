@@ -1,7 +1,9 @@
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useToast } from '@/hooks/use-toast';
+import { queryClient } from '@/lib/queryClient';
 import suibetsLogo from "@assets/image_1767008967633.png";
 import { 
   Activity as ActivityIcon, 
@@ -14,7 +16,8 @@ import {
   ArrowDownLeft,
   Wallet,
   RefreshCw,
-  Filter
+  Filter,
+  ArrowLeft
 } from 'lucide-react';
 
 interface ActivityItem {
@@ -29,20 +32,43 @@ interface ActivityItem {
 }
 
 export default function ActivityPage() {
+  const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { currentWallet } = useWalrusProtocolContext();
   const [filter, setFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const { data: rawActivities } = useQuery({
+  const { data: rawActivities, refetch } = useQuery({
     queryKey: ['/api/activity'],
-    refetchInterval: 30000,
+    refetchInterval: 10000,
+  });
+
+  const { data: rawBets } = useQuery({
+    queryKey: ['/api/bets'],
+    refetchInterval: 10000,
   });
   
   const activities: ActivityItem[] = Array.isArray(rawActivities) ? rawActivities : [];
+  const bets = Array.isArray(rawBets) ? rawBets : [];
+
+  const betActivities: ActivityItem[] = bets.map((bet: any) => ({
+    id: `bet-${bet.id}`,
+    type: bet.status === 'won' ? 'bet_won' : bet.status === 'lost' ? 'bet_lost' : 'bet_placed',
+    title: bet.status === 'won' ? 'Bet Won!' : bet.status === 'lost' ? 'Bet Lost' : 'Bet Placed',
+    description: `${bet.eventName || 'Unknown Event'} - ${bet.selection || 'Unknown Selection'}`,
+    amount: bet.status === 'won' ? bet.potentialWin : bet.stake,
+    currency: 'SUI',
+    timestamp: bet.placedAt || bet.createdAt || new Date().toISOString(),
+    status: 'completed'
+  }));
+
+  const allActivities = [...activities, ...betActivities].sort(
+    (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+  );
   
   const filteredActivities = filter === 'all' 
-    ? activities 
-    : activities.filter(a => a.type.includes(filter));
+    ? allActivities 
+    : allActivities.filter(a => a.type.includes(filter));
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -70,16 +96,24 @@ export default function ActivityPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      window.location.reload();
-    }, 500);
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/api/activity'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/bets'] }),
+      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] }),
+      refetch()
+    ]);
+    toast({ title: 'Refreshed', description: 'Activity updated' });
+    setIsRefreshing(false);
   };
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
+  const handleBack = () => {
+    setLocation('/');
   };
   
   return (
@@ -87,26 +121,35 @@ export default function ActivityPage() {
       {/* Navigation */}
       <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+              data-testid="btn-back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <Link href="/" data-testid="link-logo">
+              <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+            </Link>
+          </div>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
-            <Link href="/activity" className="text-cyan-400 text-sm font-medium">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
-            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/activity" className="text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
             {currentWallet?.address ? (
               <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
             ) : (
-              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
                 <Wallet size={16} />
                 Connect
               </button>
@@ -120,7 +163,7 @@ export default function ActivityPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white mb-2">Activity</h1>
-            <p className="text-gray-400">Track all your betting and transaction activity</p>
+            <p className="text-gray-400">Track all your betting and transaction activity in real-time</p>
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-5 w-5 text-gray-400" />
@@ -142,35 +185,43 @@ export default function ActivityPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
             <TrendingUp className="h-6 w-6 text-cyan-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'bet_placed').length}</p>
+            <p className="text-2xl font-bold text-white">{allActivities.filter(a => a.type === 'bet_placed').length}</p>
             <p className="text-gray-400 text-xs">Bets Placed</p>
           </div>
           <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
             <CheckCircle className="h-6 w-6 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-green-400">{activities.filter(a => a.type === 'bet_won').length}</p>
+            <p className="text-2xl font-bold text-green-400">{allActivities.filter(a => a.type === 'bet_won').length}</p>
             <p className="text-gray-400 text-xs">Bets Won</p>
           </div>
           <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
             <ArrowDownLeft className="h-6 w-6 text-green-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'deposit').length}</p>
+            <p className="text-2xl font-bold text-white">{allActivities.filter(a => a.type === 'deposit').length}</p>
             <p className="text-gray-400 text-xs">Deposits</p>
           </div>
           <div className="bg-[#111111] border border-cyan-900/30 rounded-xl p-4 text-center">
             <ArrowUpRight className="h-6 w-6 text-orange-400 mx-auto mb-2" />
-            <p className="text-2xl font-bold text-white">{activities.filter(a => a.type === 'withdrawal').length}</p>
+            <p className="text-2xl font-bold text-white">{allActivities.filter(a => a.type === 'withdrawal').length}</p>
             <p className="text-gray-400 text-xs">Withdrawals</p>
           </div>
         </div>
 
         {/* Activity List */}
         <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-6">Recent Activity</h3>
+          <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
+            Recent Activity
+            <span className="text-xs bg-cyan-500/20 text-cyan-400 px-2 py-1 rounded-full">Live</span>
+          </h3>
           
           {filteredActivities.length === 0 ? (
             <div className="text-center py-12">
               <ActivityIcon className="h-12 w-12 text-gray-500 mx-auto mb-4" />
               <p className="text-gray-400">No activity yet</p>
               <p className="text-gray-500 text-sm">Your betting and transaction activity will appear here</p>
+              <Link href="/">
+                <button className="mt-4 bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg" data-testid="btn-place-bet">
+                  Place Your First Bet
+                </button>
+              </Link>
             </div>
           ) : (
             <div className="space-y-3">

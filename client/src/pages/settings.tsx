@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useSettings } from '@/context/SettingsContext';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
@@ -16,13 +16,16 @@ import {
   Palette,
   Zap,
   Shield,
-  ChevronRight
+  ChevronRight,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function SettingsPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { currentWallet } = useWalrusProtocolContext();
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { 
     language, 
     setLanguage, 
@@ -35,21 +38,25 @@ export default function SettingsPage() {
     saveSettings
   } = useSettings();
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    setIsSaving(true);
     saveSettings();
+    await new Promise(resolve => setTimeout(resolve, 500));
     toast({ title: 'Settings Saved', description: 'Your preferences have been updated' });
+    setIsSaving(false);
   };
 
   const handleRefresh = () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      window.location.reload();
-    }, 500);
+    setTimeout(() => setIsRefreshing(false), 500);
   };
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
+  const handleBack = () => {
+    setLocation('/');
   };
 
   return (
@@ -57,26 +64,35 @@ export default function SettingsPage() {
       {/* Navigation */}
       <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+              data-testid="btn-back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <Link href="/" data-testid="link-logo">
+              <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+            </Link>
+          </div>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
-            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Dashboard</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
-            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
-            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
-            <Link href="/settings" className="text-cyan-400 text-sm font-medium">Settings</Link>
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/settings" className="text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
             {currentWallet?.address ? (
               <span className="text-cyan-400 text-sm">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</span>
             ) : (
-              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
                 <Wallet size={16} />
                 Connect
               </button>
@@ -199,7 +215,7 @@ export default function SettingsPage() {
               Security
             </h3>
             
-            <Link href="/audit-log" className="flex items-center justify-between p-4 bg-black/50 rounded-xl hover:border-cyan-500/30 border border-transparent transition-colors">
+            <Link href="/audit-log" className="flex items-center justify-between p-4 bg-black/50 rounded-xl hover:border-cyan-500/30 border border-transparent transition-colors" data-testid="link-audit">
               <div className="flex items-center gap-3">
                 <Shield className="h-5 w-5 text-red-400" />
                 <div>
@@ -214,11 +230,16 @@ export default function SettingsPage() {
           {/* Save Button */}
           <button
             onClick={handleSave}
-            className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-4 rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
+            disabled={isSaving}
+            className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 text-black font-bold py-4 rounded-xl transition-colors text-lg flex items-center justify-center gap-2"
             data-testid="btn-save-settings"
           >
-            <Save className="h-5 w-5" />
-            Save Settings
+            {isSaving ? (
+              <RefreshCw className="h-5 w-5 animate-spin" />
+            ) : (
+              <Save className="h-5 w-5" />
+            )}
+            {isSaving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
       </div>

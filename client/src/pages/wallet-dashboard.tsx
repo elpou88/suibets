@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useBetting } from '@/context/BettingContext';
@@ -22,29 +22,33 @@ import {
   ArrowUpRight,
   Layers,
   Settings,
-  FileText
+  FileText,
+  ArrowLeft
 } from 'lucide-react';
 
 export default function WalletDashboardPage() {
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
   const { currentWallet } = useWalrusProtocolContext();
   const { selectedBets } = useBetting();
   const [isRefreshing, setIsRefreshing] = useState(false);
   
-  const { data: betsData } = useQuery({
-    queryKey: ['/api/bets', { status: 'all' }],
-    enabled: !!currentWallet?.address
+  const { data: betsData, refetch: refetchBets } = useQuery({
+    queryKey: ['/api/bets'],
+    refetchInterval: 10000,
   });
   
-  const { data: balanceData } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
+  const { data: balanceData, refetch: refetchBalance } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
     queryKey: ['/api/user/balance'],
-    enabled: !!currentWallet?.address
+    refetchInterval: 15000,
   });
   
   const userBets = Array.isArray(betsData) ? betsData : [];
   const pendingBets = userBets.filter((b: any) => b.status === 'pending').length;
   const wonBets = userBets.filter((b: any) => b.status === 'won').length;
   const lostBets = userBets.filter((b: any) => b.status === 'lost').length;
+  const totalStaked = userBets.reduce((acc: number, b: any) => acc + (b.stake || 0), 0);
+  const totalWon = userBets.filter((b: any) => b.status === 'won').reduce((acc: number, b: any) => acc + (b.potentialWin || 0), 0);
   
   const copyAddress = () => {
     if (currentWallet?.address) {
@@ -58,16 +62,19 @@ export default function WalletDashboardPage() {
     return `${address.slice(0, 6)}...${address.slice(-4)}`;
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsRefreshing(true);
-    setTimeout(() => {
-      setIsRefreshing(false);
-      window.location.reload();
-    }, 500);
+    await Promise.all([refetchBets(), refetchBalance()]);
+    toast({ title: 'Refreshed', description: 'Data updated successfully' });
+    setIsRefreshing(false);
   };
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
+  };
+
+  const handleBack = () => {
+    setLocation('/');
   };
   
   return (
@@ -75,31 +82,40 @@ export default function WalletDashboardPage() {
       {/* Navigation */}
       <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <Link href="/">
-            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
-          </Link>
+          <div className="flex items-center gap-4">
+            <button 
+              onClick={handleBack}
+              className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+              data-testid="btn-back"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <Link href="/" data-testid="link-logo">
+              <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto cursor-pointer" />
+            </Link>
+          </div>
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Bets</Link>
-            <Link href="/dashboard" className="text-cyan-400 text-sm font-medium">Dashboard</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">My Bets</Link>
-            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Deposits</Link>
-            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Parlays</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium">Settings</Link>
+            <Link href="/" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/dashboard" className="text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
-            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2">
+            <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
             {currentWallet?.address ? (
               <div className="flex items-center gap-3">
                 <span className="text-cyan-400 text-sm">{formatAddress(currentWallet.address)}</span>
-                <button onClick={copyAddress} className="text-gray-400 hover:text-white">
+                <button onClick={copyAddress} className="text-gray-400 hover:text-white" data-testid="btn-copy">
                   <Copy size={16} />
                 </button>
               </div>
             ) : (
-              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2">
+              <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
                 <Wallet size={16} />
                 Connect
               </button>
@@ -141,7 +157,7 @@ export default function WalletDashboardPage() {
                   </div>
                   <span className="text-gray-400 text-sm">SUI Balance</span>
                 </div>
-                <p className="text-3xl font-bold text-white">{(balanceData?.suiBalance || 0).toFixed(2)}</p>
+                <p className="text-3xl font-bold text-white">{(balanceData?.suiBalance || 0).toFixed(4)}</p>
                 <p className="text-cyan-400 text-sm mt-1">SUI</p>
               </div>
 
@@ -163,7 +179,7 @@ export default function WalletDashboardPage() {
                   </div>
                   <span className="text-gray-400 text-sm">Total Winnings</span>
                 </div>
-                <p className="text-3xl font-bold text-green-400">+245.50</p>
+                <p className="text-3xl font-bold text-green-400">+{totalWon.toFixed(2)}</p>
                 <p className="text-gray-500 text-sm mt-1">SUI</p>
               </div>
 
@@ -181,19 +197,19 @@ export default function WalletDashboardPage() {
 
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group" data-testid="action-deposit">
                 <ArrowDownLeft className="h-8 w-8 text-green-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <p className="text-white font-medium">Deposit</p>
               </Link>
-              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+              <Link href="/deposits-withdrawals" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group" data-testid="action-withdraw">
                 <ArrowUpRight className="h-8 w-8 text-orange-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <p className="text-white font-medium">Withdraw</p>
               </Link>
-              <Link href="/parlay" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+              <Link href="/parlay" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group" data-testid="action-parlay">
                 <Layers className="h-8 w-8 text-purple-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <p className="text-white font-medium">Parlays</p>
               </Link>
-              <Link href="/bet-history" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group">
+              <Link href="/bet-history" className="bg-[#111111] border border-cyan-900/30 rounded-xl p-6 hover:border-cyan-500/50 transition-colors text-center group" data-testid="action-history">
                 <FileText className="h-8 w-8 text-cyan-400 mx-auto mb-3 group-hover:scale-110 transition-transform" />
                 <p className="text-white font-medium">Bet History</p>
               </Link>
@@ -226,11 +242,15 @@ export default function WalletDashboardPage() {
                     <span className="text-2xl font-bold text-yellow-400">{pendingBets}</span>
                   </div>
                   <div className="border-t border-cyan-900/30 pt-4">
-                    <div className="flex justify-between items-center">
+                    <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-300">Win Rate</span>
                       <span className="text-xl font-bold text-cyan-400">
                         {wonBets + lostBets > 0 ? ((wonBets / (wonBets + lostBets)) * 100).toFixed(0) : 0}%
                       </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-300">Total Staked</span>
+                      <span className="text-xl font-bold text-white">{totalStaked.toFixed(2)} SUI</span>
                     </div>
                   </div>
                 </div>
@@ -242,10 +262,10 @@ export default function WalletDashboardPage() {
                   <div>
                     <p className="text-gray-500 text-sm mb-1">Address</p>
                     <div className="flex items-center gap-2">
-                      <code className="text-cyan-400 bg-black/50 px-3 py-2 rounded-lg text-sm flex-1 overflow-hidden">
+                      <code className="text-cyan-400 bg-black/50 px-3 py-2 rounded-lg text-sm flex-1 overflow-hidden text-ellipsis">
                         {currentWallet.address}
                       </code>
-                      <button onClick={copyAddress} className="p-2 bg-cyan-500/20 rounded-lg hover:bg-cyan-500/30">
+                      <button onClick={copyAddress} className="p-2 bg-cyan-500/20 rounded-lg hover:bg-cyan-500/30" data-testid="btn-copy-address">
                         <Copy className="h-4 w-4 text-cyan-400" />
                       </button>
                       <a 
@@ -253,6 +273,7 @@ export default function WalletDashboardPage() {
                         target="_blank"
                         rel="noopener noreferrer"
                         className="p-2 bg-cyan-500/20 rounded-lg hover:bg-cyan-500/30"
+                        data-testid="btn-explorer"
                       >
                         <ExternalLink className="h-4 w-4 text-cyan-400" />
                       </a>
@@ -300,7 +321,7 @@ export default function WalletDashboardPage() {
                   )}
                 </div>
                 <Link href="/parlay" className="block mt-4">
-                  <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 rounded-xl transition-colors">
+                  <button className="w-full bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 rounded-xl transition-colors" data-testid="btn-view-slip">
                     View Full Bet Slip
                   </button>
                 </Link>

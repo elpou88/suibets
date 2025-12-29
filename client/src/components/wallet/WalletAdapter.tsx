@@ -63,7 +63,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const updateConnectionState = async (walletAddress: string, walletType: string = 'sui') => {
     console.log('Manually updating connection state for:', walletAddress);
     
-    // Set local state
+    // Set local state IMMEDIATELY
     setAccount({ address: walletAddress });
     setAddress(walletAddress);
     setConnected(true);
@@ -73,15 +73,11 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('wallet_address', walletAddress);
     localStorage.setItem('wallet_type', walletType);
     
-    // Notify server
-    try {
-      await apiRequest('POST', '/api/wallet/connect', {
-        address: walletAddress,
-        walletType: walletType
-      });
-    } catch (error) {
-      console.error('Error connecting wallet to server:', error);
-    }
+    // Notify server ASYNCHRONOUSLY - don't block UI
+    apiRequest('POST', '/api/wallet/connect', {
+      address: walletAddress,
+      walletType: walletType
+    }).catch(err => console.error('Silent server sync error:', err));
   };
   
   // Fetch wallet balances when connected

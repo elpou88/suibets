@@ -16,6 +16,8 @@ import { getSportsToFetch } from "./sports-config";
 import { validateRequest, PlaceBetSchema, ParlaySchema, WithdrawSchema } from "./validation";
 import aiRoutes from "./routes-ai";
 import { settlementWorker } from "./services/settlementWorker";
+import blockchainBetService from "./services/blockchainBetService";
+import walrusService from "./services/walrusService";
 
 export async function registerRoutes(app: express.Express): Promise<Server> {
   // Initialize services
@@ -597,6 +599,32 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Store bet in storage
       const storedBet = await storage.createBet(bet);
 
+      // Record bet on blockchain for verification
+      const onChainBet = await blockchainBetService.recordBetOnChain({
+        betId,
+        walletAddress: userId,
+        eventId: String(eventId),
+        prediction,
+        betAmount,
+        odds,
+        txHash: storedBet?.txHash || ''
+      });
+
+      // Store bet data in Walrus for decentralized storage
+      const walrusResult = await walrusService.storeBet({
+        betId,
+        walletAddress: userId,
+        eventId: String(eventId),
+        eventName: eventName || 'Sports Event',
+        prediction,
+        betAmount,
+        odds,
+        potentialPayout,
+        timestamp: Date.now(),
+        txHash: storedBet?.txHash,
+        status: 'pending'
+      });
+
       // Notify user of bet placement
       notificationService.notifyBetPlaced(userId, {
         ...bet,
@@ -615,7 +643,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         timestamp: Date.now()
       });
 
-      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
+      console.log(`✅ BET PLACED (ON-CHAIN + WALRUS): ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
+      console.log(`   📦 Walrus Blob: ${walrusResult.blobId} | On-chain status: ${onChainBet.status}`);
 
       res.json({
         success: true,
@@ -627,6 +656,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           potentialPayout,
           odds
         },
+        onChain: {
+          status: onChainBet.status,
+          txHash: storedBet?.txHash,
+          walrusBlobId: walrusResult.blobId,
+          packageId: blockchainBetService.getPackageId()
+        }
       });
     } catch (error: any) {
       console.error("Bet placement error:", error);
@@ -774,6 +809,48 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.json(bet);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch bet" });
+    }
+  });
+
+  // Verify bet on-chain and Walrus
+  app.get("/api/bets/:id/verify", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.id;
+      
+      // Get bet from database
+      const bet = await storage.getBet(betId);
+      if (!bet) {
+        return res.status(404).json({ message: "Bet not found" });
+      }
+
+      // Verify on Walrus
+      const walrusVerification = await walrusService.verifyBetOnWalrus(betId);
+
+      // Verify on-chain if txHash exists
+      let onChainVerification = { confirmed: false, blockHeight: 0 };
+      if (bet.txHash) {
+        onChainVerification = await blockchainBetService.verifyTransaction(bet.txHash);
+      }
+
+      res.json({
+        betId,
+        database: {
+          found: true,
+          status: bet.status,
+          txHash: bet.txHash
+        },
+        walrus: {
+          verified: walrusVerification.verified,
+          blobId: walrusVerification.blobId
+        },
+        onChain: {
+          verified: onChainVerification.confirmed,
+          blockHeight: onChainVerification.blockHeight
+        },
+        packageId: blockchainBetService.getPackageId()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to verify bet" });
     }
   });
 

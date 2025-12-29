@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
@@ -74,6 +74,16 @@ export default function CleanHome() {
   const [selectedSport, setSelectedSport] = useState<number | null>(1);
   const [activeTab, setActiveTab] = useState<"live" | "upcoming">("live");
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
+  const matchesSectionRef = useRef<HTMLDivElement>(null);
+
+  const scrollToMatches = () => {
+    matchesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  const handleTabClick = (tab: "live" | "upcoming") => {
+    setActiveTab(tab);
+    setTimeout(() => scrollToMatches(), 100);
+  };
   
   // Use real wallet adapter instead of fake state
   const { address: walletAddress, isConnected, balances, connect, disconnect } = useWalletAdapter();
@@ -105,10 +115,6 @@ export default function CleanHome() {
 
   const handleSportClick = (sportId: number) => {
     setSelectedSport(sportId);
-  };
-
-  const handleEventClick = (eventId: string | number) => {
-    setLocation(`/match/${eventId}`);
   };
 
   const handleConnectWallet = () => {
@@ -198,14 +204,14 @@ export default function CleanHome() {
             </p>
             <div className="flex gap-4">
               <button 
-                onClick={() => setActiveTab("live")}
+                onClick={() => handleTabClick("live")}
                 className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-3 rounded-lg transition-all"
                 data-testid="hero-btn-live"
               >
                 🔴 Live Matches
               </button>
               <button 
-                onClick={() => setActiveTab("upcoming")}
+                onClick={() => handleTabClick("upcoming")}
                 className="border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-bold px-6 py-3 rounded-lg transition-all"
                 data-testid="hero-btn-upcoming"
               >
@@ -251,9 +257,9 @@ export default function CleanHome() {
         </div>
 
         {/* Live / Upcoming Tabs */}
-        <div className="flex gap-2 mb-6">
+        <div ref={matchesSectionRef} className="flex gap-2 mb-6 scroll-mt-4">
           <button
-            onClick={() => setActiveTab("live")}
+            onClick={() => handleTabClick("live")}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "live"
                 ? "bg-[#111111] text-cyan-400 border border-cyan-500"
@@ -265,7 +271,7 @@ export default function CleanHome() {
             Live ({liveEvents.length})
           </button>
           <button
-            onClick={() => setActiveTab("upcoming")}
+            onClick={() => handleTabClick("upcoming")}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "upcoming"
                 ? "bg-[#111111] text-cyan-400 border border-cyan-500"
@@ -295,7 +301,6 @@ export default function CleanHome() {
               <EventCard 
                 key={`${event.sportId}-${event.id}-${index}`} 
                 event={event} 
-                onClick={() => handleEventClick(event.id)} 
               />
             ))
           )}
@@ -316,12 +321,12 @@ export default function CleanHome() {
 
 interface EventCardProps {
   event: Event;
-  onClick: () => void;
 }
 
-function EventCard({ event, onClick }: EventCardProps) {
+function EventCard({ event }: EventCardProps) {
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [stake, setStake] = useState<string>("10");
+  const [isExpanded, setIsExpanded] = useState(false);
   const { addBet } = useBetting();
   const { toast } = useToast();
 
@@ -410,19 +415,24 @@ function EventCard({ event, onClick }: EventCardProps) {
 
   return (
     <div 
-      className="bg-[#111111] rounded-xl border border-cyan-900/30 overflow-hidden cursor-pointer hover:border-cyan-500/50 transition-all"
-      onClick={onClick}
+      className="bg-[#111111] rounded-xl border border-cyan-900/30 overflow-hidden hover:border-cyan-500/50 transition-all"
       data-testid={`event-card-${event.id}`}
     >
       {/* League Header */}
-      <div className="px-4 py-2 border-b border-cyan-900/30 flex items-center justify-between">
+      <div 
+        className="px-4 py-2 border-b border-cyan-900/30 flex items-center justify-between cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div className="flex items-center gap-2">
           {event.isLive && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
           <span className="text-cyan-400 text-sm">{leagueName}</span>
         </div>
-        {event.isLive && (
-          <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded">LIVE</span>
-        )}
+        <div className="flex items-center gap-2">
+          {event.isLive && (
+            <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded">LIVE</span>
+          )}
+          <span className={`text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}>▼</span>
+        </div>
       </div>
 
       {/* Match Info */}
@@ -581,6 +591,70 @@ function EventCard({ event, onClick }: EventCardProps) {
             >
               Place Bet
             </button>
+          </div>
+        )}
+
+        {/* Expanded Markets Section */}
+        {isExpanded && (
+          <div className="border-t border-cyan-900/30 pt-4 mt-4">
+            <h4 className="text-cyan-400 font-semibold mb-3">All Markets</h4>
+            
+            {/* Over/Under Markets */}
+            <div className="mb-4">
+              <div className="text-gray-400 text-sm mb-2">Over/Under 2.5 Goals</div>
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">Over 2.5</span>
+                  <div className="text-cyan-400 font-bold">{(odds.home * 0.9).toFixed(2)}</div>
+                </button>
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">Under 2.5</span>
+                  <div className="text-cyan-400 font-bold">{(odds.away * 1.1).toFixed(2)}</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Both Teams to Score */}
+            <div className="mb-4">
+              <div className="text-gray-400 text-sm mb-2">Both Teams to Score</div>
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">Yes</span>
+                  <div className="text-cyan-400 font-bold">{(1.85).toFixed(2)}</div>
+                </button>
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">No</span>
+                  <div className="text-cyan-400 font-bold">{(1.95).toFixed(2)}</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Double Chance */}
+            <div className="mb-4">
+              <div className="text-gray-400 text-sm mb-2">Double Chance</div>
+              <div className="flex gap-2">
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">1X</span>
+                  <div className="text-cyan-400 font-bold">{(1.35).toFixed(2)}</div>
+                </button>
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">12</span>
+                  <div className="text-cyan-400 font-bold">{(1.25).toFixed(2)}</div>
+                </button>
+                <button className="flex-1 bg-[#1a1a1a] hover:bg-[#222222] text-white py-2 px-4 rounded-lg text-center transition-all">
+                  <span className="text-xs text-gray-400">X2</span>
+                  <div className="text-cyan-400 font-bold">{(1.45).toFixed(2)}</div>
+                </button>
+              </div>
+            </div>
+
+            {/* Match Info */}
+            <div className="bg-[#0a0a0a] rounded-lg p-3 mt-4">
+              <div className="text-gray-400 text-xs mb-1">Match ID</div>
+              <div className="text-white text-sm font-mono">{event.id}</div>
+              <div className="text-gray-400 text-xs mt-2 mb-1">Start Time</div>
+              <div className="text-white text-sm">{new Date(event.startTime).toLocaleString()}</div>
+            </div>
           </div>
         )}
       </div>

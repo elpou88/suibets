@@ -855,6 +855,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         // Refund stake on void using the bet's currency
         await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
         console.log(`🔄 STAKE REFUNDED (DB): ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
+      } else if (settlement.status === 'lost') {
+        // Add lost bet stake to platform revenue
+        await balanceService.addRevenue(bet.betAmount, bet.currency);
+        console.log(`📊 REVENUE (DB): ${bet.betAmount} ${bet.currency} added to platform revenue from lost bet`);
       }
 
       // Notify user of settlement with proof

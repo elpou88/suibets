@@ -121,6 +121,11 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
+- December 29, 2025: Fixed critical bet payout routing bug
+  - Added walletAddress column to bets table for correct settlement payouts
+  - Bets now store the wallet address of the bettor for settlement
+  - Settlement worker uses stored walletAddress (not hardcoded fallback)
+  - SettlementService.isBetWon now handles both string and object eventResult
 - December 29, 2025: Implemented persistent balance tracking in PostgreSQL
   - BalanceService now uses database instead of in-memory Maps
   - All balance operations (deposits, bets, winnings, revenue) persist to database

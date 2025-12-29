@@ -117,8 +117,11 @@ export class SettlementService {
     if (!eventResult) return false;
 
     const prediction = bet.prediction.toLowerCase();
-    const result = (eventResult.result || eventResult.winner || '').toLowerCase();
-    const score = eventResult.score;
+    // Handle both string and object eventResult
+    const result = typeof eventResult === 'string' 
+      ? eventResult.toLowerCase()
+      : (eventResult.result || eventResult.winner || '').toLowerCase();
+    const score = typeof eventResult === 'object' ? eventResult.score : undefined;
 
     // Direct match on prediction
     if (result === prediction || result === bet.outcomeId.toLowerCase()) {

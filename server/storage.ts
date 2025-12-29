@@ -241,6 +241,7 @@ export class DatabaseStorage implements IStorage {
       return {
         ...bet,
         id: bet.wurlusBetId || String(bet.id),
+        userId: bet.walletAddress, // Use walletAddress as userId for settlement
         winningsWithdrawn: bet.status === 'winnings_withdrawn',
         amount: bet.betAmount
       };
@@ -271,6 +272,7 @@ export class DatabaseStorage implements IStorage {
       // Insert into PostgreSQL database - use null for userId to avoid FK constraint
       const [inserted] = await db.insert(bets).values({
         userId: null, // Don't link to users table - wallet-based system
+        walletAddress: bet.userId, // Store wallet address for settlement payout
         betAmount: bet.betAmount,
         odds: bet.odds,
         prediction: bet.prediction,

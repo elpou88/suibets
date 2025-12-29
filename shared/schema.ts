@@ -114,6 +114,7 @@ export const outcomes = pgTable("outcomes", {
 export const bets = pgTable("bets", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").references(() => users.id),
+  walletAddress: text("wallet_address"), // Store wallet address for settlement
   eventId: integer("event_id").references(() => events.id),
   marketId: integer("market_id").references(() => markets.id),
   outcomeId: integer("outcome_id").references(() => outcomes.id),

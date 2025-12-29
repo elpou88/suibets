@@ -121,6 +121,8 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
+- December 29, 2025: Multi-day fetch for 200+ upcoming matches - fetches 5 days of football fixtures in parallel to get 250+ events
+- December 29, 2025: Fixed cache issue - no longer caches empty API results, preventing stale zero-event displays
 - December 29, 2025: Fixed tennis API error - tennis API (v1.tennis.api-sports.io) doesn't exist, now returns empty array cleanly
 - Fixed routing issues - removed legacy pages that redirected to old promotions page
 - Deleted obsolete pages: home.tsx, promotions.tsx, promotions-real.tsx, Live-new.tsx, live-exact.tsx, sports-exact.tsx, connect-wallet.tsx, redirect-to-promotions.tsx, live/index.tsx

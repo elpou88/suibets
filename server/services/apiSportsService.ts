@@ -302,14 +302,28 @@ export class ApiSportsService {
     const expiryToUse = cacheExpiryOverride || this.cacheExpiry;
     
     if (cached && Date.now() - cached.timestamp < expiryToUse) {
-      console.log(`[ApiSportsService] Using cached data for ${cacheKey}`);
-      return cached.data;
+      // IMPORTANT: Don't use cached empty arrays - always try to fetch fresh data
+      const isEmptyArray = Array.isArray(cached.data) && cached.data.length === 0;
+      if (!isEmptyArray) {
+        console.log(`[ApiSportsService] Using cached data for ${cacheKey}`);
+        return cached.data;
+      }
+      console.log(`[ApiSportsService] Cached data is empty, fetching fresh data for ${cacheKey}`);
     }
     
     try {
       console.log(`[ApiSportsService] Fetching fresh data for ${cacheKey}`);
       const data = await fetchFn();
-      this.cache.set(versionedKey, { data, timestamp: Date.now() });
+      
+      // Only cache non-empty results to prevent caching API failures
+      const isEmptyResult = Array.isArray(data) && data.length === 0;
+      if (!isEmptyResult) {
+        this.cache.set(versionedKey, { data, timestamp: Date.now() });
+        console.log(`[ApiSportsService] Cached ${Array.isArray(data) ? data.length : 'non-array'} items for ${cacheKey}`);
+      } else {
+        console.log(`[ApiSportsService] Not caching empty result for ${cacheKey}`);
+      }
+      
       return data;
     } catch (error) {
       // If we have stale cache, return it rather than failing
@@ -576,13 +590,60 @@ export class ApiSportsService {
         switch(sport) {
           case 'football':
           case 'soccer':
+            // IMPORTANT: 'next' parameter limited to 50, 'from/to' requires league param
+            // Solution: Fetch next 50 (quick) + tomorrow's date (for 150+ total matches)
+            // We'll handle multi-day fetching in parallel below
             apiUrl = 'https://v3.football.api-sports.io/fixtures';
-            // Football API works differently - need to use 'next' parameter instead of dates
             params = { 
-              // Use next parameter instead of date ranges
-              next: '200', // Get next 200 fixtures for comprehensive coverage
+              next: '50',
               timezone: 'UTC'
             };
+            
+            // Fetch 5 days of matches to get 200+ events (football only)
+            try {
+              const getDateStr = (daysFromNow: number) => {
+                const date = new Date();
+                date.setDate(date.getDate() + daysFromNow);
+                return date.toISOString().split('T')[0];
+              };
+              
+              // Fetch today + next 4 days in parallel
+              const dayDates = [0, 1, 2, 3, 4].map(d => getDateStr(d));
+              console.log(`[ApiSportsService] Fetching football events for dates: ${dayDates.join(', ')}`);
+              
+              const requests = dayDates.map(date => 
+                axios.get(apiUrl, {
+                  params: { date, timezone: 'UTC' },
+                  headers: { 'x-apisports-key': this.apiKey, 'Accept': 'application/json' }
+                }).catch(err => {
+                  console.log(`[ApiSportsService] Failed to fetch football for ${date}: ${err.message}`);
+                  return { data: { response: [] } }; // Tolerate individual day failures
+                })
+              );
+              
+              const results = await Promise.all(requests);
+              
+              const eventCounts = results.map((r, i) => {
+                const count = r.data?.response?.length || 0;
+                return `Day ${i} (${dayDates[i]}): ${count}`;
+              });
+              console.log(`[ApiSportsService] Event counts: ${eventCounts.join(', ')}`);
+              
+              // Combine all events with sport info (always football for this case)
+              const footballSportId = this.getSportId('football');
+              const combinedEvents = results.flatMap(r => r.data?.response || [])
+                .map((event: any) => ({ ...event, sportId: footballSportId, sportName: 'football' }));
+              
+              if (combinedEvents.length > 0) {
+                // For football, we want 200+ events, so use a minimum of 250 unless explicitly limited
+                const effectiveLimit = limit === 10 ? 250 : Math.min(limit, 250);
+                const limitedEvents = combinedEvents.slice(0, effectiveLimit);
+                console.log(`[ApiSportsService] Found ${combinedEvents.length} upcoming events for football (multi-day fetch), returning ${limitedEvents.length}`);
+                return limitedEvents;
+              }
+            } catch (e: any) {
+              console.log(`[ApiSportsService] Multi-day fetch failed for football: ${e.message}, falling back to next=50`);
+            }
             break;
           case 'basketball':
             apiUrl = 'https://v1.basketball.api-sports.io/games';
@@ -682,12 +743,10 @@ export class ApiSportsService {
             break;
           default:
             // For all other sports (tennis, cricket, golf, boxing, cycling, snooker, darts, etc.),
-            // fall back to football API as they don't have dedicated API-Sports endpoints
-            apiUrl = 'https://v3.football.api-sports.io/fixtures';
-            params = { 
-              next: '200', // Default to next 200 fixtures for comprehensive coverage
-              timezone: 'UTC'
-            };
+            // These sports don't have dedicated APIs - skip fetching entirely
+            // The football API is already fetching comprehensive football data
+            console.log(`[ApiSportsService] No dedicated API for ${sport} - skipping upcoming events`);
+            return [];
         }
         
         // Try direct approach for upcoming events

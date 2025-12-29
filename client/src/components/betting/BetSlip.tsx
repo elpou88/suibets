@@ -1,19 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
-import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { X, ChevronDown, ChevronUp, Trash, CoinsIcon } from 'lucide-react';
+import { X, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function BetSlip() {
@@ -23,66 +12,29 @@ export function BetSlip() {
   const { toast } = useToast();
   const [betType, setBetType] = useState<'single' | 'parlay'>(selectedBets.length > 1 ? 'parlay' : 'single');
   const [isLoading, setIsLoading] = useState(false);
-  const [showDetails, setShowDetails] = useState<Record<string, boolean>>({});
   const [betCurrency, setBetCurrency] = useState<'SUI' | 'SBETS'>('SUI');
-  const [isStakeInputFocused, setIsStakeInputFocused] = useState(false);
-  const stakeInputRef = useRef<HTMLInputElement>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   
-  // Log when bets are updated
-  useEffect(() => {
-    console.log("BetSlip: selectedBets updated", selectedBets);
-  }, [selectedBets]);
-  
-  // Update bet type based on number of selected bets
   useEffect(() => {
     setBetType(selectedBets.length > 1 ? 'parlay' : 'single');
   }, [selectedBets.length]);
-  
-  // Toggle bet details
-  const toggleDetails = (id: string) => {
-    setShowDetails(prev => ({
-      ...prev,
-      [id]: !prev[id]
-    }));
-  };
-  
-  // Handle stake input change
+
   const handleStakeChange = (id: string, stake: string) => {
     const stakeValue = parseFloat(stake);
     if (!isNaN(stakeValue) && stakeValue >= 0) {
       updateStake(id, stakeValue);
     }
   };
-  
-  // Focus the input when shown
-  useEffect(() => {
-    // For any bet that has just had its details shown, focus the input
-    const openBetIds = Object.entries(showDetails)
-      .filter(([_, isOpen]) => isOpen)
-      .map(([id]) => id);
-      
-    if (openBetIds.length > 0 && betType === 'single') {
-      const lastOpenedBetId = openBetIds[openBetIds.length - 1];
-      const inputElement = document.querySelector(`input[data-bet-id="${lastOpenedBetId}"]`) as HTMLInputElement;
-      if (inputElement) {
-        inputElement.focus();
-      }
-    }
-  }, [showDetails, betType]);
-  
-  // Handle place bet button click
+
   const handlePlaceBet = async () => {
     if (!user || !walletAdapter.isConnected) {
       toast({
-        title: "Not logged in",
+        title: "Connect Wallet",
         description: "Please connect your wallet to place bets",
         variant: "destructive",
       });
-      
-      // Auto-trigger wallet connection via custom event
       const connectWalletEvent = new CustomEvent('suibets:connect-wallet-required');
       window.dispatchEvent(connectWalletEvent);
-      
       return;
     }
     
@@ -95,13 +47,12 @@ export function BetSlip() {
       return;
     }
     
-    // Ensure all single bets have a stake amount set
     if (betType === 'single') {
       const invalidBets = selectedBets.filter(bet => !bet.stake || bet.stake <= 0);
       if (invalidBets.length > 0) {
         toast({
-          title: "Invalid stake amounts",
-          description: "Please enter a stake amount for all selections",
+          title: "Enter stake amounts",
+          description: "Please enter a stake for all selections",
           variant: "destructive",
         });
         return;
@@ -110,14 +61,7 @@ export function BetSlip() {
     
     setIsLoading(true);
     try {
-      // Create a copy of the current bet state to ensure we're using the latest values
-      const currentBets = [...selectedBets];
-      const currentTotal = currentBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
-      
-      console.log("Placing bet with type:", betType);
-      console.log("Current bets:", currentBets);
-      console.log("Total stake:", currentTotal);
-      
+      const currentTotal = selectedBets.reduce((sum, bet) => sum + (bet.stake || 0), 0);
       const success = await placeBet(currentTotal, {
         betType,
         currency: betCurrency,
@@ -126,307 +70,218 @@ export function BetSlip() {
       
       if (success) {
         toast({
-          title: "Bet placed successfully",
-          description: `Your ${betType} bet has been placed`,
-          variant: "default",
+          title: "Bet Placed!",
+          description: `Your ${betType} bet has been placed successfully`,
         });
-        
-        // Clear bets after successful placement
         clearBets();
       } else {
         toast({
-          title: "Failed to place bet",
+          title: "Bet Failed",
           description: "There was an error placing your bet",
           variant: "destructive",
         });
       }
     } catch (error) {
-      console.error("Error placing bet:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Unknown error occurred",
+        description: error instanceof Error ? error.message : "Unknown error",
         variant: "destructive",
       });
     } finally {
       setIsLoading(false);
     }
   };
-  
-  // Toggle bet slip expanded state
-  const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Handle bet slip click to expand/collapse
-  const handleBetSlipClick = () => {
-    console.log("BetSlip clicked - toggling expanded state");
-    setIsExpanded(!isExpanded);
-  };
-  
-  // Animate highlight on initial mount or when a new bet is added
-  const [isHighlighted, setIsHighlighted] = useState(false);
-  
-  useEffect(() => {
-    if (selectedBets.length > 0) {
-      setIsHighlighted(true);
-      const timer = setTimeout(() => setIsHighlighted(false), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [selectedBets.length]);
-  
+
+  // Don't render if no bets
+  if (selectedBets.length === 0) {
+    return null;
+  }
+
   return (
-    <Card 
-      className={`bg-gradient-to-b from-[#0b1618] to-[#081214] border-[#1e3a3f] text-white shadow-lg ${isHighlighted ? 'shadow-[0_0_15px_rgba(0,255,255,0.7)]' : 'shadow-cyan-900/20'} relative overflow-hidden min-h-[150px] cursor-pointer transition-all duration-300 ${isExpanded ? 'scale-105' : ''} hover:border-cyan-400/30`}
-      onClick={handleBetSlipClick}
-    >
-      {/* Cyan glow at the top */}
-      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-80"></div>
-      
-      {/* Side glow */}
-      <div className="absolute left-0 top-10 bottom-10 w-1 bg-gradient-to-b from-cyan-400/50 to-transparent"></div>
-      <div className="absolute right-0 top-10 bottom-10 w-1 bg-gradient-to-b from-cyan-400/50 to-transparent"></div>
-      
-      <CardHeader className="pb-2 relative z-10">
-        <CardTitle className="text-xl flex justify-between items-center">
-          <div className="flex items-center">
-            <span className="text-cyan-300 font-bold tracking-wide">Bet Slip</span>
-            <div className={`ml-2 flex items-center text-cyan-400/80 text-xs ${isExpanded ? 'rotate-180' : ''} transition-transform duration-300`}>
-              <ChevronDown className="h-3 w-3 animate-pulse" />
-              <span className="ml-1">{isExpanded ? 'Hide' : 'Show'}</span>
-            </div>
-          </div>
-          {selectedBets.length > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={(e) => {
-                e.stopPropagation(); // Prevent event from bubbling up
-                clearBets();
-              }}
-              className="text-cyan-300/80 hover:text-cyan-400 p-0 h-auto hover:bg-transparent"
-            >
-              <Trash className="h-4 w-4" />
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="pb-2 relative z-10">
-        {selectedBets.length === 0 ? (
-          <div className="py-10 text-center">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#112225] to-[#0b1618] border border-[#1e3a3f] flex items-center justify-center">
-              <CoinsIcon className="h-8 w-8 text-cyan-400/60" />
-            </div>
-            <p className="text-cyan-200">No bets selected</p>
-            <p className="text-sm mt-2 text-cyan-300/60">Click on odds to add selections</p>
-          </div>
-        ) : (
-          <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar pr-1">
-            {selectedBets.map(bet => (
-              <div 
-                key={bet.id} 
-                className="p-2 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10 relative overflow-hidden transition-all duration-200 hover:border-cyan-400/30 group"
+    <div className="bg-[#111111] border border-cyan-900/50 rounded-lg shadow-xl" data-testid="betslip">
+      {/* Header */}
+      <div 
+        className="flex items-center justify-between px-4 py-3 border-b border-cyan-900/30 cursor-pointer"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-cyan-400 font-bold text-lg">Bet Slip</span>
+          <span className="bg-cyan-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+            {selectedBets.length}
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={(e) => { e.stopPropagation(); clearBets(); }}
+            className="text-gray-500 hover:text-red-400 transition-colors"
+            data-testid="btn-clear-bets"
+          >
+            <Trash2 size={16} />
+          </button>
+          {isCollapsed ? <ChevronUp size={18} className="text-gray-400" /> : <ChevronDown size={18} className="text-gray-400" />}
+        </div>
+      </div>
+
+      {!isCollapsed && (
+        <>
+          {/* Bet Type Tabs */}
+          {selectedBets.length > 1 && (
+            <div className="flex border-b border-cyan-900/30">
+              <button
+                onClick={() => setBetType('single')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  betType === 'single' 
+                    ? 'text-cyan-400 border-b-2 border-cyan-400' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
               >
-                {/* Top line accent */}
-                <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
-                
+                Singles
+              </button>
+              <button
+                onClick={() => setBetType('parlay')}
+                className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                  betType === 'parlay' 
+                    ? 'text-cyan-400 border-b-2 border-cyan-400' 
+                    : 'text-gray-500 hover:text-gray-300'
+                }`}
+              >
+                Parlay
+              </button>
+            </div>
+          )}
+
+          {/* Bets List */}
+          <div className="max-h-60 overflow-y-auto">
+            {selectedBets.map((bet) => (
+              <div key={bet.id} className="px-4 py-3 border-b border-cyan-900/20 hover:bg-[#1a1a1a] transition-colors">
                 <div className="flex justify-between items-start mb-2">
-                  <div className="flex-1">
-                    <p className="text-sm font-medium truncate text-cyan-200">{bet.eventName}</p>
-                    <div className="flex items-center">
-                      <span className="text-xs text-cyan-300/70">{bet.market}</span>
-                      {bet.isLive && (
-                        <span className="ml-2 px-1 text-xs bg-red-600 rounded text-white animate-pulse">LIVE</span>
-                      )}
-                    </div>
+                  <div className="flex-1 pr-2">
+                    <p className="text-white text-sm font-medium truncate">{bet.eventName}</p>
+                    <p className="text-gray-500 text-xs">{bet.market}</p>
                   </div>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation(); // Prevent event from bubbling up
-                      removeBet(bet.id);
-                    }}
-                    className="h-5 w-5 p-0 text-cyan-300/60 hover:text-cyan-400 hover:bg-transparent"
+                  <button 
+                    onClick={() => removeBet(bet.id)}
+                    className="text-gray-500 hover:text-red-400 transition-colors"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
+                    <X size={16} />
+                  </button>
                 </div>
                 
-                <div 
-                  className="flex justify-between items-center cursor-pointer group-hover:bg-[#1e3a3f]/20 p-1 rounded-sm transition-colors"
-                  onClick={(e) => {
-                    e.stopPropagation(); // Stop click from propagating to bet slip
-                    toggleDetails(bet.id);
-                  }}
-                >
-                  <div className="flex items-center">
-                    <div className="text-sm font-medium text-cyan-200">{bet.selectionName}</div>
-                    <div className="ml-2 text-cyan-400 font-bold">{bet.odds.toFixed(2)}</div>
-                  </div>
-                  
-                  <div className="text-cyan-400 transition-transform">
-                    {showDetails[bet.id] ? (
-                      <ChevronUp className="h-4 w-4" />
-                    ) : (
-                      <ChevronDown className="h-4 w-4" />
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-cyan-400 font-medium">{bet.selectionName}</span>
+                    <span className="text-cyan-500 font-bold">@{bet.odds.toFixed(2)}</span>
+                    {bet.isLive && (
+                      <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded animate-pulse">LIVE</span>
                     )}
                   </div>
                 </div>
-                
-                {showDetails[bet.id] && betType === 'single' && (
-                  <div className="mt-2 pt-2 border-t border-[#1e3a3f]">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs text-cyan-200">Stake:</label>
-                      <Input
-                        className="h-8 w-20 bg-[#0b1618] border-[#1e3a3f] text-cyan-200 text-right focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                        value={bet.stake}
-                        onChange={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          handleStakeChange(bet.id, e.target.value);
-                        }}
-                        onFocus={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          setIsStakeInputFocused(true);
-                        }}
-                        onBlur={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          setIsStakeInputFocused(false);
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent click from toggling bet slip
-                        ref={stakeInputRef}
-                        data-bet-id={bet.id}
-                        type="number"
-                        min="0"
-                        step="1"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center mt-1 text-xs">
-                      <span className="text-cyan-200">Potential win:</span>
-                      <span className="text-cyan-400 font-medium bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                        {(bet.stake * bet.odds).toFixed(2)} {betCurrency}
-                      </span>
-                    </div>
+
+                {betType === 'single' && (
+                  <div className="mt-2 flex items-center justify-between">
+                    <input
+                      type="number"
+                      value={bet.stake || ''}
+                      onChange={(e) => handleStakeChange(bet.id, e.target.value)}
+                      placeholder="Stake"
+                      className="w-24 bg-[#0a0a0a] border border-cyan-900/50 rounded px-3 py-1.5 text-white text-sm focus:border-cyan-500 focus:outline-none"
+                      min="0"
+                      step="0.1"
+                    />
+                    <span className="text-gray-400 text-sm">
+                      Win: <span className="text-cyan-400 font-medium">{((bet.stake || 0) * bet.odds).toFixed(2)} {betCurrency}</span>
+                    </span>
                   </div>
                 )}
               </div>
             ))}
           </div>
-        )}
-        
-        {selectedBets.length > 0 && (
-          <>
-            <div className="mt-4">
-              <Tabs 
-                defaultValue={betType} 
-                onValueChange={(value) => setBetType(value as 'single' | 'parlay')}
-                className="w-full"
-              >
-                <TabsList className="w-full bg-[#0b1618] border border-[#1e3a3f]">
-                  <TabsTrigger 
-                    value="single" 
-                    className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:shadow-[0_0_8px_rgba(0,255,255,0.5)]"
-                  >
-                    Singles
-                  </TabsTrigger>
-                  {selectedBets.length > 1 && (
-                    <TabsTrigger 
-                      value="parlay" 
-                      className="flex-1 data-[state=active]:bg-cyan-400 data-[state=active]:text-black data-[state=active]:shadow-[0_0_8px_rgba(0,255,255,0.5)]"
-                    >
-                      Parlay
-                    </TabsTrigger>
-                  )}
-                </TabsList>
-                
-                <TabsContent value="parlay" className="mt-2">
-                  <div className="p-3 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] shadow-md shadow-cyan-900/10 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
-                    
-                    <div className="flex justify-between items-center mb-2">
-                      <label className="text-sm text-cyan-200">Total Stake:</label>
-                      <Input
-                        className="h-8 w-24 bg-[#0b1618] border-[#1e3a3f] text-right text-cyan-200 focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400"
-                        value={totalStake}
-                        onChange={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value >= 0) {
-                            // Update all stakes proportionally
-                            selectedBets.forEach(bet => {
-                              updateStake(bet.id, value / selectedBets.length);
-                            });
-                          }
-                        }}
-                        onFocus={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          setIsStakeInputFocused(true);
-                        }}
-                        onBlur={(e) => {
-                          e.stopPropagation(); // Prevent event from bubbling up
-                          setIsStakeInputFocused(false);
-                        }}
-                        onClick={(e) => e.stopPropagation()} // Prevent click from toggling bet slip
-                        type="number"
-                        min="0"
-                        step="1"
-                      />
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span className="text-cyan-200">Combined Odds:</span>
-                      <span className="text-cyan-400 font-bold bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                        {selectedBets.reduce((total, bet) => total * bet.odds, 1).toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-            
-            <div className="flex items-center space-x-2 mt-4 p-3 border border-[#1e3a3f] rounded-md bg-gradient-to-b from-[#14292e] to-[#112225] relative overflow-hidden">
-              <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-cyan-400/80 to-transparent"></div>
-              
-              <Select
-                value={betCurrency}
-                onValueChange={(value) => setBetCurrency(value as 'SUI' | 'SBETS')}
-              >
-                <SelectTrigger className="w-[120px] bg-[#0b1618] border-[#1e3a3f] text-cyan-200">
-                  <SelectValue placeholder="Currency" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0b1618] border-[#1e3a3f] text-white">
-                  <SelectItem value="SUI" className="hover:bg-[#1e3a3f] hover:text-cyan-200">SUI</SelectItem>
-                  <SelectItem value="SBETS" className="hover:bg-[#1e3a3f] hover:text-cyan-200">SBETS</SelectItem>
-                </SelectContent>
-              </Select>
-              
-              <div className="flex-1">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-cyan-200">Potential Win:</span>
-                  <span className="text-cyan-400 font-bold bg-[#0f3942] px-3 py-1 rounded-md shadow-inner shadow-cyan-900/30">
-                    {potentialWinnings.toFixed(2)} {betCurrency}
-                  </span>
-                </div>
+
+          {/* Parlay Stake Input */}
+          {betType === 'parlay' && (
+            <div className="px-4 py-3 border-b border-cyan-900/20">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-400 text-sm">Combined Odds:</span>
+                <span className="text-cyan-400 font-bold">
+                  {selectedBets.reduce((total, bet) => total * bet.odds, 1).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  value={totalStake || ''}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value);
+                    if (!isNaN(value) && value >= 0) {
+                      selectedBets.forEach(bet => {
+                        updateStake(bet.id, value / selectedBets.length);
+                      });
+                    }
+                  }}
+                  placeholder="Total Stake"
+                  className="flex-1 bg-[#0a0a0a] border border-cyan-900/50 rounded px-3 py-2 text-white focus:border-cyan-500 focus:outline-none"
+                  min="0"
+                  step="0.1"
+                />
               </div>
             </div>
-          </>
-        )}
-      </CardContent>
-      
-      {selectedBets.length > 0 && (
-        <CardFooter className="pt-2 relative z-10">
-          <Button 
-            className="w-full bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-500 hover:to-cyan-600 text-black font-bold shadow-[0_0_10px_rgba(0,255,255,0.3)] hover:shadow-[0_0_15px_rgba(0,255,255,0.5)] transition-all"
-            onClick={(e) => {
-              e.stopPropagation(); // Prevent event from bubbling up
-              handlePlaceBet();
-            }}
-            disabled={isLoading || totalStake <= 0}
-          >
-            {isLoading ? (
-              <div className="animate-spin w-5 h-5 border-2 border-current border-t-transparent rounded-full mr-2"></div>
-            ) : null}
-            {isLoading ? 'Processing...' : `Place ${betType === 'parlay' ? 'Parlay' : 'Bets'}`}
-          </Button>
-        </CardFooter>
+          )}
+
+          {/* Currency & Total */}
+          <div className="px-4 py-3 border-b border-cyan-900/20">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-gray-400 text-sm">Currency:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setBetCurrency('SUI')}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    betCurrency === 'SUI' 
+                      ? 'bg-cyan-500 text-black' 
+                      : 'bg-[#1a1a1a] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  SUI
+                </button>
+                <button
+                  onClick={() => setBetCurrency('SBETS')}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
+                    betCurrency === 'SBETS' 
+                      ? 'bg-cyan-500 text-black' 
+                      : 'bg-[#1a1a1a] text-gray-400 hover:text-white'
+                  }`}
+                >
+                  SBETS
+                </button>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-gray-400 text-sm">Potential Win:</span>
+              <span className="text-cyan-400 font-bold text-lg">{potentialWinnings.toFixed(2)} {betCurrency}</span>
+            </div>
+          </div>
+
+          {/* Place Bet Button */}
+          <div className="p-4">
+            <button
+              onClick={handlePlaceBet}
+              disabled={isLoading || totalStake <= 0}
+              className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-700 disabled:cursor-not-allowed text-black font-bold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
+              data-testid="btn-place-bet"
+            >
+              {isLoading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                  Processing...
+                </>
+              ) : (
+                `Place ${betType === 'parlay' ? 'Parlay' : 'Bet'} - ${totalStake.toFixed(2)} ${betCurrency}`
+              )}
+            </button>
+          </div>
+        </>
       )}
-    </Card>
+    </div>
   );
 }
+
+export default BetSlip;

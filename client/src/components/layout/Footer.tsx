@@ -42,7 +42,7 @@ export default function Footer() {
               </a>
             </li>
             <li>
-              <a href="#" className="flex items-center hover:text-primary" data-testid="link-twitter-footer">
+              <a href="https://x.com/Sui_Bets/" target="_blank" rel="noopener noreferrer" className="flex items-center hover:text-primary" data-testid="link-twitter-footer">
                 <TwitterIcon className="h-4 w-4 mr-2" />
                 Twitter
               </a>

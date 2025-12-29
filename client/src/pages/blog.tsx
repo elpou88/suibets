@@ -149,7 +149,7 @@ export default function BlogPage() {
           <h3 className="text-xl font-bold text-white mb-2">Stay Updated</h3>
           <p className="text-gray-400 mb-6">Follow us on social media for the latest news and updates</p>
           <div className="flex justify-center gap-4">
-            <a href="#" className="bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-twitter-blog">
+            <a href="https://x.com/Sui_Bets/" target="_blank" rel="noopener noreferrer" className="bg-[#1DA1F2] hover:bg-[#1a8cd8] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-twitter-blog">
               Twitter
             </a>
             <a href="#" className="bg-[#5865F2] hover:bg-[#4752C4] text-white font-bold px-6 py-2 rounded-lg transition-colors" data-testid="link-discord-blog">

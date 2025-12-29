@@ -47,6 +47,10 @@ import JoinPage from "@/pages/join";
 import LiveEventsPage from "@/pages/live-events";
 import UpcomingEventsPage from "@/pages/upcoming-events";
 import ResultsPage from "@/pages/results";
+import ActivityPage from "@/pages/activity";
+import DepositsWithdrawalsPage from "@/pages/deposits-withdrawals";
+import AuditLogPage from "@/pages/audit-log";
+import WhitepaperPage from "@/pages/whitepaper";
 
 function App() {
   console.log("Starting React application");
@@ -118,20 +122,12 @@ function App() {
                           <Route path="/live-scores" component={LiveScoresPage} />
                           
                           {/* Wallet & User Pages */}
-                          <Route path="/connect-wallet">
-                            {() => {
-                              const ConnectWalletRedirect = () => {
-                                useEffect(() => {
-                                  const event = new CustomEvent('suibets:connect-wallet-required');
-                                  window.dispatchEvent(event);
-                                  window.history.replaceState(null, '', '/');
-                                }, []);
-                                return <CleanHome />;
-                              };
-                              return <ConnectWalletRedirect />;
-                            }}
-                          </Route>
                           <Route path="/wallet-dashboard" component={WalletDashboard} />
+                          <Route path="/dashboard" component={WalletDashboard} />
+                          <Route path="/activity" component={ActivityPage} />
+                          <Route path="/deposits-withdrawals" component={DepositsWithdrawalsPage} />
+                          <Route path="/audit-log" component={AuditLogPage} />
+                          <Route path="/whitepaper" component={WhitepaperPage} />
                           <Route path="/join" component={JoinPage} />
                           
                           {/* Info Pages */}

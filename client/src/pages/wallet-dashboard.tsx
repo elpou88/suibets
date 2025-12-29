@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
+import Layout from '@/components/layout/Layout';
 import { WalletConnector } from '@/components/wallet/WalletConnector';
 import { DividendsPanel } from '@/components/dividends/DividendsPanel';
 import { StakingForm } from '@/components/staking/StakingForm';
@@ -41,12 +42,7 @@ export default function WalletDashboardPage() {
   
   const userBets = (betsData || []) as any[];
   
-  // Redirect to connect wallet if not connected
-  useEffect(() => {
-    if (!currentWallet?.address) {
-      navigate('/connect-wallet');
-    }
-  }, [currentWallet, navigate]);
+  // No redirect - show connect wallet UI directly on this page
   
   // Copy wallet address to clipboard
   const copyAddressToClipboard = () => {
@@ -75,17 +71,20 @@ export default function WalletDashboardPage() {
   
   if (!currentWallet?.address) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-md mx-auto">
-          <h1 className="text-3xl font-bold mb-6 text-white text-center">Connect Your Wallet</h1>
-          <WalletConnector />
+      <Layout title="Connect Wallet">
+        <div className="container mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto">
+            <h1 className="text-3xl font-bold mb-6 text-white text-center">Connect Your Wallet</h1>
+            <WalletConnector />
+          </div>
         </div>
-      </div>
+      </Layout>
     );
   }
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <Layout title="Dashboard">
+      <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start mb-6">
         <div>
           <h1 className="text-3xl font-bold text-white">Wallet Dashboard</h1>
@@ -387,5 +386,6 @@ export default function WalletDashboardPage() {
         </div>
       </div>
     </div>
+    </Layout>
   );
 }

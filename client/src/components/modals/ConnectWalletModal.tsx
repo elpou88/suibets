@@ -13,6 +13,7 @@ import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
 import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
 import { WalletDetector } from "@/components/wallet/WalletDetector";
 import { MystenWalletConnect } from "@/components/wallet/MystenWalletConnect";
+import { ConnectButton as MystenConnectButton, useWalletKit } from '@mysten/wallet-kit';
 
 // Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
@@ -27,6 +28,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const { toast } = useToast();
   // Get Suiet wallet connection state
   const suietWallet = useSuietWallet();
+  // Get Mysten wallet kit state
+  const { currentAccount, isConnected: isMystenConnected } = useWalletKit();
 
   const modalRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
@@ -76,22 +79,39 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       });
       
       if (connectWallet) {
-        // Sync the wallet connection with auth context
         connectWallet(suietWallet.address, 'sui')
-          .then(() => {
-            console.log('Suiet wallet synced with auth context');
-          })
-          .catch((syncError) => {
-            console.error('Error syncing Suiet wallet with auth:', syncError);
-          });
+          .then(() => console.log('Suiet wallet synced with auth context'))
+          .catch((syncError) => console.error('Error syncing Suiet wallet with auth:', syncError));
       }
       
-      // Close the modal after a short delay to show the success state
-      setTimeout(() => {
-        onClose();
-      }, 1000);
+      setTimeout(() => onClose(), 1000);
     }
   }, [suietWallet.connected, suietWallet.address, connectWallet, onClose, toast]);
+
+  // Handle Mysten Wallet Kit connection - THIS IS THE PRIMARY CONNECTION PATH
+  useEffect(() => {
+    if (isMystenConnected && currentAccount?.address) {
+      console.log('Mysten wallet kit connected:', currentAccount.address);
+      
+      toast({
+        title: "Wallet Connected",
+        description: `Connected to ${currentAccount.address.substring(0, 8)}...${currentAccount.address.substring(currentAccount.address.length - 6)}`,
+      });
+      
+      // Update adapter state
+      updateConnectionState(currentAccount.address, 'sui');
+      
+      // Sync with auth context
+      if (connectWallet) {
+        connectWallet(currentAccount.address, 'sui')
+          .then(() => console.log('Mysten wallet synced with auth'))
+          .catch((err) => console.error('Auth sync error:', err));
+      }
+      
+      // Close modal
+      onClose();
+    }
+  }, [isMystenConnected, currentAccount, connectWallet, updateConnectionState, onClose, toast]);
 
   const handleConnectWallet = async (walletId: string) => {
     try {
@@ -216,36 +236,32 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* Wallet detector component */}
-            <WalletDetector />
-            
-            {/* Wallet connection components */}
-            <div className="w-full rounded overflow-hidden mt-4 mb-4">
-              <h3 className="text-sm font-medium mb-2 flex items-center text-[#00FFFF]">
-                <Info className="h-4 w-4 mr-2" />
-                Connect with Mysten Wallet Kit
+            {/* PRIMARY: Official Mysten Connect Button - Most reliable method */}
+            <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
+              <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
+                Click the Button Below to Connect
               </h3>
-              <MystenWalletConnect 
-                onConnect={(address) => {
-                  if (connectWallet) {
-                    console.log('MystenWalletConnect onConnect called with address:', address);
-                    connectWallet(address, 'sui')
-                      .then(() => {
-                        toast({
-                          title: "Wallet Connected",
-                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
-                        });
-                        onClose();
-                      })
-                      .catch((error) => {
-                        console.error('Error syncing wallet with auth:', error);
-                      });
-                  }
-                }}
-              />
+              <div className="flex justify-center [&_button]:!bg-[#00FFFF] [&_button]:!text-black [&_button]:!font-bold [&_button]:!py-3 [&_button]:!px-6 [&_button]:!rounded-lg [&_button]:!text-lg">
+                <MystenConnectButton />
+              </div>
+              <p className="text-xs text-gray-400 text-center mt-2">
+                This button will detect all installed Sui wallets (Sui Wallet, Suiet, Nightly, etc.)
+              </p>
             </div>
             
-            <div className="w-full text-center text-sm text-gray-400 my-2">- or use alternative connection methods -</div>
+            {error && (
+              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+                <p className="text-red-400 text-sm flex items-center">
+                  <AlertCircle className="h-4 w-4 mr-2" />
+                  {error}
+                </p>
+              </div>
+            )}
+            
+            {/* Wallet detector for debugging */}
+            <WalletDetector />
+            
+            <div className="w-full text-center text-sm text-gray-400 my-2">- or try alternative connection methods -</div>
             
             <div className="w-full rounded overflow-hidden mb-2">
               <h3 className="text-sm font-medium mb-2 flex items-center text-gray-300">

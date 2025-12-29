@@ -33,6 +33,7 @@ import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
 import { SuietWalletProvider } from "@/components/wallet/SuietWalletProvider";
 import { SuiDappKitProvider } from "@/components/wallet/SuiDappKitProvider";
 import { WalletKitProvider } from "@mysten/wallet-kit";
+import { BetSlip } from "@/components/betting/BetSlip";
 
 // Core functionality pages
 import SportsLive from "@/pages/sports-live";
@@ -155,6 +156,11 @@ function App() {
                         
                         {/* Universal betting handlers to enable betting across all pages */}
                         <SportBettingWrapper />
+                        
+                        {/* Floating BetSlip - always visible when bets are selected */}
+                        <div className="fixed bottom-4 right-4 w-80 z-50 max-h-[70vh] overflow-auto" data-testid="floating-betslip">
+                          <BetSlip />
+                        </div>
                       </div>
                       <SpecialLinks />
                       <Toaster />

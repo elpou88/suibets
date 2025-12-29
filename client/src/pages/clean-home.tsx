@@ -5,6 +5,7 @@ import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-rea
 import { useBetting } from "@/context/BettingContext";
 import { useToast } from "@/hooks/use-toast";
 import suibetsLogo from "@assets/image_1767008967633.png";
+import suibetsHeroBg from "@assets/image_1767021435938.png";
 
 const SPORTS_LIST = [
   { id: 1, name: "Football", icon: "⚽" },
@@ -173,6 +174,41 @@ export default function CleanHome() {
           </div>
         </div>
       </nav>
+
+      {/* Hero Banner */}
+      <div className="relative w-full overflow-hidden" data-testid="hero-banner">
+        <div 
+          className="w-full h-64 md:h-80 lg:h-96 bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${suibetsHeroBg})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black"></div>
+          <div className="relative h-full flex flex-col items-center justify-center text-center px-4">
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4">
+              <span className="text-cyan-400" style={{ fontFamily: 'cursive', fontStyle: 'italic' }}>Sui</span>
+              <span className="text-white">Bets</span>
+            </h1>
+            <p className="text-gray-300 text-lg md:text-xl max-w-2xl mb-6">
+              The Future of Sports Betting on Sui Blockchain
+            </p>
+            <div className="flex gap-4">
+              <button 
+                onClick={() => setActiveTab("live")}
+                className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-3 rounded-lg transition-all"
+                data-testid="hero-btn-live"
+              >
+                🔴 Live Matches
+              </button>
+              <button 
+                onClick={() => setActiveTab("upcoming")}
+                className="border border-cyan-500 text-cyan-400 hover:bg-cyan-500/10 font-bold px-6 py-3 rounded-lg transition-all"
+                data-testid="hero-btn-upcoming"
+              >
+                📅 Upcoming
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">

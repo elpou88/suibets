@@ -4,6 +4,7 @@ import { Link, useLocation } from "wouter";
 import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
 import { useBetting } from "@/context/BettingContext";
 import { useToast } from "@/hooks/use-toast";
+import suibetsLogo from "@assets/image_1767008967633.png";
 
 const SPORTS_LIST = [
   { id: 1, name: "Football", icon: "⚽" },
@@ -110,39 +111,36 @@ export default function CleanHome() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d0b1a]" data-testid="clean-home">
+    <div className="min-h-screen bg-black" data-testid="clean-home">
       {/* Top Navigation Bar */}
-      <nav className="bg-[#1a1528] border-b border-purple-900/50 px-4 py-3">
+      <nav className="bg-[#0a0a0a] border-b border-cyan-900/30 px-4 py-3">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           {/* Logo */}
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
-            </div>
-            <span className="text-purple-400 font-bold text-xl">SUIBETS</span>
+          <div className="flex items-center">
+            <img src={suibetsLogo} alt="SuiBets" className="h-10 w-auto" />
           </div>
 
           {/* Center Navigation */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-white hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-bets">Bets</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-activity">Activity</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
-            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-withdrawals">Withdrawals</Link>
-            <Link href="/parlay" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
-            <Link href="/storage" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-audit">Audit Log</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-settings">Settings</Link>
-            <Link href="/info" className="text-gray-400 hover:text-purple-400 transition-colors text-sm font-medium" data-testid="nav-whitepaper">Whitepaper</Link>
+            <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium" data-testid="nav-bets">Bets</Link>
+            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-activity">Activity</Link>
+            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/wallet-dashboard" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-withdrawals">Withdrawals</Link>
+            <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
+            <Link href="/storage" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-audit">Audit Log</Link>
+            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-settings">Settings</Link>
+            <Link href="/info" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-whitepaper">Whitepaper</Link>
           </div>
 
           {/* Right Side - Wallet */}
           <div className="flex items-center gap-4">
-            <button className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors" data-testid="btn-buy-now">
+            <button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm transition-colors" data-testid="btn-buy-now">
               Buy Now
             </button>
             <div className="text-right">
-              <div className="text-purple-400 text-xs">0 SUI</div>
+              <div className="text-cyan-400 text-xs">0 SUI</div>
               <div className="text-gray-500 text-xs">{walletAddress || "Not connected"}</div>
             </div>
             <button 
@@ -164,7 +162,7 @@ export default function CleanHome() {
             ) : (
               <button 
                 onClick={handleConnectWallet}
-                className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+                className="flex items-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm"
                 data-testid="btn-connect-wallet"
               >
                 <Wallet size={16} />
@@ -184,7 +182,7 @@ export default function CleanHome() {
             <input
               type="text"
               placeholder="Search teams, leagues..."
-              className="w-full bg-[#1a1528] border border-purple-900/50 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-purple-500"
+              className="w-full bg-[#111111] border border-cyan-900/30 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
               data-testid="input-search"
             />
           </div>
@@ -198,8 +196,8 @@ export default function CleanHome() {
               onClick={() => handleSportClick(sport.id)}
               className={`py-3 px-4 rounded-lg text-left transition-all ${
                 selectedSport === sport.id
-                  ? "bg-gradient-to-r from-purple-600 to-purple-700 text-white"
-                  : "bg-[#1a1528] text-gray-300 hover:bg-[#241d35] border border-purple-900/30"
+                  ? "bg-cyan-500 text-black font-bold"
+                  : "bg-[#111111] text-gray-300 hover:bg-[#1a1a1a] border border-cyan-900/30"
               }`}
               data-testid={`sport-btn-${sport.name.toLowerCase().replace(/\s+/g, '-')}`}
             >
@@ -215,7 +213,7 @@ export default function CleanHome() {
             onClick={() => setActiveTab("live")}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "live"
-                ? "bg-[#1a1528] text-white border border-purple-500"
+                ? "bg-[#111111] text-cyan-400 border border-cyan-500"
                 : "bg-transparent text-gray-400 hover:text-white"
             }`}
             data-testid="tab-live"
@@ -227,7 +225,7 @@ export default function CleanHome() {
             onClick={() => setActiveTab("upcoming")}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${
               activeTab === "upcoming"
-                ? "bg-[#1a1528] text-white border border-purple-500"
+                ? "bg-[#111111] text-cyan-400 border border-cyan-500"
                 : "bg-transparent text-gray-400 hover:text-white"
             }`}
             data-testid="tab-upcoming"
@@ -241,11 +239,11 @@ export default function CleanHome() {
         <div className="space-y-4">
           {isLoading ? (
             <div className="text-center py-12">
-              <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-4"></div>
+              <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
               <p className="text-gray-400">Loading events...</p>
             </div>
           ) : events.length === 0 ? (
-            <div className="text-center py-12 bg-[#1a1528] rounded-xl border border-purple-900/30">
+            <div className="text-center py-12 bg-[#111111] rounded-xl border border-cyan-900/30">
               <p className="text-gray-400 mb-2">No {activeTab} events available</p>
               <p className="text-gray-500 text-sm">Check back later for more events</p>
             </div>
@@ -360,15 +358,15 @@ function EventCard({ event, onClick }: EventCardProps) {
 
   return (
     <div 
-      className="bg-[#1a1528] rounded-xl border border-purple-900/30 overflow-hidden cursor-pointer hover:border-purple-500/50 transition-all"
+      className="bg-[#111111] rounded-xl border border-cyan-900/30 overflow-hidden cursor-pointer hover:border-cyan-500/50 transition-all"
       onClick={onClick}
       data-testid={`event-card-${event.id}`}
     >
       {/* League Header */}
-      <div className="px-4 py-2 border-b border-purple-900/30 flex items-center justify-between">
+      <div className="px-4 py-2 border-b border-cyan-900/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
           {event.isLive && <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>}
-          <span className="text-purple-400 text-sm">{leagueName}</span>
+          <span className="text-cyan-400 text-sm">{leagueName}</span>
         </div>
         {event.isLive && (
           <span className="bg-red-500/20 text-red-400 text-xs px-2 py-1 rounded">LIVE</span>
@@ -390,7 +388,7 @@ function EventCard({ event, onClick }: EventCardProps) {
             <p className="text-gray-500 text-sm">{leagueName}</p>
             {event.isLive && (
               <div className="mt-2">
-                <span className="text-purple-400 text-2xl font-bold">
+                <span className="text-cyan-400 text-2xl font-bold">
                   {score.home} - {score.away}
                 </span>
                 <span className="text-green-400 text-xs ml-2 bg-green-500/20 px-2 py-1 rounded">
@@ -408,8 +406,8 @@ function EventCard({ event, onClick }: EventCardProps) {
           {/* Odds Cards */}
           <div className="flex gap-2">
             <div 
-              className={`bg-[#241d35] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
-                selectedOutcome === "draw" ? "ring-2 ring-yellow-500" : "hover:bg-[#2d2540]"
+              className={`bg-[#1a1a1a] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
+                selectedOutcome === "draw" ? "ring-2 ring-yellow-500" : "hover:bg-[#222222]"
               }`}
               onClick={(e) => handleOutcomeClick("draw", e)}
               data-testid={`odds-draw-${event.id}`}
@@ -418,25 +416,25 @@ function EventCard({ event, onClick }: EventCardProps) {
               <div className="text-yellow-400 text-xl font-bold">{odds.draw.toFixed(2)}</div>
             </div>
             <div 
-              className={`bg-[#241d35] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
-                selectedOutcome === "home" ? "ring-2 ring-orange-500" : "hover:bg-[#2d2540]"
+              className={`bg-[#1a1a1a] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
+                selectedOutcome === "home" ? "ring-2 ring-cyan-500" : "hover:bg-[#222222]"
               }`}
               onClick={(e) => handleOutcomeClick("home", e)}
               data-testid={`odds-home-${event.id}`}
             >
-              <div className="text-orange-400 text-xs mb-1">Odds</div>
-              <div className="text-orange-400 text-xl font-bold">{odds.home.toFixed(2)}</div>
+              <div className="text-cyan-400 text-xs mb-1">Home</div>
+              <div className="text-cyan-400 text-xl font-bold">{odds.home.toFixed(2)}</div>
               <div className="text-gray-500 text-xs">{event.homeTeam?.split(' ')[0]}</div>
             </div>
             <div 
-              className={`bg-[#241d35] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
-                selectedOutcome === "away" ? "ring-2 ring-purple-500" : "hover:bg-[#2d2540]"
+              className={`bg-[#1a1a1a] rounded-lg p-3 min-w-[70px] text-center cursor-pointer transition-all ${
+                selectedOutcome === "away" ? "ring-2 ring-cyan-500" : "hover:bg-[#222222]"
               }`}
               onClick={(e) => handleOutcomeClick("away", e)}
               data-testid={`odds-away-${event.id}`}
             >
-              <div className="text-purple-400 text-xs mb-1">Odds</div>
-              <div className="text-purple-400 text-xl font-bold">{odds.away.toFixed(2)}</div>
+              <div className="text-white text-xs mb-1">Away</div>
+              <div className="text-white text-xl font-bold">{odds.away.toFixed(2)}</div>
               <div className="text-gray-500 text-xs">{event.awayTeam?.split(' ')[0]}</div>
             </div>
           </div>
@@ -445,7 +443,7 @@ function EventCard({ event, onClick }: EventCardProps) {
         {/* Bet Button */}
         <div className="flex justify-center mb-4">
           <button 
-            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition-all"
+            className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-2 rounded-lg flex items-center gap-2 transition-all"
             onClick={handleBetClick}
             data-testid={`btn-bet-${event.id}`}
           >
@@ -458,8 +456,8 @@ function EventCard({ event, onClick }: EventCardProps) {
 
         {/* Betting Panel (shown when outcome selected) */}
         {selectedOutcome && (
-          <div className="border-t border-purple-900/30 pt-4 mt-4">
-            <div className="bg-purple-600/20 text-purple-400 px-3 py-1 rounded inline-block mb-4 text-sm font-medium">
+          <div className="border-t border-cyan-900/30 pt-4 mt-4">
+            <div className="bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded inline-block mb-4 text-sm font-medium">
               Match Winner
             </div>
             
@@ -474,8 +472,8 @@ function EventCard({ event, onClick }: EventCardProps) {
                       onClick={(e) => handleOutcomeClick(outcome, e)}
                       className={`w-full py-2 px-4 rounded-lg text-center transition-all ${
                         selectedOutcome === outcome
-                          ? "bg-purple-600 text-white"
-                          : "bg-[#241d35] text-gray-300 hover:bg-[#2d2540]"
+                          ? "bg-cyan-500 text-black font-bold"
+                          : "bg-[#1a1a1a] text-gray-300 hover:bg-[#222222]"
                       }`}
                       data-testid={`pick-${outcome}-${event.id}`}
                     >
@@ -492,18 +490,18 @@ function EventCard({ event, onClick }: EventCardProps) {
                   type="number"
                   value={stake}
                   onChange={(e) => setStake(e.target.value)}
-                  className="w-full bg-[#241d35] border border-purple-900/50 rounded-lg py-2 px-4 text-white mb-4"
+                  className="w-full bg-[#1a1a1a] border border-cyan-900/30 rounded-lg py-2 px-4 text-white mb-4"
                   onClick={(e) => e.stopPropagation()}
                   data-testid={`input-stake-${event.id}`}
                 />
                 
                 <div className="text-gray-400 text-sm mb-2">Odds</div>
-                <div className="bg-[#241d35] rounded-lg py-2 px-4 text-purple-400 mb-4">
+                <div className="bg-[#1a1a1a] rounded-lg py-2 px-4 text-cyan-400 mb-4">
                   {getOdds(selectedOutcome).toFixed(2)}
                 </div>
                 
                 <div className="text-gray-400 text-sm mb-2">To Win</div>
-                <div className="bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg py-3 px-4 text-white font-bold text-center">
+                <div className="bg-cyan-500 rounded-lg py-3 px-4 text-black font-bold text-center">
                   {potentialWin} SUI
                 </div>
               </div>
@@ -511,7 +509,7 @@ function EventCard({ event, onClick }: EventCardProps) {
 
             {/* Place Bet Button */}
             <button 
-              className="w-full mt-4 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-lg font-bold transition-all"
+              className="w-full mt-4 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 rounded-lg transition-all"
               onClick={handleBetClick}
               data-testid={`btn-place-bet-${event.id}`}
             >

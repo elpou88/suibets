@@ -2,6 +2,27 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
+// Suppress MetaMask errors - this is a Sui dApp, not Ethereum
+// MetaMask extension may try to inject itself and throw errors
+window.addEventListener('error', (event) => {
+  if (event.message?.includes('MetaMask') || 
+      event.message?.includes('ethereum') ||
+      event.error?.message?.includes('MetaMask')) {
+    event.preventDefault();
+    event.stopPropagation();
+    console.log('Suppressed MetaMask error - this is a Sui dApp');
+    return true;
+  }
+});
+
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason?.message?.includes('MetaMask') ||
+      event.reason?.message?.includes('ethereum')) {
+    event.preventDefault();
+    console.log('Suppressed MetaMask promise rejection - this is a Sui dApp');
+  }
+});
+
 // Add a debug script to the document body
 const debugScript = document.createElement('script');
 debugScript.textContent = `

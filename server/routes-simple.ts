@@ -686,10 +686,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Get contract info for frontend
   app.get("/api/contract/info", async (_req: Request, res: Response) => {
     res.json({
-      packageId: blockchainBetService.getPackageId(),
+      packageId: blockchainBetService.getBettingPackageId(),
       platformId: blockchainBetService.getBettingPlatformId(),
       network: process.env.SUI_NETWORK || 'mainnet',
-      revenueWallet: blockchainBetService.getRevenueWallet()
+      revenueWallet: blockchainBetService.getRevenueWallet(),
+      adminWallet: blockchainBetService.getAdminWallet(),
+      sbetsTokenPackage: blockchainBetService.getPackageId()
     });
   });
 

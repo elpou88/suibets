@@ -244,8 +244,16 @@ export class BlockchainBetService {
     return SBETS_PACKAGE_ID;
   }
 
+  getBettingPackageId(): string {
+    return BETTING_PACKAGE_ID;
+  }
+
   getRevenueWallet(): string {
     return REVENUE_WALLET;
+  }
+
+  getAdminWallet(): string {
+    return ADMIN_WALLET;
   }
 }
 

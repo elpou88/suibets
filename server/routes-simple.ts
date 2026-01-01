@@ -695,6 +695,16 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     });
   });
 
+  // Get settlement worker status
+  app.get("/api/settlement/status", async (_req: Request, res: Response) => {
+    const status = settlementWorker.getStatus();
+    res.json({
+      success: true,
+      ...status,
+      message: status.isRunning ? 'Settlement worker is active and monitoring for finished matches' : 'Settlement worker is not running'
+    });
+  });
+
   // Place a parlay bet (multiple selections)
   app.post("/api/bets/parlay", async (req: Request, res: Response) => {
     try {

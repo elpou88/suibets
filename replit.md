@@ -86,9 +86,13 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Fixed API Key**: 3ec255b133882788e32f6349eff77b21 (shared across services)
 
 ### Blockchain Services
-- **Sui Network** - Layer 1 blockchain for transactions
-- **Walrus Protocol** - Decentralized storage solution
+- **Sui Network** - Layer 1 blockchain for transactions (mainnet)
 - **Move Language** - Smart contract development
+- **Deployed Contract (Mainnet)**:
+  - Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa`
+  - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
+  - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
+  - Module: `betting` (place_bet, settle_bet, void_bet functions)
 
 ### Payment Integration
 - **Stripe** - Optional fiat payment processing (keys configurable)
@@ -119,16 +123,21 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Wallet addresses** for deposit/withdrawal operations
 
 ## Recent Changes
+- December 30, 2025: Mainnet contract deployed and configured
+  - Package ID: 0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa
+  - Platform Object ID: 0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89
+  - Admin Wallet: 0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f
+  - Removed Walrus protocol - using PostgreSQL database for all data storage
+  - Updated useWurlusProtocol hook to use database-backed /api/bets endpoints
+  - /api/contract/info now returns correct betting package ID
 - December 29, 2025: Added full on-chain betting infrastructure
   - Created Move smart contract (sui_contracts/suibets/sources/betting.move) with place_bet, settle_bet, void_bet functions
   - BlockchainBetService builds transaction payloads for frontend wallet signing
-  - WalrusService supports real HTTP API calls to Walrus aggregator/publisher (set USE_REAL_WALRUS=true)
   - New /api/bets/build-transaction endpoint returns transaction payload for wallet signing
   - New /api/contract/info endpoint returns package ID, platform ID, network config
-  - New /api/bets/:id/verify endpoint verifies bet status across database/Walrus/blockchain
-  - Bet response includes onChain object with status, txHash, walrusBlobId, packageId
+  - New /api/bets/:id/verify endpoint verifies bet status across database
+  - Bet response includes onChain object with status, txHash, packageId
   - Contract uses 1% fee model consistent with platform (100 basis points)
-  - To enable: deploy contract, set BETTING_PLATFORM_ID env var to the shared object ID
 - December 29, 2025: Fixed critical bet payout routing bug
   - Added walletAddress column to bets table for correct settlement payouts
   - Bets now store the wallet address of the bettor for settlement

@@ -99,17 +99,28 @@ SuiBets is a comprehensive crypto sports betting platform built on the Sui block
 - **Native Crypto** - Direct blockchain transactions preferred
 
 ### Infrastructure
-- **PostgreSQL** - Relational database (optional with blockchain fallback)
-- **WebSocket** - Real-time communication
+- **PostgreSQL** - Primary database for balance tracking and bet storage
+- **WebSocket** - Real-time communication for live updates
 - **Session Store** - User session management
 
-## Deployment Strategy
+## Architecture Model
 
-### Walrus Deployment
-- **Primary deployment target** using Walrus CLI
-- **Environment configuration** via .env variables
-- **Network support** for testnet and mainnet
-- **Automatic scaling** based on demand
+### Hybrid Custodial Model (Current)
+The platform operates as a custodial betting service where:
+1. **Deposits**: Users send SUI to the platform treasury wallet, provide txHash for verification
+2. **Betting**: Bets are tracked in PostgreSQL database with balance deductions
+3. **Auto-Settlement**: Runs every 30 seconds, checks finished matches via API-Sports, credits winners
+4. **Withdrawals**: Users request withdrawal, admin processes payout from treasury
+
+**Treasury Wallet**: 0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50
+**Admin Wallet**: 0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f
+
+### Monitoring Endpoints
+- `/api/contract/info` - Returns package ID, platform ID, admin wallet
+- `/api/settlement/status` - Returns settlement worker status (running, settled events count)
+- `/api/user/balance?userId=<wallet>` - Returns user's SUI and SBETS balance
+
+## Deployment Strategy
 
 ### Vercel Compatibility
 - **Alternative deployment** option with Node.js runtime

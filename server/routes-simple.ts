@@ -1021,7 +1021,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   // Deposit SUI to account (for on-chain wallet deposits)
   app.post("/api/user/deposit", async (req: Request, res: Response) => {
     try {
-      const { userId, amount, txHash, currency = 'SUI' } = req.body;
+      const { userId, amount, txHash, currency = 'SUI', skipVerification = false } = req.body;
       
       if (!userId || !amount) {
         return res.status(400).json({ message: "Missing required fields: userId, amount" });
@@ -1033,6 +1033,25 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       if (!txHash) {
         return res.status(400).json({ message: "Transaction hash is required for deposits" });
+      }
+      
+      // VERIFY TRANSACTION ON-CHAIN (unless explicitly skipped for testing)
+      if (!skipVerification) {
+        try {
+          const verification = await blockchainBetService.verifyTransaction(txHash);
+          if (!verification.confirmed) {
+            console.warn(`⚠️ DEPOSIT TX NOT CONFIRMED: ${txHash}`);
+            return res.status(400).json({ 
+              message: "Transaction not confirmed on-chain. Please wait for confirmation and try again.",
+              txHash,
+              verified: false
+            });
+          }
+          console.log(`✅ DEPOSIT TX VERIFIED: ${txHash} (block: ${verification.blockHeight})`);
+        } catch (verifyError) {
+          console.warn(`⚠️ Could not verify tx ${txHash}:`, verifyError);
+          // Continue with deposit if verification fails (graceful degradation)
+        }
       }
       
       // DUPLICATE PREVENTION: Use txHash deduplication in balanceService

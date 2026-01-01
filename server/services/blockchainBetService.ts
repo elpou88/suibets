@@ -1,12 +1,19 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
 
 const SBETS_PACKAGE_ID = process.env.SBETS_TOKEN_ADDRESS?.split('::')[0] || '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285';
-const BETTING_PACKAGE_ID = process.env.BETTING_PACKAGE_ID || SBETS_PACKAGE_ID;
-const BETTING_PLATFORM_ID = process.env.BETTING_PLATFORM_ID || '';
-// Revenue wallet for platform fees and settlements
+const BETTING_PACKAGE_ID = process.env.BETTING_PACKAGE_ID || '0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa';
+const BETTING_PLATFORM_ID = process.env.BETTING_PLATFORM_ID || '0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89';
 const PLATFORM_REVENUE_WALLET = process.env.PLATFORM_REVENUE_WALLET || '0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50';
-const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || PLATFORM_REVENUE_WALLET;
+const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || '0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f';
 const REVENUE_WALLET = process.env.REVENUE_WALLET_ADDRESS || PLATFORM_REVENUE_WALLET;
+
+// Validate configuration on startup
+if (!BETTING_PACKAGE_ID || !BETTING_PLATFORM_ID) {
+  console.warn('⚠️ BETTING_PACKAGE_ID or BETTING_PLATFORM_ID not set - on-chain betting disabled');
+}
+console.log(`📦 Betting Package ID: ${BETTING_PACKAGE_ID}`);
+console.log(`🏛️ Platform Object ID: ${BETTING_PLATFORM_ID}`);
+console.log(`👤 Admin Wallet: ${ADMIN_WALLET}`);
 
 export interface OnChainBet {
   betId: string;

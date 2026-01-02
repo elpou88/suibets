@@ -1,5 +1,4 @@
 import { useState, useRef } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
 import { useBetting } from "@/context/BettingContext";
@@ -7,6 +6,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import Footer from "@/components/layout/Footer";
+import { useLiveEvents, useUpcomingEvents } from "@/hooks/useEvents";
 import suibetsLogo from "@assets/image_1767008967633.png";
 import suibetsHeroBg from "@assets/image_1767021435938.png";
 
@@ -88,27 +88,8 @@ export default function CleanHome() {
   // Use real wallet adapter instead of fake state
   const { address: walletAddress, isConnected, balances, connect, disconnect } = useWalletAdapter();
 
-  const liveQueryUrl = selectedSport 
-    ? `/api/events?isLive=true&sportId=${selectedSport}` 
-    : `/api/events?isLive=true`;
-    
-  const upcomingQueryUrl = selectedSport 
-    ? `/api/events?isLive=false&sportId=${selectedSport}` 
-    : `/api/events?isLive=false`;
-
-  const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useQuery<Event[]>({
-    queryKey: [liveQueryUrl],
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time live updates
-    staleTime: 4000, // Consider data fresh for 4 seconds
-    placeholderData: (previousData) => previousData, // Keep showing previous data while refreshing
-  });
-
-  const { data: upcomingEvents = [], isLoading: upcomingLoading, refetch: refetchUpcoming } = useQuery<Event[]>({
-    queryKey: [upcomingQueryUrl],
-    refetchInterval: 15000, // Refresh every 15 seconds for upcoming
-    staleTime: 10000, // Consider data fresh for 10 seconds
-    placeholderData: (previousData) => previousData, // Keep showing previous data while refreshing
-  });
+  const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useLiveEvents(selectedSport);
+  const { data: upcomingEvents = [], isLoading: upcomingLoading, refetch: refetchUpcoming } = useUpcomingEvents(selectedSport);
 
   const events = activeTab === "live" ? liveEvents : upcomingEvents;
   const isLoading = activeTab === "live" ? liveLoading : upcomingLoading;

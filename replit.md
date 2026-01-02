@@ -115,12 +115,63 @@ The platform operates as a custodial betting service where:
 **Treasury Wallet**: 0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50
 **Admin Wallet**: 0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f
 
+### Gas Payment Architecture
+Understanding who pays gas fees for each operation:
+
+| Operation | Who Pays Gas | Description |
+|-----------|--------------|-------------|
+| **User Deposits** | User | User sends SUI to treasury wallet using their own wallet - they pay gas for the transfer |
+| **Bet Placement** | No gas needed | Bets are tracked in PostgreSQL database (off-chain) - balance is debited internally, no blockchain transaction |
+| **Settlement/Winnings** | No gas needed | Settlement worker credits winners in database (off-chain) - no blockchain transaction during settlement |
+| **Automated Withdrawals** | Admin/Treasury | If ADMIN_PRIVATE_KEY is set, the admin hot wallet signs and pays gas to send SUI to user |
+| **Manual Withdrawals** | Admin | Admin manually processes withdrawal from treasury wallet and pays gas |
+| **Platform Revenue** | Admin | When transferring accumulated fees to revenue wallet, admin wallet pays gas |
+
+**Key Points**:
+- Users only pay gas once: when depositing SUI to the treasury
+- All betting operations (placing bets, settlements, crediting winnings) happen off-chain in the database - zero gas
+- The platform (admin wallet) pays gas for automated withdrawals and revenue transfers
+- This hybrid model minimizes gas costs for users while maintaining blockchain-backed deposits/withdrawals
+
 ### Monitoring Endpoints
 - `/api/contract/info` - Returns package ID, platform ID, admin wallet
 - `/api/settlement/status` - Returns settlement worker status (running, settled events count)
 - `/api/user/balance?userId=<wallet>` - Returns user's SUI and SBETS balance
 
 ## Deployment Strategy
+
+### Railway Deployment (Recommended)
+Required environment variables for Railway:
+
+**Database (Required)**:
+- `DATABASE_URL` - Railway PostgreSQL connection string (must be Railway URL, not Neon)
+
+**Blockchain Configuration (Required)**:
+- `SUI_NETWORK` - mainnet (or testnet for testing)
+- `BETTING_PACKAGE_ID` - Deployed smart contract package ID
+- `BETTING_PLATFORM_ID` - Platform object ID from contract deployment
+- `ADMIN_WALLET_ADDRESS` - Admin wallet for contract operations
+- `PLATFORM_REVENUE_WALLET` - Treasury wallet for deposits
+- `SBETS_TOKEN_ADDRESS` - SBETS token contract address
+
+**On-Chain Payouts (Optional - for automated withdrawals)**:
+- `ADMIN_PRIVATE_KEY` - Private key for automated on-chain payouts (MUST be stored as encrypted secret)
+  - ⚠️ SECURITY WARNING: Storing private keys in environment variables is risky. For production:
+    - Consider using a hardware wallet or secure key management service
+    - Use a separate "hot wallet" with limited funds for automated payouts
+    - Never use your main treasury wallet private key
+    - Alternative: Process withdrawals manually from the treasury wallet
+  - **Supported key formats**:
+    - `suiprivkey1...` - Sui bech32 format (exported from Sui Wallet)
+    - 32-byte raw seed (base64 or hex with 0x prefix)
+    - 33-byte with scheme prefix (0x00 + 32-byte seed)
+    - 64-byte full keypair (32-byte seed + 32-byte public key)
+
+**Sports Data (Required)**:
+- `API_SPORTS_KEY` - API-Sports.io API key
+
+**Session Security (Required)**:
+- `SESSION_SECRET` - Random string for session encryption
 
 ### Vercel Compatibility
 - **Alternative deployment** option with Node.js runtime

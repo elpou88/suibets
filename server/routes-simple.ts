@@ -1107,23 +1107,37 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       const { userId, amount } = validation.data!;
-      const result = await balanceService.withdraw(userId, amount);
+      const executeOnChain = req.body.executeOnChain === true;
+      
+      const result = await balanceService.withdraw(userId, amount, executeOnChain);
 
       if (!result.success) {
         return res.status(400).json({ message: result.message });
       }
 
-      // Notify user of withdrawal
-      notificationService.notifyWithdrawal(userId, amount, 'completed');
+      // Notify user based on withdrawal status
+      if (result.status === 'completed') {
+        notificationService.notifyWithdrawal(userId, amount, 'completed');
+        console.log(`✅ WITHDRAWAL COMPLETED: ${userId} - ${amount} SUI | TX: ${result.txHash}`);
+      } else {
+        notificationService.createNotification(
+          userId,
+          'withdrawal',
+          '📋 Withdrawal Queued',
+          `Your withdrawal of ${amount} SUI is being processed`,
+          { amount, status: 'pending_admin' }
+        );
+        console.log(`📋 WITHDRAWAL QUEUED: ${userId} - ${amount} SUI`);
+      }
 
-      console.log(`✅ WITHDRAWAL PROCESSED: ${userId} - ${amount} SUI`);
       res.json({
         success: true,
         withdrawal: {
           amount,
           txHash: result.txHash,
-          status: 'completed',
-          timestamp: Date.now()
+          status: result.status,
+          timestamp: Date.now(),
+          onChainEnabled: blockchainBetService.isAdminKeyConfigured()
         }
       });
     } catch (error: any) {

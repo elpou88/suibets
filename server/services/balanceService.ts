@@ -5,6 +5,7 @@
  */
 
 import { storage } from '../storage';
+import { blockchainBetService } from './blockchainBetService';
 
 export interface UserBalance {
   userId: string;
@@ -154,33 +155,75 @@ export class BalanceService {
 
   /**
    * Withdraw SUI to wallet - PERSISTS TO DATABASE
+   * If ADMIN_PRIVATE_KEY is set and executeOnChain=true, executes on-chain payout
+   * Otherwise, creates pending withdrawal for manual admin processing
    */
-  async withdraw(userId: string, amount: number): Promise<{ success: boolean; txHash?: string; message: string }> {
+  async withdraw(userId: string, amount: number, executeOnChain: boolean = false): Promise<{ 
+    success: boolean; 
+    txHash?: string; 
+    message: string;
+    status: 'completed' | 'pending_admin';
+  }> {
     const balance = await this.getBalanceAsync(userId);
 
     if (amount < 0.1) {
-      return { success: false, message: 'Minimum withdrawal is 0.1 SUI' };
+      return { success: false, message: 'Minimum withdrawal is 0.1 SUI', status: 'pending_admin' };
     }
 
     if (amount > balance.suiBalance) {
-      return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI` };
+      return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI`, status: 'pending_admin' };
     }
 
-    const txHash = `tx-${userId.slice(0, 8)}-${Date.now()}`;
+    // OPTION 1: Execute on-chain if admin key is configured and requested
+    if (executeOnChain && blockchainBetService.isAdminKeyConfigured()) {
+      const payoutResult = await blockchainBetService.executePayoutOnChain(userId, amount);
+      
+      if (payoutResult.success && payoutResult.txHash) {
+        // Update database with completed status
+        await storage.updateUserBalance(userId, -amount, 0);
+        await storage.recordWalletOperation(userId, 'withdrawal', amount, payoutResult.txHash, { 
+          status: 'completed',
+          onChain: true
+        });
 
-    // Update database
+        // Update cache
+        balance.suiBalance -= amount;
+        balance.lastUpdated = Date.now();
+
+        console.log(`💸 ON-CHAIN WITHDRAWAL: ${userId.slice(0, 8)}... - ${amount} SUI | TX: ${payoutResult.txHash}`);
+        return {
+          success: true,
+          txHash: payoutResult.txHash,
+          message: `Successfully withdrawn ${amount} SUI on-chain`,
+          status: 'completed'
+        };
+      } else {
+        console.error(`❌ On-chain payout failed: ${payoutResult.error}`);
+        // Fall through to pending status
+      }
+    }
+
+    // OPTION 2: Create pending withdrawal for manual admin processing
+    const withdrawalId = `wd-${userId.slice(0, 8)}-${Date.now()}`;
+
+    // Deduct from balance immediately to prevent double-spend
     await storage.updateUserBalance(userId, -amount, 0);
-    await storage.recordWalletOperation(userId, 'withdrawal', amount, txHash, { status: 'completed' });
+    await storage.recordWalletOperation(userId, 'withdrawal', amount, withdrawalId, { 
+      status: 'pending_admin',
+      recipientWallet: userId,
+      onChain: false
+    });
 
     // Update cache
     balance.suiBalance -= amount;
     balance.lastUpdated = Date.now();
 
-    console.log(`💸 WITHDRAWAL COMPLETED (DB): ${userId.slice(0, 8)}... - ${amount} SUI | TX: ${txHash}`);
+    console.log(`📋 WITHDRAWAL QUEUED: ${userId.slice(0, 8)}... - ${amount} SUI | ID: ${withdrawalId} (pending admin)`);
     return {
       success: true,
-      txHash,
-      message: `Successfully withdrawn ${amount} SUI`
+      txHash: withdrawalId,
+      message: `Withdrawal of ${amount} SUI queued for processing`,
+      status: 'pending_admin'
     };
   }
 

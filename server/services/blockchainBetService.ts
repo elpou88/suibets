@@ -1,4 +1,6 @@
 import { SuiClient, getFullnodeUrl } from '@mysten/sui/client';
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
+import { Transaction } from '@mysten/sui/transactions';
 
 const SBETS_PACKAGE_ID = process.env.SBETS_TOKEN_ADDRESS?.split('::')[0] || '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285';
 const BETTING_PACKAGE_ID = process.env.BETTING_PACKAGE_ID || '0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa';
@@ -6,6 +8,9 @@ const BETTING_PLATFORM_ID = process.env.BETTING_PLATFORM_ID || '0x5fe75eab8aef1c
 const PLATFORM_REVENUE_WALLET = process.env.PLATFORM_REVENUE_WALLET || '0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50';
 const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || '0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f';
 const REVENUE_WALLET = process.env.REVENUE_WALLET_ADDRESS || PLATFORM_REVENUE_WALLET;
+// SECURITY: ADMIN_PRIVATE_KEY must be stored as encrypted secret on Railway/production
+// NEVER log, expose, or commit this value. Used only for on-chain payouts.
+const ADMIN_PRIVATE_KEY = process.env.ADMIN_PRIVATE_KEY;
 
 // Validate configuration on startup
 if (!BETTING_PACKAGE_ID || !BETTING_PLATFORM_ID) {
@@ -14,6 +19,14 @@ if (!BETTING_PACKAGE_ID || !BETTING_PLATFORM_ID) {
 console.log(`📦 Betting Package ID: ${BETTING_PACKAGE_ID}`);
 console.log(`🏛️ Platform Object ID: ${BETTING_PLATFORM_ID}`);
 console.log(`👤 Admin Wallet: ${ADMIN_WALLET}`);
+
+// SECURITY: Only log existence, never the key itself
+if (ADMIN_PRIVATE_KEY) {
+  console.log(`🔐 Admin Private Key: CONFIGURED (length: ${ADMIN_PRIVATE_KEY.length})`);
+} else {
+  console.warn('⚠️ ADMIN_PRIVATE_KEY not set - on-chain payouts/withdrawals will be disabled');
+  console.warn('   To enable: Add ADMIN_PRIVATE_KEY as a secret on Railway');
+}
 
 export interface OnChainBet {
   betId: string;
@@ -261,6 +274,122 @@ export class BlockchainBetService {
 
   getAdminWallet(): string {
     return ADMIN_WALLET;
+  }
+
+  // Check if admin key is configured for on-chain payouts
+  isAdminKeyConfigured(): boolean {
+    return !!ADMIN_PRIVATE_KEY && ADMIN_PRIVATE_KEY.length > 0;
+  }
+
+  // Get admin keypair from private key (for on-chain transactions)
+  // Sui SDK's Ed25519Keypair.fromSecretKey expects the 32-byte secret seed
+  private getAdminKeypair(): Ed25519Keypair | null {
+    if (!ADMIN_PRIVATE_KEY) {
+      console.warn('⚠️ ADMIN_PRIVATE_KEY not configured - on-chain payouts disabled');
+      return null;
+    }
+    
+    try {
+      let keyBytes: Uint8Array;
+      
+      // Support multiple formats: hex, base64, or Sui bech32 format
+      if (ADMIN_PRIVATE_KEY.startsWith('suiprivkey')) {
+        // Sui bech32 format - use decodeSuiPrivateKey if available
+        try {
+          // Try importing the decode function
+          const { decodeSuiPrivateKey } = require('@mysten/sui/cryptography');
+          const decoded = decodeSuiPrivateKey(ADMIN_PRIVATE_KEY);
+          return Ed25519Keypair.fromSecretKey(decoded.secretKey);
+        } catch (e) {
+          console.error('❌ Failed to parse Sui bech32 private key:', e);
+          return null;
+        }
+      } else if (ADMIN_PRIVATE_KEY.startsWith('0x')) {
+        // Hex format
+        const hexKey = ADMIN_PRIVATE_KEY.slice(2);
+        keyBytes = new Uint8Array(Buffer.from(hexKey, 'hex'));
+      } else {
+        // Assume base64 encoding
+        keyBytes = new Uint8Array(Buffer.from(ADMIN_PRIVATE_KEY, 'base64'));
+      }
+      
+      // Handle different key formats:
+      // - 32 bytes: raw secret seed (ready to use)
+      // - 33 bytes: 1 scheme byte + 32 secret seed (strip scheme)
+      // - 64 bytes: 32 secret + 32 public (use first 32)
+      // - 65 bytes: 1 scheme + 32 secret + 32 public (strip scheme, use first 32)
+      
+      if (keyBytes.length === 33 && keyBytes[0] === 0) {
+        // Strip the scheme byte prefix (0x00 for Ed25519)
+        keyBytes = keyBytes.slice(1);
+      } else if (keyBytes.length === 65 && keyBytes[0] === 0) {
+        // Strip scheme byte and take first 32 bytes (secret seed)
+        keyBytes = keyBytes.slice(1, 33);
+      } else if (keyBytes.length === 64) {
+        // Full keypair format (secret + public), take only first 32 bytes
+        keyBytes = keyBytes.slice(0, 32);
+      }
+      
+      if (keyBytes.length !== 32) {
+        console.error(`❌ Invalid private key length: ${keyBytes.length} (expected 32 bytes)`);
+        console.error('   Supported formats: 32-byte raw seed, 33-byte with scheme prefix, or suiprivkey bech32');
+        return null;
+      }
+      
+      const keypair = Ed25519Keypair.fromSecretKey(keyBytes);
+      console.log(`✅ Admin keypair loaded: ${keypair.toSuiAddress().slice(0, 12)}...`);
+      return keypair;
+    } catch (error) {
+      console.error('❌ Failed to parse ADMIN_PRIVATE_KEY:', error);
+      return null;
+    }
+  }
+
+  // Execute on-chain SUI payout to user (for withdrawals)
+  // Returns explicit error if keypair loading fails
+  async executePayoutOnChain(
+    recipientAddress: string,
+    amountSui: number
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      const error = 'Admin private key not configured or invalid format';
+      console.error(`❌ PAYOUT BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
+    try {
+      const amountMist = Math.floor(amountSui * 1e9);
+      
+      const tx = new Transaction();
+      const [coin] = tx.splitCoins(tx.gas, [amountMist]);
+      tx.transferObjects([coin], recipientAddress);
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        console.log(`✅ ON-CHAIN PAYOUT: ${amountSui} SUI to ${recipientAddress} | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        console.error(`❌ PAYOUT FAILED: ${result.effects?.status?.error || 'Unknown error'}`);
+        return { success: false, error: result.effects?.status?.error || 'Transaction failed' };
+      }
+    } catch (error: any) {
+      console.error('❌ Payout execution error:', error);
+      return { success: false, error: error.message || 'Failed to execute payout' };
+    }
+  }
+
+  // Get treasury balance (admin wallet balance)
+  async getTreasuryBalance(): Promise<{ sui: number; sbets: number }> {
+    return this.getWalletBalance(PLATFORM_REVENUE_WALLET);
   }
 }
 

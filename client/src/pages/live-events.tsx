@@ -1,35 +1,17 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import Layout from '@/components/layout/Layout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiRequest } from '@/lib/queryClient';
 import { Radio, Clock, TrendingUp, Filter } from 'lucide-react';
 import SimpleMarkets from '@/components/betting/SimpleMarkets';
+import { useLiveEvents, SportEvent } from '@/hooks/useEvents';
 
 export default function LiveEventsPage() {
   const [selectedSport, setSelectedSport] = useState<string>('all');
 
-  // Fetch live events
-  const { data: liveEvents = [], isLoading: liveLoading } = useQuery({
-    queryKey: ['/api/events/live', selectedSport],
-    queryFn: async () => {
-      const url = selectedSport === 'all' 
-        ? '/api/events?isLive=true' 
-        : `/api/events?isLive=true&sportId=${selectedSport}`;
-      
-      const response = await apiRequest('GET', url);
-      if (!response.ok) throw new Error('Failed to fetch live events');
-      
-      const data = await response.json();
-      return Array.isArray(data) ? data : [];
-    },
-    refetchInterval: 5000, // Refresh every 5 seconds for real-time updates
-    staleTime: 4000, // Consider data fresh for 4 seconds
-    placeholderData: (previousData: any) => previousData, // Keep showing previous data while refreshing
-  });
+  const { data: liveEvents = [], isLoading: liveLoading } = useLiveEvents(selectedSport);
 
   // Get unique sports from events
   const availableSports = [

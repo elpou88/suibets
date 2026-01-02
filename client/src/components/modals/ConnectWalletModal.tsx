@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle, Loader2, WalletIcon, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { 
   useCurrentAccount, 
   useConnectWallet,
@@ -26,39 +25,94 @@ interface WalletInfo {
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
   const { connectWallet } = useAuth();
-  const { updateConnectionState } = useWalletAdapter();
   const { toast } = useToast();
   const [connecting, setConnecting] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [allWallets, setAllWallets] = useState<WalletInfo[]>([]);
   
-  // Ref to prevent duplicate processing of the same address
-  const processedAddressRef = useRef<string | null>(null);
-  const isProcessingRef = useRef(false);
+  // Single ref to track connection completion - prevents duplicate processing
+  const connectionHandledRef = useRef(false);
+  const lastProcessedAddressRef = useRef<string | null>(null);
 
   const currentAccount = useCurrentAccount();
   const dappkitWallets = useWallets();
-  const { mutate: connect } = useConnectWallet();
+  const { mutate: connectDappKit } = useConnectWallet();
 
+  // Unified connection finalization - ONLY place that shows toast and updates auth
+  const handleConnectionSuccess = useCallback(async (address: string, walletName: string) => {
+    // Prevent duplicate handling
+    if (connectionHandledRef.current || lastProcessedAddressRef.current === address) {
+      console.log('Connection already handled for:', address);
+      return;
+    }
+    
+    connectionHandledRef.current = true;
+    lastProcessedAddressRef.current = address;
+    
+    console.log('=== CONNECTION SUCCESS ===');
+    console.log('Address:', address);
+    console.log('Wallet:', walletName);
+    
+    // Save to localStorage immediately
+    localStorage.setItem('wallet_address', address);
+    localStorage.setItem('wallet_type', walletName.toLowerCase());
+    
+    // Update AuthContext (this sets the user state)
+    try {
+      await connectWallet(address, walletName.toLowerCase());
+    } catch (e) {
+      console.error('AuthContext update error:', e);
+    }
+    
+    // Show single success toast
+    toast({
+      title: "Wallet Connected",
+      description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,
+    });
+    
+    // Clean up UI state
+    setConnecting(false);
+    setConnectingWallet(null);
+    setError(null);
+    
+    // Close modal
+    onClose();
+  }, [connectWallet, toast, onClose]);
+
+  // Detect all available wallets
   const detectAllWallets = useCallback(() => {
     const walletMap = new Map<string, WalletInfo>();
     
+    // 1. Check dapp-kit wallets first (most reliable)
+    dappkitWallets.forEach((wallet) => {
+      console.log('Dapp-kit wallet found:', wallet.name);
+      walletMap.set(wallet.name, {
+        name: wallet.name,
+        icon: wallet.icon,
+        wallet: wallet,
+        source: 'dappkit'
+      });
+    });
+    
+    // 2. Check wallet-standard API
     try {
       const walletsApi = getWallets();
       const registeredWallets = walletsApi.get();
-      console.log('Wallet Standard API found:', registeredWallets.length, 'wallets');
       
       registeredWallets.forEach((wallet: any) => {
+        if (walletMap.has(wallet.name)) return; // Skip if already added via dapp-kit
+        
         const hasSuiFeature = wallet.features?.['sui:signAndExecuteTransactionBlock'] || 
                               wallet.features?.['sui:signTransactionBlock'] ||
                               wallet.features?.['standard:connect'] ||
                               wallet.chains?.some((c: string) => c.includes('sui'));
         
-        if (hasSuiFeature || wallet.name?.toLowerCase().includes('sui') || 
-            ['slush', 'nightly', 'suiet', 'ethos', 'martian'].some(n => 
-              wallet.name?.toLowerCase().includes(n))) {
-          console.log('Found Sui wallet:', wallet.name, wallet.icon ? '(has icon)' : '');
+        const isKnownWallet = ['slush', 'nightly', 'suiet', 'ethos', 'martian', 'solflare'].some(n => 
+          wallet.name?.toLowerCase().includes(n));
+        
+        if (hasSuiFeature || isKnownWallet) {
+          console.log('Wallet-standard wallet found:', wallet.name);
           walletMap.set(wallet.name, {
             name: wallet.name,
             icon: wallet.icon,
@@ -68,152 +122,141 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
         }
       });
     } catch (e) {
-      console.log('Wallet Standard API error:', e);
+      console.log('Wallet-standard API not available');
     }
     
-    dappkitWallets.forEach((wallet) => {
-      if (!walletMap.has(wallet.name)) {
-        console.log('Adding dapp-kit wallet:', wallet.name);
-        walletMap.set(wallet.name, {
-          name: wallet.name,
-          icon: wallet.icon,
-          wallet: wallet,
-          source: 'dappkit'
-        });
-      }
-    });
-    
+    // 3. Check window globals as fallback
     const win = window as any;
     const directWallets = [
-      { key: 'slush', check: () => win.slush || win.suiWallet, name: 'Slush' },
-      { key: 'nightly', check: () => win.nightly?.sui, name: 'Nightly' },
-      { key: 'suiet', check: () => win.suiet, name: 'Suiet' },
-      { key: 'ethos', check: () => win.ethos, name: 'Ethos Wallet' },
-      { key: 'martian', check: () => win.martian, name: 'Martian Sui Wallet' },
+      { check: () => win.slush, name: 'Slush' },
+      { check: () => win.suiWallet, name: 'Sui Wallet' },
+      { check: () => win.nightly?.sui, name: 'Nightly' },
+      { check: () => win.suiet, name: 'Suiet' },
+      { check: () => win.ethos, name: 'Ethos Wallet' },
+      { check: () => win.martian, name: 'Martian Sui Wallet' },
+      { check: () => win.solflare, name: 'Solflare' },
     ];
     
-    directWallets.forEach(({ key, check, name }) => {
-      const walletObj = check();
-      if (walletObj && !walletMap.has(name)) {
-        console.log('Found direct window wallet:', name);
-        walletMap.set(name, {
-          name: name,
-          wallet: { directKey: key, obj: walletObj },
-          source: 'direct'
-        });
-      }
+    directWallets.forEach(({ check, name }) => {
+      try {
+        const walletObj = check();
+        if (walletObj && !walletMap.has(name)) {
+          console.log('Window wallet found:', name);
+          walletMap.set(name, {
+            name: name,
+            wallet: walletObj,
+            source: 'direct'
+          });
+        }
+      } catch {}
     });
     
     const walletList = Array.from(walletMap.values());
-    console.log('Total wallets found:', walletList.length, walletList.map(w => w.name));
+    console.log('Total wallets detected:', walletList.length, walletList.map(w => w.name));
     setAllWallets(walletList);
     return walletList;
   }, [dappkitWallets]);
 
+  // Reset state when modal opens/closes
   useEffect(() => {
-    if (!isOpen) {
-      // Reset processing state when modal closes so reconnection works
-      isProcessingRef.current = false;
-      return;
-    }
-    
-    // Reset processed address when modal opens to allow reconnection
-    processedAddressRef.current = null;
-    
-    detectAllWallets();
-    
-    const timers = [100, 500, 1000, 2000].map(delay => 
-      setTimeout(detectAllWallets, delay)
-    );
-    
-    try {
-      const walletsApi = getWallets();
-      const unsubscribe = walletsApi.on('register', () => {
-        console.log('New wallet registered');
-        detectAllWallets();
-      });
-      return () => {
-        timers.forEach(clearTimeout);
-        unsubscribe();
-      };
-    } catch (e) {
-      return () => timers.forEach(clearTimeout);
+    if (isOpen) {
+      // Reset refs when modal opens to allow new connections
+      connectionHandledRef.current = false;
+      lastProcessedAddressRef.current = null;
+      setError(null);
+      setConnecting(false);
+      setConnectingWallet(null);
+      
+      // Detect wallets
+      detectAllWallets();
+      
+      // Re-detect after delays to catch late-loading extensions
+      const timers = [200, 800, 1500].map(delay => 
+        setTimeout(detectAllWallets, delay)
+      );
+      
+      // Listen for new wallet registrations
+      try {
+        const walletsApi = getWallets();
+        const unsubscribe = walletsApi.on('register', detectAllWallets);
+        return () => {
+          timers.forEach(clearTimeout);
+          unsubscribe();
+        };
+      } catch {
+        return () => timers.forEach(clearTimeout);
+      }
     }
   }, [isOpen, detectAllWallets]);
 
-  // Single effect to handle dapp-kit connection state changes
+  // Watch for dapp-kit connection changes - this handles connections made via dapp-kit
   useEffect(() => {
-    const address = currentAccount?.address;
+    if (!isOpen) return;
     
-    // Skip if no address, already processed this address, or currently processing
-    if (!address || processedAddressRef.current === address || isProcessingRef.current) {
+    const address = currentAccount?.address;
+    if (!address) return;
+    
+    // Check if we should handle this connection
+    if (connectionHandledRef.current || lastProcessedAddressRef.current === address) {
       return;
     }
     
-    // Mark as processing to prevent race conditions
-    isProcessingRef.current = true;
-    processedAddressRef.current = address;
-    
-    console.log('Dapp-kit connected, processing address:', address);
-    
-    // Show toast once
-    toast({
-      title: "Wallet Connected",
-      description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,
-    });
-    
-    // Update auth context (async but don't block)
-    if (connectWallet) {
-      connectWallet(address, 'sui')
-        .catch((err) => console.error('Auth sync error:', err))
-        .finally(() => {
-          isProcessingRef.current = false;
-        });
-    } else {
-      isProcessingRef.current = false;
-    }
-    
-    // Reset UI state and close modal
-    setConnecting(false);
-    setConnectingWallet(null);
-    onClose();
-  }, [currentAccount?.address, connectWallet, onClose, toast]);
+    // Dapp-kit connected successfully
+    console.log('Dapp-kit currentAccount changed:', address);
+    handleConnectionSuccess(address, connectingWallet || 'sui');
+  }, [currentAccount?.address, isOpen, connectingWallet, handleConnectionSuccess]);
 
+  // Main connection function
   const connectToWallet = async (walletInfo: WalletInfo) => {
+    if (connecting) return;
+    
     setConnecting(true);
     setConnectingWallet(walletInfo.name);
     setError(null);
     
+    console.log('Attempting to connect:', walletInfo.name, 'source:', walletInfo.source);
+    
     try {
-      if (walletInfo.source === 'dappkit' || walletInfo.source === 'standard') {
-        const dappkitWallet = dappkitWallets.find(w => w.name === walletInfo.name);
-        
-        if (dappkitWallet) {
-          console.log('Connecting via dapp-kit:', walletInfo.name);
-          connect({ wallet: dappkitWallet }, {
-            onSuccess: () => {
-              console.log('Dapp-kit connection success');
-            },
-            onError: (err) => {
-              console.error('Dapp-kit connection failed:', err);
-              tryDirectConnection(walletInfo);
-            }
-          });
-          return;
-        }
-        
-        if (walletInfo.wallet?.features?.['standard:connect']) {
-          console.log('Connecting via wallet standard:', walletInfo.name);
+      // METHOD 1: Use dapp-kit if wallet is available there
+      const dappkitWallet = dappkitWallets.find(w => 
+        w.name === walletInfo.name || 
+        w.name.toLowerCase().includes(walletInfo.name.toLowerCase())
+      );
+      
+      if (dappkitWallet) {
+        console.log('Connecting via dapp-kit...');
+        connectDappKit({ wallet: dappkitWallet }, {
+          onSuccess: () => {
+            console.log('Dapp-kit connect mutation succeeded');
+            // The useEffect watching currentAccount will handle the rest
+          },
+          onError: (err) => {
+            console.error('Dapp-kit connect failed:', err);
+            // Try direct connection as fallback
+            tryDirectConnection(walletInfo);
+          }
+        });
+        return;
+      }
+      
+      // METHOD 2: Use wallet-standard connect
+      if (walletInfo.source === 'standard' && walletInfo.wallet?.features?.['standard:connect']) {
+        console.log('Connecting via wallet-standard...');
+        try {
           const result = await walletInfo.wallet.features['standard:connect'].connect();
           const address = result?.accounts?.[0]?.address;
           if (address) {
-            await finalizeConnection(address, walletInfo.name);
+            await handleConnectionSuccess(address, walletInfo.name);
             return;
           }
+        } catch (e) {
+          console.error('Wallet-standard connect failed:', e);
         }
       }
       
+      // METHOD 3: Direct window connection
       await tryDirectConnection(walletInfo);
+      
     } catch (err: any) {
       console.error('Connection error:', err);
       setError(err?.message || "Connection failed. Please try again.");
@@ -222,52 +265,79 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
     }
   };
   
+  // Direct connection via window globals
   const tryDirectConnection = async (walletInfo: WalletInfo) => {
     const win = window as any;
-    let address: string | null = null;
     const name = walletInfo.name.toLowerCase();
     
+    console.log('Trying direct connection for:', name);
+    
     try {
-      if (name.includes('slush') || name === 'sui wallet') {
+      let address: string | null = null;
+      
+      // Slush / Sui Wallet
+      if (name.includes('slush') || name.includes('sui wallet')) {
         const wallet = win.slush || win.suiWallet;
         if (wallet) {
           try { await wallet.requestPermissions?.(); } catch {}
           const accounts = await wallet.getAccounts?.() || [];
-          address = accounts[0] || (await wallet.connect?.())?.accounts?.[0]?.address;
+          if (accounts.length > 0) {
+            address = accounts[0];
+          } else {
+            const result = await wallet.connect?.();
+            address = result?.accounts?.[0]?.address;
+          }
         }
-      } else if (name.includes('nightly')) {
+      }
+      // Nightly
+      else if (name.includes('nightly')) {
         const wallet = win.nightly?.sui;
         if (wallet) {
           const result = await wallet.connect();
           address = result?.accounts?.[0]?.address || result?.publicKey;
         }
-      } else if (name.includes('suiet')) {
+      }
+      // Suiet
+      else if (name.includes('suiet')) {
         const wallet = win.suiet;
         if (wallet) {
-          try { 
-            if (!await wallet.hasPermissions?.()) await wallet.requestPermissions?.(); 
-          } catch {}
+          try { await wallet.requestPermissions?.(); } catch {}
           const result = await wallet.connect?.();
           address = result?.accounts?.[0]?.address || (await wallet.getAccounts?.())?.[0];
         }
-      } else if (name.includes('ethos')) {
+      }
+      // Ethos
+      else if (name.includes('ethos')) {
         const wallet = win.ethos;
         if (wallet) {
           const result = await wallet.connect?.();
-          address = result?.accounts?.[0]?.address;
+          address = result?.accounts?.[0]?.address || result?.address;
         }
-      } else if (name.includes('martian')) {
-        const wallet = win.martian;
+      }
+      // Martian
+      else if (name.includes('martian')) {
+        const wallet = win.martian?.sui || win.martian;
         if (wallet) {
           const result = await wallet.connect?.();
+          address = result?.accounts?.[0]?.address || result?.address;
+        }
+      }
+      // Solflare
+      else if (name.includes('solflare')) {
+        const wallet = win.solflare;
+        if (wallet?.sui) {
+          const result = await wallet.sui.connect?.();
           address = result?.accounts?.[0]?.address;
+        } else if (wallet) {
+          await wallet.connect?.();
+          address = wallet.publicKey?.toString?.();
         }
       }
       
       if (address) {
-        await finalizeConnection(address, walletInfo.name);
+        await handleConnectionSuccess(address, walletInfo.name);
       } else {
-        throw new Error(`Could not connect to ${walletInfo.name}`);
+        throw new Error(`Could not get address from ${walletInfo.name}`);
       }
     } catch (err: any) {
       console.error('Direct connection failed:', err);
@@ -276,70 +346,28 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       setConnectingWallet(null);
     }
   };
-  
-  const finalizeConnection = async (address: string, walletName: string) => {
-    // Skip if already processed this address
-    if (processedAddressRef.current === address) {
-      console.log('Address already processed:', address);
-      setConnecting(false);
-      setConnectingWallet(null);
-      onClose();
-      return;
-    }
-    
-    console.log('Finalizing connection for:', address, 'via', walletName);
-    
-    // Mark as processed
-    processedAddressRef.current = address;
-    isProcessingRef.current = true;
-    
-    // Update WalletAdapter state
-    try {
-      await updateConnectionState(address, walletName.toLowerCase());
-    } catch (e) {
-      console.error('WalletAdapter update error:', e);
-    }
-    
-    // Update AuthContext (syncs with backend)
-    if (connectWallet) {
-      try {
-        await connectWallet(address, walletName.toLowerCase());
-      } catch (e) {
-        console.error('AuthContext update error:', e);
-      }
-    }
-    
-    isProcessingRef.current = false;
-    
-    // Show single toast
-    toast({
-      title: "Wallet Connected",
-      description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,
-    });
-    
-    setConnecting(false);
-    setConnectingWallet(null);
-    onClose();
-  };
 
+  // Quick connect - auto-select best wallet
   const handleQuickConnect = async () => {
     const wallets = detectAllWallets();
     
-    const priorityOrder = ['slush', 'sui wallet', 'nightly', 'suiet'];
-    const priorityWallet = wallets.find(w => 
-      priorityOrder.some(p => w.name.toLowerCase().includes(p))
-    );
-    
-    if (priorityWallet) {
-      await connectToWallet(priorityWallet);
-    } else if (wallets.length > 0) {
-      await connectToWallet(wallets[0]);
-    } else {
+    if (wallets.length === 0) {
       setError("No wallet found. Please install Slush, Nightly, or Suiet wallet extension.");
+      return;
     }
+    
+    // Priority order
+    const priority = ['slush', 'sui wallet', 'nightly', 'suiet'];
+    const bestWallet = wallets.find(w => 
+      priority.some(p => w.name.toLowerCase().includes(p))
+    ) || wallets[0];
+    
+    await connectToWallet(bestWallet);
   };
 
-  const displayWallets = allWallets.filter(w => w.name !== 'Stashed');
+  const displayWallets = allWallets.filter(w => 
+    w.name !== 'Stashed' && !w.name.toLowerCase().includes('stashed')
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>

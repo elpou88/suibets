@@ -59,9 +59,9 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [balances, setBalances] = useState<TokenBalances>({ SUI: 0, SBETS: 0 });
 
-  // Utility function to update connection state consistently
+  // Utility function to update connection state consistently - NO TOAST (handled by caller)
   const updateConnectionState = async (walletAddress: string, walletType: string = 'sui') => {
-    console.log('Manually updating connection state for:', walletAddress);
+    console.log('WalletAdapter: Updating connection state for:', walletAddress);
     
     // Set local state IMMEDIATELY
     setAccount({ address: walletAddress });
@@ -73,7 +73,7 @@ export const WalletProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.setItem('wallet_address', walletAddress);
     localStorage.setItem('wallet_type', walletType);
     
-    // Notify server ASYNCHRONOUSLY - don't block UI
+    // Notify server ASYNCHRONOUSLY - don't block UI, no toast here
     apiRequest('POST', '/api/wallet/connect', {
       address: walletAddress,
       walletType: walletType

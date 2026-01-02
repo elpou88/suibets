@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
 import { AlertCircle, Loader2, WalletIcon, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { 
@@ -24,7 +23,6 @@ interface WalletInfo {
 }
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
-  const { connectWallet } = useAuth();
   const { toast } = useToast();
   const [connecting, setConnecting] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
@@ -39,7 +37,8 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const dappkitWallets = useWallets();
   const { mutate: connectDappKit } = useConnectWallet();
 
-  // Unified connection finalization - ONLY place that shows toast and updates auth
+  // Unified connection finalization - ONLY place that shows toast and closes modal
+  // AuthContext automatically syncs with dapp-kit's currentAccount
   const handleConnectionSuccess = useCallback(async (address: string, walletName: string) => {
     // Prevent duplicate handling
     if (connectionHandledRef.current || lastProcessedAddressRef.current === address) {
@@ -54,17 +53,6 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
     console.log('Address:', address);
     console.log('Wallet:', walletName);
     
-    // Save to localStorage immediately
-    localStorage.setItem('wallet_address', address);
-    localStorage.setItem('wallet_type', walletName.toLowerCase());
-    
-    // Update AuthContext (this sets the user state)
-    try {
-      await connectWallet(address, walletName.toLowerCase());
-    } catch (e) {
-      console.error('AuthContext update error:', e);
-    }
-    
     // Show single success toast
     toast({
       title: "Wallet Connected",
@@ -76,9 +64,9 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
     setConnectingWallet(null);
     setError(null);
     
-    // Close modal
+    // Close modal - AuthContext will auto-sync via useCurrentAccount
     onClose();
-  }, [connectWallet, toast, onClose]);
+  }, [toast, onClose]);
 
   // Detect all available wallets
   const detectAllWallets = useCallback(() => {

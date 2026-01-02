@@ -111,13 +111,42 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const statusUpdated = await storage.updateBetStatus(betId, outcome);
       
       if (statusUpdated && bet) {
+        const currency = bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
+        const walletId = bet.walletAddress || String(bet.userId);
+        
         if (outcome === 'won') {
-          await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+          // Calculate and record 1% platform fee on winnings
+          const grossPayout = bet.potentialPayout || 0;
+          const platformFee = grossPayout * 0.01;
+          const netPayout = grossPayout - platformFee;
+          
+          const winningsAdded = await balanceService.addWinnings(walletId, netPayout, currency);
+          if (!winningsAdded) {
+            // CRITICAL: Revert bet status if balance credit failed
+            await storage.updateBetStatus(betId, 'pending');
+            console.error(`❌ SETTLEMENT REVERTED: Failed to credit winnings for bet ${betId}`);
+            return res.status(500).json({ message: "Failed to credit winnings - settlement reverted" });
+          }
+          // Record platform fee as revenue
+          await balanceService.addRevenue(platformFee, currency);
+          console.log(`💰 ADMIN SETTLE: ${walletId} won ${netPayout} ${currency} (fee: ${platformFee} ${currency})`);
         } else if (outcome === 'lost') {
-          await balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+          // Add full stake to platform revenue
+          await balanceService.addRevenue(bet.betAmount || 0, currency);
+          console.log(`📊 ADMIN SETTLE: ${bet.betAmount} ${currency} added to revenue from lost bet`);
+        } else if (outcome === 'void') {
+          // Refund stake on void
+          const refundSuccess = await balanceService.addWinnings(walletId, bet.betAmount || 0, currency);
+          if (!refundSuccess) {
+            await storage.updateBetStatus(betId, 'pending');
+            console.error(`❌ SETTLEMENT REVERTED: Failed to refund stake for voided bet ${betId}`);
+            return res.status(500).json({ message: "Failed to refund stake - settlement reverted" });
+          }
+          console.log(`🔄 ADMIN SETTLE: ${walletId} refunded ${bet.betAmount} ${currency} (void)`);
         }
       } else if (!statusUpdated) {
         console.log(`⚠️ Bet ${betId} already settled - no payout applied`);
+        return res.status(400).json({ message: "Bet already settled" });
       }
       
       const action = {
@@ -981,11 +1010,24 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (statusUpdated) {
         // AUTO-PAYOUT: Add winnings to user balance using the bet's currency
         if (settlement.status === 'won' && netPayout > 0) {
-          await balanceService.addWinnings(bet.userId, netPayout, bet.currency);
-          console.log(`💰 AUTO-PAYOUT (DB): ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
+          const winningsAdded = await balanceService.addWinnings(bet.userId, netPayout, bet.currency);
+          if (!winningsAdded) {
+            // CRITICAL: Revert bet status if balance credit failed - user keeps their bet
+            await storage.updateBetStatus(betId, 'pending');
+            console.error(`❌ SETTLEMENT REVERTED: Failed to credit winnings for bet ${betId}`);
+            return res.status(500).json({ message: "Failed to credit winnings - settlement reverted" });
+          }
+          // CRITICAL: Record 1% platform fee as revenue (was missing!)
+          await balanceService.addRevenue(platformFee, bet.currency);
+          console.log(`💰 AUTO-PAYOUT (DB): ${bet.userId} received ${netPayout} ${bet.currency} (fee: ${platformFee} ${bet.currency} -> revenue)`);
         } else if (settlement.status === 'void') {
           // Refund stake on void using the bet's currency
-          await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
+          const refundSuccess = await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
+          if (!refundSuccess) {
+            await storage.updateBetStatus(betId, 'pending');
+            console.error(`❌ SETTLEMENT REVERTED: Failed to refund stake for voided bet ${betId}`);
+            return res.status(500).json({ message: "Failed to refund stake - settlement reverted" });
+          }
           console.log(`🔄 STAKE REFUNDED (DB): ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
         } else if (settlement.status === 'lost') {
           // Add lost bet stake to platform revenue

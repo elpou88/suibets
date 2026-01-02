@@ -476,14 +476,36 @@ export class DatabaseStorage implements IStorage {
   async updateBetStatus(betId: string, status: string, payout?: number): Promise<boolean> {
     try {
       // ATOMIC SETTLEMENT with STATE MACHINE VALIDATION
-      // 1. Only allows transitions from settable states (pending, in_play, active)
-      // 2. Returns the OLD status to verify no conflicting settlement occurred
+      // 1. Normal settlement: only from settable states (pending, in_play, active) to terminal states
+      // 2. Rollback: allows reverting FROM terminal states TO pending (for failed payouts)
       // 3. Single atomic UPDATE prevents race conditions
       
+      const isRollback = status === 'pending';
       const settledAt = (status === 'won' || status === 'lost' || status === 'cashed_out' || status === 'void') 
         ? new Date() : undefined;
       
-      // Use a CTE to capture old status and only update if valid transition
+      if (isRollback) {
+        // ROLLBACK PATH: Allow reverting from any terminal state back to pending
+        // This is used when payout fails after status was already updated
+        const rollbackResult = await db.execute(sql`
+          UPDATE bets 
+          SET status = 'pending',
+              settled_at = NULL
+          WHERE wurlus_bet_id = ${betId}
+            AND status IN ('won', 'lost', 'void', 'cashed_out')
+          RETURNING id
+        `);
+        
+        if (rollbackResult.rowCount === 0) {
+          console.log(`⚠️ ROLLBACK FAILED: Bet ${betId} not in terminal state or not found`);
+          return false;
+        }
+        
+        console.log(`🔄 BET STATUS ROLLED BACK: ${betId} -> pending (payout failed, will retry)`);
+        return true;
+      }
+      
+      // NORMAL SETTLEMENT PATH: Only allow transitions from settable states
       const result = await db.execute(sql`
         WITH old_bet AS (
           SELECT id, status as old_status 

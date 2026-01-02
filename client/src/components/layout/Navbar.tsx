@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -14,58 +14,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ConnectButton, useCurrentAccount, useDisconnectWallet, useAccounts } from '@mysten/dapp-kit';
+import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
 import '@mysten/dapp-kit/dist/index.css';
 
 export default function Navbar() {
   const [location, setLocation] = useLocation();
-  const { user, disconnectWallet, connectWallet } = useAuth();
+  const { disconnectWallet, walletAddress: authWalletAddress } = useAuth();
   const { toast } = useToast();
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [hasShownToast, setHasShownToast] = useState(false);
   
-  // Use dapp-kit hooks directly
+  // Use dapp-kit's useCurrentAccount as PRIMARY source of truth
   const currentAccount = useCurrentAccount();
-  const accounts = useAccounts();
-  const { mutate: disconnectDappKit } = useDisconnectWallet();
   
-  // Get wallet address from either dapp-kit or AuthContext
-  const walletAddress = currentAccount?.address || user?.walletAddress;
+  // Wallet address from dapp-kit (preferred) or AuthContext (fallback)
+  const walletAddress = currentAccount?.address || authWalletAddress;
   const isConnected = !!walletAddress;
   
-  // Sync dapp-kit connection to AuthContext when account changes
-  const syncConnection = useCallback(async () => {
-    if (currentAccount?.address) {
-      // Only sync if AuthContext doesn't have this address yet
-      if (!user?.walletAddress || user.walletAddress !== currentAccount.address) {
-        console.log('[Navbar] Syncing wallet to AuthContext:', currentAccount.address);
-        await connectWallet(currentAccount.address, 'sui');
-        
-        // Show toast only once per connection
-        if (!hasShownToast) {
-          toast({
-            title: "Wallet Connected",
-            description: `${currentAccount.address.substring(0, 8)}...${currentAccount.address.slice(-6)}`,
-          });
-          setHasShownToast(true);
-        }
-      }
-    } else {
-      // Reset toast flag when disconnected
-      setHasShownToast(false);
-    }
-  }, [currentAccount?.address, user?.walletAddress, connectWallet, toast, hasShownToast]);
-  
-  useEffect(() => {
-    syncConnection();
-  }, [syncConnection]);
-  
-  // Handle disconnect - both dapp-kit and AuthContext
+  // Handle disconnect
   const handleDisconnect = () => {
     console.log('[Navbar] Disconnecting wallet');
-    setHasShownToast(false);
-    disconnectDappKit();
     disconnectWallet();
+    toast({
+      title: "Wallet Disconnected",
+      description: "Your wallet has been disconnected.",
+    });
   };
 
   return (
@@ -178,7 +150,7 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Use dapp-kit's built-in ConnectButton */}
+            {/* Use dapp-kit's built-in ConnectButton - handles all wallet selection */}
             <ConnectButton 
               connectText="Connect Wallet"
             />

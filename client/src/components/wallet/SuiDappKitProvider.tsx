@@ -1,19 +1,17 @@
 import { ReactNode, useEffect } from 'react';
-import { getFullnodeUrl } from '@mysten/sui.js/client';
-import { SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
-import { useToast } from '@/hooks/use-toast';
+import '@mysten/dapp-kit/dist/index.css';
+import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
+import { getFullnodeUrl } from '@mysten/sui/client';
 
-// Define supported networks
-const networks = {
+const { networkConfig } = createNetworkConfig({
   mainnet: { url: getFullnodeUrl('mainnet') },
   testnet: { url: getFullnodeUrl('testnet') },
   devnet: { url: getFullnodeUrl('devnet') },
-  localnet: { url: getFullnodeUrl('localnet') }
-};
+  localnet: { url: getFullnodeUrl('localnet') },
+});
 
-// Get current network from environment or config (defaults to testnet)
-const getNetworkName = (): 'mainnet' | 'testnet' | 'devnet' | 'localnet' => {
-  const network = import.meta.env.VITE_SUI_NETWORK as string || 'testnet';
+const getDefaultNetwork = (): 'mainnet' | 'testnet' | 'devnet' | 'localnet' => {
+  const network = import.meta.env.VITE_SUI_NETWORK as string || 'mainnet';
   return network as 'mainnet' | 'testnet' | 'devnet' | 'localnet';
 };
 
@@ -22,42 +20,28 @@ interface SuiDappKitProviderProps {
 }
 
 export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
-  const networkName = getNetworkName();
-  const { toast } = useToast();
+  const defaultNetwork = getDefaultNetwork();
   
-  // Ensure wallet connect from Mysten repository is enabled
   useEffect(() => {
-    // Log wallet detection information with delay for extension injection
     const detectWallets = () => {
       const win = window as any;
-      const hasSlush = typeof win.slush !== 'undefined' || typeof win.suiWallet !== 'undefined';
-      const hasNightly = typeof win.nightly?.sui !== 'undefined';
-      const hasSuietWallet = typeof win.suiet !== 'undefined';
-      const hasEthosWallet = typeof win.ethos !== 'undefined';
-      const hasMartianWallet = typeof win.martian !== 'undefined';
-      const hasWalletStandard = typeof win.walletStandard !== 'undefined';
-      
-      console.log("Wallet detection on initialization:", {
-        hasSlush,
-        hasNightly,
-        hasSuietWallet,
-        hasEthosWallet, 
-        hasMartianWallet
+      console.log("Wallet detection:", {
+        slush: !!win.slush || !!win.suiWallet,
+        nightly: !!win.nightly?.sui,
+        suiet: !!win.suiet,
+        ethos: !!win.ethos,
+        martian: !!win.martian,
+        walletStandard: !!win.walletStandard
       });
-
-      console.log("Wallet Standard support available:", hasWalletStandard);
     };
-    
-    // Delay detection to allow extensions time to inject
-    setTimeout(detectWallets, 1000);
+    setTimeout(detectWallets, 500);
   }, []);
   
   return (
-    <SuiClientProvider networks={networks} defaultNetwork={networkName}>
+    <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
       <WalletProvider
-        autoConnect={false} // Explicitly disable autoconnect in favor of our custom connector
-        preferredWallets={["Slush", "Sui Wallet", "Nightly", "Suiet", "Sui: Ethos Wallet", "Martian Sui Wallet"]}
-        enableUnsafeBurner={false}
+        autoConnect={true}
+        preferredWallets={['Slush', 'Sui Wallet', 'Nightly', 'Suiet', 'Ethos Wallet', 'Martian Sui Wallet']}
       >
         {children}
       </WalletProvider>

@@ -2,7 +2,7 @@ import { Switch, Route } from "wouter";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
 
 // Main pages - unified SuiBets design
@@ -30,9 +30,7 @@ import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
 import { UniversalClickHandler } from "@/components/betting/UniversalClickHandler";
 import { SportBettingWrapper } from "@/components/betting/SportBettingWrapper";
-import { SuietWalletProvider } from "@/components/wallet/SuietWalletProvider";
 import { SuiDappKitProvider } from "@/components/wallet/SuiDappKitProvider";
-import { WalletKitProvider } from "@mysten/wallet-kit";
 import { BetSlip } from "@/components/betting/BetSlip";
 
 // Core functionality pages
@@ -95,14 +93,9 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        {/* Order matters - WalletKitProvider enables useWalletKit hook */}
-        <WalletKitProvider>
-          {/* SuiDappKitProvider for Sui dapp integration */}
-          <SuiDappKitProvider>
-            {/* SuietWalletProvider as a fallback for Suiet wallet compatibility */}
-            <SuietWalletProvider>
-              {/* Other application providers */}
-              <WalProvider>
+        {/* SuiDappKitProvider - single source of truth for Sui wallet connection */}
+        <SuiDappKitProvider>
+          <WalProvider>
               <WalrusProtocolProvider>
                 <BlockchainAuthProvider>
                   <AuthProvider>
@@ -184,10 +177,8 @@ function App() {
                   </AuthProvider>
                 </BlockchainAuthProvider>
               </WalrusProtocolProvider>
-            </WalProvider>
-            </SuietWalletProvider>
-          </SuiDappKitProvider>
-        </WalletKitProvider>
+          </WalProvider>
+        </SuiDappKitProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

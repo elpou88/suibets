@@ -1,287 +1,148 @@
-import { useRef, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { WALLET_TYPES } from "@/lib/utils";
-import { ChevronRight, AlertCircle, Loader2, WalletIcon, Info } from "lucide-react";
-import { useWalrusProtocol } from "@/hooks/useWalrusProtocol";
+import { AlertCircle, Loader2, WalletIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
-import { ConnectButton } from '@suiet/wallet-kit';
-import { useWallet as useSuietWallet } from '@suiet/wallet-kit';
-import { SuiDappKitConnect } from "@/components/wallet/SuiDappKitConnect";
-import { SuietWalletConnect } from "@/components/wallet/SuietWalletConnect";
-import { WalletDetector } from "@/components/wallet/WalletDetector";
-import { MystenWalletConnect } from "@/components/wallet/MystenWalletConnect";
-import { ConnectButton as MystenConnectButton, useWalletKit } from '@mysten/wallet-kit';
-import { ConnectButton as DappKitConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
+import { 
+  ConnectButton, 
+  useCurrentAccount, 
+  useConnectWallet,
+  useWallets,
+  useDisconnectWallet
+} from '@mysten/dapp-kit';
 
-// Define the props interface here instead of importing from types
 interface ConnectWalletModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
-  const { user, connectWallet } = useAuth();
-  const { connect: connectAdapter, address, isConnected, error: walletError, updateConnectionState } = useWalletAdapter();
-  const { connectToWurlusProtocol, checkRegistrationStatus, error: walrusError } = useWalrusProtocol();
+  const { connectWallet } = useAuth();
   const { toast } = useToast();
-  // Get Suiet wallet connection state
-  const suietWallet = useSuietWallet();
-  // Get Mysten wallet kit state
-  const { currentAccount, isConnected: isMystenConnected } = useWalletKit();
-
-  const modalRef = useRef<HTMLDivElement>(null);
   const [connecting, setConnecting] = useState(false);
-  const [connectionStep, setConnectionStep] = useState<'selecting' | 'connecting' | 'registering'>('selecting');
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  
-  // Update UI if wallet connection state changes
+
+  const currentAccount = useCurrentAccount();
+  const wallets = useWallets();
+  const { mutate: connect } = useConnectWallet();
+  const { mutate: disconnect } = useDisconnectWallet();
+
   useEffect(() => {
-    if (isConnected && address) {
-      console.log('Wallet detected as connected:', address);
+    console.log('Available wallets:', wallets.map(w => w.name));
+  }, [wallets]);
+
+  useEffect(() => {
+    if (currentAccount?.address) {
+      console.log('Wallet connected:', currentAccount.address);
       
-      // Auto-close modal and notify user
       toast({
         title: "Wallet Connected",
-        description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
-      });
-      
-      // Sync with auth context
-      if (connectWallet) {
-        connectWallet(address, 'sui');
-      }
-      
-      setConnecting(false);
-      setConnectionStep('selecting');
-      onClose();
-    }
-  }, [isConnected, address, connectWallet, onClose, toast]);
-  
-  // Update UI if there's an error from the wallet adapter
-  useEffect(() => {
-    if (walletError) {
-      setError(walletError);
-      setConnecting(false);
-      setConnectionStep('selecting');
-    }
-  }, [walletError]);
-  
-  // Handle Suiet Wallet connection
-  useEffect(() => {
-    if (suietWallet.connected && suietWallet.address) {
-      console.log('Suiet wallet connected successfully:', suietWallet.address);
-      
-      toast({
-        title: "Wallet Connected via Suiet",
-        description: `Connected to ${suietWallet.address.substring(0, 8)}...${suietWallet.address.substring(suietWallet.address.length - 6)}`,
+        description: `Connected to ${currentAccount.address.substring(0, 8)}...${currentAccount.address.substring(currentAccount.address.length - 6)}`,
       });
       
       if (connectWallet) {
-        connectWallet(suietWallet.address, 'sui')
-          .then(() => console.log('Suiet wallet synced with auth context'))
-          .catch((syncError) => console.error('Error syncing Suiet wallet with auth:', syncError));
-      }
-      
-      setTimeout(() => onClose(), 1000);
-    }
-  }, [suietWallet.connected, suietWallet.address, connectWallet, onClose, toast]);
-
-  // Get dapp-kit account (the newer, more reliable connection)
-  const dappKitAccount = useCurrentAccount();
-  
-  // Handle dapp-kit connection (Nightly uses this)
-  useEffect(() => {
-    console.log('Dapp-kit account state:', { address: dappKitAccount?.address || 'none' });
-    
-    if (dappKitAccount?.address) {
-      console.log('SUCCESS: Dapp-kit wallet connected with address:', dappKitAccount.address);
-      
-      try {
-        toast({
-          title: "Wallet Connected",
-          description: `Connected to ${dappKitAccount.address.substring(0, 8)}...${dappKitAccount.address.substring(dappKitAccount.address.length - 6)}`,
-        });
-        
-        // Update adapter state
-        console.log('Updating adapter state from dapp-kit...');
-        updateConnectionState(dappKitAccount.address, 'sui');
-        
-        // Sync with auth context
-        if (connectWallet) {
-          console.log('Syncing dapp-kit with auth context...');
-          connectWallet(dappKitAccount.address, 'sui')
-            .then(() => {
-              console.log('Dapp-kit auth sync complete');
-              onClose();
-            })
-            .catch((err) => {
-              console.error('Dapp-kit auth sync error:', err);
-              onClose();
-            });
-        } else {
-          onClose();
-        }
-      } catch (err) {
-        console.error('Error in dapp-kit connection handler:', err);
-      }
-    }
-  }, [dappKitAccount, connectWallet, updateConnectionState, onClose, toast]);
-
-  // Handle Mysten Wallet Kit connection - LEGACY FALLBACK
-  useEffect(() => {
-    console.log('Mysten wallet state:', { isMystenConnected, currentAccount: currentAccount?.address || 'none' });
-    
-    // Only process if dapp-kit didn't already handle it
-    if (dappKitAccount?.address) return;
-    
-    if (isMystenConnected && currentAccount?.address) {
-      console.log('SUCCESS: Mysten wallet connected with address:', currentAccount.address);
-      
-      try {
-        toast({
-          title: "Wallet Connected",
-          description: `Connected to ${currentAccount.address.substring(0, 8)}...${currentAccount.address.substring(currentAccount.address.length - 6)}`,
-        });
-        
-        // Update adapter state
-        console.log('Updating adapter state...');
-        updateConnectionState(currentAccount.address, 'sui');
-        
-        // Sync with auth context
-        if (connectWallet) {
-          console.log('Syncing with auth context...');
-          connectWallet(currentAccount.address, 'sui')
-            .then(() => {
-              console.log('Auth sync complete');
-              // Close modal only after sync
-              onClose();
-            })
-            .catch((err) => {
-              console.error('Auth sync error:', err);
-              // Still close modal even if auth sync fails
-              onClose();
-            });
-        } else {
-          onClose();
-        }
-      } catch (err) {
-        console.error('Error in Mysten connection handler:', err);
-      }
-    }
-  }, [isMystenConnected, currentAccount, connectWallet, updateConnectionState, onClose, toast]);
-
-  const handleConnectWallet = async (walletId: string) => {
-    try {
-      setSelectedWallet(walletId);
-      setConnectionStep('connecting');
-      setConnecting(true);
-      setError(null);
-      
-      console.log('Initiating wallet connection for:', walletId);
-      
-      // Handle Nightly wallet specifically
-      if (walletId === 'NIGHTLY') {
-        try {
-          const nightly = (window as any).nightly;
-          const nightlySui = nightly?.sui;
-          
-          console.log('Nightly check:', { nightly: !!nightly, nightlySui: !!nightlySui });
-          
-          if (!nightlySui) {
-            window.open('https://nightly.app/', '_blank');
-            setConnecting(false);
-            setConnectionStep('selecting');
-            setError("Nightly wallet not detected. Please install the extension and refresh the page.");
-            return;
-          }
-
-          console.log('Nightly wallet detected! Requesting connection...');
-          
-          // Simple direct connection with timeout
-          let response: any;
-          try {
-            const connectFn = nightlySui.connect || nightlySui.features?.['standard:connect']?.connect;
-            if (!connectFn) {
-              throw new Error("Nightly wallet has no connect method");
-            }
-            
-            response = await Promise.race([
-              connectFn(),
-              new Promise((_, reject) => setTimeout(() => reject(new Error("Connection timed out after 20s")), 20000))
-            ]);
-          } catch (connectErr: any) {
-            console.error('Connection attempt failed:', connectErr);
-            // Check for user rejection
-            if (connectErr?.message?.toLowerCase().includes('reject') || 
-                connectErr?.message?.toLowerCase().includes('cancel') ||
-                connectErr?.message?.toLowerCase().includes('denied')) {
-              setError("Connection rejected. Please approve in your wallet.");
-            } else {
-              setError(connectErr?.message || "Wallet connection failed");
-            }
-            setConnecting(false);
-            setConnectionStep('selecting');
-            return;
-          }
-
-          console.log('Nightly response:', response);
-          const addr = response?.accounts?.[0]?.address || response?.address || response?.publicKey;
-          
-          if (addr) {
-            console.log('Got wallet address:', addr);
-            // Update state and close
-            setConnecting(false);
-            setConnectionStep('selecting');
+        connectWallet(currentAccount.address, 'sui')
+          .then(() => onClose())
+          .catch((err) => {
+            console.error('Auth sync error:', err);
             onClose();
-            
-            // Sync contexts
-            updateConnectionState(addr, 'nightly').catch(e => console.error('Adapter sync error:', e));
-            if (connectWallet) {
-              connectWallet(addr, 'nightly').catch(e => console.error('Auth sync error:', e));
-            }
-            
-            toast({ title: "Wallet Connected", description: "Nightly wallet ready" });
-            return;
-          } else {
-            console.error('No address in response:', response);
-            setError("Connected but no address received. Please try again.");
-            setConnecting(false);
-            setConnectionStep('selecting');
-            return;
-          }
-        } catch (err: any) {
-          console.error('Nightly connection error:', err);
-          setError(err?.message || "Connection failed. Please try again.");
+          });
+      } else {
+        onClose();
+      }
+    }
+  }, [currentAccount?.address, connectWallet, onClose, toast]);
+
+  const handleDirectConnect = async () => {
+    setConnecting(true);
+    setError(null);
+    
+    try {
+      const win = window as any;
+      
+      const slush = win.slush || win.suiWallet;
+      if (slush) {
+        console.log('Connecting via Slush/Sui Wallet...');
+        if (slush.requestPermissions) await slush.requestPermissions();
+        const accounts = await slush.getAccounts?.() || [];
+        if (accounts?.[0]) {
+          if (connectWallet) await connectWallet(accounts[0], 'slush');
+          toast({ title: "Wallet Connected", description: `Connected: ${accounts[0].substring(0, 10)}...` });
           setConnecting(false);
-          setConnectionStep('selecting');
+          onClose();
+          return;
+        }
+        const result = await slush.connect?.();
+        const addr = result?.accounts?.[0]?.address || result?.address;
+        if (addr) {
+          if (connectWallet) await connectWallet(addr, 'slush');
+          toast({ title: "Wallet Connected", description: `Connected: ${addr.substring(0, 10)}...` });
+          setConnecting(false);
+          onClose();
           return;
         }
       }
-      
-      // Generic adapter for other wallets
-      const success = await connectAdapter();
-      if (success) onClose();
-      
-      // Fail-safe timeout
-      setTimeout(() => {
-        setConnecting(prev => {
-          if (prev) {
-            setConnectionStep('selecting');
-            setError("Timed out");
-            return false;
-          }
-          return false;
-        });
-      }, 15000);
-      
-    } catch (err: any) {
-      setError("Connection failed");
+
+      const nightly = win.nightly?.sui;
+      if (nightly) {
+        console.log('Connecting via Nightly...');
+        const result = await nightly.connect();
+        const addr = result?.accounts?.[0]?.address || result?.address || result?.publicKey;
+        if (addr) {
+          if (connectWallet) await connectWallet(addr, 'nightly');
+          toast({ title: "Wallet Connected", description: `Connected: ${addr.substring(0, 10)}...` });
+          setConnecting(false);
+          onClose();
+          return;
+        }
+      }
+
+      const suiet = win.suiet;
+      if (suiet) {
+        console.log('Connecting via Suiet...');
+        const result = await suiet.connect?.();
+        const addr = result?.accounts?.[0]?.address || result?.address;
+        if (addr) {
+          if (connectWallet) await connectWallet(addr, 'suiet');
+          toast({ title: "Wallet Connected", description: `Connected: ${addr.substring(0, 10)}...` });
+          setConnecting(false);
+          onClose();
+          return;
+        }
+      }
+
+      if (wallets.length > 0) {
+        console.log('Using dapp-kit to connect first available wallet:', wallets[0].name);
+        connect({ wallet: wallets[0] });
+        setConnecting(false);
+        return;
+      }
+
+      setError("No wallet detected. Please install Slush, Nightly, or Suiet wallet extension and refresh the page.");
       setConnecting(false);
-      setConnectionStep('selecting');
+    } catch (err: any) {
+      console.error('Connection error:', err);
+      setError(err?.message || "Connection failed. Please try again.");
+      setConnecting(false);
     }
+  };
+
+  const connectSpecificWallet = (wallet: any) => {
+    setConnecting(true);
+    setError(null);
+    console.log('Connecting to wallet:', wallet.name);
+    connect({ wallet }, {
+      onSuccess: () => {
+        console.log('Connected successfully');
+        setConnecting(false);
+      },
+      onError: (err) => {
+        console.error('Connection failed:', err);
+        setError(err?.message || "Failed to connect");
+        setConnecting(false);
+      }
+    });
   };
 
   return (
@@ -290,337 +151,105 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold">Connect Wallet</DialogTitle>
           <DialogDescription>
-            Connect with one of our available wallet providers to continue
+            Connect your Sui wallet to continue
           </DialogDescription>
         </DialogHeader>
 
-        {connectionStep === 'selecting' ? (
-          <div className="space-y-3 py-4">
-            {/* PRIMARY: Direct Wallet Connection Button */}
-            <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
-              <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
-                Connect Your Wallet
-              </h3>
-              <Button
-                onClick={async () => {
-                  try {
-                    setConnecting(true);
-                    setError(null);
-                    console.log('Direct wallet connection attempt...');
-                    
-                    const win = window as any;
-                    
-                    // Try Slush/Sui Wallet first (most popular)
-                    const slush = win.slush || win.suiWallet;
-                    if (slush) {
-                      console.log('Found Slush/Sui wallet, connecting...');
-                      try {
-                        if (slush.requestPermissions) await slush.requestPermissions();
-                        const accounts = await slush.getAccounts?.() || [];
-                        if (accounts?.[0]) {
-                          updateConnectionState(accounts[0], 'slush');
-                          if (connectWallet) await connectWallet(accounts[0], 'slush');
-                          toast({ title: "Wallet Connected", description: `Connected to ${accounts[0].substring(0, 8)}...` });
-                          setConnecting(false);
-                          onClose();
-                          return;
-                        }
-                        const result = await slush.connect?.();
-                        const addr = result?.accounts?.[0]?.address || result?.address;
-                        if (addr) {
-                          updateConnectionState(addr, 'slush');
-                          if (connectWallet) await connectWallet(addr, 'slush');
-                          toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
-                          setConnecting(false);
-                          onClose();
-                          return;
-                        }
-                      } catch (e) { console.log('Slush connect failed:', e); }
-                    }
-                    
-                    // Try Nightly
-                    const nightly = win.nightly;
-                    if (nightly?.sui) {
-                      console.log('Found Nightly.sui, connecting...');
-                      const result = await nightly.sui.connect();
-                      const addr = result?.accounts?.[0]?.address || result?.address || result?.publicKey;
-                      if (addr) {
-                        updateConnectionState(addr, 'nightly');
-                        if (connectWallet) await connectWallet(addr, 'nightly');
-                        toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
-                        setConnecting(false);
-                        onClose();
-                        return;
-                      }
-                    }
-                    
-                    // Try Suiet
-                    const suiet = win.suiet;
-                    if (suiet) {
-                      console.log('Found Suiet wallet, connecting...');
-                      const result = await suiet.connect?.();
-                      const addr = result?.accounts?.[0]?.address || result?.address;
-                      if (addr) {
-                        updateConnectionState(addr, 'suiet');
-                        if (connectWallet) await connectWallet(addr, 'suiet');
-                        toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
-                        setConnecting(false);
-                        onClose();
-                        return;
-                      }
-                    }
-                    
-                    setError("No wallet detected. Please install Slush, Nightly, or Suiet wallet extension.");
-                    setConnecting(false);
-                  } catch (err: any) {
-                    console.error('Direct connect error:', err);
-                    setError(err?.message || "Connection failed");
-                    setConnecting(false);
-                  }
-                }}
-                disabled={connecting}
-                className="w-full bg-[#00FFFF] hover:bg-[#00DDDD] text-black font-bold py-4 text-lg"
-                data-testid="button-direct-connect"
-              >
-                {connecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                    Connecting...
-                  </>
-                ) : (
-                  <>
-                    <WalletIcon className="mr-2 h-5 w-5" />
-                    Connect Wallet
-                  </>
-                )}
-              </Button>
-              <p className="text-xs text-gray-400 text-center mt-2">
-                Supports Slush, Nightly, Suiet and other Sui wallets
-              </p>
-            </div>
-            
-            {/* Secondary: Dapp-Kit button as fallback */}
-            <div className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-600/30">
-              <p className="text-sm text-gray-400 mb-2 text-center">Alternative connection:</p>
-              <div className="flex justify-center [&_button]:!bg-gray-700 [&_button]:!text-white [&_button]:!py-2 [&_button]:!px-4 [&_button]:!rounded">
-                <DappKitConnectButton />
-              </div>
-            </div>
-            
-            {error && (
-              <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
-                <p className="text-red-400 text-sm flex items-center">
-                  <AlertCircle className="h-4 w-4 mr-2" />
-                  {error}
-                </p>
-              </div>
-            )}
-            
-            {/* Wallet detector for debugging */}
-            <WalletDetector />
-            
-            <div className="w-full text-center text-sm text-gray-400 my-2">- or try alternative connection methods -</div>
-            
-            <div className="w-full rounded overflow-hidden mb-2">
-              <h3 className="text-sm font-medium mb-2 flex items-center text-gray-300">
-                <Info className="h-4 w-4 mr-2" />
-                SuiDappKit Connect
-              </h3>
-              <SuiDappKitConnect 
-                onConnect={(address) => {
-                  if (connectWallet) {
-                    console.log('SuiDappKitConnect onConnect called with address:', address);
-                    connectWallet(address, 'sui')
-                      .then(() => {
-                        toast({
-                          title: "Wallet Connected",
-                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
-                        });
-                        onClose();
-                      })
-                      .catch((error) => {
-                        console.error('Error syncing wallet with auth:', error);
-                      });
-                  }
-                }}
-              />
-            </div>
-            
-            <div className="w-full rounded overflow-hidden mb-4 mt-3">
-              <h3 className="text-sm font-medium mb-2 flex items-center text-gray-300">
-                <Info className="h-4 w-4 mr-2" />
-                Suiet Wallet
-              </h3>
-              <SuietWalletConnect 
-                onConnect={(address) => {
-                  if (connectWallet) {
-                    connectWallet(address, 'sui')
-                      .then(() => {
-                        toast({
-                          title: "Wallet Connected",
-                          description: `Connected to ${address.substring(0, 8)}...${address.substring(address.length - 6)}`,
-                        });
-                        onClose();
-                      })
-                      .catch((error) => {
-                        console.error('Error syncing wallet with auth:', error);
-                      });
-                  }
-                }}
-              />
-            </div>
-            
-            <div className="w-full text-center text-sm text-gray-400 my-2">- or select wallet manually -</div>
-            
-            {WALLET_TYPES.map((wallet) => (
-              <Button
-                key={wallet.key}
-                variant="outline"
-                className="w-full justify-between py-6 px-4"
-                onClick={() => handleConnectWallet(wallet.key)}
-                disabled={connecting}
-              >
-                <div className="flex items-center">
-                  <div className={`w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white mr-3`}>
-                    {wallet.name[0]}
-                  </div>
-                  <span className="font-medium">{wallet.name}</span>
-                </div>
-                <ChevronRight className="h-5 w-5 text-gray-400" />
-              </Button>
-            ))}
-          </div>
-        ) : (
-          <div className="py-8 flex flex-col items-center justify-center space-y-4">
-            <Loader2 className="h-10 w-10 text-primary animate-spin" />
-            <div className="text-center">
-              <h3 className="font-medium text-lg">
-                {connectionStep === 'connecting' ? 'Connecting Wallet' : 'Registering with Walrus Protocol'}
-              </h3>
-              <p className="text-muted-foreground mt-1">
-                {connectionStep === 'connecting' 
-                  ? 'Please approve the connection in your wallet...' 
-                  : 'Registering your wallet with the Walrus protocol...'}
-              </p>
-            </div>
-            {selectedWallet && (
-              <div className="flex items-center mt-2">
-                <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-white mr-2">
-                  {WALLET_TYPES.find(w => w.key === selectedWallet)?.name[0] || '?'}
-                </div>
-                <span>{WALLET_TYPES.find(w => w.key === selectedWallet)?.name || 'Wallet'}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <div className="bg-destructive/10 text-destructive rounded-md p-3 flex items-start">
-            <AlertCircle className="h-5 w-5 mr-2 mt-0.5" />
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
-
-        <div className="text-center text-sm text-gray-500">
-          <p>
-            By connecting a wallet, you agree to SuiBets'&nbsp;
-            <Button variant="link" className="p-0 h-auto text-primary">
-              Terms of Service
+        <div className="space-y-4 py-4">
+          <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
+            <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
+              Quick Connect
+            </h3>
+            <Button
+              onClick={handleDirectConnect}
+              disabled={connecting}
+              className="w-full bg-[#00FFFF] hover:bg-[#00DDDD] text-black font-bold py-4 text-lg"
+              data-testid="button-direct-connect"
+            >
+              {connecting ? (
+                <>
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <WalletIcon className="mr-2 h-5 w-5" />
+                  Connect Wallet
+                </>
+              )}
             </Button>
-            &nbsp;and&nbsp;
-            <Button variant="link" className="p-0 h-auto text-primary">
-              Privacy Policy
-            </Button>
-          </p>
-          
-          <div className="mt-4 pt-2 border-t border-gray-200 dark:border-gray-700 text-xs">
-            <p className="mb-2 text-gray-600 dark:text-gray-400 font-medium">Wallet Connection Options:</p>
-            
-            <div className="flex flex-col justify-center items-center mb-4">
-              <p className="text-center text-gray-600 dark:text-gray-400 mb-2">
-                <span className="font-semibold">Note:</span> To use a real Sui wallet, you need to have a wallet extension like Sui Wallet, Ethos Wallet, or Suiet installed in your browser.
-              </p>
-              
-              <div className="flex items-center my-2">
-                <span className="text-green-500 mr-2">✅</span>
-                <span className="text-gray-700 dark:text-gray-300">Real wallets are always prioritized by default</span>
-              </div>
-              
-              <div className="flex justify-between items-center w-full mt-2">
-                <span className="text-sm text-green-600 dark:text-green-400">
-                  ✅ Using real Sui wallets only
-                </span>
-              </div>
-            </div>
-            
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-100 dark:border-blue-800">
-              <div className="flex items-center text-blue-700 dark:text-blue-300 font-medium mb-1">
-                <WalletIcon className="h-4 w-4 mr-1" />
-                <span>Real Wallet Extensions</span>
-              </div>
-              <p className="text-[11px] text-blue-700 dark:text-blue-400">
-                For real wallet support, install one of these browser extensions:
-              </p>
-              <div className="mt-2 grid grid-cols-2 gap-1">
-                <a 
-                  href="https://nightly.app/" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline font-bold"
-                >
-                  • Nightly Wallet (Recommended)
-                </a>
-                <a 
-                  href="https://chrome.google.com/webstore/detail/sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
-                >
-                  • Sui Wallet
-                </a>
-                <a 
-                  href="https://chrome.google.com/webstore/detail/ethos-sui-wallet/mcbigmjiafegjnnogedioegffbooigli" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
-                >
-                  • Ethos Wallet
-                </a>
-                <a 
-                  href="https://chrome.google.com/webstore/detail/suiet-sui-wallet/khpkpbbcccdmmclmpigdgddabeilkdpd" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
-                >
-                  • Suiet Wallet
-                </a>
-                <a 
-                  href="https://chrome.google.com/webstore/detail/martian-wallet-aptos-sui/efbglgofoippbgcjepnhiblaibcnclgk" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-[10px] text-blue-600 dark:text-blue-300 hover:underline"
-                >
-                  • Martian Wallet
-                </a>
-              </div>
-            </div>
+          </div>
 
-            <div className="mt-3 bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-md border border-yellow-100 dark:border-yellow-800">
-              <div className="flex items-center text-yellow-700 dark:text-yellow-300 font-medium mb-1">
-                <AlertCircle className="h-4 w-4 mr-1" />
-                <span>Troubleshooting Tips</span>
-              </div>
-              <ul className="text-[10px] text-yellow-700 dark:text-yellow-400 list-disc pl-4 space-y-1">
-                <li>Make sure your wallet extension is installed and enabled</li>
-                <li>Unlock your wallet before connecting</li>
-                <li>If connecting fails, try refreshing the page</li>
-                <li>Check that your wallet is on the Sui network</li>
-                <li>Allow pop-ups from this site in your browser settings</li>
-              </ul>
+          {wallets.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm text-gray-400 text-center">Or select a wallet:</p>
+              {wallets.map((wallet) => (
+                <Button
+                  key={wallet.name}
+                  variant="outline"
+                  className="w-full justify-start py-3"
+                  onClick={() => connectSpecificWallet(wallet)}
+                  disabled={connecting}
+                  data-testid={`wallet-${wallet.name.toLowerCase().replace(/\s/g, '-')}`}
+                >
+                  {wallet.icon && (
+                    <img 
+                      src={wallet.icon} 
+                      alt={wallet.name} 
+                      className="w-6 h-6 mr-3 rounded"
+                    />
+                  )}
+                  {wallet.name}
+                </Button>
+              ))}
             </div>
-            
-            <div className="mt-3 text-[10px] text-center text-gray-500">
-              Need help? Check out the <a href="https://docs.sui.io/guides/wallet-browser" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">Sui Wallet documentation</a> for detailed setup instructions.
+          )}
+
+          <div className="w-full p-3 bg-gray-800/50 rounded-lg border border-gray-600/30">
+            <p className="text-sm text-gray-400 mb-2 text-center">Standard Connection:</p>
+            <div className="flex justify-center [&_button]:!bg-cyan-600 [&_button]:!text-white [&_button]:!py-2 [&_button]:!px-4 [&_button]:!rounded [&_button]:!font-medium">
+              <ConnectButton />
+            </div>
+          </div>
+
+          {error && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded-lg">
+              <p className="text-red-400 text-sm flex items-center">
+                <AlertCircle className="h-4 w-4 mr-2 flex-shrink-0" />
+                {error}
+              </p>
+            </div>
+          )}
+
+          <div className="text-center text-xs text-gray-500 pt-2 border-t border-gray-700">
+            <p className="mb-2">
+              Don't have a wallet? Install one of these:
+            </p>
+            <div className="flex justify-center gap-3">
+              <a 
+                href="https://slush.dev" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Slush
+              </a>
+              <a 
+                href="https://nightly.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Nightly
+              </a>
+              <a 
+                href="https://suiet.app" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-cyan-400 hover:text-cyan-300"
+              >
+                Suiet
+              </a>
             </div>
           </div>
         </div>

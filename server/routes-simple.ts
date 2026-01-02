@@ -1024,6 +1024,50 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Wallet connect endpoint - registers/retrieves user by wallet address
+  app.post("/api/wallet/connect", async (req: Request, res: Response) => {
+    try {
+      const { address, walletType } = req.body;
+      
+      if (!address) {
+        return res.status(400).json({ message: "Wallet address is required" });
+      }
+      
+      // Check if user exists with this wallet address
+      let user = await storage.getUserByWalletAddress(address);
+      
+      if (!user) {
+        // Create new user with wallet address (password required by schema, use placeholder for wallet-based auth)
+        const crypto = await import('crypto');
+        const placeholderPassword = crypto.randomBytes(32).toString('hex');
+        user = await storage.createUser({
+          username: address.substring(0, 8),
+          password: placeholderPassword,
+          walletAddress: address,
+          walletType: walletType || 'sui'
+        });
+        console.log(`[Wallet Connect] Created new user for wallet: ${address.substring(0, 8)}...`);
+      } else {
+        console.log(`[Wallet Connect] Found existing user for wallet: ${address.substring(0, 8)}...`);
+      }
+      
+      // Get balance for user
+      const balance = await balanceService.getBalanceAsync(address);
+      
+      res.json({
+        id: user.id,
+        username: user.username,
+        walletAddress: user.walletAddress,
+        walletType: user.walletType || walletType || 'sui',
+        createdAt: user.createdAt,
+        balance: balance
+      });
+    } catch (error) {
+      console.error("Wallet connect error:", error);
+      res.status(500).json({ message: "Failed to connect wallet" });
+    }
+  });
+
   // Get user balance (from database for accuracy)
   app.get("/api/user/balance", async (req: Request, res: Response) => {
     try {

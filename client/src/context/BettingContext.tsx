@@ -4,6 +4,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from './AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { calculatePotentialWinnings, calculateParlayOdds } from '@/lib/utils';
+import { useOnChainBet } from '@/hooks/useOnChainBet';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 
 // Create betting context
 const BettingContext = createContext<BettingContextType>({
@@ -37,6 +39,10 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
   const [selectedBets, setSelectedBets] = useState<SelectedBet[]>(loadSavedBets);
   const { user } = useAuth();
   const { toast } = useToast();
+  
+  // On-chain betting hook
+  const currentAccount = useCurrentAccount();
+  const { placeBetOnChain, isLoading: isOnChainLoading } = useOnChainBet();
   
   // Save bets to localStorage whenever they change
   useEffect(() => {
@@ -163,38 +169,96 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         ...options,
       };
 
-      // For single bets
+      // For single bets - SUBMIT ON-CHAIN FIRST
       if (betOptions.betType === 'single' && selectedBets.length === 1) {
         const bet = selectedBets[0];
+        const stakeAmount = bet.stake || betAmount;
         
-        const response = await apiRequest('POST', '/api/bets', {
-          userId: user.id,
-          walletAddress: user.walletAddress,
-          eventId: bet.eventId,
-          eventName: bet.eventName,
-          marketId: bet.marketId,
-          outcomeId: bet.outcomeId,
-          odds: bet.odds,
-          betAmount: bet.stake || betAmount,
-          prediction: bet.selectionName,
-          potentialPayout: calculatePotentialWinnings(bet.stake || betAmount, bet.odds),
-          feeCurrency: betOptions.currency,
-        });
-
-        if (response.ok) {
+        // Check if wallet is connected for on-chain betting
+        if (!currentAccount?.address) {
           toast({
-            title: "Bet placed successfully",
-            description: `${bet.selectionName} bet placed for ${bet.stake || betAmount} ${betOptions.currency}`,
-          });
-          clearBets();
-          return true;
-        } else {
-          const errorData = await response.json();
-          toast({
-            title: "Failed to place bet",
-            description: errorData.message || "An error occurred",
+            title: "Wallet Required",
+            description: "Connect your Sui wallet to place on-chain bets",
             variant: "destructive",
           });
+          
+          const connectWalletEvent = new CustomEvent('suibets:connect-wallet-required');
+          window.dispatchEvent(connectWalletEvent);
+          return false;
+        }
+
+        // Use the on-chain betting hook
+        const onChainResult = await placeBetOnChain({
+          eventId: String(bet.eventId),
+          marketId: String(bet.marketId || 'match_winner'),
+          prediction: bet.selectionName,
+          betAmountSui: stakeAmount,
+          odds: bet.odds,
+          walrusBlobId: '',
+        });
+
+        if (!onChainResult.success) {
+          // On-chain bet failed - don't clear slip, error already shown by hook
+          return false;
+        }
+
+        // On-chain bet succeeded - now record in database
+        try {
+          const response = await apiRequest('POST', '/api/bets', {
+            userId: user.id,
+            walletAddress: currentAccount.address,
+            eventId: bet.eventId,
+            eventName: bet.eventName,
+            marketId: bet.marketId,
+            outcomeId: bet.outcomeId,
+            odds: bet.odds,
+            betAmount: stakeAmount,
+            prediction: bet.selectionName,
+            potentialPayout: calculatePotentialWinnings(stakeAmount, bet.odds),
+            feeCurrency: betOptions.currency,
+            txHash: onChainResult.txDigest,
+            onChainBetId: onChainResult.betObjectId,
+            status: 'confirmed',
+          });
+
+          if (response.ok) {
+            toast({
+              title: "Bet Recorded",
+              description: "On-chain bet saved to database!",
+            });
+            clearBets();
+            return true;
+          } else {
+            // Database failed but bet is on-chain - keep in slip for retry
+            toast({
+              title: "Database Error",
+              description: `Bet is on-chain (TX: ${onChainResult.txDigest?.slice(0, 12)}...) but failed to save. Retry or contact support.`,
+              variant: "destructive",
+            });
+            // Store txHash locally for recovery
+            localStorage.setItem('pendingOnChainBet', JSON.stringify({
+              txDigest: onChainResult.txDigest,
+              betObjectId: onChainResult.betObjectId,
+              bet,
+              stakeAmount,
+              timestamp: Date.now(),
+            }));
+            return false;
+          }
+        } catch (dbError: any) {
+          // Database error but bet is on-chain
+          toast({
+            title: "Database Error",
+            description: `Bet is on-chain (TX: ${onChainResult.txDigest?.slice(0, 12)}...) but failed to save. Retry or contact support.`,
+            variant: "destructive",
+          });
+          localStorage.setItem('pendingOnChainBet', JSON.stringify({
+            txDigest: onChainResult.txDigest,
+            betObjectId: onChainResult.betObjectId,
+            bet,
+            stakeAmount,
+            timestamp: Date.now(),
+          }));
           return false;
         }
       }

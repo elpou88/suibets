@@ -1,4 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
 import { Event, Sport } from "@/types";
 import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { ChevronDown, ChevronRight, Activity } from "lucide-react";
@@ -7,118 +6,10 @@ import { Link } from "wouter";
 import { cn } from "@/lib/utils";
 import FeaturedEventCard from "./FeaturedEventCard";
 import { useState, useEffect } from "react";
+import { useLiveEvents } from "@/hooks/useEvents";
 
 export function LiveEventsSection() {
-  const { data: liveEvents = [], isLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events/live-lite'],
-    queryFn: async () => {
-      console.log("Fetching live events from lite API for LiveEventsSection");
-      try {
-        // Use the optimized lite endpoint for better performance
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8s timeout for lite API
-        
-        try {
-          const response = await fetch('/api/events/live-lite', {
-            signal: controller.signal,
-            headers: {
-              'Accept': 'application/json',
-              'Cache-Control': 'no-cache'
-            }
-          });
-          
-          clearTimeout(timeoutId);
-          
-          if (!response.ok) {
-            console.warn(`LiveEventsSection: Lite API returned status ${response.status}, trying fallback`);
-            return await fetchFallbackEvents();
-          }
-          
-          const responseText = await response.text();
-          
-          // Strict validation that it's a JSON array
-          if (!responseText.trim().startsWith('[') || !responseText.trim().endsWith(']')) {
-            console.warn('LiveEventsSection: Lite API response is not in array format');
-            return await fetchFallbackEvents();
-          }
-          
-          try {
-            // Try to parse the response manually
-            const data = JSON.parse(responseText);
-            
-            // Validate it's an array
-            if (!Array.isArray(data)) {
-              console.warn('LiveEventsSection: Lite API did not return an array after parsing:', typeof data);
-              return await fetchFallbackEvents();
-            }
-            
-            console.log(`LiveEventsSection: Received ${data.length} events from lite API`);
-            
-            // Validate and filter events to ensure minimal required properties
-            const validEvents = data.filter(event => 
-              event && 
-              typeof event === 'object' && 
-              (event.id || event.eventId) && 
-              (event.homeTeam || event.awayTeam || event.home || event.away || event.team1 || event.team2)
-            );
-            
-            return validEvents;
-          } catch (jsonError) {
-            console.warn('LiveEventsSection: Failed to parse JSON response:', jsonError);
-            return await fetchFallbackEvents();
-          }
-        } catch (fetchError) {
-          clearTimeout(timeoutId);
-          console.warn('LiveEventsSection: Error fetching from lite API:', fetchError);
-          return await fetchFallbackEvents();
-        }
-      } catch (error) {
-        console.error("Error fetching live events:", error);
-        return []; // Return empty array on error
-      }
-    },
-    refetchInterval: 15000, // Refresh every 15 seconds for live
-    retry: 2, // Fewer retries for faster recovery
-    retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 3000) // Progressive delay
-  });
-  
-  // Helper function to fetch fallback events
-  async function fetchFallbackEvents(): Promise<Event[]> {
-    try {
-      console.log('LiveEventsSection: Using fallback API endpoint');
-      const fallbackResponse = await fetch('/api/events?isLive=true', {
-        headers: {
-          'Accept': 'application/json',
-          'Cache-Control': 'no-cache'
-        },
-        signal: AbortSignal.timeout(15000) // 15s timeout for fallback
-      });
-      
-      if (!fallbackResponse.ok) {
-        console.warn(`LiveEventsSection: Fallback API also failed with status ${fallbackResponse.status}`);
-        return [];
-      }
-      
-      try {
-        const fallbackText = await fallbackResponse.text();
-        const fallbackData = JSON.parse(fallbackText);
-        
-        if (!Array.isArray(fallbackData)) {
-          console.warn('LiveEventsSection: Fallback API did not return an array:', typeof fallbackData);
-          return [];
-        }
-        
-        console.log(`LiveEventsSection: Received ${fallbackData.length} events from fallback API`);
-        return fallbackData;
-      } catch (parseError) {
-        console.warn('LiveEventsSection: Failed to parse fallback response:', parseError);
-        return [];
-      }
-    } catch (fallbackError) {
-      console.error("LiveEventsSection: Error fetching fallback events:", fallbackError);
-      return []; // Final fallback - empty array
-    }
-  }
+  const { data: liveEvents = [], isLoading } = useLiveEvents();
 
   if (isLoading) {
     return <div className="p-12 text-center">Loading live events...</div>;

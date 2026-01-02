@@ -6,6 +6,7 @@ import { Card, CardHeader, CardContent } from "@/components/ui/card";
 import { ChevronDown, Globe } from "lucide-react";
 import { BettingCard } from "@/components/ui/betting-card";
 import { formatDate } from "@/lib/utils";
+import { useUpcomingEvents } from "@/hooks/useEvents";
 
 export function EventsContainer() {
   const [selectedFilter, setSelectedFilter] = useState("all");
@@ -14,9 +15,7 @@ export function EventsContainer() {
     queryKey: ['/api/sports']
   });
   
-  const { data: events = [], isLoading: eventsLoading } = useQuery<Event[]>({
-    queryKey: ['/api/events', { isLive: false }]
-  });
+  const { data: events = [], isLoading: eventsLoading } = useUpcomingEvents();
 
   const groupedEvents = events.reduce((acc, event) => {
     const key = event.leagueSlug;

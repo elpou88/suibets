@@ -21,10 +21,18 @@ export class BalanceService {
   private cacheExpiry = 30000; // 30 second cache
 
   /**
+   * Normalize wallet address for consistent cache keys
+   */
+  private normalizeKey(userId: string): string {
+    return userId.toLowerCase();
+  }
+
+  /**
    * Get user balance from database (with caching for performance)
    */
   async getBalanceAsync(userId: string): Promise<UserBalance> {
-    const cached = this.balanceCache.get(userId);
+    const cacheKey = this.normalizeKey(userId);
+    const cached = this.balanceCache.get(cacheKey);
     if (cached && Date.now() - cached.lastUpdated < this.cacheExpiry) {
       return cached;
     }
@@ -32,7 +40,7 @@ export class BalanceService {
     const dbBalance = await storage.getUserBalance(userId);
     
     const balance: UserBalance = {
-      userId,
+      userId: cacheKey,
       suiBalance: dbBalance?.suiBalance || 0,
       sbetsBalance: dbBalance?.sbetsBalance || 0,
       totalBetAmount: 0,
@@ -40,7 +48,7 @@ export class BalanceService {
       lastUpdated: Date.now()
     };
 
-    this.balanceCache.set(userId, balance);
+    this.balanceCache.set(cacheKey, balance);
     return balance;
   }
 
@@ -48,14 +56,15 @@ export class BalanceService {
    * Synchronous balance getter (uses cache, falls back to 0)
    */
   getBalance(userId: string): UserBalance {
-    const cached = this.balanceCache.get(userId);
+    const cacheKey = this.normalizeKey(userId);
+    const cached = this.balanceCache.get(cacheKey);
     if (cached) {
       return cached;
     }
 
     // Return default, async load will populate
     const balance: UserBalance = {
-      userId,
+      userId: cacheKey,
       suiBalance: 0,
       sbetsBalance: 0,
       totalBetAmount: 0,
@@ -259,10 +268,10 @@ export class BalanceService {
   }
 
   /**
-   * Deposit SUI to account with txHash deduplication
+   * Deposit SUI or SBETS to account with txHash deduplication
    * PERSISTS TO DATABASE - Returns false if txHash was already processed
    */
-  async deposit(userId: string, amount: number, txHash?: string, reason: string = 'Wallet deposit'): Promise<{ success: boolean; message: string }> {
+  async deposit(userId: string, amount: number, txHash?: string, reason: string = 'Wallet deposit', currency: 'SUI' | 'SBETS' = 'SUI'): Promise<{ success: boolean; message: string }> {
     // DUPLICATE PREVENTION: Check if this txHash was already processed
     if (txHash) {
       const alreadyProcessed = await storage.isTransactionProcessed(txHash);
@@ -272,17 +281,25 @@ export class BalanceService {
       }
     }
 
-    // Update database
-    await storage.updateUserBalance(userId, amount, 0);
-    await storage.recordWalletOperation(userId, 'deposit', amount, txHash || `deposit-${Date.now()}`, { reason });
+    // Update database with correct currency
+    if (currency === 'SBETS') {
+      await storage.updateUserBalance(userId, 0, amount);
+    } else {
+      await storage.updateUserBalance(userId, amount, 0);
+    }
+    await storage.recordWalletOperation(userId, 'deposit', amount, txHash || `deposit-${Date.now()}`, { reason, currency });
 
     // Update cache
     const balance = await this.getBalanceAsync(userId);
-    balance.suiBalance += amount;
+    if (currency === 'SBETS') {
+      balance.sbetsBalance += amount;
+    } else {
+      balance.suiBalance += amount;
+    }
     balance.lastUpdated = Date.now();
 
-    console.log(`💳 DEPOSIT ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SUI (${reason}) txHash: ${txHash} | Balance: ${balance.suiBalance} SUI`);
-    return { success: true, message: `Deposited ${amount} SUI` };
+    console.log(`💳 DEPOSIT ADDED (DB): ${userId.slice(0, 8)}... - ${amount} ${currency} (${reason}) txHash: ${txHash} | Balance: ${balance.suiBalance} SUI, ${balance.sbetsBalance} SBETS`);
+    return { success: true, message: `Deposited ${amount} ${currency}` };
   }
 
   /**

@@ -1170,7 +1170,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
       
       // DUPLICATE PREVENTION: Use txHash deduplication in balanceService
-      const depositResult = await balanceService.deposit(userId, amount, txHash, 'Wallet deposit');
+      const depositResult = await balanceService.deposit(userId, amount, txHash, 'Wallet deposit', currency as 'SUI' | 'SBETS');
       
       if (!depositResult.success) {
         console.warn(`⚠️ DUPLICATE DEPOSIT BLOCKED: ${txHash} for ${userId}`);

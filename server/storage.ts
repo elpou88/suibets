@@ -482,7 +482,7 @@ export class DatabaseStorage implements IStorage {
       
       const isRollback = status === 'pending';
       const settledAt = (status === 'won' || status === 'lost' || status === 'cashed_out' || status === 'void') 
-        ? new Date() : undefined;
+        ? new Date().toISOString() : null;
       
       if (isRollback) {
         // ROLLBACK PATH: Allow reverting from any terminal state back to pending
@@ -496,7 +496,10 @@ export class DatabaseStorage implements IStorage {
           RETURNING id
         `);
         
-        if (rollbackResult.rowCount === 0) {
+        // Handle both array and object result formats
+        const rollbackRows = Array.isArray(rollbackResult) ? rollbackResult : (rollbackResult.rows || []);
+        
+        if (rollbackRows.length === 0) {
           console.log(`⚠️ ROLLBACK FAILED: Bet ${betId} not in terminal state or not found`);
           return false;
         }
@@ -515,7 +518,7 @@ export class DatabaseStorage implements IStorage {
         updated_bet AS (
           UPDATE bets 
           SET status = ${status},
-              payout = COALESCE(${payout ?? null}, payout),
+              payout = COALESCE(${payout ?? null}::real, payout),
               settled_at = COALESCE(${settledAt ?? null}, settled_at)
           WHERE wurlus_bet_id = ${betId}
             AND status IN ('pending', 'in_play', 'active')
@@ -529,12 +532,15 @@ export class DatabaseStorage implements IStorage {
         LEFT JOIN updated_bet ON old_bet.id = updated_bet.id
       `);
       
-      if (result.rowCount === 0) {
+      // Handle both array and object result formats
+      const rows = Array.isArray(result) ? result : (result.rows || []);
+      
+      if (rows.length === 0) {
         console.log(`⚠️ BET NOT FOUND: ${betId}`);
         return false;
       }
       
-      const row = result.rows[0] as any;
+      const row = rows[0] as any;
       
       if (!row.updated) {
         // Bet exists but was not updated (already in terminal state)
@@ -588,7 +594,9 @@ export class DatabaseStorage implements IStorage {
   
   async getUserBalance(walletAddress: string): Promise<{ suiBalance: number; sbetsBalance: number } | undefined> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      // Normalize wallet address to lowercase for consistent lookups
+      const normalizedWallet = walletAddress.toLowerCase();
+      const [user] = await db.select().from(users).where(eq(users.walletAddress, normalizedWallet));
       if (!user) return undefined;
       return {
         suiBalance: user.suiBalance || 0,
@@ -602,6 +610,9 @@ export class DatabaseStorage implements IStorage {
 
   async updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<boolean> {
     try {
+      // Normalize wallet address to lowercase for consistent storage/lookup
+      const normalizedWallet = walletAddress.toLowerCase();
+      
       // ATOMIC BALANCE UPDATE: Single UPDATE that validates resulting balance won't go negative
       // This prevents race conditions, overdrafts, and handles mixed credit/debit scenarios
       
@@ -613,17 +624,21 @@ export class DatabaseStorage implements IStorage {
         // Has deductions - use atomic update with balance validation
         const result = await db.execute(sql`
           UPDATE users 
-          SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta},
-              sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}
-          WHERE wallet_address = ${walletAddress}
-            AND (${suiRequired} = 0 OR COALESCE(sui_balance, 0) >= ${suiRequired})
-            AND (${sbetsRequired} = 0 OR COALESCE(sbets_balance, 0) >= ${sbetsRequired})
+          SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta}::real,
+              sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}::real
+          WHERE wallet_address = ${normalizedWallet}
+            AND (${suiRequired}::real = 0 OR COALESCE(sui_balance, 0) >= ${suiRequired}::real)
+            AND (${sbetsRequired}::real = 0 OR COALESCE(sbets_balance, 0) >= ${sbetsRequired}::real)
           RETURNING id, sui_balance, sbets_balance
         `);
         
-        if (result.rowCount === 0) {
+        // Handle both array and object result formats from db.execute
+        const rows = Array.isArray(result) ? result : (result.rows || []);
+        const rowCount = rows.length;
+        
+        if (rowCount === 0) {
           // Either user doesn't exist or insufficient balance for the deduction(s)
-          const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+          const [user] = await db.select().from(users).where(eq(users.walletAddress, normalizedWallet));
           if (!user) {
             console.log(`⚠️ User ${walletAddress.slice(0, 8)}... not found for balance update`);
             return false;
@@ -632,7 +647,7 @@ export class DatabaseStorage implements IStorage {
           return false;
         }
         
-        const newBalance = result.rows[0] as any;
+        const newBalance = rows[0] as any;
         console.log(`💰 ATOMIC UPDATE: ${walletAddress.slice(0, 8)}... | ${suiDelta >= 0 ? '+' : ''}${suiDelta} SUI, ${sbetsDelta >= 0 ? '+' : ''}${sbetsDelta} SBETS | New: ${newBalance.sui_balance} SUI, ${newBalance.sbets_balance} SBETS`);
         return true;
       }
@@ -640,26 +655,32 @@ export class DatabaseStorage implements IStorage {
       // Pure credits only - no balance validation needed, just atomic increment
       const creditResult = await db.execute(sql`
         UPDATE users 
-        SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta},
-            sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}
-        WHERE wallet_address = ${walletAddress}
+        SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta}::real,
+            sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}::real
+        WHERE wallet_address = ${normalizedWallet}
         RETURNING id, sui_balance, sbets_balance
       `);
       
-      if (creditResult.rowCount === 0) {
+      // Handle both array and object result formats
+      const creditRows = Array.isArray(creditResult) ? creditResult : (creditResult.rows || []);
+      const creditRowCount = creditRows.length;
+      
+      if (creditRowCount === 0) {
         // User doesn't exist - create new user with initial balance
+        // Use normalized (lowercase) wallet address for consistent storage
+        const uniqueSuffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         await db.insert(users).values({
-          username: `wallet_${walletAddress.slice(0, 8)}`,
-          password: '',
-          walletAddress,
+          username: `wallet_${normalizedWallet.slice(0, 12)}_${uniqueSuffix}`,
+          password: 'wallet_user',
+          walletAddress: normalizedWallet,
           suiBalance: Math.max(0, suiDelta),
           sbetsBalance: Math.max(0, sbetsDelta)
         });
-        console.log(`📝 Created new user for wallet ${walletAddress.slice(0, 8)}... with balance ${suiDelta} SUI, ${sbetsDelta} SBETS`);
+        console.log(`📝 Created new user for wallet ${normalizedWallet.slice(0, 8)}... with balance ${suiDelta} SUI, ${sbetsDelta} SBETS`);
         return true;
       }
       
-      const newBalance = creditResult.rows[0] as any;
+      const newBalance = creditRows[0] as any;
       console.log(`💰 ATOMIC CREDIT: ${walletAddress.slice(0, 8)}... | +${suiDelta} SUI, +${sbetsDelta} SBETS | New: ${newBalance.sui_balance} SUI, ${newBalance.sbets_balance} SBETS`);
       return true;
     } catch (error) {
@@ -670,26 +691,29 @@ export class DatabaseStorage implements IStorage {
 
   async setUserBalance(walletAddress: string, suiBalance: number, sbetsBalance: number): Promise<void> {
     try {
-      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      // Normalize wallet address to lowercase for consistent storage
+      const normalizedWallet = walletAddress.toLowerCase();
+      const [user] = await db.select().from(users).where(eq(users.walletAddress, normalizedWallet));
       
       if (!user) {
         // Create new user with wallet address
+        const uniqueSuffix = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
         await db.insert(users).values({
-          username: `wallet_${walletAddress.slice(0, 8)}`,
-          password: '',
-          walletAddress,
+          username: `wallet_${normalizedWallet.slice(0, 12)}_${uniqueSuffix}`,
+          password: 'wallet_user',
+          walletAddress: normalizedWallet,
           suiBalance,
           sbetsBalance
         });
-        console.log(`📝 Created new user for wallet ${walletAddress.slice(0, 8)}... with balance ${suiBalance} SUI, ${sbetsBalance} SBETS`);
+        console.log(`📝 Created new user for wallet ${normalizedWallet.slice(0, 8)}... with balance ${suiBalance} SUI, ${sbetsBalance} SBETS`);
         return;
       }
 
       await db.update(users)
         .set({ suiBalance, sbetsBalance })
-        .where(eq(users.walletAddress, walletAddress));
+        .where(eq(users.walletAddress, normalizedWallet));
       
-      console.log(`💰 DB BALANCE SET: ${walletAddress.slice(0, 8)}... | SUI: ${suiBalance} | SBETS: ${sbetsBalance}`);
+      console.log(`💰 DB BALANCE SET: ${normalizedWallet.slice(0, 8)}... | SUI: ${suiBalance} | SBETS: ${sbetsBalance}`);
     } catch (error) {
       console.error('Error setting user balance:', error);
     }

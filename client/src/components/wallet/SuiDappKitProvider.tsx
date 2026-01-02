@@ -1,7 +1,8 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import '@mysten/dapp-kit/dist/index.css';
 import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { networkConfig } = createNetworkConfig({
   mainnet: { url: getFullnodeUrl('mainnet') },
@@ -14,6 +15,8 @@ const getDefaultNetwork = (): 'mainnet' | 'testnet' | 'devnet' | 'localnet' => {
   const network = import.meta.env.VITE_SUI_NETWORK as string || 'mainnet';
   return network as 'mainnet' | 'testnet' | 'devnet' | 'localnet';
 };
+
+const walletQueryClient = new QueryClient();
 
 interface SuiDappKitProviderProps {
   children: ReactNode;
@@ -31,20 +34,26 @@ export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
         suiet: !!win.suiet,
         ethos: !!win.ethos,
         martian: !!win.martian,
-        walletStandard: !!win.walletStandard
       });
     };
+    
     setTimeout(detectWallets, 500);
+    setTimeout(detectWallets, 1500);
   }, []);
   
   return (
-    <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
-      <WalletProvider
-        autoConnect={true}
-        preferredWallets={['Slush', 'Sui Wallet', 'Nightly', 'Suiet', 'Ethos Wallet', 'Martian Sui Wallet']}
-      >
-        {children}
-      </WalletProvider>
-    </SuiClientProvider>
+    <QueryClientProvider client={walletQueryClient}>
+      <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
+        <WalletProvider
+          autoConnect={true}
+          stashedWallet={{
+            name: 'SuiBets',
+          }}
+          preferredWallets={['Slush', 'Sui Wallet', 'Nightly', 'Suiet', 'Ethos Wallet', 'Martian Sui Wallet']}
+        >
+          {children}
+        </WalletProvider>
+      </SuiClientProvider>
+    </QueryClientProvider>
   );
 };

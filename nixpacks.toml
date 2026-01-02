@@ -1,8 +1,8 @@
 [phases.setup]
-nixPkgs = ["nodejs-20_x", "npm-9_x"]
+nixPkgs = ["nodejs_20", "npm-10_x"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --omit=optional"]
 
 [phases.build]
 cmds = ["npm run build"]

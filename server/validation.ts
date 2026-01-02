@@ -19,6 +19,7 @@ export const OddsSchema = z.number()
 // Bet placement schema
 export const PlaceBetSchema = z.object({
   userId: z.string().optional().default('user1'),
+  walletAddress: z.string().optional(),
   eventId: z.string().min(1, 'Event ID required'),
   eventName: z.string().optional(), // Event name for bet history display
   marketId: z.string().min(1, 'Market ID required'),
@@ -26,7 +27,12 @@ export const PlaceBetSchema = z.object({
   odds: OddsSchema,
   betAmount: BetAmountSchema,
   prediction: z.string().min(1, 'Prediction required'),
-  feeCurrency: z.enum(['SUI', 'SBETS']).optional().default('SUI')
+  potentialPayout: z.number().optional(),
+  feeCurrency: z.enum(['SUI', 'SBETS']).optional().default('SUI'),
+  paymentMethod: z.enum(['platform', 'wallet']).optional().default('platform'),
+  txHash: z.string().optional(), // For wallet/on-chain bets
+  onChainBetId: z.string().optional(), // Sui bet object ID
+  status: z.enum(['pending', 'confirmed', 'settled', 'cancelled']).optional().default('pending')
 });
 
 // Parlay schema

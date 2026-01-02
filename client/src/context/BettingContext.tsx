@@ -161,19 +161,66 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         return false;
       }
 
-      // Default options
+      // Default options - default to wallet (on-chain) betting
       const betOptions: PlaceBetOptions = {
         betType: selectedBets.length > 1 ? 'parlay' : 'single',
         currency: 'SUI',
         acceptOddsChange: true,
+        paymentMethod: 'wallet', // Default to on-chain betting
         ...options,
       };
 
-      // For single bets - SUBMIT ON-CHAIN FIRST
+      // For single bets
       if (betOptions.betType === 'single' && selectedBets.length === 1) {
         const bet = selectedBets[0];
         const stakeAmount = bet.stake || betAmount;
-        
+
+        // OPTION 1: Platform Balance (off-chain, deduct from database)
+        if (betOptions.paymentMethod === 'platform') {
+          try {
+            const response = await apiRequest('POST', '/api/bets', {
+              userId: user.id,
+              walletAddress: user.walletAddress,
+              eventId: bet.eventId,
+              eventName: bet.eventName,
+              marketId: bet.marketId,
+              outcomeId: bet.outcomeId,
+              odds: bet.odds,
+              betAmount: stakeAmount,
+              prediction: bet.selectionName,
+              potentialPayout: calculatePotentialWinnings(stakeAmount, bet.odds),
+              feeCurrency: betOptions.currency,
+              paymentMethod: 'platform',
+              status: 'pending',
+            });
+
+            if (response.ok) {
+              toast({
+                title: "Bet Placed",
+                description: `${bet.selectionName} bet placed for ${stakeAmount} ${betOptions.currency}`,
+              });
+              clearBets();
+              return true;
+            } else {
+              const errorData = await response.json();
+              toast({
+                title: "Failed to place bet",
+                description: errorData.message || "Insufficient balance or error occurred",
+                variant: "destructive",
+              });
+              return false;
+            }
+          } catch (error: any) {
+            toast({
+              title: "Error placing bet",
+              description: error.message || "An unexpected error occurred",
+              variant: "destructive",
+            });
+            return false;
+          }
+        }
+
+        // OPTION 2: Direct Wallet (on-chain transaction)
         // Check if wallet is connected for on-chain betting
         if (!currentAccount?.address) {
           toast({
@@ -218,6 +265,7 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
             feeCurrency: betOptions.currency,
             txHash: onChainResult.txDigest,
             onChainBetId: onChainResult.betObjectId,
+            paymentMethod: 'wallet',
             status: 'confirmed',
           });
 

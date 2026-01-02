@@ -551,30 +551,39 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      const { userId, eventId, eventName, marketId, outcomeId, odds, betAmount, prediction, feeCurrency } = validation.data!;
+      const { userId, eventId, eventName, marketId, outcomeId, odds, betAmount, prediction, feeCurrency, paymentMethod, txHash, onChainBetId, status } = validation.data!;
       
       // Determine currency (default to SUI)
       const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
-
-      // Check user balance (using async for accurate DB read)
-      const balance = await balanceService.getBalanceAsync(userId);
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
-      const availableBalance = currency === 'SBETS' ? balance.sbetsBalance : balance.suiBalance;
-      if (availableBalance < totalDebit) {
-        return res.status(400).json({ 
-          message: `Insufficient balance. Required: ${totalDebit} ${currency}, Available: ${availableBalance} ${currency}`
-        });
+      // For platform balance betting - check and deduct balance
+      if (paymentMethod === 'platform') {
+        const balance = await balanceService.getBalanceAsync(userId);
+        const availableBalance = currency === 'SBETS' ? balance.sbetsBalance : balance.suiBalance;
+        
+        if (availableBalance < totalDebit) {
+          return res.status(400).json({ 
+            message: `Insufficient balance. Required: ${totalDebit} ${currency}, Available: ${availableBalance} ${currency}`
+          });
+        }
+
+        // Deduct bet from balance (with currency support)
+        const deductSuccess = await balanceService.deductForBet(userId, betAmount, platformFee, currency);
+        if (!deductSuccess) {
+          return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
+        }
+      }
+      // For wallet/on-chain betting - verify txHash exists
+      else if (paymentMethod === 'wallet') {
+        if (!txHash) {
+          return res.status(400).json({ message: "Transaction hash required for on-chain bets" });
+        }
+        console.log(`📦 ON-CHAIN BET: Recording wallet bet with txHash: ${txHash}, betObjectId: ${onChainBetId}`);
       }
 
-      // Deduct bet from balance (with currency support)
-      const deductSuccess = await balanceService.deductForBet(userId, betAmount, platformFee, currency);
-      if (!deductSuccess) {
-        return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
-      }
-
-      const betId = `bet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const betId = onChainBetId || `bet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const potentialPayout = Math.round(betAmount * odds * 100) / 100;
 
       const bet = {
@@ -587,27 +596,33 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         odds,
         betAmount,
         currency,
-        status: 'pending' as const,
+        status: (paymentMethod === 'wallet' ? 'confirmed' : 'pending') as 'pending' | 'confirmed',
         prediction,
         placedAt: Date.now(),
         potentialPayout,
-        platformFee,
-        totalDebit
+        platformFee: paymentMethod === 'wallet' ? 0 : platformFee, // No platform fee for on-chain bets (paid in gas)
+        totalDebit: paymentMethod === 'wallet' ? betAmount : totalDebit,
+        txHash: txHash || undefined,
+        onChainBetId: onChainBetId || undefined,
+        paymentMethod
       };
 
       // Store bet in storage
       const storedBet = await storage.createBet(bet);
 
-      // Record bet on blockchain for verification
-      const onChainBet = await blockchainBetService.recordBetOnChain({
-        betId,
-        walletAddress: userId,
-        eventId: String(eventId),
-        prediction,
-        betAmount,
-        odds,
-        txHash: storedBet?.txHash || ''
-      });
+      // Record bet on blockchain for verification (platform bets only)
+      let onChainBet = null;
+      if (paymentMethod === 'platform') {
+        onChainBet = await blockchainBetService.recordBetOnChain({
+          betId,
+          walletAddress: userId,
+          eventId: String(eventId),
+          prediction,
+          betAmount,
+          odds,
+          txHash: storedBet?.txHash || ''
+        });
+      }
 
       // Notify user of bet placement
       notificationService.notifyBetPlaced(userId, {
@@ -627,21 +642,23 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         timestamp: Date.now()
       });
 
-      console.log(`✅ BET PLACED: ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
+      console.log(`✅ BET PLACED (${paymentMethod}): ${betId} - ${prediction} @ ${odds} odds, Stake: ${betAmount} ${currency}, Potential: ${potentialPayout} ${currency}`);
 
       res.json({
         success: true,
         bet: storedBet || bet,
+        paymentMethod,
         calculations: {
           betAmount,
-          platformFee,
-          totalDebit,
+          platformFee: paymentMethod === 'wallet' ? 0 : platformFee,
+          totalDebit: paymentMethod === 'wallet' ? betAmount : totalDebit,
           potentialPayout,
           odds
         },
         onChain: {
-          status: onChainBet.status,
-          txHash: storedBet?.txHash,
+          status: paymentMethod === 'wallet' ? 'confirmed' : (onChainBet?.status || 'pending'),
+          txHash: txHash || storedBet?.txHash,
+          betObjectId: onChainBetId,
           packageId: blockchainBetService.getPackageId()
         }
       });

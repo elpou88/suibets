@@ -41,6 +41,7 @@ export interface PlaceBetOptions {
   betType?: 'single' | 'parlay';
   currency?: 'SUI' | 'SBETS';
   acceptOddsChange?: boolean;
+  paymentMethod?: 'platform' | 'wallet'; // 'platform' = use deposited balance, 'wallet' = on-chain transaction
 }
 
 export interface BettingContextType {

@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'wouter';
 import { useState } from 'react';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   FileText, 
   Shield, 

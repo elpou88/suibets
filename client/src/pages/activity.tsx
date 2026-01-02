@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   Activity as ActivityIcon, 
   TrendingUp, 

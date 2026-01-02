@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   FileText, 
   CheckCircle, 

@@ -5,7 +5,7 @@ import { useBetting } from '@/context/BettingContext';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   Layers, 
   Plus, 

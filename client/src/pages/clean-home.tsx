@@ -7,8 +7,8 @@ import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import Footer from "@/components/layout/Footer";
 import { useLiveEvents, useUpcomingEvents } from "@/hooks/useEvents";
-import suibetsLogo from "@assets/image_1767008967633.png";
-import suibetsHeroBg from "@assets/image_1767021435938.png";
+const suibetsLogo = "/images/suibets-logo.png";
+const suibetsHeroBg = "/images/hero-bg.png";
 
 const SPORTS_LIST = [
   { id: 1, name: "Football", icon: "⚽" },

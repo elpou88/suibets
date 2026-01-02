@@ -14,7 +14,7 @@ import { formatOdds } from '@/lib/utils';
 import { useBetting } from '@/context/BettingContext';
 import { SportPageOverlays } from '@/components/betting/SportPageOverlays';
 import SportsSidebar from '@/components/layout/SportsSidebar';
-import suiBetsHero from "@assets/image_1764016029610.png";
+const suiBetsHero = "/images/sui-hero2.png";
 
 // Map sport slug to sportId for the API
 const sportIdMap: Record<string, number> = {

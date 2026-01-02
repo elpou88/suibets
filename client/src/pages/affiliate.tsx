@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
 import { ArrowLeft, Users, DollarSign, TrendingUp, Gift, Zap, BarChart } from 'lucide-react';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 
 export default function AffiliatePage() {
   return (

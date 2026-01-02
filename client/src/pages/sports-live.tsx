@@ -10,7 +10,7 @@ import { BetSlip } from '@/components/betting/BetSlip';
 import { useBetting } from '@/context/BettingContext';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 import { Clock, Calendar } from 'lucide-react';
-import suiBetsHero from "@assets/image_1764014704063.png";
+const suiBetsHero = "/images/sui-hero.png";
 
 /**
  * Sport page that displays events for a specific sport with real-time data

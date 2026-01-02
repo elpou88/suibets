@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useSettings } from '@/context/SettingsContext';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { useToast } from '@/hooks/use-toast';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   Settings as SettingsIcon, 
   Bell, 

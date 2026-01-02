@@ -1,7 +1,7 @@
 import { Link } from 'wouter';
 import { ArrowLeft, HelpCircle, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 
 interface FAQItem {
   question: string;

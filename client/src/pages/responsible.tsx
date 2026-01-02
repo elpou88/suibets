@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
 import { ArrowLeft, Heart, AlertTriangle, Phone, Clock, Ban } from 'lucide-react';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 
 export default function ResponsibleGambling() {
   return (

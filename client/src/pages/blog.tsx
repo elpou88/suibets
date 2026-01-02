@@ -1,6 +1,6 @@
 import { Link } from 'wouter';
 import { ArrowLeft, BookOpen, Calendar, User, ArrowRight } from 'lucide-react';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 
 interface BlogPost {
   id: string;

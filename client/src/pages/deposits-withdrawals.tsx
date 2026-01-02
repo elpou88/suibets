@@ -4,7 +4,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
 import { queryClient, apiRequest } from '@/lib/queryClient';
-import suibetsLogo from "@assets/image_1767008967633.png";
+const suibetsLogo = "/images/suibets-logo.png";
 import { 
   ArrowDownLeft, 
   ArrowUpRight, 

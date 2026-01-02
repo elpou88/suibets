@@ -240,19 +240,24 @@ class SettlementWorkerService {
         const status = isWinner ? 'won' : 'lost';
         const payout = isWinner ? bet.potentialWin : 0;
 
-        await storage.updateBetStatus(bet.id, status, payout);
+        // DOUBLE PAYOUT PREVENTION: Only process winnings if status update succeeded
+        const statusUpdated = await storage.updateBetStatus(bet.id, status, payout);
 
-        if (isWinner && payout > 0) {
-          await balanceService.addWinnings(bet.userId, payout, bet.currency as 'SUI' | 'SBETS');
-          console.log(`💰 WINNER (DB): ${bet.userId} won ${payout} ${bet.currency} on ${bet.prediction}`);
+        if (statusUpdated) {
+          if (isWinner && payout > 0) {
+            await balanceService.addWinnings(bet.userId, payout, bet.currency as 'SUI' | 'SBETS');
+            console.log(`💰 WINNER (DB): ${bet.userId} won ${payout} ${bet.currency} on ${bet.prediction}`);
+          } else {
+            await balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
+            console.log(`📉 LOST (DB): ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
+          }
+          console.log(`✅ Settled bet ${bet.id}: ${status} (${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam})`);
         } else {
-          await balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
-          console.log(`📉 LOST (DB): ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
+          console.log(`⚠️ DUPLICATE SETTLEMENT PREVENTED: Bet ${bet.id} already settled - no payout applied`);
         }
 
         // Mark bet as settled to prevent duplicate processing
         this.settledBetIds.add(bet.id);
-        console.log(`✅ Settled bet ${bet.id}: ${status} (${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam})`);
       } catch (error) {
         console.error(`❌ Error settling bet ${bet.id}:`, error);
       }
@@ -301,7 +306,13 @@ class SettlementWorkerService {
       const payout = outcome === 'won' ? bet.potentialPayout : 
                      outcome === 'void' ? bet.betAmount : 0;
 
-      await storage.updateBetStatus(betId, outcome, payout);
+      // DOUBLE PAYOUT PREVENTION: Only process winnings if status update succeeded
+      const statusUpdated = await storage.updateBetStatus(betId, outcome, payout);
+
+      if (!statusUpdated) {
+        console.log(`⚠️ DUPLICATE SETTLEMENT PREVENTED: Bet ${betId} already settled - no payout applied`);
+        return { success: false, betId, outcome, payout, message: 'Bet already settled' };
+      }
 
       if (outcome === 'won' && payout > 0) {
         await balanceService.addWinnings(bet.userId || 'user1', payout, (bet.feeCurrency || 'SUI') as 'SUI' | 'SBETS');

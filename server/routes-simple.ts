@@ -106,14 +106,18 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid outcome - must be 'won', 'lost', or 'void'" });
       }
 
-      // Update bet status directly and handle payouts
-      await storage.updateBetStatus(betId, outcome);
+      // Update bet status directly and handle payouts - ONLY if status update succeeds (prevents double payout)
       const bet = await storage.getBetByStringId(betId);
+      const statusUpdated = await storage.updateBetStatus(betId, outcome);
       
-      if (bet && outcome === 'won') {
-        await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
-      } else if (bet && outcome === 'lost') {
-        await balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+      if (statusUpdated && bet) {
+        if (outcome === 'won') {
+          await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialPayout || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+        } else if (outcome === 'lost') {
+          await balanceService.addRevenue(bet.betAmount || 0, bet.feeCurrency === 'SBETS' ? 'SBETS' : 'SUI');
+        }
+      } else if (!statusUpdated) {
+        console.log(`⚠️ Bet ${betId} already settled - no payout applied`);
       }
       
       const action = {
@@ -266,13 +270,17 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       for (const bet of pendingBets) {
         try {
-          await storage.updateBetStatus(bet.id, outcome);
-          if (outcome === 'won') {
-            await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialWin || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
-          } else if (outcome === 'lost') {
-            await balanceService.addRevenue(bet.stake || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+          const statusUpdated = await storage.updateBetStatus(bet.id, outcome);
+          if (statusUpdated) {
+            if (outcome === 'won') {
+              await balanceService.addWinnings(bet.walletAddress || String(bet.userId), bet.potentialWin || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+            } else if (outcome === 'lost') {
+              await balanceService.addRevenue(bet.stake || 0, bet.currency === 'SBETS' ? 'SBETS' : 'SUI');
+            }
+            results.push({ betId: bet.id, status: 'settled', outcome });
+          } else {
+            results.push({ betId: bet.id, status: 'skipped', outcome, reason: 'Already settled' });
           }
-          results.push({ betId: bet.id, status: 'settled', outcome });
         } catch (err) {
           results.push({ betId: bet.id, status: 'error', error: String(err) });
         }
@@ -967,21 +975,26 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const signedSettlement = antiCheatService.signSettlementData(settlementData);
       const onChainProof = antiCheatService.generateOnChainProof(signedSettlement);
 
-      // Update bet status
-      await storage.updateBetStatus(betId, settlement.status, settlement.payout);
+      // Update bet status - ONLY process payouts if status update succeeds (prevents double payout)
+      const statusUpdated = await storage.updateBetStatus(betId, settlement.status, settlement.payout);
       
-      // AUTO-PAYOUT: Add winnings to user balance using the bet's currency
-      if (settlement.status === 'won' && netPayout > 0) {
-        await balanceService.addWinnings(bet.userId, netPayout, bet.currency);
-        console.log(`💰 AUTO-PAYOUT (DB): ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
-      } else if (settlement.status === 'void') {
-        // Refund stake on void using the bet's currency
-        await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
-        console.log(`🔄 STAKE REFUNDED (DB): ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
-      } else if (settlement.status === 'lost') {
-        // Add lost bet stake to platform revenue
-        await balanceService.addRevenue(bet.betAmount, bet.currency);
-        console.log(`📊 REVENUE (DB): ${bet.betAmount} ${bet.currency} added to platform revenue from lost bet`);
+      if (statusUpdated) {
+        // AUTO-PAYOUT: Add winnings to user balance using the bet's currency
+        if (settlement.status === 'won' && netPayout > 0) {
+          await balanceService.addWinnings(bet.userId, netPayout, bet.currency);
+          console.log(`💰 AUTO-PAYOUT (DB): ${bet.userId} received ${netPayout} ${bet.currency} (after ${platformFee} ${bet.currency} fee)`);
+        } else if (settlement.status === 'void') {
+          // Refund stake on void using the bet's currency
+          await balanceService.addWinnings(bet.userId, settlement.payout, bet.currency);
+          console.log(`🔄 STAKE REFUNDED (DB): ${bet.userId} received ${settlement.payout} ${bet.currency} back`);
+        } else if (settlement.status === 'lost') {
+          // Add lost bet stake to platform revenue
+          await balanceService.addRevenue(bet.betAmount, bet.currency);
+          console.log(`📊 REVENUE (DB): ${bet.betAmount} ${bet.currency} added to platform revenue from lost bet`);
+        }
+      } else {
+        console.log(`⚠️ DUPLICATE SETTLEMENT PREVENTED: Bet ${betId} already settled - no payout applied`);
+        return res.status(400).json({ message: "Bet already settled - duplicate settlement prevented" });
       }
 
       // Notify user of settlement with proof
@@ -1259,11 +1272,16 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const platformFee = cashOutValue * 0.01; // 1% cash-out fee
       const netCashOut = cashOutValue - platformFee;
 
+      // Update bet status FIRST - only add winnings if status update succeeds (prevents double cash-out)
+      const statusUpdated = await storage.updateBetStatus(betId, 'cashed_out', netCashOut);
+      
+      if (!statusUpdated) {
+        console.log(`⚠️ DUPLICATE CASH-OUT PREVENTED: Bet ${betId} already cashed out or settled`);
+        return res.status(400).json({ message: "Bet already cashed out or settled - duplicate cash-out prevented" });
+      }
+      
       // Add cash out amount to user balance in the correct currency
       await balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
-      
-      // Update bet status
-      await storage.updateBetStatus(betId, 'cashed_out', netCashOut);
 
       console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue} ${bet.currency}, Fee: ${platformFee} ${bet.currency}, Net: ${netCashOut} ${bet.currency}`);
 

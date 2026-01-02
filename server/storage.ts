@@ -31,7 +31,7 @@ export interface IStorage {
   createParlay(parlay: any): Promise<any>;
   getUserBets(userId: string): Promise<any[]>;
   getAllBets(status?: string): Promise<any[]>;
-  updateBetStatus(betId: string, status: string, payout?: number): Promise<void>;
+  updateBetStatus(betId: string, status: string, payout?: number): Promise<boolean>;
   markBetWinningsWithdrawn(betId: number, txHash: string): Promise<void>;
   cashOutSingleBet(betId: number): Promise<void>;
   
@@ -40,7 +40,7 @@ export interface IStorage {
   
   // Balance methods (persistent)
   getUserBalance(walletAddress: string): Promise<{ suiBalance: number; sbetsBalance: number } | undefined>;
-  updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<void>;
+  updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<boolean>;
   setUserBalance(walletAddress: string, suiBalance: number, sbetsBalance: number): Promise<void>;
   recordWalletOperation(walletAddress: string, operationType: string, amount: number, txHash: string, metadata?: any): Promise<void>;
   getWalletOperations(walletAddress: string, limit?: number): Promise<any[]>;
@@ -473,33 +473,58 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateBetStatus(betId: string, status: string, payout?: number): Promise<void> {
+  async updateBetStatus(betId: string, status: string, payout?: number): Promise<boolean> {
     try {
-      // DUPLICATE SETTLEMENT PREVENTION: Check if bet is already settled
-      const existing = await db.select().from(bets).where(eq(bets.wurlusBetId, betId));
-      if (existing.length > 0) {
-        const currentStatus = existing[0].status;
-        if (currentStatus === 'won' || currentStatus === 'lost' || currentStatus === 'cashed_out' || currentStatus === 'void') {
-          console.log(`⚠️ DUPLICATE SETTLEMENT BLOCKED: Bet ${betId} already settled as ${currentStatus}`);
-          return; // Don't update already settled bets
-        }
+      // ATOMIC SETTLEMENT with STATE MACHINE VALIDATION
+      // 1. Only allows transitions from settable states (pending, in_play, active)
+      // 2. Returns the OLD status to verify no conflicting settlement occurred
+      // 3. Single atomic UPDATE prevents race conditions
+      
+      const settledAt = (status === 'won' || status === 'lost' || status === 'cashed_out' || status === 'void') 
+        ? new Date() : undefined;
+      
+      // Use a CTE to capture old status and only update if valid transition
+      const result = await db.execute(sql`
+        WITH old_bet AS (
+          SELECT id, status as old_status 
+          FROM bets 
+          WHERE wurlus_bet_id = ${betId}
+        ),
+        updated_bet AS (
+          UPDATE bets 
+          SET status = ${status},
+              payout = COALESCE(${payout ?? null}, payout),
+              settled_at = COALESCE(${settledAt ?? null}, settled_at)
+          WHERE wurlus_bet_id = ${betId}
+            AND status IN ('pending', 'in_play', 'active')
+          RETURNING id, status as new_status
+        )
+        SELECT 
+          old_bet.old_status,
+          updated_bet.new_status,
+          CASE WHEN updated_bet.id IS NOT NULL THEN true ELSE false END as updated
+        FROM old_bet
+        LEFT JOIN updated_bet ON old_bet.id = updated_bet.id
+      `);
+      
+      if (result.rowCount === 0) {
+        console.log(`⚠️ BET NOT FOUND: ${betId}`);
+        return false;
       }
       
-      const updateData: any = { status };
-      if (payout !== undefined) {
-        updateData.payout = payout;
-      }
-      if (status === 'won' || status === 'lost' || status === 'cashed_out') {
-        updateData.settledAt = new Date();
+      const row = result.rows[0] as any;
+      
+      if (!row.updated) {
+        // Bet exists but was not updated (already in terminal state)
+        console.log(`⚠️ DUPLICATE SETTLEMENT BLOCKED: Bet ${betId} already settled as '${row.old_status}' - attempted '${status}'`);
+        return false;
       }
       
-      await db.update(bets)
-        .set(updateData)
-        .where(eq(bets.wurlusBetId, betId));
-      
-      console.log(`✅ BET STATUS UPDATED IN DB: ${betId} -> ${status}`);
+      console.log(`✅ BET STATUS UPDATED IN DB: ${betId} | ${row.old_status} -> ${status}`);
+      return true; // Status was successfully updated atomically
     } catch (error) {
       console.error('Error updating bet status in database:', error);
+      return false;
     }
   }
 
@@ -553,13 +578,54 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<void> {
+  async updateUserBalance(walletAddress: string, suiDelta: number, sbetsDelta: number): Promise<boolean> {
     try {
-      // Get current balance
-      const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+      // ATOMIC BALANCE UPDATE: Single UPDATE that validates resulting balance won't go negative
+      // This prevents race conditions, overdrafts, and handles mixed credit/debit scenarios
       
-      if (!user) {
-        // Create new user with wallet address if doesn't exist
+      // Calculate the minimum balance required for each currency (only for deductions)
+      const suiRequired = suiDelta < 0 ? Math.abs(suiDelta) : 0;
+      const sbetsRequired = sbetsDelta < 0 ? Math.abs(sbetsDelta) : 0;
+      
+      if (suiRequired > 0 || sbetsRequired > 0) {
+        // Has deductions - use atomic update with balance validation
+        const result = await db.execute(sql`
+          UPDATE users 
+          SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta},
+              sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}
+          WHERE wallet_address = ${walletAddress}
+            AND (${suiRequired} = 0 OR COALESCE(sui_balance, 0) >= ${suiRequired})
+            AND (${sbetsRequired} = 0 OR COALESCE(sbets_balance, 0) >= ${sbetsRequired})
+          RETURNING id, sui_balance, sbets_balance
+        `);
+        
+        if (result.rowCount === 0) {
+          // Either user doesn't exist or insufficient balance for the deduction(s)
+          const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+          if (!user) {
+            console.log(`⚠️ User ${walletAddress.slice(0, 8)}... not found for balance update`);
+            return false;
+          }
+          console.log(`❌ INSUFFICIENT BALANCE: ${walletAddress.slice(0, 8)}... has ${user.suiBalance} SUI, ${user.sbetsBalance} SBETS, needed ${suiRequired} SUI, ${sbetsRequired} SBETS`);
+          return false;
+        }
+        
+        const newBalance = result.rows[0] as any;
+        console.log(`💰 ATOMIC UPDATE: ${walletAddress.slice(0, 8)}... | ${suiDelta >= 0 ? '+' : ''}${suiDelta} SUI, ${sbetsDelta >= 0 ? '+' : ''}${sbetsDelta} SBETS | New: ${newBalance.sui_balance} SUI, ${newBalance.sbets_balance} SBETS`);
+        return true;
+      }
+      
+      // Pure credits only - no balance validation needed, just atomic increment
+      const creditResult = await db.execute(sql`
+        UPDATE users 
+        SET sui_balance = COALESCE(sui_balance, 0) + ${suiDelta},
+            sbets_balance = COALESCE(sbets_balance, 0) + ${sbetsDelta}
+        WHERE wallet_address = ${walletAddress}
+        RETURNING id, sui_balance, sbets_balance
+      `);
+      
+      if (creditResult.rowCount === 0) {
+        // User doesn't exist - create new user with initial balance
         await db.insert(users).values({
           username: `wallet_${walletAddress.slice(0, 8)}`,
           password: '',
@@ -568,23 +634,15 @@ export class DatabaseStorage implements IStorage {
           sbetsBalance: Math.max(0, sbetsDelta)
         });
         console.log(`📝 Created new user for wallet ${walletAddress.slice(0, 8)}... with balance ${suiDelta} SUI, ${sbetsDelta} SBETS`);
-        return;
+        return true;
       }
-
-      // Update existing user's balance
-      const newSuiBalance = Math.max(0, (user.suiBalance || 0) + suiDelta);
-      const newSbetsBalance = Math.max(0, (user.sbetsBalance || 0) + sbetsDelta);
       
-      await db.update(users)
-        .set({ 
-          suiBalance: newSuiBalance,
-          sbetsBalance: newSbetsBalance
-        })
-        .where(eq(users.walletAddress, walletAddress));
-      
-      console.log(`💰 DB BALANCE UPDATE: ${walletAddress.slice(0, 8)}... | SUI: ${user.suiBalance || 0} -> ${newSuiBalance} | SBETS: ${user.sbetsBalance || 0} -> ${newSbetsBalance}`);
+      const newBalance = creditResult.rows[0] as any;
+      console.log(`💰 ATOMIC CREDIT: ${walletAddress.slice(0, 8)}... | +${suiDelta} SUI, +${sbetsDelta} SBETS | New: ${newBalance.sui_balance} SUI, ${newBalance.sbets_balance} SBETS`);
+      return true;
     } catch (error) {
       console.error('Error updating user balance:', error);
+      return false;
     }
   }
 

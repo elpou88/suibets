@@ -85,13 +85,15 @@ export class BalanceService {
     const totalDebit = amount + fee;
 
     if (currency === 'SBETS') {
-      if (balance.sbetsBalance < totalDebit) {
+      // ATOMIC DEDUCTION: Use database-level balance check to prevent race conditions
+      const deductionSuccess = await storage.updateUserBalance(userId, 0, -totalDebit);
+      
+      if (!deductionSuccess) {
         console.warn(`❌ Insufficient SBETS for ${userId}: ${balance.sbetsBalance} SBETS < ${totalDebit} SBETS needed`);
         return false;
       }
       
-      // Update database
-      await storage.updateUserBalance(userId, 0, -totalDebit);
+      // Only record operation after successful atomic deduction
       await storage.recordWalletOperation(userId, 'bet_placed', totalDebit, `bet-${Date.now()}`, { currency: 'SBETS', fee });
       
       // Update cache
@@ -101,13 +103,15 @@ export class BalanceService {
       
       console.log(`💰 BET DEDUCTED (DB): ${userId.slice(0, 8)}... - ${amount} SBETS (Fee: ${fee} SBETS) | Balance: ${balance.sbetsBalance} SBETS`);
     } else {
-      if (balance.suiBalance < totalDebit) {
+      // ATOMIC DEDUCTION: Use database-level balance check to prevent race conditions
+      const deductionSuccess = await storage.updateUserBalance(userId, -totalDebit, 0);
+      
+      if (!deductionSuccess) {
         console.warn(`❌ Insufficient balance for ${userId}: ${balance.suiBalance} SUI < ${totalDebit} SUI needed`);
         return false;
       }
       
-      // Update database
-      await storage.updateUserBalance(userId, -totalDebit, 0);
+      // Only record operation after successful atomic deduction
       await storage.recordWalletOperation(userId, 'bet_placed', totalDebit, `bet-${Date.now()}`, { currency: 'SUI', fee });
       
       // Update cache
@@ -125,12 +129,19 @@ export class BalanceService {
    * Add winnings to user balance (supports SUI or SBETS)
    * PERSISTS TO DATABASE
    */
-  async addWinnings(userId: string, amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): Promise<void> {
+  async addWinnings(userId: string, amount: number, currency: 'SUI' | 'SBETS' = 'SUI'): Promise<boolean> {
     const balance = await this.getBalanceAsync(userId);
     
     if (currency === 'SBETS') {
-      // Update database
-      await storage.updateUserBalance(userId, 0, amount);
+      // ATOMIC CREDIT: Use database-level atomic increment
+      const creditSuccess = await storage.updateUserBalance(userId, 0, amount);
+      
+      if (!creditSuccess) {
+        console.error(`❌ Failed to add SBETS winnings for ${userId}`);
+        return false;
+      }
+      
+      // Only record operation after successful atomic credit
       await storage.recordWalletOperation(userId, 'bet_won', amount, `win-${Date.now()}`, { currency: 'SBETS' });
       
       // Update cache
@@ -140,8 +151,15 @@ export class BalanceService {
       
       console.log(`🎉 WINNINGS ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SBETS | New Balance: ${balance.sbetsBalance} SBETS`);
     } else {
-      // Update database
-      await storage.updateUserBalance(userId, amount, 0);
+      // ATOMIC CREDIT: Use database-level atomic increment
+      const creditSuccess = await storage.updateUserBalance(userId, amount, 0);
+      
+      if (!creditSuccess) {
+        console.error(`❌ Failed to add SUI winnings for ${userId}`);
+        return false;
+      }
+      
+      // Only record operation after successful atomic credit
       await storage.recordWalletOperation(userId, 'bet_won', amount, `win-${Date.now()}`, { currency: 'SUI' });
       
       // Update cache
@@ -151,6 +169,7 @@ export class BalanceService {
       
       console.log(`🎉 WINNINGS ADDED (DB): ${userId.slice(0, 8)}... - ${amount} SUI | New Balance: ${balance.suiBalance} SUI`);
     }
+    return true;
   }
 
   /**
@@ -170,17 +189,21 @@ export class BalanceService {
       return { success: false, message: 'Minimum withdrawal is 0.1 SUI', status: 'pending_admin' };
     }
 
-    if (amount > balance.suiBalance) {
-      return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI`, status: 'pending_admin' };
-    }
+    // ATOMIC WITHDRAWAL: Use database-level balance check to prevent race conditions
+    // This prevents concurrent withdrawals from overdrawing
 
     // OPTION 1: Execute on-chain if admin key is configured and requested
     if (executeOnChain && blockchainBetService.isAdminKeyConfigured()) {
+      // Try atomic deduction first (prevents race condition)
+      const deductionSuccess = await storage.updateUserBalance(userId, -amount, 0);
+      
+      if (!deductionSuccess) {
+        return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI`, status: 'pending_admin' };
+      }
+      
       const payoutResult = await blockchainBetService.executePayoutOnChain(userId, amount);
       
       if (payoutResult.success && payoutResult.txHash) {
-        // Update database with completed status
-        await storage.updateUserBalance(userId, -amount, 0);
         await storage.recordWalletOperation(userId, 'withdrawal', amount, payoutResult.txHash, { 
           status: 'completed',
           onChain: true
@@ -198,16 +221,24 @@ export class BalanceService {
           status: 'completed'
         };
       } else {
-        console.error(`❌ On-chain payout failed: ${payoutResult.error}`);
-        // Fall through to pending status
+        // On-chain failed - refund the deducted amount
+        await storage.updateUserBalance(userId, amount, 0);
+        console.error(`❌ On-chain payout failed, refunded ${amount} SUI: ${payoutResult.error}`);
+        return { success: false, message: `On-chain payout failed: ${payoutResult.error}`, status: 'pending_admin' };
       }
     }
 
     // OPTION 2: Create pending withdrawal for manual admin processing
     const withdrawalId = `wd-${userId.slice(0, 8)}-${Date.now()}`;
 
-    // Deduct from balance immediately to prevent double-spend
-    await storage.updateUserBalance(userId, -amount, 0);
+    // ATOMIC DEDUCTION: Use database-level balance check to prevent race conditions
+    const deductionSuccess = await storage.updateUserBalance(userId, -amount, 0);
+    
+    if (!deductionSuccess) {
+      console.log(`❌ WITHDRAWAL REJECTED: Insufficient balance for ${userId.slice(0, 8)}...`);
+      return { success: false, message: `Insufficient balance. Available: ${balance.suiBalance} SUI`, status: 'pending_admin' };
+    }
+    
     await storage.recordWalletOperation(userId, 'withdrawal', amount, withdrawalId, { 
       status: 'pending_admin',
       recipientWallet: userId,

@@ -8,5 +8,6 @@ dist
 .replit
 replit.nix
 sui_contracts
+suibets-vercel-package
 *.log
 .DS_Store

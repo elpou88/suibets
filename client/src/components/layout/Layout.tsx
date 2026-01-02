@@ -8,7 +8,7 @@ import {
   TrendingDown, Trophy, MenuIcon, MessageCircle
 } from 'lucide-react';
 import { ConnectWalletModal } from '@/components/modals/ConnectWalletModal';
-import suibetsLogo from '@assets/suibets-logo.jpg';
+const suibetsLogo = "/images/suibets-logo.jpg";
 
 export interface LayoutProps {
   children: ReactNode;

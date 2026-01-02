@@ -7,7 +7,6 @@ dist
 .env*
 .replit
 replit.nix
-attached_assets
 sui_contracts
 *.log
 .DS_Store

@@ -65,29 +65,31 @@ import BlogPage from "@/pages/blog";
 function App() {
   console.log("Starting React application");
   
-  // Log wallet detection on app start
+  // Log wallet detection on app start (with delay for extension injection)
   useEffect(() => {
-    console.log("Checking for installed wallets...");
+    const checkWallets = () => {
+      console.log("Checking for installed wallets...");
+      const win = window as any;
+      
+      const hasSlush = typeof win.slush !== 'undefined' || typeof win.suiWallet !== 'undefined';
+      const hasNightly = typeof win.nightly?.sui !== 'undefined';
+      const hasSuietWallet = typeof win.suiet !== 'undefined';
+      const hasEthosWallet = typeof win.ethos !== 'undefined';
+      const hasMartianWallet = typeof win.martian !== 'undefined';
+      const hasWalletStandard = typeof win.walletStandard !== 'undefined';
+      
+      console.log("Wallet detection:", {
+        slush: hasSlush,
+        nightly: hasNightly,
+        suiet: hasSuietWallet,
+        ethos: hasEthosWallet,
+        martian: hasMartianWallet,
+        walletStandard: hasWalletStandard
+      });
+    };
     
-    // Check for wallet-standard support
-    // @ts-ignore - Checking global object
-    const hasWalletStandard = typeof window.walletStandard !== 'undefined';
-    // @ts-ignore - Checking global object
-    const hasSuiWallet = typeof window.suiWallet !== 'undefined';
-    // @ts-ignore - Checking global object
-    const hasEthosWallet = typeof window.ethos !== 'undefined';
-    // @ts-ignore - Checking global object
-    const hasSuietWallet = typeof window.suiet !== 'undefined';
-    // @ts-ignore - Checking global object
-    const hasMartianWallet = typeof window.martian !== 'undefined';
-    
-    console.log("Wallet detection:", {
-      walletStandard: hasWalletStandard,
-      suiWallet: hasSuiWallet,
-      ethosWallet: hasEthosWallet,
-      suietWallet: hasSuietWallet,
-      martianWallet: hasMartianWallet
-    });
+    // Delay to allow extensions time to inject their APIs
+    setTimeout(checkWallets, 1000);
   }, []);
 
   return (

@@ -27,37 +27,36 @@ export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
   
   // Ensure wallet connect from Mysten repository is enabled
   useEffect(() => {
-    // Log wallet detection information
+    // Log wallet detection information with delay for extension injection
     const detectWallets = () => {
-      // @ts-ignore - Checking for global objects
-      const hasSuiWallet = typeof window.suiWallet !== 'undefined';
-      // @ts-ignore - Checking for global objects
-      const hasEthosWallet = typeof window.ethos !== 'undefined';
-      // @ts-ignore - Checking for global objects
-      const hasSuietWallet = typeof window.suiet !== 'undefined';
-      // @ts-ignore - Checking for global objects
-      const hasMartianWallet = typeof window.martian !== 'undefined';
-      // @ts-ignore - Checking for global objects
-      const hasWalletStandard = typeof window.walletStandard !== 'undefined';
+      const win = window as any;
+      const hasSlush = typeof win.slush !== 'undefined' || typeof win.suiWallet !== 'undefined';
+      const hasNightly = typeof win.nightly?.sui !== 'undefined';
+      const hasSuietWallet = typeof win.suiet !== 'undefined';
+      const hasEthosWallet = typeof win.ethos !== 'undefined';
+      const hasMartianWallet = typeof win.martian !== 'undefined';
+      const hasWalletStandard = typeof win.walletStandard !== 'undefined';
       
       console.log("Wallet detection on initialization:", {
-        hasSuiWallet,
-        hasEthosWallet, 
+        hasSlush,
+        hasNightly,
         hasSuietWallet,
+        hasEthosWallet, 
         hasMartianWallet
       });
 
       console.log("Wallet Standard support available:", hasWalletStandard);
     };
     
-    detectWallets();
+    // Delay detection to allow extensions time to inject
+    setTimeout(detectWallets, 1000);
   }, []);
   
   return (
     <SuiClientProvider networks={networks} defaultNetwork={networkName}>
       <WalletProvider
         autoConnect={false} // Explicitly disable autoconnect in favor of our custom connector
-        preferredWallets={["Sui Wallet", "Sui: Ethos Wallet", "Martian Sui Wallet", "Suiet", "Glass Wallet"]}
+        preferredWallets={["Slush", "Sui Wallet", "Nightly", "Suiet", "Sui: Ethos Wallet", "Martian Sui Wallet"]}
         enableUnsafeBurner={false}
       >
         {children}

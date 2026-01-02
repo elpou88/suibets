@@ -2,11 +2,9 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
-import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { shortenAddress } from "@/lib/utils";
 import { Bell, LogOut } from "lucide-react";
-import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -16,61 +14,38 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { ConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
+import '@mysten/dapp-kit/dist/index.css';
 
 export default function Navbar() {
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, disconnectWallet, connectWallet } = useAuth();
-  const { connect: connectAdapter, address, isConnected } = useWalletAdapter();
+  const { user, disconnectWallet, connectWallet } = useAuth();
   const { toast } = useToast();
-  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isAttemptingConnection, setIsAttemptingConnection] = useState(false);
   
-  // Debug wallet status in console
-  useEffect(() => {
-    console.log('Navbar: User state updated -', {
-      user,
-      userWalletAddress: user?.walletAddress,
-      isAuthenticated,
-      hasWalletAddress: !!user?.walletAddress,
-      walletAdapterAddress: address,
-      walletAdapterIsConnected: isConnected
-    });
-  }, [user, isAuthenticated, address, isConnected]);
+  // Use dapp-kit hooks directly
+  const currentAccount = useCurrentAccount();
+  const { mutate: disconnectDappKit } = useDisconnectWallet();
   
-  // Listen for wallet connection requests from other components
+  // Sync dapp-kit connection state with AuthContext
   useEffect(() => {
-    const handleWalletConnectionRequired = () => {
-      console.log('Wallet connection requested from another component');
-      if (!user?.walletAddress) {
-        // Open the wallet modal directly
-        setIsWalletModalOpen(true);
+    if (currentAccount?.address) {
+      // Wallet connected via dapp-kit - sync with AuthContext
+      if (!user?.walletAddress || user.walletAddress !== currentAccount.address) {
+        console.log('Syncing dapp-kit connection to AuthContext:', currentAccount.address);
+        connectWallet(currentAccount.address, 'sui');
+        toast({
+          title: "Wallet Connected",
+          description: `Connected: ${currentAccount.address.substring(0, 8)}...${currentAccount.address.slice(-6)}`,
+        });
       }
-    };
-    
-    window.addEventListener('suibets:connect-wallet-required', handleWalletConnectionRequired);
-    return () => {
-      window.removeEventListener('suibets:connect-wallet-required', handleWalletConnectionRequired);
-    };
-  }, [user?.walletAddress]);
-  
-  // Open connect wallet modal directly (no connection attempt first)
-  const attemptQuickWalletConnection = (e?: React.MouseEvent) => {
-    // Prevent default behavior to avoid page navigation
-    if (e) e.preventDefault();
-    
-    if (isAttemptingConnection) return; // Prevent multiple attempts
-    
-    try {
-      console.log('Connect wallet button clicked, opening modal directly');
-      
-      // Set the wallet modal to open
-      setIsWalletModalOpen(true);
-    } catch (error) {
-      console.error('Error opening wallet modal:', error);
-      // Still try to open the modal even if there was an error
-      setIsWalletModalOpen(true);
     }
+  }, [currentAccount?.address, user?.walletAddress, connectWallet, toast]);
+  
+  // Handle disconnect - both dapp-kit and AuthContext
+  const handleDisconnect = () => {
+    disconnectDappKit();
+    disconnectWallet();
   };
 
   const goToLive = (e: React.MouseEvent) => {
@@ -82,6 +57,10 @@ export default function Navbar() {
     e.preventDefault();
     window.location.href = "/promotions-final.html";
   };
+
+  // Check if connected via either dapp-kit or auth context
+  const isConnected = !!currentAccount?.address || !!user?.walletAddress;
+  const walletAddress = currentAccount?.address || user?.walletAddress;
 
   return (
     <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-3 px-3 md:py-4 md:px-6 flex items-center shadow-lg shadow-cyan-900/20">
@@ -136,21 +115,20 @@ export default function Navbar() {
       
       
       <div className="flex items-center justify-end flex-1 pr-4">
-        {/* Place wallet connection button before bell/settings icons */}
-        {user?.walletAddress ? (
+        {isConnected && walletAddress ? (
           <div className="flex items-center">
             {/* Wallet dropdown with address */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="border-cyan-500/50 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 font-medium transition-all duration-300">
-                  <span className="hidden sm:inline">{shortenAddress(user.walletAddress)}</span>
+                  <span className="hidden sm:inline">{shortenAddress(walletAddress)}</span>
                   <span className="sm:hidden">Wallet</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent>
                 <DropdownMenuLabel>Your Wallet</DropdownMenuLabel>
                 <div className="px-2 py-2 text-sm text-cyan-300">
-                  {shortenAddress(user.walletAddress)}
+                  {shortenAddress(walletAddress)}
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem 
@@ -173,7 +151,7 @@ export default function Navbar() {
                   Dividends
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={disconnectWallet}>
+                <DropdownMenuItem onClick={handleDisconnect}>
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Disconnect</span>
                 </DropdownMenuItem>
@@ -192,14 +170,11 @@ export default function Navbar() {
           </div>
         ) : (
           <div className="flex items-center">
-            {/* Connect Wallet Button - Enhanced */}
-            <Button 
-              className="bg-gradient-to-r from-cyan-400 to-cyan-500 hover:from-cyan-300 hover:to-cyan-400 text-black font-semibold px-6 py-2 rounded-lg shadow-lg shadow-cyan-500/40 hover:shadow-cyan-500/60 transition-all duration-300 transform hover:scale-105" 
-              onClick={attemptQuickWalletConnection}
-              disabled={isAttemptingConnection}
-            >
-              {isAttemptingConnection ? 'Connecting...' : 'Connect Wallet'}
-            </Button>
+            {/* Use dapp-kit's built-in ConnectButton */}
+            <ConnectButton 
+              connectText="Connect Wallet"
+              className="!bg-gradient-to-r !from-cyan-400 !to-cyan-500 hover:!from-cyan-300 hover:!to-cyan-400 !text-black !font-semibold !px-6 !py-2 !rounded-lg !shadow-lg !shadow-cyan-500/40 hover:!shadow-cyan-500/60 !transition-all !duration-300"
+            />
             
             {/* Telegram Join Now Button */}
             <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="ml-3">
@@ -210,11 +185,6 @@ export default function Navbar() {
           </div>
         )}
       </div>
-
-      <ConnectWalletModal 
-        isOpen={isWalletModalOpen} 
-        onClose={() => setIsWalletModalOpen(false)} 
-      />
       
       <NotificationsModal 
         isOpen={isNotificationsModalOpen} 

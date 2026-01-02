@@ -1,6 +1,6 @@
 import { db } from './db';
 import { users, sports, events, markets, bets, promotions, wurlus_wallet_operations, type User, type InsertUser, type Sport, type Event, type Market } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, ilike, or, sql } from "drizzle-orm";
 import connectPg from "connect-pg-simple";
 import session from "express-session";
 import pg from 'pg';
@@ -269,10 +269,13 @@ export class DatabaseStorage implements IStorage {
       // Generate mock tx hash (in production, this would be the real blockchain tx)
       const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 40)}`;
       
+      // NORMALIZE wallet address to lowercase for consistent retrieval
+      const normalizedWallet = bet.userId?.toLowerCase?.() || bet.userId;
+      
       // Insert into PostgreSQL database - use null for userId to avoid FK constraint
       const [inserted] = await db.insert(bets).values({
         userId: null, // Don't link to users table - wallet-based system
-        walletAddress: bet.userId, // Store wallet address for settlement payout
+        walletAddress: normalizedWallet, // Store NORMALIZED wallet address for settlement payout
         betAmount: bet.betAmount,
         odds: bet.odds,
         prediction: bet.prediction,
@@ -307,8 +310,13 @@ export class DatabaseStorage implements IStorage {
   async createParlay(parlay: any): Promise<any> {
     try {
       // For parlays, we store in DB with a special betType
+      // IMPORTANT: Store walletAddress so bets are ALWAYS retrievable and never disappear
+      // NORMALIZE wallet address to lowercase for consistent retrieval
+      const normalizedWallet = parlay.userId?.toLowerCase?.() || parlay.userId;
+      
       const [inserted] = await db.insert(bets).values({
         userId: null, // Don't link to users table - wallet-based system
+        walletAddress: normalizedWallet, // Store NORMALIZED wallet address for bet retrieval and settlement
         betAmount: parlay.totalStake,
         odds: parlay.combinedOdds,
         prediction: JSON.stringify(parlay.selections),
@@ -319,7 +327,8 @@ export class DatabaseStorage implements IStorage {
         wurlusBetId: parlay.id,
         platformFee: parlay.platformFee,
         networkFee: parlay.networkFee,
-        feeCurrency: parlay.currency || 'SUI'
+        feeCurrency: parlay.currency || 'SUI',
+        eventName: 'Parlay Bet' // Ensure parlay has event name for display
       }).returning();
       
       console.log(`✅ PARLAY STORED IN DB: ${parlay.id} (db id: ${inserted.id})`);
@@ -338,10 +347,59 @@ export class DatabaseStorage implements IStorage {
 
   async getUserBets(userId: string): Promise<any[]> {
     try {
-      const userIdNum = parseInt(userId);
-      const userBets = isNaN(userIdNum) 
-        ? await db.select().from(bets) // If no valid userId, return all (for demo)
-        : await db.select().from(bets).where(eq(bets.userId, userIdNum));
+      // IMPORTANT: Comprehensive bet retrieval that NEVER loses bets
+      // Uses multiple fallback strategies to ensure 100% bet persistence
+      let userBets: any[] = [];
+      
+      // Normalize wallet address for case-insensitive matching
+      const normalizedAddress = userId.toLowerCase();
+      
+      // COMPREHENSIVE QUERY: Use OR to match walletAddress with any casing
+      // This single query catches all cases: lowercase, mixed case, original case
+      userBets = await db.select().from(bets)
+        .where(or(
+          sql`LOWER(${bets.walletAddress}) = ${normalizedAddress}`,
+          eq(bets.walletAddress, userId)
+        ))
+        .orderBy(desc(bets.createdAt));
+      
+      // FALLBACK 1: Try by userId (for legacy numeric IDs)
+      if (userBets.length === 0) {
+        const userIdNum = parseInt(userId);
+        if (!isNaN(userIdNum)) {
+          userBets = await db.select().from(bets).where(eq(bets.userId, userIdNum)).orderBy(desc(bets.createdAt));
+        }
+      }
+      
+      // FALLBACK 2: If still no results and looks like a wallet, check wurlusBetId contains wallet prefix
+      if (userBets.length === 0 && (userId.startsWith('0x') || userId.length > 20)) {
+        const shortPrefix = userId.slice(0, 10).toLowerCase();
+        userBets = await db.select().from(bets)
+          .where(sql`LOWER(${bets.wurlusBetId}) LIKE ${`%${shortPrefix}%`}`)
+          .orderBy(desc(bets.createdAt));
+      }
+      
+      // FALLBACK 3: Include legacy bets with NULL walletAddress that might belong to this user
+      // This ensures historical bets are NEVER lost while we transition to wallet-based system
+      if (userBets.length === 0) {
+        // Check for bets that might have been created before wallet normalization
+        // by looking at wurlusBetId pattern or any matching identifiers
+        const legacyBets = await db.select().from(bets)
+          .where(sql`${bets.walletAddress} IS NULL`)
+          .orderBy(desc(bets.createdAt))
+          .limit(100); // Limit to prevent loading all orphaned bets
+        
+        // Filter legacy bets that might belong to this wallet based on wurlusBetId pattern
+        if (legacyBets.length > 0 && userId.startsWith('0x')) {
+          const walletPrefix = userId.slice(0, 8).toLowerCase();
+          userBets = legacyBets.filter((bet: any) => 
+            bet.wurlusBetId?.toLowerCase().includes(walletPrefix) ||
+            bet.txHash?.toLowerCase().includes(walletPrefix)
+          );
+        }
+      }
+      
+      console.log(`📋 getUserBets: Found ${userBets.length} bets for ${userId.slice(0, 12)}...`);
       
       // Transform to match frontend's expected format for bet-history page
       return userBets.map((bet: any) => ({

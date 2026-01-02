@@ -1,4 +1,4 @@
-import { ReactNode, useEffect, useState } from 'react';
+import { ReactNode, useEffect } from 'react';
 import '@mysten/dapp-kit/dist/index.css';
 import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
@@ -18,6 +18,13 @@ const getDefaultNetwork = (): 'mainnet' | 'testnet' | 'devnet' | 'localnet' => {
 
 const walletQueryClient = new QueryClient();
 
+// Custom storage that doesn't persist - forces fresh wallet selection every time
+const noopStorage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+};
+
 interface SuiDappKitProviderProps {
   children: ReactNode;
 }
@@ -25,20 +32,15 @@ interface SuiDappKitProviderProps {
 export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
   const defaultNetwork = getDefaultNetwork();
   
+  // Clear any cached wallet data on mount
   useEffect(() => {
-    const detectWallets = () => {
-      const win = window as any;
-      console.log("Wallet detection:", {
-        slush: !!win.slush || !!win.suiWallet,
-        nightly: !!win.nightly?.sui,
-        suiet: !!win.suiet,
-        ethos: !!win.ethos,
-        martian: !!win.martian,
-      });
-    };
-    
-    setTimeout(detectWallets, 500);
-    setTimeout(detectWallets, 1500);
+    try {
+      localStorage.removeItem('sui-dapp-kit:wallet-connection-info');
+      localStorage.removeItem('@mysten/wallet-kit:lastWallet');
+      localStorage.removeItem('suiWallet');
+    } catch (e) {
+      console.log('Could not clear wallet cache');
+    }
   }, []);
   
   return (
@@ -46,10 +48,10 @@ export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
       <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
         <WalletProvider
           autoConnect={false}
+          storage={noopStorage}
           stashedWallet={{
             name: 'SuiBets',
           }}
-          preferredWallets={['Slush', 'Sui Wallet', 'Nightly', 'Suiet', 'Ethos Wallet', 'Martian Sui Wallet']}
         >
           {children}
         </WalletProvider>

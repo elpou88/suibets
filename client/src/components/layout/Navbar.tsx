@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { shortenAddress } from "@/lib/utils";
-import { Bell, LogOut } from "lucide-react";
+import { Bell, LogOut, Wallet } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ConnectButton, useCurrentAccount, useDisconnectWallet } from '@mysten/dapp-kit';
+import { ConnectButton, useCurrentAccount, useDisconnectWallet, useAccounts } from '@mysten/dapp-kit';
 import '@mysten/dapp-kit/dist/index.css';
 
 export default function Navbar() {
@@ -22,45 +22,51 @@ export default function Navbar() {
   const { user, disconnectWallet, connectWallet } = useAuth();
   const { toast } = useToast();
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
+  const [hasShownToast, setHasShownToast] = useState(false);
   
   // Use dapp-kit hooks directly
   const currentAccount = useCurrentAccount();
+  const accounts = useAccounts();
   const { mutate: disconnectDappKit } = useDisconnectWallet();
   
-  // Sync dapp-kit connection state with AuthContext
-  useEffect(() => {
+  // Get wallet address from either dapp-kit or AuthContext
+  const walletAddress = currentAccount?.address || user?.walletAddress;
+  const isConnected = !!walletAddress;
+  
+  // Sync dapp-kit connection to AuthContext when account changes
+  const syncConnection = useCallback(async () => {
     if (currentAccount?.address) {
-      // Wallet connected via dapp-kit - sync with AuthContext
+      // Only sync if AuthContext doesn't have this address yet
       if (!user?.walletAddress || user.walletAddress !== currentAccount.address) {
-        console.log('Syncing dapp-kit connection to AuthContext:', currentAccount.address);
-        connectWallet(currentAccount.address, 'sui');
-        toast({
-          title: "Wallet Connected",
-          description: `Connected: ${currentAccount.address.substring(0, 8)}...${currentAccount.address.slice(-6)}`,
-        });
+        console.log('[Navbar] Syncing wallet to AuthContext:', currentAccount.address);
+        await connectWallet(currentAccount.address, 'sui');
+        
+        // Show toast only once per connection
+        if (!hasShownToast) {
+          toast({
+            title: "Wallet Connected",
+            description: `${currentAccount.address.substring(0, 8)}...${currentAccount.address.slice(-6)}`,
+          });
+          setHasShownToast(true);
+        }
       }
+    } else {
+      // Reset toast flag when disconnected
+      setHasShownToast(false);
     }
-  }, [currentAccount?.address, user?.walletAddress, connectWallet, toast]);
+  }, [currentAccount?.address, user?.walletAddress, connectWallet, toast, hasShownToast]);
+  
+  useEffect(() => {
+    syncConnection();
+  }, [syncConnection]);
   
   // Handle disconnect - both dapp-kit and AuthContext
   const handleDisconnect = () => {
+    console.log('[Navbar] Disconnecting wallet');
+    setHasShownToast(false);
     disconnectDappKit();
     disconnectWallet();
   };
-
-  const goToLive = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.location.href = "/live-final.html";
-  };
-
-  const goToPromotions = (e: React.MouseEvent) => {
-    e.preventDefault();
-    window.location.href = "/promotions-final.html";
-  };
-
-  // Check if connected via either dapp-kit or auth context
-  const isConnected = !!currentAccount?.address || !!user?.walletAddress;
-  const walletAddress = currentAccount?.address || user?.walletAddress;
 
   return (
     <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-3 px-3 md:py-4 md:px-6 flex items-center shadow-lg shadow-cyan-900/20">
@@ -76,7 +82,6 @@ export default function Navbar() {
         
         {/* Desktop navigation */}
         <div className="hidden md:flex items-center space-x-6 lg:space-x-10 mx-auto">
-          {/* Sports link */}
           <a 
             href="/" 
             className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer text-sm lg:text-base`}
@@ -84,7 +89,6 @@ export default function Navbar() {
             Sports
           </a>
           
-          {/* Live link */}
           <a 
             href="/live-events" 
             className="text-black bg-gradient-to-r from-[#00FFFF] to-[#00d9ff] px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg cursor-pointer font-semibold text-sm lg:text-base hover:shadow-lg hover:shadow-cyan-400/50 transition-all duration-300"
@@ -92,7 +96,6 @@ export default function Navbar() {
             Live<span className="ml-1 inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
           </a>
           
-          {/* Promo link */}
           <a 
             href="/promotions" 
             className="text-white bg-gradient-to-r from-blue-600 to-blue-500 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg cursor-pointer font-semibold text-sm lg:text-base hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
@@ -100,7 +103,6 @@ export default function Navbar() {
             Promo
           </a>
           
-          {/* Buy SBETS link */}
           <a 
             href="https://app.turbos.finance/#/trade?input=0x2::sui::SUI&output=0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS" 
             target="_blank"
@@ -120,7 +122,12 @@ export default function Navbar() {
             {/* Wallet dropdown with address */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-cyan-500/50 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 font-medium transition-all duration-300">
+                <Button 
+                  variant="outline" 
+                  className="border-cyan-500/50 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 font-medium transition-all duration-300"
+                  data-testid="button-wallet-menu"
+                >
+                  <Wallet className="w-4 h-4 mr-2" />
                   <span className="hidden sm:inline">{shortenAddress(walletAddress)}</span>
                   <span className="sm:hidden">Wallet</span>
                 </Button>
@@ -164,6 +171,7 @@ export default function Navbar() {
               size="icon"
               className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
               onClick={() => setIsNotificationsModalOpen(true)}
+              data-testid="button-notifications"
             >
               <Bell className="h-5 w-5" />
             </Button>
@@ -173,7 +181,6 @@ export default function Navbar() {
             {/* Use dapp-kit's built-in ConnectButton */}
             <ConnectButton 
               connectText="Connect Wallet"
-              className="!bg-gradient-to-r !from-cyan-400 !to-cyan-500 hover:!from-cyan-300 hover:!to-cyan-400 !text-black !font-semibold !px-6 !py-2 !rounded-lg !shadow-lg !shadow-cyan-500/40 hover:!shadow-cyan-500/60 !transition-all !duration-300"
             />
             
             {/* Telegram Join Now Button */}

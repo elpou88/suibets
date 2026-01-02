@@ -1,44 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/context/AuthContext";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
-import { shortenAddress } from "@/lib/utils";
-import { Bell, LogOut, Wallet } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { ConnectButton, useCurrentAccount } from '@mysten/dapp-kit';
-import '@mysten/dapp-kit/dist/index.css';
+import { Bell } from "lucide-react";
+import { FreshConnectButton } from "@/components/wallet/FreshConnectButton";
 
 export default function Navbar() {
-  const [location, setLocation] = useLocation();
-  const { disconnectWallet, walletAddress: authWalletAddress } = useAuth();
-  const { toast } = useToast();
+  const [location] = useLocation();
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  
-  // Use dapp-kit's useCurrentAccount as PRIMARY source of truth
-  const currentAccount = useCurrentAccount();
-  
-  // Wallet address from dapp-kit (preferred) or AuthContext (fallback)
-  const walletAddress = currentAccount?.address || authWalletAddress;
-  const isConnected = !!walletAddress;
-  
-  // Handle disconnect
-  const handleDisconnect = () => {
-    console.log('[Navbar] Disconnecting wallet');
-    disconnectWallet();
-    toast({
-      title: "Wallet Disconnected",
-      description: "Your wallet has been disconnected.",
-    });
-  };
 
   return (
     <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-3 px-3 md:py-4 md:px-6 flex items-center shadow-lg shadow-cyan-900/20">
@@ -87,82 +56,27 @@ export default function Navbar() {
         </div>
       </div>
       
-      
-      <div className="flex items-center justify-end flex-1 pr-4">
-        {isConnected && walletAddress ? (
-          <div className="flex items-center">
-            {/* Wallet dropdown with address */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  className="border-cyan-500/50 bg-cyan-900/20 text-cyan-300 hover:bg-cyan-900/40 hover:border-cyan-400 hover:shadow-lg hover:shadow-cyan-500/30 font-medium transition-all duration-300"
-                  data-testid="button-wallet-menu"
-                >
-                  <Wallet className="w-4 h-4 mr-2" />
-                  <span className="hidden sm:inline">{shortenAddress(walletAddress)}</span>
-                  <span className="sm:hidden">Wallet</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuLabel>Your Wallet</DropdownMenuLabel>
-                <div className="px-2 py-2 text-sm text-cyan-300">
-                  {shortenAddress(walletAddress)}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/wallet-dashboard')}
-                >
-                  Wallet Dashboard
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/bet-history')}
-                >
-                  My Bets
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer"
-                  onClick={() => setLocation('/dividends')}
-                >
-                  Dividends
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleDisconnect}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Disconnect</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {/* Notification Button */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
-              onClick={() => setIsNotificationsModalOpen(true)}
-              data-testid="button-notifications"
-            >
-              <Bell className="h-5 w-5" />
-            </Button>
-          </div>
-        ) : (
-          <div className="flex items-center">
-            {/* Use dapp-kit's built-in ConnectButton - handles all wallet selection */}
-            <ConnectButton 
-              connectText="Connect Wallet"
-            />
-            
-            {/* Telegram Join Now Button */}
-            <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="ml-3">
-              <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
-                Join Telegram
-              </Button>
-            </a>
-          </div>
-        )}
+      <div className="flex items-center justify-end flex-1 pr-4 gap-2">
+        {/* FreshConnectButton handles both connected and disconnected states */}
+        <FreshConnectButton />
+        
+        {/* Notification Button */}
+        <Button 
+          variant="ghost" 
+          size="icon"
+          className="text-white hover:text-[#00FFFF] hover:bg-[#112225]"
+          onClick={() => setIsNotificationsModalOpen(true)}
+          data-testid="button-notifications"
+        >
+          <Bell className="h-5 w-5" />
+        </Button>
+        
+        {/* Telegram Join Now Button */}
+        <a href="https://t.me/Sui_Bets" target="_blank" rel="noopener noreferrer" className="hidden sm:block">
+          <Button variant="outline" className="border-[#00FFFF] text-[#00FFFF] hover:bg-[#00FFFF]/20 font-medium">
+            Join Telegram
+          </Button>
+        </a>
       </div>
       
       <NotificationsModal 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
@@ -32,6 +32,10 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [allWallets, setAllWallets] = useState<WalletInfo[]>([]);
+  
+  // Ref to prevent duplicate processing of the same address
+  const processedAddressRef = useRef<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   const currentAccount = useCurrentAccount();
   const dappkitWallets = useWallets();
@@ -107,7 +111,14 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   }, [dappkitWallets]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      // Reset processing state when modal closes so reconnection works
+      isProcessingRef.current = false;
+      return;
+    }
+    
+    // Reset processed address when modal opens to allow reconnection
+    processedAddressRef.current = null;
     
     detectAllWallets();
     
@@ -130,28 +141,42 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
     }
   }, [isOpen, detectAllWallets]);
 
+  // Single effect to handle dapp-kit connection state changes
   useEffect(() => {
-    if (currentAccount?.address) {
-      console.log('Wallet connected:', currentAccount.address);
-      
-      toast({
-        title: "Wallet Connected",
-        description: `Connected: ${currentAccount.address.substring(0, 8)}...${currentAccount.address.slice(-6)}`,
-      });
-      
-      if (connectWallet) {
-        connectWallet(currentAccount.address, 'sui')
-          .then(() => onClose())
-          .catch((err) => {
-            console.error('Auth sync error:', err);
-            onClose();
-          });
-      } else {
-        onClose();
-      }
-      setConnecting(false);
-      setConnectingWallet(null);
+    const address = currentAccount?.address;
+    
+    // Skip if no address, already processed this address, or currently processing
+    if (!address || processedAddressRef.current === address || isProcessingRef.current) {
+      return;
     }
+    
+    // Mark as processing to prevent race conditions
+    isProcessingRef.current = true;
+    processedAddressRef.current = address;
+    
+    console.log('Dapp-kit connected, processing address:', address);
+    
+    // Show toast once
+    toast({
+      title: "Wallet Connected",
+      description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,
+    });
+    
+    // Update auth context (async but don't block)
+    if (connectWallet) {
+      connectWallet(address, 'sui')
+        .catch((err) => console.error('Auth sync error:', err))
+        .finally(() => {
+          isProcessingRef.current = false;
+        });
+    } else {
+      isProcessingRef.current = false;
+    }
+    
+    // Reset UI state and close modal
+    setConnecting(false);
+    setConnectingWallet(null);
+    onClose();
   }, [currentAccount?.address, connectWallet, onClose, toast]);
 
   const connectToWallet = async (walletInfo: WalletInfo) => {
@@ -253,26 +278,40 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   };
   
   const finalizeConnection = async (address: string, walletName: string) => {
+    // Skip if already processed this address
+    if (processedAddressRef.current === address) {
+      console.log('Address already processed:', address);
+      setConnecting(false);
+      setConnectingWallet(null);
+      onClose();
+      return;
+    }
+    
     console.log('Finalizing connection for:', address, 'via', walletName);
     
-    // CRITICAL: Update WalletAdapter state FIRST (this updates localStorage and local state immediately)
+    // Mark as processed
+    processedAddressRef.current = address;
+    isProcessingRef.current = true;
+    
+    // Update WalletAdapter state
     try {
       await updateConnectionState(address, walletName.toLowerCase());
-      console.log('WalletAdapter state updated');
     } catch (e) {
       console.error('WalletAdapter update error:', e);
     }
     
-    // Then update AuthContext (this syncs with backend)
+    // Update AuthContext (syncs with backend)
     if (connectWallet) {
       try {
         await connectWallet(address, walletName.toLowerCase());
-        console.log('AuthContext state updated');
       } catch (e) {
         console.error('AuthContext update error:', e);
       }
     }
     
+    isProcessingRef.current = false;
+    
+    // Show single toast
     toast({
       title: "Wallet Connected",
       description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,

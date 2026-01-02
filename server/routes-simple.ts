@@ -1038,8 +1038,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       
       if (!user) {
         // Create new user with wallet address (password required by schema, use placeholder for wallet-based auth)
-        const crypto = await import('crypto');
-        const placeholderPassword = crypto.randomBytes(32).toString('hex');
+        const placeholderPassword = `wallet_${Date.now()}_${Math.random().toString(36).substring(2)}`;
         user = await storage.createUser({
           username: address.substring(0, 8),
           password: placeholderPassword,

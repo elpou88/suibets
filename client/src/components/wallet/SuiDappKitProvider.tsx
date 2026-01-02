@@ -2,7 +2,6 @@ import { ReactNode, useEffect } from 'react';
 import '@mysten/dapp-kit/dist/index.css';
 import { createNetworkConfig, SuiClientProvider, WalletProvider } from '@mysten/dapp-kit';
 import { getFullnodeUrl } from '@mysten/sui/client';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const { networkConfig } = createNetworkConfig({
   mainnet: { url: getFullnodeUrl('mainnet') },
@@ -16,9 +15,6 @@ const getDefaultNetwork = (): 'mainnet' | 'testnet' | 'devnet' | 'localnet' => {
   return network as 'mainnet' | 'testnet' | 'devnet' | 'localnet';
 };
 
-const walletQueryClient = new QueryClient();
-
-// Custom storage that doesn't persist - forces fresh wallet selection every time
 const noopStorage = {
   getItem: () => null,
   setItem: () => {},
@@ -32,7 +28,6 @@ interface SuiDappKitProviderProps {
 export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
   const defaultNetwork = getDefaultNetwork();
   
-  // Clear any cached wallet data on mount
   useEffect(() => {
     try {
       localStorage.removeItem('sui-dapp-kit:wallet-connection-info');
@@ -44,18 +39,16 @@ export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
   }, []);
   
   return (
-    <QueryClientProvider client={walletQueryClient}>
-      <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
-        <WalletProvider
-          autoConnect={false}
-          storage={noopStorage}
-          stashedWallet={{
-            name: 'SuiBets',
-          }}
-        >
-          {children}
-        </WalletProvider>
-      </SuiClientProvider>
-    </QueryClientProvider>
+    <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
+      <WalletProvider
+        autoConnect={false}
+        storage={noopStorage}
+        stashedWallet={{
+          name: 'SuiBets',
+        }}
+      >
+        {children}
+      </WalletProvider>
+    </SuiClientProvider>
   );
 };

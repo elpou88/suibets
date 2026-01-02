@@ -2,7 +2,7 @@ import { useState, useEffect, createContext, useContext, ReactNode } from 'react
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
-import { useWallet } from '@suiet/wallet-kit';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 
 export interface BlockchainAuthUser {
   walletAddress: string;
@@ -23,7 +23,6 @@ interface BlockchainAuthContextType {
   checkWalletStatusQuery: ReturnType<typeof useCheckWalletStatusQuery>;
 }
 
-// Create a custom hook for connecting a wallet
 function useConnectWalletMutation() {
   const { toast } = useToast();
   
@@ -39,9 +38,7 @@ function useConnectWalletMutation() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        // Invalidate wallet status query
         queryClient.invalidateQueries({ queryKey: ['/api/auth/wallet-status'] });
-        // Invalidate profile query
         queryClient.invalidateQueries({ queryKey: ['/api/auth/profile'] });
         
         toast({
@@ -61,7 +58,6 @@ function useConnectWalletMutation() {
   });
 }
 
-// Create a custom hook for disconnecting a wallet
 function useDisconnectWalletMutation() {
   const { toast } = useToast();
   
@@ -72,9 +68,7 @@ function useDisconnectWalletMutation() {
     },
     onSuccess: (data) => {
       if (data.success) {
-        // Invalidate wallet status query
         queryClient.invalidateQueries({ queryKey: ['/api/auth/wallet-status'] });
-        // Invalidate profile query
         queryClient.invalidateQueries({ queryKey: ['/api/auth/profile'] });
         
         toast({
@@ -94,7 +88,6 @@ function useDisconnectWalletMutation() {
   });
 }
 
-// Create a custom hook for checking wallet status
 function useCheckWalletStatusQuery() {
   return useQuery({
     queryKey: ['/api/auth/wallet-status'],
@@ -102,12 +95,11 @@ function useCheckWalletStatusQuery() {
       const res = await apiRequest('GET', '/api/auth/wallet-status');
       return await res.json();
     },
-    staleTime: 60000, // 1 minute
+    staleTime: 60000,
     refetchOnWindowFocus: true,
   });
 }
 
-// Create a custom hook for getting user profile
 function useProfileQuery() {
   return useQuery({
     queryKey: ['/api/auth/profile'],
@@ -116,61 +108,52 @@ function useProfileQuery() {
         const res = await apiRequest('GET', '/api/auth/profile');
         return await res.json();
       } catch (error) {
-        // If unauthorized, return null profile
         return { success: false, profile: null };
       }
     },
-    staleTime: 60000, // 1 minute
-    retry: false, // Don't retry if unauthorized
+    staleTime: 60000,
+    retry: false,
   });
 }
 
-// Create the blockchain auth context
 const BlockchainAuthContext = createContext<BlockchainAuthContextType | null>(null);
 
-// Create the blockchain auth provider
 export function BlockchainAuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<BlockchainAuthUser | null>(null);
   const [error, setError] = useState<Error | null>(null);
   
-  // Get Suiet wallet state
-  const suietWallet = useWallet();
+  // Use dapp-kit instead of suiet/wallet-kit
+  const currentAccount = useCurrentAccount();
   
-  // Get wallet status
   const checkWalletStatusQuery = useCheckWalletStatusQuery();
   const { data: walletStatusData, isLoading: isCheckingWalletStatus } = checkWalletStatusQuery;
   
-  // Get user profile
   const { data: profileData, isLoading: isLoadingProfile } = useProfileQuery();
   
-  // Create mutations
   const connectWalletMutation = useConnectWalletMutation();
   const disconnectWalletMutation = useDisconnectWalletMutation();
   
-  // Effect to handle Suiet wallet connection
+  // Handle dapp-kit wallet connection
   useEffect(() => {
-    if (suietWallet.connected && suietWallet.address) {
-      console.log('Suiet wallet connected:', suietWallet.address);
-      // Connect the wallet to our blockchain authentication system
+    if (currentAccount?.address) {
+      console.log('[BlockchainAuth] dapp-kit wallet connected:', currentAccount.address);
       connectWalletMutation.mutate({
-        walletAddress: suietWallet.address,
-        walletType: 'Suiet'
+        walletAddress: currentAccount.address,
+        walletType: 'sui-dapp-kit'
       });
     }
-  }, [suietWallet.connected, suietWallet.address]);
+  }, [currentAccount?.address]);
   
-  // Add additional debug info for wallet connection issues
   useEffect(() => {
     if (connectWalletMutation.isError) {
-      console.error('Wallet connection error:', connectWalletMutation.error);
+      console.error('[BlockchainAuth] Wallet connection error:', connectWalletMutation.error);
     }
     
     if (walletStatusData) {
-      console.log('Wallet status:', walletStatusData);
+      console.log('[BlockchainAuth] Wallet status:', walletStatusData);
     }
   }, [connectWalletMutation.isError, connectWalletMutation.error, walletStatusData]);
   
-  // Effect to update user state
   useEffect(() => {
     if (walletStatusData?.authenticated && profileData?.success && profileData?.profile) {
       setUser({
@@ -189,10 +172,8 @@ export function BlockchainAuthProvider({ children }: { children: ReactNode }) {
     }
   }, [walletStatusData, profileData]);
   
-  // Combine loading states
   const isLoading = isCheckingWalletStatus || isLoadingProfile || connectWalletMutation.isPending;
   
-  // Provide context value
   const contextValue: BlockchainAuthContextType = {
     user,
     isLoading,
@@ -209,7 +190,6 @@ export function BlockchainAuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Create the hook for using blockchain auth
 export function useBlockchainAuth() {
   const context = useContext(BlockchainAuthContext);
   

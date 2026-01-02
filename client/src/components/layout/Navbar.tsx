@@ -1,12 +1,11 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import { NotificationsModal } from "@/components/modals/NotificationsModal";
-import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
-import { Bell, Settings, LogOut } from "lucide-react";
+import { Bell, LogOut } from "lucide-react";
 import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -25,7 +24,6 @@ export default function Navbar() {
   const { toast } = useToast();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isAttemptingConnection, setIsAttemptingConnection] = useState(false);
   
   // Debug wallet status in console
@@ -86,44 +84,49 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-4 px-6 flex items-center shadow-lg shadow-cyan-900/20">
+    <nav className="bg-gradient-to-r from-[#09181B] via-[#0f1f25] to-[#09181B] border-b border-cyan-900/30 py-3 px-3 md:py-4 md:px-6 flex items-center shadow-lg shadow-cyan-900/20">
       <div className="flex-1 flex items-center">
-        <div className="w-[120px]"></div> {/* Spacer */}
+        {/* Logo - visible on mobile */}
+        <Link href="/" className="md:hidden">
+          <img 
+            src="/logo/suibets-logo.png?v=999" 
+            alt="SuiBets Logo" 
+            className="h-8"
+          />
+        </Link>
         
-        <div className="flex items-center space-x-10 mx-auto">
-          {/* Sports link - simple text link */}
+        {/* Desktop navigation */}
+        <div className="hidden md:flex items-center space-x-6 lg:space-x-10 mx-auto">
+          {/* Sports link */}
           <a 
             href="/" 
-            className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer`}
+            className={`${location === "/" ? "text-[#00FFFF]" : "text-white hover:text-[#00FFFF]"} cursor-pointer text-sm lg:text-base`}
           >
             Sports
-            {location === "/" && (
-              <div className="absolute -bottom-3 left-0 w-full h-1 bg-[#00FFFF]"></div>
-            )}
           </a>
           
-          {/* Live link - Enhanced */}
+          {/* Live link */}
           <a 
-            href="/live-final.html" 
-            className="text-black bg-gradient-to-r from-[#00FFFF] to-[#00d9ff] px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-cyan-400/50 transition-all duration-300 transform hover:scale-105"
+            href="/live-events" 
+            className="text-black bg-gradient-to-r from-[#00FFFF] to-[#00d9ff] px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg cursor-pointer font-semibold text-sm lg:text-base hover:shadow-lg hover:shadow-cyan-400/50 transition-all duration-300"
           >
             Live<span className="ml-1 inline-block w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
           </a>
           
-          {/* Promo link - Enhanced */}
+          {/* Promo link */}
           <a 
-            href="/promotions-final.html" 
-            className="text-white bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300 transform hover:scale-105"
+            href="/promotions" 
+            className="text-white bg-gradient-to-r from-blue-600 to-blue-500 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg cursor-pointer font-semibold text-sm lg:text-base hover:shadow-lg hover:shadow-blue-500/50 transition-all duration-300"
           >
             Promo
           </a>
           
-          {/* Buy SBETS link - Enhanced */}
+          {/* Buy SBETS link */}
           <a 
             href="https://app.turbos.finance/#/trade?input=0x2::sui::SUI&output=0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS" 
             target="_blank"
             rel="noopener noreferrer"
-            className="text-black bg-gradient-to-r from-green-400 to-emerald-500 px-4 py-2 rounded-lg cursor-pointer font-semibold hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300 transform hover:scale-105"
+            className="text-black bg-gradient-to-r from-green-400 to-emerald-500 px-3 lg:px-4 py-1.5 lg:py-2 rounded-lg cursor-pointer font-semibold text-sm lg:text-base hover:shadow-lg hover:shadow-green-500/50 transition-all duration-300"
             data-testid="link-buy-sbets"
           >
             Buy SBETS
@@ -131,17 +134,6 @@ export default function Navbar() {
         </div>
       </div>
       
-      {/* Logo in center - only visible on mobile */}
-      <div className="md:hidden absolute left-1/2 transform -translate-x-1/2">
-        <Link href="/">
-          <img 
-            src="/logo/suibets-logo.png?v=999" 
-            alt="SuiBets Logo" 
-            className="h-8"
-            onError={(e) => console.log('Logo loading:', e)}
-          />
-        </Link>
-      </div>
       
       <div className="flex items-center justify-end flex-1 pr-4">
         {/* Place wallet connection button before bell/settings icons */}
@@ -197,16 +189,6 @@ export default function Navbar() {
             >
               <Bell className="h-5 w-5" />
             </Button>
-            
-            {/* Settings Button */}
-            <Button 
-              variant="ghost" 
-              size="icon"
-              className="text-white hover:text-[#00FFFF] hover:bg-[#112225] mx-1"
-              onClick={() => setIsSettingsModalOpen(true)}
-            >
-              <Settings className="h-5 w-5" />
-            </Button>
           </div>
         ) : (
           <div className="flex items-center">
@@ -237,11 +219,6 @@ export default function Navbar() {
       <NotificationsModal 
         isOpen={isNotificationsModalOpen} 
         onClose={() => setIsNotificationsModalOpen(false)} 
-      />
-      
-      <SettingsModal 
-        isOpen={isSettingsModalOpen} 
-        onClose={() => setIsSettingsModalOpen(false)} 
       />
     </nav>
   );

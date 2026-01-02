@@ -69,7 +69,7 @@ const Layout: React.FC<LayoutProps> = ({
     { label: 'Home', i18nKey: 'home', icon: <Home />, href: '/' },
     { label: 'Live', i18nKey: 'live', icon: <TrendingUp />, href: '/live-events' },
     { label: 'History', i18nKey: 'bet_history', icon: <Clock />, href: '/bet-history' },
-    { label: 'Settings', i18nKey: 'settings', icon: <Settings />, href: '/settings' },
+    { label: 'Wallet', i18nKey: 'wallet', icon: <Wallet />, href: '/wallet-dashboard' },
   ];
 
   const handleBack = () => {

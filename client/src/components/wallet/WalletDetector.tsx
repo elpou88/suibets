@@ -23,11 +23,11 @@ export function WalletDetector() {
     
     const win = window as any;
     
-    const hasSuiWallet = typeof win.suiWallet !== 'undefined';
+    const hasSlush = typeof win.slush !== 'undefined' || typeof win.suiWallet !== 'undefined';
     results.push({ 
-      name: 'Sui Wallet', 
-      detected: hasSuiWallet,
-      available: hasSuiWallet
+      name: 'Slush Wallet', 
+      detected: hasSlush,
+      available: hasSlush
     });
     
     const hasNightly = typeof win.nightly?.sui !== 'undefined';

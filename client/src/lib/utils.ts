@@ -247,11 +247,11 @@ export function calculateTransactionFees(amount: number): {
 }
 
 // Wallet types for UI display - as array for mapping
+// Slush (formerly Sui Wallet) is most popular, listed first
 export const WALLET_TYPES = [
+  { key: 'SLUSH', name: 'Slush Wallet' },
   { key: 'NIGHTLY', name: 'Nightly Wallet' },
-  { key: 'SUI', name: 'Sui Wallet' },
+  { key: 'SUIET', name: 'Suiet Wallet' },
   { key: 'ETHOS', name: 'Ethos Wallet' },
   { key: 'MARTIAN', name: 'Martian Wallet' },
-  { key: 'SUIET', name: 'Suiet Wallet' },
-  { key: 'WEB3AUTH', name: 'Web3Auth' },
 ];

@@ -50,7 +50,6 @@ import UpcomingEventsPage from "@/pages/upcoming-events";
 import ResultsPage from "@/pages/results";
 import ActivityPage from "@/pages/activity";
 import DepositsWithdrawalsPage from "@/pages/deposits-withdrawals";
-import AuditLogPage from "@/pages/audit-log";
 import WhitepaperPage from "@/pages/whitepaper";
 import AdminPanel from "@/pages/admin-panel";
 
@@ -126,7 +125,6 @@ function App() {
                           <Route path="/results" component={ResultsPage} />
                           <Route path="/promotions/referral" component={ReferralPage} />
                           <Route path="/notifications" component={Notifications} />
-                          <Route path="/settings" component={Settings} />
                           <Route path="/bet-history" component={BetHistoryPage} />
                           <Route path="/dividends" component={DividendsReal} />
                           <Route path="/storage" component={StoragePage} />
@@ -137,7 +135,6 @@ function App() {
                           <Route path="/dashboard" component={WalletDashboard} />
                           <Route path="/activity" component={ActivityPage} />
                           <Route path="/deposits-withdrawals" component={DepositsWithdrawalsPage} />
-                          <Route path="/audit-log" component={AuditLogPage} />
                           <Route path="/whitepaper" component={WhitepaperPage} />
                           <Route path="/join" component={JoinPage} />
                           

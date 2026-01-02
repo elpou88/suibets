@@ -296,7 +296,7 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
 
         {connectionStep === 'selecting' ? (
           <div className="space-y-3 py-4">
-            {/* PRIMARY: Direct Nightly Connection Button */}
+            {/* PRIMARY: Direct Wallet Connection Button */}
             <div className="w-full p-4 bg-gradient-to-r from-cyan-900/30 to-blue-900/30 rounded-lg border border-cyan-500/30">
               <h3 className="text-lg font-bold mb-3 text-center text-[#00FFFF]">
                 Connect Your Wallet
@@ -306,24 +306,45 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
                   try {
                     setConnecting(true);
                     setError(null);
-                    console.log('Direct Nightly connection attempt...');
+                    console.log('Direct wallet connection attempt...');
                     
-                    // Try wallet standard first
-                    const walletStandard = (window as any).navigator?.wallets || (window as any).walletStandard?.wallets;
-                    console.log('Wallet standard:', walletStandard);
+                    const win = window as any;
                     
-                    // Try Nightly direct
-                    const nightly = (window as any).nightly;
-                    console.log('Nightly object:', nightly);
+                    // Try Slush/Sui Wallet first (most popular)
+                    const slush = win.slush || win.suiWallet;
+                    if (slush) {
+                      console.log('Found Slush/Sui wallet, connecting...');
+                      try {
+                        if (slush.requestPermissions) await slush.requestPermissions();
+                        const accounts = await slush.getAccounts?.() || [];
+                        if (accounts?.[0]) {
+                          updateConnectionState(accounts[0], 'slush');
+                          if (connectWallet) await connectWallet(accounts[0], 'slush');
+                          toast({ title: "Wallet Connected", description: `Connected to ${accounts[0].substring(0, 8)}...` });
+                          setConnecting(false);
+                          onClose();
+                          return;
+                        }
+                        const result = await slush.connect?.();
+                        const addr = result?.accounts?.[0]?.address || result?.address;
+                        if (addr) {
+                          updateConnectionState(addr, 'slush');
+                          if (connectWallet) await connectWallet(addr, 'slush');
+                          toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
+                          setConnecting(false);
+                          onClose();
+                          return;
+                        }
+                      } catch (e) { console.log('Slush connect failed:', e); }
+                    }
                     
+                    // Try Nightly
+                    const nightly = win.nightly;
                     if (nightly?.sui) {
                       console.log('Found Nightly.sui, connecting...');
                       const result = await nightly.sui.connect();
-                      console.log('Nightly connect result:', result);
-                      
                       const addr = result?.accounts?.[0]?.address || result?.address || result?.publicKey;
                       if (addr) {
-                        console.log('Got address:', addr);
                         updateConnectionState(addr, 'nightly');
                         if (connectWallet) await connectWallet(addr, 'nightly');
                         toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
@@ -333,23 +354,23 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
                       }
                     }
                     
-                    // Fallback to sui wallet
-                    const suiWallet = (window as any).suiWallet;
-                    if (suiWallet) {
-                      console.log('Found suiWallet, connecting...');
-                      const result = await suiWallet.requestPermissions();
-                      const accounts = await suiWallet.getAccounts();
-                      if (accounts?.[0]) {
-                        updateConnectionState(accounts[0], 'sui');
-                        if (connectWallet) await connectWallet(accounts[0], 'sui');
-                        toast({ title: "Wallet Connected", description: `Connected to ${accounts[0].substring(0, 8)}...` });
+                    // Try Suiet
+                    const suiet = win.suiet;
+                    if (suiet) {
+                      console.log('Found Suiet wallet, connecting...');
+                      const result = await suiet.connect?.();
+                      const addr = result?.accounts?.[0]?.address || result?.address;
+                      if (addr) {
+                        updateConnectionState(addr, 'suiet');
+                        if (connectWallet) await connectWallet(addr, 'suiet');
+                        toast({ title: "Wallet Connected", description: `Connected to ${addr.substring(0, 8)}...` });
                         setConnecting(false);
                         onClose();
                         return;
                       }
                     }
                     
-                    setError("No wallet detected. Please install Nightly or Sui Wallet extension.");
+                    setError("No wallet detected. Please install Slush, Nightly, or Suiet wallet extension.");
                     setConnecting(false);
                   } catch (err: any) {
                     console.error('Direct connect error:', err);
@@ -369,12 +390,12 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
                 ) : (
                   <>
                     <WalletIcon className="mr-2 h-5 w-5" />
-                    Connect Nightly / Sui Wallet
+                    Connect Wallet
                   </>
                 )}
               </Button>
               <p className="text-xs text-gray-400 text-center mt-2">
-                Direct connection - bypasses wallet provider issues
+                Supports Slush, Nightly, Suiet and other Sui wallets
               </p>
             </div>
             

@@ -87,7 +87,6 @@ export default function SettingsPage() {
             <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
             <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
-            <Link href="/settings" className="text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
@@ -219,16 +218,15 @@ export default function SettingsPage() {
               Security
             </h3>
             
-            <Link href="/audit-log" className="flex items-center justify-between p-4 bg-black/50 rounded-xl hover:border-cyan-500/30 border border-transparent transition-colors" data-testid="link-audit">
+            <div className="flex items-center justify-between p-4 bg-black/50 rounded-xl border border-transparent">
               <div className="flex items-center gap-3">
-                <Shield className="h-5 w-5 text-red-400" />
+                <Shield className="h-5 w-5 text-green-400" />
                 <div>
-                  <p className="text-white font-medium">Audit Log</p>
-                  <p className="text-gray-500 text-sm">View all account activity</p>
+                  <p className="text-white font-medium">Wallet Authentication</p>
+                  <p className="text-gray-500 text-sm">Your wallet is your secure login</p>
                 </div>
               </div>
-              <ChevronRight className="h-5 w-5 text-gray-400" />
-            </Link>
+            </div>
           </div>
 
           {/* Save Button */}

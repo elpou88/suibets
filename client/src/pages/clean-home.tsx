@@ -126,8 +126,6 @@ export default function CleanHome() {
             <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
             <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-withdrawals">Withdrawals</Link>
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
-            <Link href="/audit-log" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-audit">Audit Log</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-settings">Settings</Link>
             <Link href="/whitepaper" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-whitepaper">Whitepaper</Link>
           </div>
 

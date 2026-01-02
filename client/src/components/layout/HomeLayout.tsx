@@ -41,10 +41,10 @@ export default function HomeLayout({ children }: HomeLayoutProps) {
           </button>
           <button 
             className="p-2 flex flex-col items-center justify-center"
-            onClick={() => setLocation("/settings")}
+            onClick={() => setLocation("/wallet-dashboard")}
           >
             <User className="h-6 w-6" />
-            <span className="text-xs mt-1">Account</span>
+            <span className="text-xs mt-1">Wallet</span>
           </button>
         </div>
       )}

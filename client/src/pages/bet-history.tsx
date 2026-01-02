@@ -114,7 +114,6 @@ export default function BetHistoryPage() {
             <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
             <Link href="/deposits-withdrawals" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
-            <Link href="/settings" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-settings">Settings</Link>
           </div>
           <div className="flex items-center gap-4">
             <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">

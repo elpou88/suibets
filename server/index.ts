@@ -86,9 +86,9 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // Use PORT from environment (Railway, Heroku, etc.) or default to 3000
-  // In Replit dev, use 5000 for local testing
-  const port = parseInt(process.env.PORT || process.env.REPL_ID ? '5000' : '3000', 10);
+  // Use PORT from environment (Railway sets this automatically)
+  // Default to 5000 for local development
+  const port = parseInt(process.env.PORT || '5000', 10);
   const host = process.env.HOST || '0.0.0.0';
   
   server.listen(port, host, () => {

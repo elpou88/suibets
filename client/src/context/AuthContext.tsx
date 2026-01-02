@@ -132,23 +132,46 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   }, [toast, isWalletConnected]);
 
   const connectWallet = async (address: string, walletType: WalletType) => {
+    console.log('AuthContext.connectWallet called with:', address, walletType);
+    
     try {
       setIsLoading(true);
       
-      const res = await apiRequest('POST', '/api/wallet/connect', {
-        address,
-        walletType
-      });
+      // IMMEDIATELY save to localStorage and set a minimal user state
+      // This ensures the UI updates right away
+      localStorage.setItem('wallet_address', address);
+      localStorage.setItem('wallet_type', walletType);
       
-      if (res.ok) {
-        const userData = await res.json();
-        setUser(userData);
+      // Set a minimal user state immediately so UI updates
+      const minimalUser: User = {
+        id: 0,
+        username: address.substring(0, 8),
+        walletAddress: address,
+        walletType: walletType,
+        createdAt: new Date().toISOString(),
+        balance: { SUI: 0, SBETS: 0 }
+      };
+      setUser(minimalUser);
+      console.log('AuthContext: Set minimal user state immediately');
+      
+      // Then fetch full user data from server asynchronously
+      try {
+        const res = await apiRequest('POST', '/api/wallet/connect', {
+          address,
+          walletType
+        });
         
-        // Save wallet data to local storage
-        localStorage.setItem('wallet_address', address);
-        localStorage.setItem('wallet_type', walletType);
-        
-        // No toast notification for wallet connection
+        if (res.ok) {
+          const userData = await res.json();
+          console.log('AuthContext: Got full user data from server:', userData);
+          setUser(userData);
+        } else {
+          console.error('AuthContext: API response not ok:', res.status);
+          // Keep the minimal user state - don't clear it
+        }
+      } catch (apiError) {
+        console.error('AuthContext: API call failed, keeping minimal user:', apiError);
+        // Keep the minimal user state - UI should still show connected
       }
     } catch (error) {
       console.error('Wallet connection error:', error);

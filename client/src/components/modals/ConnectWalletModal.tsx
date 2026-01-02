@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/context/AuthContext";
 import { AlertCircle, Loader2, WalletIcon, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
 import { 
   useCurrentAccount, 
   useConnectWallet,
@@ -25,6 +26,7 @@ interface WalletInfo {
 
 export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps) {
   const { connectWallet } = useAuth();
+  const { updateConnectionState } = useWalletAdapter();
   const { toast } = useToast();
   const [connecting, setConnecting] = useState(false);
   const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
@@ -251,15 +253,30 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
   };
   
   const finalizeConnection = async (address: string, walletName: string) => {
-    console.log('Connected:', address, 'via', walletName);
+    console.log('Finalizing connection for:', address, 'via', walletName);
+    
+    // CRITICAL: Update WalletAdapter state FIRST (this updates localStorage and local state immediately)
+    try {
+      await updateConnectionState(address, walletName.toLowerCase());
+      console.log('WalletAdapter state updated');
+    } catch (e) {
+      console.error('WalletAdapter update error:', e);
+    }
+    
+    // Then update AuthContext (this syncs with backend)
+    if (connectWallet) {
+      try {
+        await connectWallet(address, walletName.toLowerCase());
+        console.log('AuthContext state updated');
+      } catch (e) {
+        console.error('AuthContext update error:', e);
+      }
+    }
+    
     toast({
       title: "Wallet Connected",
       description: `Connected: ${address.substring(0, 8)}...${address.slice(-6)}`,
     });
-    
-    if (connectWallet) {
-      await connectWallet(address, walletName.toLowerCase());
-    }
     
     setConnecting(false);
     setConnectingWallet(null);

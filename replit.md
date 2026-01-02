@@ -1,250 +1,82 @@
 # SuiBets Platform - Crypto Sports Betting Platform
 
 ## Overview
+SuiBets is a crypto sports betting platform built on the Sui blockchain, offering real-time betting across 30+ sports. It integrates multiple sports APIs for live scores and automated event tracking, utilizing blockchain for secure transactions and PostgreSQL for data persistence. The platform aims to provide a comprehensive and robust betting experience.
 
-SuiBets is a comprehensive crypto sports betting platform built on the Sui blockchain. The platform integrates multiple sports APIs to provide real-time betting opportunities across 30+ sports, featuring automated event tracking, live score updates, and blockchain-based transactions with PostgreSQL database for data persistence.
+## User Preferences
+Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-- **React 18** with TypeScript for the user interface
-- **Vite** as the build tool for fast development
-- **Tailwind CSS** with custom theming for responsive design
-- **Framer Motion** for smooth animations
-- **Radix UI** components for accessible UI elements
-- **TanStack Query** for data fetching and caching
-- **Wouter** for lightweight routing
+### Frontend
+- **Framework**: React 18 with TypeScript
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS (custom themed)
+- **Animations**: Framer Motion
+- **UI Components**: Radix UI
+- **Data Fetching**: TanStack Query
+- **Routing**: Wouter
 
-### Backend Architecture
-- **Express.js** server with TypeScript
-- **RESTful API** design with sport-specific service modules
-- **WebSocket** integration for real-time live score updates
-- **Multi-API aggregation** with resilience and fallback mechanisms
-- **Session-based authentication** with optional blockchain authentication
+### Backend
+- **Framework**: Express.js with TypeScript
+- **API**: RESTful design with sport-specific modules
+- **Real-time**: WebSocket for live score updates
+- **Data Aggregation**: Multi-API with resilience and fallback
+- **Authentication**: Session-based with optional blockchain authentication
 
-### Data Storage Solutions
-- **PostgreSQL** database with Drizzle ORM (Railway hosted)
-- **In-memory caching** for frequently accessed data
-- **Session storage** for user authentication state
+### Data Storage
+- **Primary Database**: PostgreSQL with Drizzle ORM (Railway hosted)
+- **Caching**: In-memory for performance
+- **Authentication State**: Session storage
 
-## Key Components
+### Key Features
+- **Sports Data Integration**: Aggregates data from API-Sports and SportsData API across various sports with an event tracking service and API resilience.
+- **Blockchain Integration**: Utilizes the Sui blockchain for secure transactions, supports SBETS token, and employs Move smart contracts for betting operations, with multiple wallet support.
+- **Betting System**: Provides real-time odds, multiple market types, live betting via WebSockets, betting slip management, and automated payout through smart contracts.
+- **User Management**: Features wallet-based authentication, user profiles, balance management for SUI and SBETS tokens, and secure session handling.
 
-### Sports Data Integration
-- **API-Sports** integration for 14 core sports
-- **SportsData API** as secondary data source
-- **Sport-specific services** for Football, Basketball, Tennis, Baseball, Hockey, Rugby, Cricket, Golf, Boxing, MMA, Formula 1, Cycling, American Football, and others
-- **Event tracking service** that monitors upcoming events and transitions them to live status
-- **API resilience service** with DNS fallback and retry mechanisms
+### Data Flow
+- **Event Data Pipeline**: Involves data aggregation, normalization, event tracking, real-time updates via WebSocket, and caching.
+- **Betting Flow (On-Chain)**: Users select markets, odds are calculated, bets are placed via Sui smart contracts (user signs `place_bet` transaction), confirmed transactions are recorded in PostgreSQL, and settlements are automated.
+- **Authentication Flow**: Wallet connection, address verification, session creation, balance synchronization from blockchain, and transaction authorization.
 
-### Blockchain Integration
-- **Sui blockchain** integration for secure transactions
-- **SBETS token** (0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS)
-- **Smart contracts** written in Move language for betting operations
-- **Multiple wallet support** including Sui Wallet and Suiet
+### Architecture Model
+- **Hybrid Custodial Model**: Users deposit SUI to a platform treasury wallet. Bets are tracked in PostgreSQL, and winnings are settled off-chain. Withdrawals can be automated or manual.
+  - **Treasury Wallet**: `0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50`
+  - **Admin Wallet**: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
+- **Gas Payment**: Users pay gas for deposits and on-chain bet placement. The platform (admin wallet) pays gas for automated withdrawals and revenue transfers. Betting operations themselves (settlements, crediting winnings) are off-chain and incur no gas fees.
 
-### Betting System
-- **Real-time odds** calculation and display
-- **Multiple market types** (Match Winner, Handicap, Over/Under, etc.)
-- **Live betting** capabilities with WebSocket updates
-- **Betting slip** management with parlay support
-- **Automated payout** system via smart contracts
+### Monitoring Endpoints
+- `/api/contract/info`: Provides blockchain contract details.
+- `/api/settlement/status`: Reports on the settlement worker's status.
+- `/api/user/balance?userId=<wallet>`: Fetches user SUI and SBETS balances.
 
-### User Management
-- **Wallet-based authentication** with optional traditional auth
-- **User profiles** with betting history and statistics
-- **Balance management** for SUI and SBETS tokens
-- **Session management** with secure cookie handling
-
-## Data Flow
-
-### Event Data Pipeline
-1. **Data Aggregation**: Multiple sports APIs fetch live and upcoming events
-2. **Data Normalization**: Standardize event data across different sports
-3. **Event Tracking**: Monitor status changes from upcoming to live
-4. **Real-time Updates**: WebSocket broadcasts live score updates
-5. **Caching Layer**: Store frequently accessed data for performance
-
-### Betting Flow
-1. **Event Selection**: User selects betting markets from live/upcoming events
-2. **Odds Calculation**: Real-time odds computation with margin application
-3. **Bet Placement**: Smart contract execution on Sui blockchain
-4. **Settlement**: Automated payout based on event results
-5. **History Tracking**: Store bet records in database and blockchain
-
-### Authentication Flow
-1. **Wallet Connection**: User connects Sui-compatible wallet
-2. **Address Verification**: Validate wallet address and signature
-3. **Session Creation**: Establish authenticated session
-4. **Balance Sync**: Update user balance from blockchain
-5. **Transaction Authorization**: Enable betting transactions
+### Deployment Strategy
+- **Railway Deployment**: Recommended, requires specific environment variables for database, blockchain configuration, on-chain payouts (optional `ADMIN_PRIVATE_KEY` for automated withdrawals), sports data, and session security.
+- **Vercel Compatibility**: Alternative for serverless functions and static asset optimization.
+- **Configuration Management**: Uses environment variables for secrets, network configuration, fee structure, and wallet addresses.
 
 ## External Dependencies
 
 ### Sports Data Providers
-- **API-Sports** - Primary sports data provider (api-sports.io)
-- **SportsData API** - Secondary data source for enhanced coverage
-- **Fixed API Key**: 3ec255b133882788e32f6349eff77b21 (shared across services)
+- **API-Sports**: Primary sports data provider (`api-sports.io`).
+- **SportsData API**: Secondary data source.
+- **Fixed API Key**: `3ec255b133882788e32f6349eff77b21`
 
 ### Blockchain Services
-- **Sui Network** - Layer 1 blockchain for transactions (mainnet)
-- **Move Language** - Smart contract development
+- **Sui Network**: Layer 1 blockchain (mainnet).
+- **Move Language**: For smart contract development.
 - **Deployed Contract (Mainnet)**:
-  - Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa`
-  - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
-  - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
-  - Module: `betting` (place_bet, settle_bet, void_bet functions)
+    - Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa`
+    - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
+    - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
+    - Module: `betting` (functions: `place_bet`, `settle_bet`, `void_bet`)
 
 ### Payment Integration
-- **Stripe** - Optional fiat payment processing (keys configurable)
-- **Native Crypto** - Direct blockchain transactions preferred
+- **Stripe**: Optional fiat payment processing.
+- **Native Crypto**: Preferred direct blockchain transactions.
 
 ### Infrastructure
-- **PostgreSQL** - Primary database for balance tracking and bet storage
-- **WebSocket** - Real-time communication for live updates
-- **Session Store** - User session management
-
-## Architecture Model
-
-### Hybrid Custodial Model (Current)
-The platform operates as a custodial betting service where:
-1. **Deposits**: Users send SUI to the platform treasury wallet, provide txHash for verification
-2. **Betting**: Bets are tracked in PostgreSQL database with balance deductions
-3. **Auto-Settlement**: Runs every 30 seconds, checks finished matches via API-Sports, credits winners
-4. **Withdrawals**: Users request withdrawal, admin processes payout from treasury
-
-**Treasury Wallet**: 0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50
-**Admin Wallet**: 0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f
-
-### Gas Payment Architecture
-Understanding who pays gas fees for each operation:
-
-| Operation | Who Pays Gas | Description |
-|-----------|--------------|-------------|
-| **User Deposits** | User | User sends SUI to treasury wallet using their own wallet - they pay gas for the transfer |
-| **Bet Placement** | No gas needed | Bets are tracked in PostgreSQL database (off-chain) - balance is debited internally, no blockchain transaction |
-| **Settlement/Winnings** | No gas needed | Settlement worker credits winners in database (off-chain) - no blockchain transaction during settlement |
-| **Automated Withdrawals** | Admin/Treasury | If ADMIN_PRIVATE_KEY is set, the admin hot wallet signs and pays gas to send SUI to user |
-| **Manual Withdrawals** | Admin | Admin manually processes withdrawal from treasury wallet and pays gas |
-| **Platform Revenue** | Admin | When transferring accumulated fees to revenue wallet, admin wallet pays gas |
-
-**Key Points**:
-- Users only pay gas once: when depositing SUI to the treasury
-- All betting operations (placing bets, settlements, crediting winnings) happen off-chain in the database - zero gas
-- The platform (admin wallet) pays gas for automated withdrawals and revenue transfers
-- This hybrid model minimizes gas costs for users while maintaining blockchain-backed deposits/withdrawals
-
-### Monitoring Endpoints
-- `/api/contract/info` - Returns package ID, platform ID, admin wallet
-- `/api/settlement/status` - Returns settlement worker status (running, settled events count)
-- `/api/user/balance?userId=<wallet>` - Returns user's SUI and SBETS balance
-
-## Deployment Strategy
-
-### Railway Deployment (Recommended)
-Required environment variables for Railway:
-
-**Database (Required)**:
-- `DATABASE_URL` - Railway PostgreSQL connection string (must be Railway URL, not Neon)
-
-**Blockchain Configuration (Required)**:
-- `SUI_NETWORK` - mainnet (or testnet for testing)
-- `BETTING_PACKAGE_ID` - Deployed smart contract package ID
-- `BETTING_PLATFORM_ID` - Platform object ID from contract deployment
-- `ADMIN_WALLET_ADDRESS` - Admin wallet for contract operations
-- `PLATFORM_REVENUE_WALLET` - Treasury wallet for deposits
-- `SBETS_TOKEN_ADDRESS` - SBETS token contract address
-
-**On-Chain Payouts (Optional - for automated withdrawals)**:
-- `ADMIN_PRIVATE_KEY` - Private key for automated on-chain payouts (MUST be stored as encrypted secret)
-  - ⚠️ SECURITY WARNING: Storing private keys in environment variables is risky. For production:
-    - Consider using a hardware wallet or secure key management service
-    - Use a separate "hot wallet" with limited funds for automated payouts
-    - Never use your main treasury wallet private key
-    - Alternative: Process withdrawals manually from the treasury wallet
-  - **Supported key formats**:
-    - `suiprivkey1...` - Sui bech32 format (exported from Sui Wallet)
-    - 32-byte raw seed (base64 or hex with 0x prefix)
-    - 33-byte with scheme prefix (0x00 + 32-byte seed)
-    - 64-byte full keypair (32-byte seed + 32-byte public key)
-
-**Sports Data (Required)**:
-- `API_SPORTS_KEY` - API-Sports.io API key
-
-**Session Security (Required)**:
-- `SESSION_SECRET` - Random string for session encryption
-
-### Vercel Compatibility
-- **Alternative deployment** option with Node.js runtime
-- **Serverless functions** for API endpoints
-- **Static asset** optimization
-
-### Configuration Management
-- **Environment variables** for API keys and secrets
-- **Network configuration** (testnet/mainnet toggle)
-- **Fee structure** configuration (platform, network, staking fees)
-- **Wallet addresses** for deposit/withdrawal operations
-
-## Recent Changes
-- December 30, 2025: Mainnet contract deployed and configured
-  - Package ID: 0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa
-  - Platform Object ID: 0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89
-  - Admin Wallet: 0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f
-  - Removed Walrus protocol - using PostgreSQL database for all data storage
-  - Updated useWurlusProtocol hook to use database-backed /api/bets endpoints
-  - /api/contract/info now returns correct betting package ID
-- December 29, 2025: Added full on-chain betting infrastructure
-  - Created Move smart contract (sui_contracts/suibets/sources/betting.move) with place_bet, settle_bet, void_bet functions
-  - BlockchainBetService builds transaction payloads for frontend wallet signing
-  - New /api/bets/build-transaction endpoint returns transaction payload for wallet signing
-  - New /api/contract/info endpoint returns package ID, platform ID, network config
-  - New /api/bets/:id/verify endpoint verifies bet status across database
-  - Bet response includes onChain object with status, txHash, packageId
-  - Contract uses 1% fee model consistent with platform (100 basis points)
-- December 29, 2025: Fixed critical bet payout routing bug
-  - Added walletAddress column to bets table for correct settlement payouts
-  - Bets now store the wallet address of the bettor for settlement
-  - Settlement worker uses stored walletAddress (not hardcoded fallback)
-  - SettlementService.isBetWon now handles both string and object eventResult
-- December 29, 2025: Implemented persistent balance tracking in PostgreSQL
-  - BalanceService now uses database instead of in-memory Maps
-  - All balance operations (deposits, bets, winnings, revenue) persist to database
-  - Balances survive server restarts - critical for settlement reliability
-  - Settlement worker correctly processes and persists all winnings/revenue
-  - All pages (bet-history, activity, wallet-dashboard, audit-log) now include wallet address for proper data fetching
-  - Fixed useWurlusProtocol hook to use correct API endpoints
-  - Removed all references to non-existent /api/bets/user endpoint
-- December 29, 2025: Fixed critical duplicate payment issues
-  - Deposit endpoint now requires txHash and blocks duplicate deposits
-  - Settlement worker now processes ALL users' bets (not just user1)
-  - New users start with 0 balance (no mock balances)
-  - txHash deduplication prevents double-crediting deposits
-- December 29, 2025: Multi-day fetch for 200+ upcoming matches - fetches 5 days of football fixtures in parallel to get 250+ events
-- December 29, 2025: Fixed cache issue - no longer caches empty API results, preventing stale zero-event displays
-- December 29, 2025: Fixed tennis API error - tennis API (v1.tennis.api-sports.io) doesn't exist, now returns empty array cleanly
-- Fixed routing issues - removed legacy pages that redirected to old promotions page
-- Deleted obsolete pages: home.tsx, promotions.tsx, promotions-real.tsx, Live-new.tsx, live-exact.tsx, sports-exact.tsx, connect-wallet.tsx, redirect-to-promotions.tsx, live/index.tsx
-- Updated data refresh intervals: 15 seconds for live events, 30 seconds for upcoming events (was 60 seconds)
-- Increased event limit from 50 to 100 per sport for better match coverage
-- All pages now use consistent Layout component with cyan/turquoise theme
-- Unified routing through App.tsx with modern pages only (clean-home, live-events, bet-history, etc.)
-- PostgreSQL database for bets with proper wurlusBetId field
-- Zero tolerance for mock data - only genuine API responses with verified live status indicators
-
-## Working API-Sports Endpoints
-- Football: v3.football.api-sports.io ✅
-- Basketball: v1.basketball.api-sports.io ✅ (Free tier)
-- MMA/UFC: v1.mma.api-sports.io ✅
-- Baseball: v1.baseball.api-sports.io ✅
-- Hockey: v1.hockey.api-sports.io ✅
-- Rugby: v1.rugby.api-sports.io ✅
-- Handball: v1.handball.api-sports.io ✅
-- Volleyball: v1.volleyball.api-sports.io ✅
-- Formula 1: v1.formula-1.api-sports.io ✅
-- American Football: v1.american-football.api-sports.io ✅
-
-## Non-existent APIs (fall back to football or return empty)
-- Tennis, Cricket, Golf, Boxing, Cycling, Snooker, Darts, Table Tennis, Badminton, Motorsport, Esports, Netball, Aussie Rules
-
-## User Preferences
-
-Preferred communication style: Simple, everyday language.
+- **PostgreSQL**: Primary database.
+- **WebSocket**: Real-time communication.
+- **Session Store**: User session management.

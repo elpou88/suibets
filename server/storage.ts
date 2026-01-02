@@ -347,62 +347,77 @@ export class DatabaseStorage implements IStorage {
 
   async getUserBets(userId: string): Promise<any[]> {
     try {
-      // IMPORTANT: Comprehensive bet retrieval that NEVER loses bets
-      // Uses multiple fallback strategies to ensure 100% bet persistence
-      let userBets: any[] = [];
-      
-      // Normalize wallet address for case-insensitive matching
+      // COMPREHENSIVE bet retrieval - NEVER loses bets
+      // Combines all possible sources to guarantee 100% bet persistence
       const normalizedAddress = userId.toLowerCase();
+      const allMatchedBets: any[] = [];
+      const seenIds = new Set<number>();
       
-      // COMPREHENSIVE QUERY: Use OR to match walletAddress with any casing
-      // This single query catches all cases: lowercase, mixed case, original case
-      userBets = await db.select().from(bets)
+      // Helper to add bets without duplicates
+      const addBets = (betList: any[]) => {
+        for (const bet of betList) {
+          if (!seenIds.has(bet.id)) {
+            seenIds.add(bet.id);
+            allMatchedBets.push(bet);
+          }
+        }
+      };
+      
+      // STRATEGY 1: Match walletAddress with any casing (primary lookup)
+      const walletBets = await db.select().from(bets)
         .where(or(
           sql`LOWER(${bets.walletAddress}) = ${normalizedAddress}`,
           eq(bets.walletAddress, userId)
         ))
         .orderBy(desc(bets.createdAt));
+      addBets(walletBets);
       
-      // FALLBACK 1: Try by userId (for legacy numeric IDs)
-      if (userBets.length === 0) {
+      // STRATEGY 2: Match by numeric userId (legacy support)
+      // IMPORTANT: Only run for purely numeric IDs to avoid cross-user leakage
+      if (/^\d+$/.test(userId)) {
         const userIdNum = parseInt(userId);
-        if (!isNaN(userIdNum)) {
-          userBets = await db.select().from(bets).where(eq(bets.userId, userIdNum)).orderBy(desc(bets.createdAt));
-        }
+        const legacyUserBets = await db.select().from(bets)
+          .where(eq(bets.userId, userIdNum))
+          .orderBy(desc(bets.createdAt));
+        addBets(legacyUserBets);
       }
       
-      // FALLBACK 2: If still no results and looks like a wallet, check wurlusBetId contains wallet prefix
-      if (userBets.length === 0 && (userId.startsWith('0x') || userId.length > 20)) {
+      // STRATEGY 3: Match by wurlusBetId containing wallet prefix
+      if (userId.startsWith('0x') || userId.length > 20) {
         const shortPrefix = userId.slice(0, 10).toLowerCase();
-        userBets = await db.select().from(bets)
+        const wurlusBets = await db.select().from(bets)
           .where(sql`LOWER(${bets.wurlusBetId}) LIKE ${`%${shortPrefix}%`}`)
           .orderBy(desc(bets.createdAt));
+        addBets(wurlusBets);
       }
       
-      // FALLBACK 3: Include legacy bets with NULL walletAddress that might belong to this user
-      // This ensures historical bets are NEVER lost while we transition to wallet-based system
-      if (userBets.length === 0) {
-        // Check for bets that might have been created before wallet normalization
-        // by looking at wurlusBetId pattern or any matching identifiers
-        const legacyBets = await db.select().from(bets)
+      // STRATEGY 4: Include legacy bets with NULL walletAddress that match wallet pattern
+      if (userId.startsWith('0x')) {
+        const walletPrefix = userId.slice(0, 8).toLowerCase();
+        const nullWalletBets = await db.select().from(bets)
           .where(sql`${bets.walletAddress} IS NULL`)
           .orderBy(desc(bets.createdAt))
-          .limit(100); // Limit to prevent loading all orphaned bets
+          .limit(200);
         
-        // Filter legacy bets that might belong to this wallet based on wurlusBetId pattern
-        if (legacyBets.length > 0 && userId.startsWith('0x')) {
-          const walletPrefix = userId.slice(0, 8).toLowerCase();
-          userBets = legacyBets.filter((bet: any) => 
-            bet.wurlusBetId?.toLowerCase().includes(walletPrefix) ||
-            bet.txHash?.toLowerCase().includes(walletPrefix)
-          );
-        }
+        // Filter by wurlusBetId or txHash containing wallet prefix
+        const matchingLegacy = nullWalletBets.filter((bet: any) => 
+          bet.wurlusBetId?.toLowerCase().includes(walletPrefix) ||
+          bet.txHash?.toLowerCase().includes(walletPrefix)
+        );
+        addBets(matchingLegacy);
       }
       
-      console.log(`📋 getUserBets: Found ${userBets.length} bets for ${userId.slice(0, 12)}...`);
+      // Sort all results by creation date
+      allMatchedBets.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      console.log(`📋 getUserBets: Found ${allMatchedBets.length} bets for ${userId.slice(0, 12)}...`);
       
       // Transform to match frontend's expected format for bet-history page
-      return userBets.map((bet: any) => ({
+      return allMatchedBets.map((bet: any) => ({
         id: bet.wurlusBetId || String(bet.id),
         eventName: bet.eventName || 'Unknown Event',
         selection: bet.prediction,

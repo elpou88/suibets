@@ -7,7 +7,7 @@ import { NotificationsModal } from "@/components/modals/NotificationsModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
 import { shortenAddress } from "@/lib/utils";
 import { Bell, Settings, LogOut } from "lucide-react";
-import { useWalletAdapter } from "@/components/wallet/WalletAdapter";
+import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -20,8 +20,10 @@ import {
 
 const NavigationBar = () => {
   const [location, setLocation] = useLocation();
-  const { user, isAuthenticated, disconnectWallet, connectWallet } = useAuth();
-  const { connect: connectAdapter, address, isConnected } = useWalletAdapter();
+  const { user, isAuthenticated, disconnectWallet } = useAuth();
+  const currentAccount = useCurrentAccount();
+  const address = currentAccount?.address;
+  const isConnected = !!address;
   const { toast } = useToast();
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isNotificationsModalOpen, setIsNotificationsModalOpen] = useState(false);

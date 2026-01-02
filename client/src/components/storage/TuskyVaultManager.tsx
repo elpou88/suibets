@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,7 +32,9 @@ interface Vault {
  * Uses Tusky.io protocol for Sui blockchain storage
  */
 const TuskyVaultManager: React.FC = () => {
-  const { isConnected, address } = useWalletAdapter();
+  const currentAccount = useCurrentAccount();
+  const isConnected = !!currentAccount?.address;
+  const address = currentAccount?.address;
   const { toast } = useToast();
   
   // Component state

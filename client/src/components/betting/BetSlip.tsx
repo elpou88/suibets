@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
-import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { X, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function BetSlip() {
   const { selectedBets, removeBet, clearBets, updateStake, placeBet, totalStake, potentialWinnings } = useBetting();
   const { user } = useAuth();
-  const walletAdapter = useWalletAdapter();
+  const currentAccount = useCurrentAccount();
+  const walletAdapter = { isConnected: !!currentAccount?.address, address: currentAccount?.address };
   const { toast } = useToast();
   const [betType, setBetType] = useState<'single' | 'parlay'>(selectedBets.length > 1 ? 'parlay' : 'single');
   const [isLoading, setIsLoading] = useState(false);

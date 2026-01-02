@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import MainLayout from '@/components/layout/MainLayout';
 import { default as TuskyVaultManager } from '@/components/storage/TuskyVaultManager';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useWalletAdapter } from '@/components/wallet/WalletAdapter';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { Button } from '@/components/ui/button';
 import { Link } from 'wouter';
 
@@ -11,7 +11,8 @@ import { Link } from 'wouter';
  * Storage page for managing decentralized storage on the SUI blockchain
  */
 const StoragePage: React.FC = () => {
-  const { isConnected } = useWalletAdapter();
+  const currentAccount = useCurrentAccount();
+  const isConnected = !!currentAccount?.address;
   
   return (
     <MainLayout>

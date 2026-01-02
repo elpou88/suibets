@@ -125,16 +125,16 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
       console.log('Wallet-standard API not available');
     }
     
-    // 3. Check window globals as fallback
+    // 3. Check window globals as fallback - comprehensive Nightly detection
     const win = window as any;
     const directWallets = [
       { check: () => win.slush, name: 'Slush' },
       { check: () => win.suiWallet, name: 'Sui Wallet' },
-      { check: () => win.nightly?.sui, name: 'Nightly' },
+      { check: () => win.nightly?.sui || win.nightly?.wallets?.sui || win.nightly?.wallets?.SUI || win.nightly, name: 'Nightly' },
       { check: () => win.suiet, name: 'Suiet' },
       { check: () => win.ethos, name: 'Ethos Wallet' },
-      { check: () => win.martian, name: 'Martian Sui Wallet' },
-      { check: () => win.solflare, name: 'Solflare' },
+      { check: () => win.martian?.sui || win.martian, name: 'Martian Sui Wallet' },
+      { check: () => win.solflare?.sui || win.solflare, name: 'Solflare' },
     ];
     
     directWallets.forEach(({ check, name }) => {
@@ -289,12 +289,29 @@ export function ConnectWalletModal({ isOpen, onClose }: ConnectWalletModalProps)
           }
         }
       }
-      // Nightly
+      // Nightly - comprehensive detection
       else if (name.includes('nightly')) {
-        const wallet = win.nightly?.sui;
-        if (wallet) {
-          const result = await wallet.connect();
-          address = result?.accounts?.[0]?.address || result?.publicKey;
+        const nightly = win.nightly;
+        if (nightly) {
+          // Try multiple Nightly connection methods
+          const suiWallet = nightly.sui || nightly.wallets?.sui || nightly.wallets?.SUI;
+          if (suiWallet) {
+            try {
+              const result = await suiWallet.connect();
+              address = result?.accounts?.[0]?.address || result?.publicKey;
+            } catch (e) {
+              console.log('Nightly sui.connect failed, trying alternatives');
+            }
+          }
+          // Fallback to generic nightly.connect
+          if (!address && nightly.connect) {
+            try {
+              const result = await nightly.connect({ network: 'sui' });
+              address = result?.accounts?.[0]?.address || result?.publicKey || result?.address;
+            } catch (e) {
+              console.log('Nightly generic connect failed:', e);
+            }
+          }
         }
       }
       // Suiet

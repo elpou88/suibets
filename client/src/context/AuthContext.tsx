@@ -41,95 +41,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     disconnect: disconnectWalletAdapter 
   } = useWalletAdapter();
 
-  // Sync user state with wallet adapter
+  // NO AUTO-CONNECT: User explicitly requested no automatic wallet reconnection
+  // Wallet connections only happen via explicit user action in ConnectWalletModal
   useEffect(() => {
-    const syncWithWalletAdapter = async () => {
-      try {
-        if (isWalletConnected && walletAddress) {
-          // If wallet is connected in adapter but not in auth context, connect it
-          if (!user?.walletAddress) {
-            console.log('Wallet connected in adapter but not in auth, syncing:', walletAddress);
-            setIsLoading(true);
-            
-            try {
-              const res = await apiRequest('POST', '/api/wallet/connect', {
-                address: walletAddress,
-                walletType: 'sui'
-              });
-              
-              if (res.ok) {
-                const userData = await res.json();
-                setUser(userData);
-                console.log('Successfully synced wallet from adapter');
-              }
-            } catch (error) {
-              console.error('Error syncing wallet from adapter:', error);
-            } finally {
-              setIsLoading(false);
-            }
-          }
-        } else if (!isWalletConnected && user?.walletAddress) {
-          // If wallet is disconnected in adapter but still in auth context, disconnect it
-          console.log('Wallet disconnected in adapter but still in auth, cleaning up');
-          disconnectWallet();
-        }
-      } catch (error) {
-        console.error('Error syncing with wallet adapter:', error);
-      }
-    };
-    
-    syncWithWalletAdapter();
-  }, [isWalletConnected, walletAddress, user?.walletAddress]);
-
-  // Check if user is authenticated on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setIsLoading(true);
-        // Check if wallet data exists in localStorage
-        const savedAddress = localStorage.getItem('wallet_address');
-        const savedWalletType = localStorage.getItem('wallet_type');
-        
-        // If we have saved wallet data, try to reconnect
-        if (savedAddress && savedWalletType && !isWalletConnected) {
-          console.log('Found saved wallet data, attempting to reconnect:', { savedAddress, savedWalletType });
-          
-          try {
-            const res = await apiRequest('POST', '/api/wallet/connect', {
-              address: savedAddress,
-              walletType: savedWalletType
-            });
-            
-            if (res.ok) {
-              const userData = await res.json();
-              setUser(userData);
-              console.log('Successfully reconnected wallet from localStorage');
-              
-              // No toast notification for reconnecting wallet
-            } else {
-              console.error('Failed to reconnect wallet, response not OK:', res.status);
-              // Only clear if the error is permanent (not a temporary network issue)
-              if (res.status === 400 || res.status === 404) {
-                localStorage.removeItem('wallet_address');
-                localStorage.removeItem('wallet_type');
-              }
-            }
-          } catch (connectionError) {
-            console.error('Error reconnecting wallet:', connectionError);
-            // Don't clear the data on network errors - might be temporary
-          }
-        } else {
-          console.log('No saved wallet data found or wallet already connected');
-        }
-      } catch (error) {
-        console.error('Auth check error:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
-    checkAuth();
-  }, [toast, isWalletConnected]);
+    // Clear any stale localStorage on mount to prevent phantom connections
+    // Only clear if wallet adapter is not actually connected
+    if (!isWalletConnected) {
+      localStorage.removeItem('wallet_address');
+      localStorage.removeItem('wallet_type');
+    }
+    setIsLoading(false);
+  }, []);
 
   const connectWallet = async (address: string, walletType: WalletType) => {
     console.log('AuthContext.connectWallet called with:', address, walletType);

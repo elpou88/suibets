@@ -45,7 +45,7 @@ export const SuiDappKitProvider = ({ children }: SuiDappKitProviderProps) => {
     <QueryClientProvider client={walletQueryClient}>
       <SuiClientProvider networks={networkConfig} defaultNetwork={defaultNetwork}>
         <WalletProvider
-          autoConnect={true}
+          autoConnect={false}
           stashedWallet={{
             name: 'SuiBets',
           }}

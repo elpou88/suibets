@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useWalrusProtocol } from '@/hooks/useWalrusProtocol';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Wallet, CheckCircle } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { ConnectButton, useWallet } from '@suiet/wallet-kit';
+import { useCurrentAccount, useDisconnectWallet, useConnectWallet, useWallets } from '@mysten/dapp-kit';
+import { shortenAddress } from '@/lib/utils';
 
 interface WalletConnectorProps {
   onConnect?: (address: string) => void;
@@ -14,90 +13,58 @@ interface WalletConnectorProps {
 
 export function WalletConnector({ onConnect }: WalletConnectorProps) {
   const { toast } = useToast();
-  const { currentWallet, connectToWurlusProtocol } = useWalrusProtocol();
-  const [selectedWallet, setSelectedWallet] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
   const [showWallets, setShowWallets] = useState(false);
+  const [connectingWallet, setConnectingWallet] = useState<string | null>(null);
   
-  const suietWallet = useWallet();
+  const currentAccount = useCurrentAccount();
+  const { mutate: disconnect } = useDisconnectWallet();
+  const { mutate: connect } = useConnectWallet();
+  const wallets = useWallets();
 
   useEffect(() => {
-    if (selectedWallet && currentWallet?.address) {
-      if (onConnect) {
-        onConnect(selectedWallet);
-      }
+    if (currentAccount?.address && onConnect) {
+      onConnect(currentAccount.address);
     }
-  }, [selectedWallet, currentWallet, onConnect]);
-  
-  useEffect(() => {
-    if (suietWallet.connected && suietWallet.address) {
-      console.log('Suiet wallet connected:', suietWallet.address);
-      setSelectedWallet(suietWallet.address);
-      
-      if (onConnect) {
-        onConnect(suietWallet.address);
-      }
-      
-      toast({
-        title: 'Wallet Connected via Suiet',
-        description: `Connected to ${suietWallet.address.substring(0, 8)}...${suietWallet.address.substring(suietWallet.address.length - 6)}`,
-      });
-    }
-  }, [suietWallet.connected, suietWallet.address, onConnect, toast]);
+  }, [currentAccount?.address, onConnect]);
 
-  const handleConnectWallet = async (walletAddress: string) => {
-    setSelectedWallet(walletAddress);
-    setConnecting(true);
+  const handleConnect = (wallet: any) => {
+    setConnectingWallet(wallet.name);
     
-    try {
-      await connectToWurlusProtocol(walletAddress);
-      
-      toast({
-        title: 'Wallet Connected',
-        description: `Connected to ${walletAddress.substring(0, 8)}...${walletAddress.substring(walletAddress.length - 6)}`,
-        variant: 'default',
-      });
-      
-      if (onConnect) {
-        onConnect(walletAddress);
+    connect(
+      { wallet },
+      {
+        onSuccess: () => {
+          setConnectingWallet(null);
+          setShowWallets(false);
+          toast({
+            title: 'Wallet Connected',
+            description: `Connected to ${wallet.name}`,
+          });
+        },
+        onError: (error) => {
+          setConnectingWallet(null);
+          toast({
+            title: 'Connection Failed',
+            description: error.message || 'Failed to connect wallet',
+            variant: 'destructive',
+          });
+        },
       }
-    } catch (error) {
-      console.error('Connection error:', error);
-      toast({
-        title: 'Connection Failed',
-        description: 'Failed to connect wallet. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setConnecting(false);
-      setShowWallets(false);
-    }
+    );
   };
 
-  const handleWalletButtonClick = () => {
-    setShowWallets(!showWallets);
-  };
-
-  const handleDisconnect = async () => {
-    setSelectedWallet(null);
-    
-    if (suietWallet.connected) {
-      try {
-        await suietWallet.disconnect();
-        console.log('Suiet wallet disconnected');
-      } catch (error) {
-        console.error('Error disconnecting Suiet wallet:', error);
+  const handleDisconnect = () => {
+    disconnect(undefined, {
+      onSuccess: () => {
+        toast({
+          title: 'Wallet Disconnected',
+          description: 'Your wallet has been disconnected.',
+        });
       }
-    }
-    
-    toast({
-      title: 'Wallet Disconnected',
-      description: 'Your wallet has been disconnected.',
-      variant: 'default',
     });
   };
 
-  if (currentWallet?.address) {
+  if (currentAccount?.address) {
     return (
       <Card className="w-full max-w-md mx-auto bg-[#112225] border-[#1e3a3f] text-white">
         <CardHeader>
@@ -106,7 +73,7 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
             Connected Wallet
           </CardTitle>
           <CardDescription className="text-gray-400">
-            Your wallet is connected to the Walrus protocol
+            Your wallet is connected
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -114,12 +81,11 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
             <div>
               <p className="text-sm font-medium text-gray-200">Address</p>
               <p className="text-xs font-mono text-[#00ffff]">
-                {currentWallet.address.substring(0, 8)}...
-                {currentWallet.address.substring(currentWallet.address.length - 6)}
+                {shortenAddress(currentAccount.address)}
               </p>
             </div>
             <Badge className="bg-[#1e3a3f] text-[#00ffff]">
-              <CheckCircle className="h-3 w-3 mr-1" /> Registered
+              <CheckCircle className="h-3 w-3 mr-1" /> Connected
             </Badge>
           </div>
         </CardContent>
@@ -141,31 +107,54 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
       <CardHeader>
         <CardTitle className="text-white">Connect Your Wallet</CardTitle>
         <CardDescription className="text-gray-400">
-          Connect your Sui wallet to start betting with the Walrus protocol
+          Connect your Sui wallet to start betting
         </CardDescription>
       </CardHeader>
       <CardContent>
-        {connecting ? (
-          <div className="flex flex-col items-center justify-center p-4">
-            <Loader2 className="h-8 w-8 animate-spin text-[#00ffff] mb-4" />
-            <p className="text-sm text-gray-300 mb-2">
-              Connecting to Walrus protocol...
-            </p>
-            <Progress 
-              value={75} 
-              className="h-1 w-full bg-[#1e3a3f]" 
-            />
-          </div>
-        ) : showWallets ? (
+        {showWallets ? (
           <div className="space-y-3">
-            <div className="w-full rounded overflow-hidden mb-4">
-              <ConnectButton 
-                className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold py-3 px-4 rounded flex items-center justify-center"
-              >
-                <Wallet className="h-5 w-5 mr-2" />
-                <span>Connect with Suiet Wallet Kit</span>
-              </ConnectButton>
-            </div>
+            {wallets.length === 0 ? (
+              <div className="text-center py-4 text-gray-400">
+                <p className="mb-4">No Sui wallets detected</p>
+                <p className="text-sm">Please install a Sui wallet extension like:</p>
+                <ul className="text-sm mt-2 space-y-1">
+                  <li><a href="https://slush.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Slush Wallet</a></li>
+                  <li><a href="https://suiet.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Suiet Wallet</a></li>
+                  <li><a href="https://nightly.app" target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">Nightly Wallet</a></li>
+                </ul>
+              </div>
+            ) : (
+              wallets.map((wallet) => (
+                <button
+                  key={wallet.name}
+                  onClick={() => handleConnect(wallet)}
+                  disabled={connectingWallet === wallet.name}
+                  className="w-full flex items-center gap-4 p-4 bg-[#0b1618] hover:bg-cyan-900/30 rounded-lg border border-[#1e3a3f] hover:border-cyan-500/50 transition-all duration-200 disabled:opacity-50"
+                >
+                  {wallet.icon && (
+                    <img 
+                      src={wallet.icon} 
+                      alt={wallet.name} 
+                      className="w-10 h-10 rounded-lg"
+                    />
+                  )}
+                  <div className="flex-1 text-left">
+                    <div className="font-semibold text-white">{wallet.name}</div>
+                    <div className="text-xs text-gray-400">Click to connect</div>
+                  </div>
+                  {connectingWallet === wallet.name && (
+                    <Loader2 className="h-5 w-5 animate-spin text-cyan-500" />
+                  )}
+                </button>
+              ))
+            )}
+            <Button 
+              variant="outline"
+              onClick={() => setShowWallets(false)}
+              className="w-full border-[#1e3a3f] text-gray-400 hover:bg-[#1e3a3f]"
+            >
+              Cancel
+            </Button>
           </div>
         ) : (
           <div className="flex flex-col space-y-4">
@@ -182,12 +171,12 @@ export function WalletConnector({ onConnect }: WalletConnectorProps) {
                 </li>
                 <li className="flex items-start">
                   <CheckCircle className="h-4 w-4 mr-2 text-[#00ffff] mt-0.5 flex-shrink-0" />
-                  <span>Earn dividends from the Walrus protocol</span>
+                  <span>Earn dividends from staking SBETS</span>
                 </li>
               </ul>
             </div>
             <Button 
-              onClick={handleWalletButtonClick}
+              onClick={() => setShowWallets(true)}
               className="w-full bg-gradient-to-r from-[#00FFFF] to-[#00CCCC] hover:from-[#00FFFF]/90 hover:to-[#00CCCC]/90 text-[#112225] font-bold"
             >
               <Wallet className="h-4 w-4 mr-2" />

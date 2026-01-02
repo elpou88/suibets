@@ -225,31 +225,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     setUser(prevUser => {
       if (!prevUser) return null;
       
-      // Create a new user object with updated balance
-      // In a real implementation, this would be more specific to handle different token balances
-      let newBalance = 0;
+      // Always use the object balance format { SUI, SBETS }
+      const currentBalance = prevUser.balance && typeof prevUser.balance === 'object' 
+        ? prevUser.balance 
+        : { SUI: 0, SBETS: 0 };
       
-      // Handle the case where balance could be a complex object or a number
-      if (typeof prevUser.balance === 'number') {
-        newBalance = prevUser.balance + amount;
-      } else if (prevUser.balance) {
-        // If it's a complex object with token balances, update the specific token
-        const balanceObj = {...prevUser.balance};
-        if (currency === 'SUI' && typeof balanceObj.SUI === 'number') {
-          balanceObj.SUI += amount;
-        } else if (currency === 'SBETS' && typeof balanceObj.SBETS === 'number') {
-          balanceObj.SBETS += amount;
-        } else {
-          // Default case if the specific token doesn't exist
-          if (currency === 'SUI') balanceObj.SUI = amount;
-          if (currency === 'SBETS') balanceObj.SBETS = amount;
-        }
-        return {
-          ...prevUser,
-          balance: balanceObj
-        };
-      } else {
-        newBalance = amount;
+      const newBalance = { ...currentBalance };
+      
+      if (currency === 'SUI') {
+        newBalance.SUI = (newBalance.SUI || 0) + amount;
+      } else if (currency === 'SBETS') {
+        newBalance.SBETS = (newBalance.SBETS || 0) + amount;
       }
       
       return {

@@ -1166,7 +1166,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         walletAddress: user.walletAddress,
         walletType: user.walletType || walletType || 'sui',
         createdAt: user.createdAt,
-        balance: balance
+        balance: {
+          SUI: balance.suiBalance || 0,
+          SBETS: balance.sbetsBalance || 0
+        }
       });
     } catch (error: any) {
       console.error("Wallet connect error:", error?.message || error);
@@ -1208,7 +1211,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           username: user.username,
           walletAddress: user.walletAddress,
           walletType: user.walletType || walletType || 'sui',
-          balance: balance
+          balance: {
+            SUI: balance.suiBalance || 0,
+            SBETS: balance.sbetsBalance || 0
+          }
         }
       });
     } catch (error: any) {
@@ -1285,7 +1291,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     try {
       const userId = req.query.userId as string || 'user1';
       const balance = await balanceService.getBalanceAsync(userId);
-      res.json(balance);
+      res.json({
+        SUI: balance.suiBalance || 0,
+        SBETS: balance.sbetsBalance || 0,
+        suiBalance: balance.suiBalance || 0,
+        sbetsBalance: balance.sbetsBalance || 0
+      });
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch balance" });
     }

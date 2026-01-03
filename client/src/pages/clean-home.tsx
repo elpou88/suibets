@@ -118,9 +118,11 @@ export default function CleanHome() {
     : 0;
   
   // Fetch platform deposited balance from API (what's available to bet)
+  // Refetch every 30 seconds to show updated balances after settlements
   const { data: balanceData } = useQuery<{ SUI: number; SBETS: number; suiBalance: number; sbetsBalance: number }>({
     queryKey: [`/api/user/balance?userId=${walletAddress}`],
     enabled: !!walletAddress,
+    refetchInterval: 30000, // Auto-refresh every 30 seconds to show settled bet winnings
   });
   
   const platformBalances = {

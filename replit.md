@@ -83,11 +83,26 @@ Preferred communication style: Simple, everyday language.
 ### Blockchain Services
 - **Sui Network**: Layer 1 blockchain (mainnet).
 - **Move Language**: For smart contract development.
-- **Deployed Contract (Mainnet)**:
-    - Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa`
+- **Contract Source**: `sources/betting.move` (full-featured contract ready for deployment)
+- **Deployed Contract (Mainnet)** - NEEDS REDEPLOYMENT with full contract:
+    - Current Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa` (legacy - missing functions)
     - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
     - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
-    - Module: `betting` (functions: `place_bet`, `settle_bet`, `void_bet`)
+    - Module: `betting`
+- **Full Contract Functions**:
+    - `place_bet` - Place bet with SUI (user callable)
+    - `settle_bet` - Settle bet win/lose (admin/oracle)
+    - `void_bet` - Void and refund bet (admin/oracle)
+    - `withdraw_fees` - Extract platform revenue (admin only)
+    - `deposit_liquidity` - Add treasury funds (admin only)
+    - `add_oracle` / `remove_oracle` - Manage oracles (admin only)
+    - `set_pause` - Pause/unpause platform (admin only)
+    - `update_fee` - Change fee percentage (admin only)
+    - `update_limits` - Change min/max bet (admin only)
+- **Deployment Guide**: See `DEPLOY_CONTRACT.md` for deployment instructions
+- **Environment Variables** (update after deployment):
+    - `BETTING_PACKAGE_ID` / `VITE_BETTING_PACKAGE_ID` - New package ID
+    - `BETTING_PLATFORM_ID` / `VITE_BETTING_PLATFORM_ID` - New platform object ID
 
 ### Payment Integration
 - **Stripe**: Optional fiat payment processing.

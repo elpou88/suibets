@@ -3,8 +3,9 @@ import { useSignAndExecuteTransaction, useSuiClient } from '@mysten/dapp-kit';
 import { Transaction } from '@mysten/sui/transactions';
 import { useToast } from '@/hooks/use-toast';
 
-const BETTING_PACKAGE_ID = '0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa';
-const BETTING_PLATFORM_ID = '0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89';
+// Contract addresses - will be updated after new deployment
+const BETTING_PACKAGE_ID = import.meta.env.VITE_BETTING_PACKAGE_ID || '0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa';
+const BETTING_PLATFORM_ID = import.meta.env.VITE_BETTING_PLATFORM_ID || '0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89';
 const CLOCK_OBJECT_ID = '0x6';
 
 export interface OnChainBetParams {
@@ -44,13 +45,18 @@ export function useOnChainBet() {
       
       const [coin] = tx.splitCoins(tx.gas, [betAmountMist]);
       
-      // Deployed contract expects: Platform, Coin<SUI>, odds (u64)
+      // Full contract signature: place_bet(platform, payment, event_id, market_id, prediction, odds, walrus_blob_id, clock)
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::place_bet`,
         arguments: [
           tx.object(BETTING_PLATFORM_ID),
           coin,
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(eventId))),
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(marketId))),
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(prediction))),
           tx.pure.u64(oddsBps),
+          tx.pure.vector('u8', Array.from(new TextEncoder().encode(walrusBlobId))),
+          tx.object(CLOCK_OBJECT_ID),
         ],
       });
 

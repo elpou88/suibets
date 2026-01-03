@@ -69,15 +69,19 @@ export class BlockchainBetService {
   ): Promise<TransactionPayload> {
     const oddsInBps = Math.floor(odds * 100);
 
+    // Full contract signature: place_bet(platform, payment, event_id, market_id, prediction, odds, walrus_blob_id, clock)
+    // Note: payment coin must be constructed by caller, clock is 0x6
     return {
       target: `${BETTING_PACKAGE_ID}::betting::place_bet`,
       arguments: [
         BETTING_PLATFORM_ID,
+        // payment coin must be added by caller
         Array.from(new TextEncoder().encode(eventId)),
         Array.from(new TextEncoder().encode(marketId)),
         Array.from(new TextEncoder().encode(prediction)),
         oddsInBps,
         Array.from(new TextEncoder().encode(walrusBlobId)),
+        '0x6', // clock object
       ],
       typeArguments: []
     };
@@ -142,12 +146,14 @@ export class BlockchainBetService {
     betObjectId: string,
     won: boolean
   ): Promise<TransactionPayload> {
+    // Full contract signature: settle_bet(platform, bet, won, clock)
     return {
       target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
       arguments: [
         BETTING_PLATFORM_ID,
         betObjectId,
-        won
+        won,
+        '0x6', // clock object
       ],
       typeArguments: []
     };
@@ -413,13 +419,14 @@ export class BlockchainBetService {
     try {
       const tx = new Transaction();
       
-      // Call settle_bet(platform, bet, won) - deployed contract signature
+      // Call settle_bet(platform, bet, won, clock) - full contract signature
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
         arguments: [
           tx.object(BETTING_PLATFORM_ID),  // platform: &mut Platform
           tx.object(betObjectId),           // bet: &mut Bet
           tx.pure.bool(won),                // won: bool
+          tx.object('0x6'),                 // clock: &Clock
         ],
       });
 

@@ -759,7 +759,7 @@ export class DatabaseStorage implements IStorage {
         .orderBy(desc(wurlus_wallet_operations.timestamp))
         .limit(limit);
       
-      return operations.map(op => ({
+      return operations.map((op: typeof wurlus_wallet_operations.$inferSelect) => ({
         type: op.operationType,
         amount: op.amount,
         txHash: op.txHash,

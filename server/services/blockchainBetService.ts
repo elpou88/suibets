@@ -551,14 +551,159 @@ export class BlockchainBetService {
   }
 
   /**
-   * Get platform contract info (treasury balance, stats)
+   * Execute on-chain SBETS bet settlement via smart contract
+   * Calls the settle_bet_sbets function for SBETS bets
+   * @param betObjectId - The on-chain Bet object ID
+   * @param won - Whether the bet won or lost
+   * @returns Transaction result with hash or error
+   */
+  async executeSettleBetSbetsOnChain(
+    betObjectId: string,
+    won: boolean
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      const error = 'Admin private key not configured - cannot execute on-chain SBETS settlement';
+      console.error(`❌ SBETS SETTLEMENT BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
+    try {
+      const tx = new Transaction();
+      
+      // Call settle_bet_sbets(platform, bet, won, clock)
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::settle_bet_sbets`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),
+          tx.object(betObjectId),
+          tx.pure.bool(won),
+          tx.object('0x6'),
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        const outcome = won ? 'WON (SBETS payout sent)' : 'LOST (SBETS stake kept in treasury)';
+        console.log(`✅ ON-CHAIN SBETS SETTLEMENT: Bet ${betObjectId.slice(0, 12)}... ${outcome} | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        const errorMsg = result.effects?.status?.error || 'Unknown error';
+        console.error(`❌ ON-CHAIN SBETS SETTLEMENT FAILED: ${errorMsg}`);
+        return { success: false, error: errorMsg };
+      }
+    } catch (error: any) {
+      console.error('❌ SBETS Settlement execution error:', error);
+      return { success: false, error: error.message || 'Failed to execute on-chain SBETS settlement' };
+    }
+  }
+
+  /**
+   * Execute on-chain SBETS bet void via smart contract
+   * @param betObjectId - The on-chain Bet object ID
+   * @returns Transaction result with hash or error
+   */
+  async executeVoidBetSbetsOnChain(
+    betObjectId: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      return { success: false, error: 'Admin private key not configured' };
+    }
+
+    try {
+      const tx = new Transaction();
+      
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::void_bet_sbets`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),
+          tx.object(betObjectId),
+          tx.object('0x6'),
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: { showEffects: true },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        console.log(`✅ ON-CHAIN SBETS VOID: Bet ${betObjectId.slice(0, 12)}... refunded | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        return { success: false, error: result.effects?.status?.error || 'Failed' };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Withdraw SBETS fees from contract to admin wallet
+   * @param amount - Amount of SBETS to withdraw
+   * @returns Transaction result
+   */
+  async withdrawFeesSbetsOnChain(
+    amount: number
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      return { success: false, error: 'Admin private key not configured' };
+    }
+
+    try {
+      const amountMist = Math.floor(amount * 1e9);
+      const tx = new Transaction();
+      
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::withdraw_fees_sbets`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),
+          tx.pure.u64(amountMist),
+          tx.object('0x6'),
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: { showEffects: true },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        console.log(`✅ SBETS FEES WITHDRAWN: ${amount} SBETS | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        return { success: false, error: result.effects?.status?.error || 'Failed' };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get platform contract info (treasury balance, stats) - dual treasury
    */
   async getPlatformInfo(): Promise<{
-    treasuryBalance: number;
+    treasuryBalanceSui: number;
+    treasuryBalanceSbets: number;
     totalBets: number;
-    totalVolume: number;
-    totalLiability: number;
-    accruedFees: number;
+    totalVolumeSui: number;
+    totalVolumeSbets: number;
+    totalLiabilitySui: number;
+    totalLiabilitySbets: number;
+    accruedFeesSui: number;
+    accruedFeesSbets: number;
     paused: boolean;
   } | null> {
     try {
@@ -570,11 +715,15 @@ export class BlockchainBetService {
       if (platformObj.data?.content?.dataType === 'moveObject') {
         const fields = (platformObj.data.content as any).fields;
         return {
-          treasuryBalance: parseInt(fields.treasury || '0') / 1e9,
+          treasuryBalanceSui: parseInt(fields.treasury_sui?.fields?.value || '0') / 1e9,
+          treasuryBalanceSbets: parseInt(fields.treasury_sbets?.fields?.value || '0') / 1e9,
           totalBets: parseInt(fields.total_bets || '0'),
-          totalVolume: parseInt(fields.total_volume || '0') / 1e9,
-          totalLiability: parseInt(fields.total_potential_liability || '0') / 1e9,
-          accruedFees: parseInt(fields.accrued_fees || '0') / 1e9,
+          totalVolumeSui: parseInt(fields.total_volume_sui || '0') / 1e9,
+          totalVolumeSbets: parseInt(fields.total_volume_sbets || '0') / 1e9,
+          totalLiabilitySui: parseInt(fields.total_potential_liability_sui || '0') / 1e9,
+          totalLiabilitySbets: parseInt(fields.total_potential_liability_sbets || '0') / 1e9,
+          accruedFeesSui: parseInt(fields.accrued_fees_sui || '0') / 1e9,
+          accruedFeesSbets: parseInt(fields.accrued_fees_sbets || '0') / 1e9,
           paused: fields.paused || false,
         };
       }

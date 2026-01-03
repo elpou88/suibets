@@ -40,9 +40,9 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
   const { user } = useAuth();
   const { toast } = useToast();
   
-  // On-chain betting hook
+  // On-chain betting hook (SUI and SBETS)
   const currentAccount = useCurrentAccount();
-  const { placeBetOnChain, isLoading: isOnChainLoading } = useOnChainBet();
+  const { placeBetOnChain, getSbetsCoins, isLoading: isOnChainLoading } = useOnChainBet();
   
   // Save bets to localStorage whenever they change
   useEffect(() => {
@@ -240,12 +240,12 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
           }
         }
 
-        // OPTION 2: Direct Wallet (on-chain transaction)
-        // Check if wallet is connected for on-chain betting
+        // OPTION 2: Direct Wallet (on-chain for SUI, off-chain for SBETS)
+        // Check if wallet is connected
         if (!currentAccount?.address) {
           toast({
             title: "Wallet Required",
-            description: "Connect your Sui wallet to place on-chain bets",
+            description: "Connect your Sui wallet to place bets",
             variant: "destructive",
           });
           
@@ -254,14 +254,31 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
           return false;
         }
 
-        // Use the on-chain betting hook
+        // Get SBETS coin object if needed for SBETS bets
+        let sbetsCoinObjectId: string | undefined;
+        if (betOptions.currency === 'SBETS') {
+          const sbetsCoins = await getSbetsCoins(currentAccount.address);
+          if (sbetsCoins.length === 0 || sbetsCoins[0].balance < stakeAmount) {
+            toast({
+              title: "Insufficient SBETS",
+              description: "You don't have enough SBETS tokens for this bet",
+              variant: "destructive",
+            });
+            return false;
+          }
+          sbetsCoinObjectId = sbetsCoins[0].objectId;
+        }
+
+        // Both SUI and SBETS use on-chain smart contract
         const onChainResult = await placeBetOnChain({
           eventId: String(bet.eventId),
           marketId: String(bet.marketId || 'match_winner'),
           prediction: bet.selectionName,
-          betAmountSui: stakeAmount,
+          betAmount: stakeAmount,
           odds: bet.odds,
           walrusBlobId: '',
+          coinType: betOptions.currency as 'SUI' | 'SBETS',
+          sbetsCoinObjectId,
         });
 
         if (!onChainResult.success) {

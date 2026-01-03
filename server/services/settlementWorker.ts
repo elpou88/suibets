@@ -332,14 +332,16 @@ class SettlementWorkerService {
         const platformFee = grossPayout > 0 ? grossPayout * 0.01 : 0;
         const netPayout = grossPayout - platformFee;
 
-        // DUAL SETTLEMENT: On-chain for SUI with betObjectId, off-chain for SBETS or fallback
-        const isSuiOnChainBet = bet.currency === 'SUI' && bet.betObjectId && blockchainBetService.isAdminKeyConfigured();
+        // DUAL SETTLEMENT: On-chain for SUI/SBETS with betObjectId, off-chain fallback
+        const hasOnChainBet = bet.betObjectId && blockchainBetService.isAdminKeyConfigured();
+        const isSuiOnChainBet = bet.currency === 'SUI' && hasOnChainBet;
+        const isSbetsOnChainBet = bet.currency === 'SBETS' && hasOnChainBet;
 
         if (isSuiOnChainBet) {
           // ============ ON-CHAIN SETTLEMENT (SUI via smart contract) ============
           // Contract handles payout directly - winner gets SUI from contract treasury
           // Lost bets stay in contract treasury as accrued fees
-          console.log(`🔗 ON-CHAIN SETTLEMENT: Bet ${bet.id} (${bet.currency}) via smart contract`);
+          console.log(`🔗 ON-CHAIN SUI SETTLEMENT: Bet ${bet.id} via smart contract`);
           
           const settlementResult = await blockchainBetService.executeSettleBetOnChain(
             bet.betObjectId!,
@@ -350,12 +352,32 @@ class SettlementWorkerService {
             // Update database status to reflect on-chain settlement
             const statusUpdated = await storage.updateBetStatus(bet.id, status, grossPayout);
             if (statusUpdated) {
-              console.log(`✅ ON-CHAIN SETTLED: ${bet.id} ${status} | TX: ${settlementResult.txHash}`);
+              console.log(`✅ ON-CHAIN SUI SETTLED: ${bet.id} ${status} | TX: ${settlementResult.txHash}`);
               this.settledBetIds.add(bet.id);
             }
           } else {
-            console.error(`❌ ON-CHAIN SETTLEMENT FAILED: ${bet.id} - ${settlementResult.error}`);
+            console.error(`❌ ON-CHAIN SUI SETTLEMENT FAILED: ${bet.id} - ${settlementResult.error}`);
             // Don't mark as settled - will retry next cycle
+            continue;
+          }
+        } else if (isSbetsOnChainBet) {
+          // ============ ON-CHAIN SETTLEMENT (SBETS via smart contract) ============
+          // Contract handles payout directly - winner gets SBETS from contract treasury
+          console.log(`🔗 ON-CHAIN SBETS SETTLEMENT: Bet ${bet.id} via smart contract`);
+          
+          const settlementResult = await blockchainBetService.executeSettleBetSbetsOnChain(
+            bet.betObjectId!,
+            isWinner
+          );
+
+          if (settlementResult.success) {
+            const statusUpdated = await storage.updateBetStatus(bet.id, status, grossPayout);
+            if (statusUpdated) {
+              console.log(`✅ ON-CHAIN SBETS SETTLED: ${bet.id} ${status} | TX: ${settlementResult.txHash}`);
+              this.settledBetIds.add(bet.id);
+            }
+          } else {
+            console.error(`❌ ON-CHAIN SBETS SETTLEMENT FAILED: ${bet.id} - ${settlementResult.error}`);
             continue;
           }
         } else {

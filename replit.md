@@ -45,23 +45,23 @@ Preferred communication style: Simple, everyday language.
   - **Treasury Wallet**: `0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50`
   - **Admin Wallet**: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
 
-#### Fund Flow - DUAL SETTLEMENT SYSTEM
+#### Fund Flow - FULL ON-CHAIN DUAL TOKEN SYSTEM
 
 **SUI Bets (On-Chain via Smart Contract):**
-1. **User places bet** → SUI goes directly to contract treasury
+1. **User places bet** → `place_bet` - SUI goes directly to contract treasury_sui
 2. **If Bet WON** → `settle_bet` pays user from contract treasury (1% fee on profit)
-3. **If Bet LOST** → Stake stays in contract treasury (added to `accrued_fees`)
-4. **Admin can** → Call `withdraw_fees` to withdraw platform revenue
+3. **If Bet LOST** → Stake stays in contract treasury (added to `accrued_fees_sui`)
+4. **Admin can** → Call `withdraw_fees` to withdraw SUI platform revenue
 
-**SBETS Bets (Off-Chain Hybrid Model):**
-1. **User deposits** → SBETS transferred to treasury wallet → internal balance credited
-2. **Bet Placement** → Internal balance deducted
-3. **If Bet LOST** → Stake stays in treasury → recorded as database revenue
-4. **If Bet WON** → Winnings credited to internal balance → user can withdraw
-5. **Withdrawal** → Admin keypair signs transfer from treasury to user
+**SBETS Bets (On-Chain via Smart Contract):**
+1. **User places bet** → `place_bet_sbets` - SBETS goes directly to contract treasury_sbets
+2. **If Bet WON** → `settle_bet_sbets` pays user from SBETS treasury (1% fee on profit)
+3. **If Bet LOST** → Stake stays in SBETS treasury (added to `accrued_fees_sbets`)
+4. **Admin can** → Call `withdraw_fees_sbets` to withdraw SBETS platform revenue
 
-- **Key Point**: SUI uses smart contract for settlements (full on-chain). SBETS uses hybrid custodial model (off-chain tracking).
-- **Gas Payment**: Users pay gas for deposits/bets. Platform pays gas for on-chain settlements and withdrawals.
+- **Key Point**: BOTH SUI and SBETS use smart contract for settlements (full on-chain).
+- **Gas Payment**: Users pay gas for bets. Platform pays gas for on-chain settlements.
+- **Dual Treasury**: Contract maintains separate treasuries and liability tracking for SUI and SBETS.
 
 ### Monitoring Endpoints
 - `/api/contract/info`: Provides blockchain contract details.
@@ -83,22 +83,32 @@ Preferred communication style: Simple, everyday language.
 ### Blockchain Services
 - **Sui Network**: Layer 1 blockchain (mainnet).
 - **Move Language**: For smart contract development.
-- **Contract Source**: `sources/betting.move` (full-featured contract ready for deployment)
+- **SBETS Token (Mainnet)**: `0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS`
+- **Contract Source**: `sources/betting.move` (full-featured dual-token contract)
 - **Deployed Contract (Mainnet)** - NEEDS REDEPLOYMENT with full contract:
     - Current Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa` (legacy - missing functions)
     - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
     - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
     - Module: `betting`
-- **Full Contract Functions**:
+- **Full Contract Functions (SUI)**:
     - `place_bet` - Place bet with SUI (user callable)
-    - `settle_bet` - Settle bet win/lose (admin/oracle)
-    - `void_bet` - Void and refund bet (admin/oracle)
-    - `withdraw_fees` - Extract platform revenue (admin only)
-    - `deposit_liquidity` - Add treasury funds (admin only)
+    - `settle_bet` - Settle SUI bet win/lose (admin/oracle)
+    - `void_bet` - Void and refund SUI bet (admin/oracle)
+    - `withdraw_fees` - Extract SUI platform revenue (admin only)
+    - `deposit_liquidity` - Add SUI to treasury (admin only)
+- **Full Contract Functions (SBETS)**:
+    - `place_bet_sbets` - Place bet with SBETS (user callable)
+    - `settle_bet_sbets` - Settle SBETS bet win/lose (admin/oracle)
+    - `void_bet_sbets` - Void and refund SBETS bet (admin/oracle)
+    - `withdraw_fees_sbets` - Extract SBETS platform revenue (admin only)
+    - `deposit_liquidity_sbets` - Add SBETS to treasury (admin only)
+- **Admin Functions**:
     - `add_oracle` / `remove_oracle` - Manage oracles (admin only)
     - `set_pause` - Pause/unpause platform (admin only)
     - `update_fee` - Change fee percentage (admin only)
     - `update_limits` - Change min/max bet (admin only)
+    - `propose_admin` / `accept_admin` - Transfer admin role
+    - `emergency_withdraw` / `emergency_withdraw_sbets` - Emergency withdrawal (paused only)
 - **Deployment Guide**: See `DEPLOY_CONTRACT.md` for deployment instructions
 - **Environment Variables** (update after deployment):
     - `BETTING_PACKAGE_ID` / `VITE_BETTING_PACKAGE_ID` - New package ID

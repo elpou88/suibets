@@ -413,14 +413,13 @@ export class BlockchainBetService {
     try {
       const tx = new Transaction();
       
-      // Call settle_bet(platform, bet, won, clock)
+      // Call settle_bet(platform, bet, won) - deployed contract signature
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
         arguments: [
-          tx.object(BETTING_PLATFORM_ID),  // platform: &mut BettingPlatform
+          tx.object(BETTING_PLATFORM_ID),  // platform: &mut Platform
           tx.object(betObjectId),           // bet: &mut Bet
           tx.pure.bool(won),                // won: bool
-          tx.object('0x6'),                 // clock: &Clock
         ],
       });
 

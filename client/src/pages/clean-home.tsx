@@ -7,6 +7,7 @@ import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import Footer from "@/components/layout/Footer";
 import { useLiveEvents, useUpcomingEvents } from "@/hooks/useEvents";
+import { useQuery } from "@tanstack/react-query";
 const suibetsLogo = "/images/suibets-logo.png";
 const suibetsHeroBg = "/images/hero-bg.png";
 
@@ -90,7 +91,17 @@ export default function CleanHome() {
   const { mutate: disconnectWallet } = useDisconnectWallet();
   const walletAddress = currentAccount?.address;
   const isConnected = !!walletAddress;
-  const balances = { SUI: 0, SBETS: 0 };
+  
+  // Fetch real balance from API when wallet is connected
+  const { data: balanceData } = useQuery<{ SUI: number; SBETS: number; suiBalance: number; sbetsBalance: number }>({
+    queryKey: [`/api/user/balance?userId=${walletAddress}`],
+    enabled: !!walletAddress,
+  });
+  
+  const balances = {
+    SUI: balanceData?.SUI ?? balanceData?.suiBalance ?? 0,
+    SBETS: balanceData?.SBETS ?? balanceData?.sbetsBalance ?? 0
+  };
   const disconnect = () => disconnectWallet();
 
   const { data: liveEvents = [], isLoading: liveLoading, refetch: refetchLive } = useLiveEvents(selectedSport);
@@ -142,7 +153,7 @@ export default function CleanHome() {
             {isConnected && walletAddress ? (
               <>
                 <div className="text-right">
-                  <div className="text-cyan-400 text-xs">{balances.SUI.toFixed(2)} SUI</div>
+                  <div className="text-cyan-400 text-xs">{balances.SUI.toFixed(4)} SUI | {balances.SBETS.toFixed(2)} SBETS</div>
                   <div className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</div>
                 </div>
                 <button 

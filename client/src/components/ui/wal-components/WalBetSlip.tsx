@@ -125,14 +125,14 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
         const selection = selections[0];
         addBet({
           id: `${selection.eventId}-${selection.marketId}-${selection.outcomeId}`,
-          eventId: parseInt(selection.eventId),
+          eventId: selection.eventId,
           eventName: selection.eventName,
           selectionName: selection.outcomeName,
           odds: selection.odds,
           stake: amountValue,
           market: selection.marketName,
-          marketId: parseInt(selection.marketId),
-          outcomeId: parseInt(selection.outcomeId),
+          marketId: selection.marketId,
+          outcomeId: selection.outcomeId,
           currency: selectedCurrency,
           paymentMethod: paymentMethod // 'platform' or 'wallet'
         });
@@ -181,10 +181,9 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
     }
   };
 
-  // Import formatCurrency from utils to avoid code duplication
+  // Format currency for display with selected currency
   const formatBetCurrency = (value: number) => {
-    // Use the imported formatCurrency function from utils.ts
-    return formatCurrency(value, selectedCurrency);
+    return `${formatCurrency(value)} ${selectedCurrency}`;
   };
 
   return (
@@ -344,21 +343,13 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
             <div className="flex justify-between px-4">
               <span>SUI Balance:</span>
               <span className="font-medium">
-                {formatCurrency(
-                  // @ts-ignore - User schema has been updated with these fields but TypeScript definition might be outdated
-                  user.suiBalance !== undefined ? user.suiBalance : 0, 
-                  "SUI"
-                )}
+                {formatCurrency(user.suiBalance !== undefined ? user.suiBalance : 0)} SUI
               </span>
             </div>
             <div className="flex justify-between px-4">
               <span>SBETS Balance:</span>
               <span className="font-medium">
-                {formatCurrency(
-                  // @ts-ignore - User schema has been updated with these fields but TypeScript definition might be outdated
-                  user.sbetsBalance !== undefined ? user.sbetsBalance : 0, 
-                  "SBETS"
-                )}
+                {formatCurrency(user.sbetsBalance !== undefined ? user.sbetsBalance : 0)} SBETS
               </span>
             </div>
           </div>

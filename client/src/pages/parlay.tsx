@@ -52,10 +52,7 @@ export default function ParlayPage() {
 
   const placeBetMutation = useMutation({
     mutationFn: async (betData: any) => {
-      return apiRequest('/api/bets', {
-        method: 'POST',
-        body: JSON.stringify(betData),
-      });
+      return apiRequest('POST', '/api/bets', betData);
     },
     onSuccess: () => {
       toast({ title: 'Parlay Placed!', description: `${parlayLegs.length}-leg parlay placed for ${stake} SUI` });

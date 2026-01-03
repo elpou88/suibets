@@ -1,26 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
+import { useCurrentAccount } from '@mysten/dapp-kit';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 const suibetsLogo = "/images/suibets-logo.png";
 import { 
   ArrowDownLeft, 
   ArrowUpRight, 
   Wallet, 
-  Copy, 
   ExternalLink,
   Clock,
   CheckCircle,
   AlertCircle,
   RefreshCw,
-  Shield,
   ArrowLeft
 } from 'lucide-react';
-
-// Platform treasury wallet address for deposits
-const TREASURY_WALLET = '0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50';
 
 interface Transaction {
   id: string;
@@ -36,15 +31,10 @@ export default function DepositsWithdrawalsPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const currentAccount = useCurrentAccount();
-  const suiClient = useSuiClient();
-  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
   const walletAddress = currentAccount?.address;
-  const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
-  const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isDepositing, setIsDepositing] = useState(false);
 
   const { data: rawTransactions, refetch: refetchTransactions } = useQuery({
     queryKey: ['/api/transactions'],
@@ -57,24 +47,6 @@ export default function DepositsWithdrawalsPage() {
   });
   
   const transactions: Transaction[] = Array.isArray(rawTransactions) ? rawTransactions : [];
-
-  // Treasury address where users should send deposits
-  const depositAddress = TREASURY_WALLET;
-
-  const depositMutation = useMutation({
-    mutationFn: async (amount: number) => {
-      return apiRequest('POST', '/api/transactions/deposit', { amount, currency: 'SUI', address: walletAddress });
-    },
-    onSuccess: () => {
-      toast({ title: 'Deposit Initiated', description: `Awaiting ${depositAmount} SUI deposit confirmation` });
-      setDepositAmount('');
-      queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] });
-    },
-    onError: () => {
-      toast({ title: 'Deposit Failed', description: 'Please try again', variant: 'destructive' });
-    }
-  });
 
   const withdrawMutation = useMutation({
     mutationFn: async (data: { amount: number; address: string }) => {
@@ -91,23 +63,6 @@ export default function DepositsWithdrawalsPage() {
       toast({ title: 'Withdrawal Failed', description: 'Please check your balance and try again', variant: 'destructive' });
     }
   });
-
-  const handleCopyAddress = () => {
-    navigator.clipboard.writeText(depositAddress);
-    toast({ title: 'Address Copied', description: 'Deposit address copied to clipboard' });
-  };
-
-  const handleDeposit = () => {
-    if (!depositAmount || parseFloat(depositAmount) <= 0) {
-      toast({ title: 'Enter Amount', description: 'Please enter a valid deposit amount', variant: 'destructive' });
-      return;
-    }
-    if (!walletAddress) {
-      toast({ title: 'Wallet Required', description: 'Please connect your wallet first', variant: 'destructive' });
-      return;
-    }
-    depositMutation.mutate(parseFloat(depositAmount));
-  };
 
   const handleWithdraw = () => {
     if (!withdrawAddress) {
@@ -184,7 +139,7 @@ export default function DepositsWithdrawalsPage() {
             <Link href="/dashboard" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-dashboard">Dashboard</Link>
             <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
             <Link href="/activity" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-activity">Activity</Link>
-            <Link href="/deposits-withdrawals" className="text-cyan-400 text-sm font-medium" data-testid="nav-deposits">Deposits</Link>
+            <Link href="/deposits-withdrawals" className="text-cyan-400 text-sm font-medium" data-testid="nav-withdraw">Withdraw</Link>
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
           </div>
           <div className="flex items-center gap-4">
@@ -209,8 +164,19 @@ export default function DepositsWithdrawalsPage() {
       <div className="max-w-4xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Deposits & Withdrawals</h1>
-          <p className="text-gray-400">Manage your funds securely on the Sui blockchain</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Withdraw Funds</h1>
+          <p className="text-gray-400">Withdraw your platform balance to your wallet</p>
+          
+          {/* Direct Wallet Mode Notice */}
+          <div className="mt-4 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+            <p className="text-green-400 font-medium flex items-center gap-2">
+              <span>🔗</span> Direct Wallet Betting Mode Active
+            </p>
+            <p className="text-gray-400 text-sm mt-1">
+              Bets are now placed directly from your connected wallet. No deposits needed!
+              Use this page to withdraw any existing platform balance.
+            </p>
+          </div>
           {walletAddress && (
             <div className="mt-4 p-4 bg-[#111111] border border-cyan-900/30 rounded-xl">
               <p className="text-gray-400 text-sm">Available Balance</p>
@@ -219,118 +185,16 @@ export default function DepositsWithdrawalsPage() {
           )}
         </div>
 
-        {/* Tab Buttons */}
+        {/* Withdraw Header - No tabs needed */}
         <div className="flex gap-2 mb-8">
-          <button
-            onClick={() => setActiveTab('deposit')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-              activeTab === 'deposit'
-                ? 'bg-green-500 text-black'
-                : 'bg-[#111111] text-gray-400 hover:text-white border border-cyan-900/30'
-            }`}
-            data-testid="tab-deposit"
-          >
-            <ArrowDownLeft size={18} />
-            Deposit
-          </button>
-          <button
-            onClick={() => setActiveTab('withdraw')}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-medium transition-all ${
-              activeTab === 'withdraw'
-                ? 'bg-orange-500 text-black'
-                : 'bg-[#111111] text-gray-400 hover:text-white border border-cyan-900/30'
-            }`}
-            data-testid="tab-withdraw"
-          >
+          <div className="flex items-center gap-2 px-6 py-3 rounded-xl font-medium bg-orange-500 text-black">
             <ArrowUpRight size={18} />
-            Withdraw
-          </button>
+            Withdraw Platform Balance
+          </div>
         </div>
 
-        {/* Deposit Section */}
-        {activeTab === 'deposit' && (
-          <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-8 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-3 bg-green-500/20 rounded-xl">
-                <ArrowDownLeft className="h-6 w-6 text-green-400" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-white">Deposit SUI</h2>
-                <p className="text-gray-400 text-sm">Send SUI to your wallet address</p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">Your Deposit Address</label>
-                <div className="flex gap-3">
-                  <div className="flex-1 bg-black/50 border border-cyan-900/30 rounded-xl p-4">
-                    <code className="text-cyan-400 text-sm break-all">{depositAddress}</code>
-                  </div>
-                  <button 
-                    onClick={handleCopyAddress}
-                    className="p-4 bg-cyan-500/20 hover:bg-cyan-500/30 rounded-xl transition-colors"
-                    data-testid="btn-copy-address"
-                  >
-                    <Copy className="h-5 w-5 text-cyan-400" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-black/50 border border-cyan-900/30 rounded-xl p-6 flex items-center justify-center">
-                <div className="text-center">
-                  <img 
-                    src={generateQRCode(depositAddress)} 
-                    alt="Deposit QR Code" 
-                    className="h-48 w-48 mx-auto mb-4 rounded-lg"
-                    data-testid="qr-code"
-                  />
-                  <p className="text-gray-500 text-sm">Scan QR code to deposit SUI</p>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-gray-400 text-sm mb-2 block">Amount (SUI)</label>
-                <input
-                  type="number"
-                  value={depositAmount}
-                  onChange={(e) => setDepositAmount(e.target.value)}
-                  placeholder="Enter amount"
-                  min="0"
-                  step="0.01"
-                  className="w-full bg-black/50 border border-cyan-900/30 rounded-xl p-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
-                  data-testid="input-deposit-amount"
-                />
-              </div>
-
-              <div className="flex items-start gap-3 p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
-                <Shield className="h-5 w-5 text-green-400 mt-0.5" />
-                <div>
-                  <p className="text-green-400 font-medium text-sm">Secure On-Chain Deposit</p>
-                  <p className="text-gray-400 text-xs">Deposits are processed on the Sui blockchain with full transparency and immutability</p>
-                </div>
-              </div>
-
-              <button
-                onClick={handleDeposit}
-                disabled={depositMutation.isPending}
-                className="w-full bg-green-500 hover:bg-green-600 disabled:bg-gray-600 text-black font-bold py-4 rounded-xl transition-colors text-lg"
-                data-testid="btn-deposit"
-              >
-                {depositMutation.isPending ? (
-                  <RefreshCw className="h-5 w-5 inline mr-2 animate-spin" />
-                ) : (
-                  <ArrowDownLeft className="h-5 w-5 inline mr-2" />
-                )}
-                {depositMutation.isPending ? 'Processing...' : 'Deposit SUI'}
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Withdraw Section */}
-        {activeTab === 'withdraw' && (
-          <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-8 mb-8">
+        <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-8 mb-8">
             <div className="flex items-center gap-3 mb-6">
               <div className="p-3 bg-orange-500/20 rounded-xl">
                 <ArrowUpRight className="h-6 w-6 text-orange-400" />
@@ -417,7 +281,6 @@ export default function DepositsWithdrawalsPage() {
               </button>
             </div>
           </div>
-        )}
 
         {/* Transaction History */}
         <div className="bg-[#111111] border border-cyan-900/30 rounded-2xl p-6">

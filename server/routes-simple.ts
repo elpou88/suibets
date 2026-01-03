@@ -695,29 +695,13 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
-      // For platform balance betting - check and deduct balance
-      if (paymentMethod === 'platform') {
-        const balance = await balanceService.getBalanceAsync(userId);
-        const availableBalance = currency === 'SBETS' ? balance.sbetsBalance : balance.suiBalance;
-        
-        if (availableBalance < totalDebit) {
-          return res.status(400).json({ 
-            message: `Insufficient balance. Required: ${totalDebit} ${currency}, Available: ${availableBalance} ${currency}`
-          });
-        }
-
-        // Deduct bet from balance (with currency support)
-        const deductSuccess = await balanceService.deductForBet(userId, betAmount, platformFee, currency);
-        if (!deductSuccess) {
-          return res.status(400).json({ message: "Failed to deduct bet amount from balance" });
-        }
-      }
-      // For wallet/on-chain betting - verify txHash exists
-      else if (paymentMethod === 'wallet') {
-        if (!txHash) {
-          return res.status(400).json({ message: "Transaction hash required for on-chain bets" });
-        }
-        console.log(`📦 ON-CHAIN BET: Recording wallet bet with txHash: ${txHash}, betObjectId: ${onChainBetId}`);
+      // SIMPLIFIED OFF-CHAIN BETTING - No balance check required
+      // Bets are recorded directly and settled when events complete
+      // Settlement adds winnings to user's platform balance
+      console.log(`🎲 OFF-CHAIN BET: Recording bet for ${userId} - ${betAmount} ${currency}`);
+      
+      if (txHash) {
+        console.log(`📦 With txHash: ${txHash}, betObjectId: ${onChainBetId}`);
       }
 
       const betId = onChainBetId || `bet-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

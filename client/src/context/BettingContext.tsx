@@ -161,15 +161,13 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         return false;
       }
 
-      // FORCE platform (off-chain) betting for ALL bets
-      // On-chain smart contract has argument mismatch with deployed mainnet version
-      // TODO: Re-enable on-chain betting after contract is redeployed with correct args
+      // Simple off-chain betting - all bets recorded in database
       const betOptions: PlaceBetOptions = {
-        ...options,
         betType: selectedBets.length > 1 ? 'parlay' : 'single',
         currency: options?.currency || 'SUI',
         acceptOddsChange: true,
-        paymentMethod: 'platform', // FORCED: Always platform (on-chain disabled due to contract mismatch)
+        paymentMethod: 'platform', // Off-chain betting
+        ...options,
       };
 
       // For single bets

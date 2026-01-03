@@ -70,11 +70,26 @@ function App() {
       const win = window as any;
       
       const hasSlush = typeof win.slush !== 'undefined' || typeof win.suiWallet !== 'undefined';
-      const hasNightly = typeof win.nightly?.sui !== 'undefined';
+      // Comprehensive Nightly detection - check multiple injection points
+      const hasNightly = typeof win.nightly !== 'undefined' || 
+                         typeof win.nightly?.sui !== 'undefined' ||
+                         typeof win.nightly?.wallets !== 'undefined' ||
+                         (win.navigator?.wallets && Array.from(win.navigator.wallets || []).some((w: any) => 
+                           w?.name?.toLowerCase().includes('nightly')));
       const hasSuietWallet = typeof win.suiet !== 'undefined';
       const hasEthosWallet = typeof win.ethos !== 'undefined';
       const hasMartianWallet = typeof win.martian !== 'undefined';
       const hasWalletStandard = typeof win.walletStandard !== 'undefined';
+      
+      // Also check Wallet Standard registry for all Sui wallets
+      const walletStandardWallets: string[] = [];
+      if (win.navigator?.wallets) {
+        try {
+          for (const wallet of win.navigator.wallets) {
+            if (wallet?.name) walletStandardWallets.push(wallet.name);
+          }
+        } catch (e) { /* ignore */ }
+      }
       
       console.log("Wallet detection:", {
         slush: hasSlush,
@@ -82,12 +97,18 @@ function App() {
         suiet: hasSuietWallet,
         ethos: hasEthosWallet,
         martian: hasMartianWallet,
-        walletStandard: hasWalletStandard
+        walletStandard: hasWalletStandard,
+        walletStandardWallets
       });
+      
+      // Log raw window.nightly object for debugging
+      if (win.nightly) {
+        console.log("Nightly wallet object found:", Object.keys(win.nightly));
+      }
     };
     
     // Delay to allow extensions time to inject their APIs
-    setTimeout(checkWallets, 1000);
+    setTimeout(checkWallets, 1500);
   }, []);
 
   return (

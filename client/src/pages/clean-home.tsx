@@ -236,7 +236,7 @@ export default function CleanHome() {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         {/* Search Bar */}
-        <div className="mb-6">
+        <div className="mb-4">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
             <input
@@ -248,27 +248,29 @@ export default function CleanHome() {
           </div>
         </div>
 
-        {/* Sports Grid */}
-        <div className="grid grid-cols-2 gap-3 mb-8">
-          {SPORTS_LIST.map((sport) => (
-            <button
-              key={sport.id}
-              onClick={() => handleSportClick(sport.id)}
-              className={`py-3 px-4 rounded-lg text-left transition-all ${
-                selectedSport === sport.id
-                  ? "bg-cyan-500 text-black font-bold"
-                  : "bg-[#111111] text-gray-300 hover:bg-[#1a1a1a] border border-cyan-900/30"
-              }`}
-              data-testid={`sport-btn-${sport.name.toLowerCase().replace(/\s+/g, '-')}`}
-            >
-              <span className="mr-2">{sport.icon}</span>
-              {sport.name}
-            </button>
-          ))}
+        {/* Sports - Horizontal scroll on mobile, wrapping grid on desktop */}
+        <div className="mb-4 overflow-x-auto md:overflow-visible pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
+          <div className="flex gap-2 md:flex-wrap md:gap-3 w-max md:w-auto">
+            {SPORTS_LIST.map((sport) => (
+              <button
+                key={sport.id}
+                onClick={() => handleSportClick(sport.id)}
+                className={`py-2 px-3 md:py-3 md:px-4 rounded-lg whitespace-nowrap text-sm md:text-base transition-all flex-shrink-0 md:flex-shrink ${
+                  selectedSport === sport.id
+                    ? "bg-cyan-500 text-black font-bold"
+                    : "bg-[#111111] text-gray-300 hover:bg-[#1a1a1a] border border-cyan-900/30"
+                }`}
+                data-testid={`sport-btn-${sport.name.toLowerCase().replace(/\s+/g, '-')}`}
+              >
+                <span className="mr-1 md:mr-2">{sport.icon}</span>
+                {sport.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Live / Upcoming Tabs */}
-        <div ref={matchesSectionRef} className="flex gap-2 mb-6 scroll-mt-4">
+        <div ref={matchesSectionRef} className="flex gap-2 mb-4 scroll-mt-4">
           <button
             onClick={() => handleTabClick("live")}
             className={`flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all ${

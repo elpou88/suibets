@@ -1166,6 +1166,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         walletAddress: user.walletAddress,
         walletType: user.walletType || walletType || 'sui',
         createdAt: user.createdAt,
+        suiBalance: balance.suiBalance || 0,
+        sbetsBalance: balance.sbetsBalance || 0,
         balance: {
           SUI: balance.suiBalance || 0,
           SBETS: balance.sbetsBalance || 0
@@ -1211,6 +1213,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           username: user.username,
           walletAddress: user.walletAddress,
           walletType: user.walletType || walletType || 'sui',
+          suiBalance: balance.suiBalance || 0,
+          sbetsBalance: balance.sbetsBalance || 0,
           balance: {
             SUI: balance.suiBalance || 0,
             SBETS: balance.sbetsBalance || 0

@@ -36,22 +36,26 @@ export function useLiveEvents(sportId?: string | number | null) {
       const timeoutId = setTimeout(() => controller.abort(), 15000);
       
       try {
-        // Try lite endpoint first for faster response
-        const liteResponse = await fetch('/api/events/live-lite', {
-          signal: controller.signal,
-          credentials: 'include',
-        }).catch(() => null);
-        
-        clearTimeout(timeoutId);
-        
-        if (liteResponse?.ok) {
-          const data = await liteResponse.json();
-          if (Array.isArray(data) && data.length > 0) {
-            return data;
+        // Only use lite endpoint when fetching all sports (no filter)
+        // When a specific sport is selected, go directly to filtered endpoint
+        if (normalizedSportId === 'all') {
+          const liteResponse = await fetch('/api/events/live-lite', {
+            signal: controller.signal,
+            credentials: 'include',
+          }).catch(() => null);
+          
+          clearTimeout(timeoutId);
+          
+          if (liteResponse?.ok) {
+            const data = await liteResponse.json();
+            if (Array.isArray(data) && data.length > 0) {
+              return data;
+            }
           }
         }
         
-        // Fallback to main endpoint
+        // Use filtered endpoint for specific sport or as fallback
+        clearTimeout(timeoutId);
         const response = await fetch(url, { credentials: 'include' });
         if (!response.ok) throw new Error('Failed to fetch live events');
         const data = await response.json();

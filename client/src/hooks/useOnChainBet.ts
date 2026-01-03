@@ -44,17 +44,13 @@ export function useOnChainBet() {
       
       const [coin] = tx.splitCoins(tx.gas, [betAmountMist]);
       
+      // Deployed contract expects: Platform, Coin<SUI>, odds (u64)
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::place_bet`,
         arguments: [
           tx.object(BETTING_PLATFORM_ID),
           coin,
-          tx.pure.vector('u8', Array.from(new TextEncoder().encode(eventId))),
-          tx.pure.vector('u8', Array.from(new TextEncoder().encode(marketId))),
-          tx.pure.vector('u8', Array.from(new TextEncoder().encode(prediction))),
           tx.pure.u64(oddsBps),
-          tx.pure.vector('u8', Array.from(new TextEncoder().encode(walrusBlobId))),
-          tx.object(CLOCK_OBJECT_ID),
         ],
       });
 

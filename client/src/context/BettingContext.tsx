@@ -161,12 +161,12 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         return false;
       }
 
-      // Simple off-chain betting - all bets recorded in database
+      // On-chain betting - funds come directly from connected wallet
       const betOptions: PlaceBetOptions = {
         betType: selectedBets.length > 1 ? 'parlay' : 'single',
         currency: options?.currency || 'SUI',
         acceptOddsChange: true,
-        paymentMethod: 'platform', // Off-chain betting
+        paymentMethod: 'wallet', // On-chain betting from wallet balance
         ...options,
       };
 
@@ -290,11 +290,30 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
           });
 
           if (response.ok) {
-            toast({
-              title: "Bet Recorded",
-              description: "On-chain bet saved to database!",
+            const betData = await response.json();
+            
+            // Emit confirmation event for UI
+            const betConfirmedEvent = new CustomEvent('suibets:bet-confirmed', {
+              detail: {
+                betId: betData.bet?.id || onChainResult.betObjectId,
+                eventName: bet.eventName,
+                prediction: bet.selectionName,
+                odds: bet.odds,
+                stake: stakeAmount,
+                currency: betOptions.currency,
+                potentialWin: calculatePotentialWinnings(stakeAmount, bet.odds),
+                txHash: onChainResult.txDigest,
+                status: 'confirmed',
+                placedAt: new Date().toISOString(),
+              }
             });
-            clearBets();
+            window.dispatchEvent(betConfirmedEvent);
+            
+            toast({
+              title: "✅ Bet Placed On-Chain!",
+              description: `TX: ${onChainResult.txDigest?.slice(0, 12)}...`,
+            });
+            // Bets cleared when user dismisses confirmation
             return true;
           } else {
             // Database failed but bet is on-chain - keep in slip for retry

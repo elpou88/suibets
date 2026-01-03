@@ -71,25 +71,32 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUserByWalletAddress(walletAddress: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.walletAddress, walletAddress));
+    // Normalize to lowercase for consistent lookup
+    const normalizedAddress = walletAddress.toLowerCase();
+    const [user] = await db.select().from(users).where(eq(users.walletAddress, normalizedAddress));
     return user || undefined;
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    // Create a new user
+    // Normalize wallet address to lowercase before storing
+    const normalizedUser = {
+      ...insertUser,
+      walletAddress: insertUser.walletAddress?.toLowerCase()
+    };
     const [user] = await db
       .insert(users)
-      .values(insertUser)
+      .values(normalizedUser)
       .returning();
     return user;
   }
 
   async updateWalletAddress(userId: number, walletAddress: string, walletType: string): Promise<User> {
-    // Update a user's wallet address and type
+    // Update a user's wallet address and type - normalize to lowercase
+    const normalizedAddress = walletAddress.toLowerCase();
     const [user] = await db
       .update(users)
       .set({ 
-        walletAddress,
+        walletAddress: normalizedAddress,
         walletType,
         lastLoginAt: new Date()
       })

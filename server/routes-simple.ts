@@ -1088,25 +1088,30 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ message: "Wallet address is required" });
       }
       
+      // CRITICAL: Normalize wallet address to lowercase for consistent storage/retrieval
+      const normalizedAddress = address.toLowerCase();
+      console.log(`[Wallet Connect] Processing connection for: ${normalizedAddress.substring(0, 10)}...`);
+      
       // Check if user exists with this wallet address
-      let user = await storage.getUserByWalletAddress(address);
+      let user = await storage.getUserByWalletAddress(normalizedAddress);
       
       if (!user) {
         // Create new user with wallet address (password required by schema, use placeholder for wallet-based auth)
         const placeholderPassword = `wallet_${Date.now()}_${Math.random().toString(36).substring(2)}`;
         user = await storage.createUser({
-          username: address.substring(0, 8),
+          username: normalizedAddress.substring(0, 8),
           password: placeholderPassword,
-          walletAddress: address,
+          walletAddress: normalizedAddress,
           walletType: walletType || 'sui'
         });
-        console.log(`[Wallet Connect] Created new user for wallet: ${address.substring(0, 8)}...`);
+        console.log(`[Wallet Connect] Created new user for wallet: ${normalizedAddress.substring(0, 10)}...`);
       } else {
-        console.log(`[Wallet Connect] Found existing user for wallet: ${address.substring(0, 8)}...`);
+        console.log(`[Wallet Connect] Found existing user for wallet: ${normalizedAddress.substring(0, 10)}...`);
       }
       
-      // Get balance for user
-      const balance = await balanceService.getBalanceAsync(address);
+      // Get balance for user using normalized address
+      const balance = await balanceService.getBalanceAsync(normalizedAddress);
+      console.log(`[Wallet Connect] Balance retrieved:`, balance);
       
       res.json({
         id: user.id,
@@ -1116,9 +1121,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         createdAt: user.createdAt,
         balance: balance
       });
-    } catch (error) {
-      console.error("Wallet connect error:", error);
-      res.status(500).json({ message: "Failed to connect wallet" });
+    } catch (error: any) {
+      console.error("Wallet connect error:", error?.message || error);
+      res.status(500).json({ message: "Failed to connect wallet", error: error?.message || "Unknown error" });
     }
   });
 

@@ -161,12 +161,13 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         return false;
       }
 
-      // Default options - default to wallet (on-chain) betting
+      // Default options - default to platform (off-chain) betting for reliability
+      // On-chain wallet betting requires matching smart contract version
       const betOptions: PlaceBetOptions = {
         betType: selectedBets.length > 1 ? 'parlay' : 'single',
         currency: 'SUI',
         acceptOddsChange: true,
-        paymentMethod: 'wallet', // Default to on-chain betting
+        paymentMethod: 'platform', // Default to platform balance (reliable)
         ...options,
       };
 
@@ -195,11 +196,31 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
             });
 
             if (response.ok) {
-              toast({
-                title: "Bet Placed",
-                description: `${bet.selectionName} bet placed for ${stakeAmount} ${betOptions.currency}`,
+              const betData = await response.json();
+              
+              // Emit event with bet confirmation details for UI to display
+              const betConfirmedEvent = new CustomEvent('suibets:bet-confirmed', {
+                detail: {
+                  betId: betData.id || betData.betId,
+                  eventName: bet.eventName,
+                  prediction: bet.selectionName,
+                  odds: bet.odds,
+                  stake: stakeAmount,
+                  currency: betOptions.currency,
+                  potentialWin: calculatePotentialWinnings(stakeAmount, bet.odds),
+                  txHash: betData.txHash || null,
+                  status: 'confirmed',
+                  placedAt: new Date().toISOString(),
+                }
               });
-              clearBets();
+              window.dispatchEvent(betConfirmedEvent);
+              
+              toast({
+                title: "✅ Bet Confirmed!",
+                description: `${bet.selectionName} @ ${bet.odds.toFixed(2)} - ${stakeAmount} ${betOptions.currency}`,
+              });
+              // Don't clear bets here - let BetSlip show confirmation first
+              // Bets will be cleared when user dismisses the confirmation
               return true;
             } else {
               const errorData = await response.json();

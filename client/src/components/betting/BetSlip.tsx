@@ -2,8 +2,21 @@ import { useState, useEffect } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrentAccount } from '@mysten/dapp-kit';
-import { X, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { X, Trash2, ChevronUp, ChevronDown, CheckCircle2, Copy, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+
+interface BetConfirmation {
+  betId: string;
+  eventName: string;
+  prediction: string;
+  odds: number;
+  stake: number;
+  currency: string;
+  potentialWin: number;
+  txHash: string | null;
+  status: string;
+  placedAt: string;
+}
 
 export function BetSlip() {
   const { selectedBets, removeBet, clearBets, updateStake, placeBet, totalStake, potentialWinnings } = useBetting();
@@ -15,10 +28,33 @@ export function BetSlip() {
   const [isLoading, setIsLoading] = useState(false);
   const [betCurrency, setBetCurrency] = useState<'SUI' | 'SBETS'>('SUI');
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [confirmedBet, setConfirmedBet] = useState<BetConfirmation | null>(null);
   
   useEffect(() => {
     setBetType(selectedBets.length > 1 ? 'parlay' : 'single');
   }, [selectedBets.length]);
+
+  // Listen for bet confirmation events
+  useEffect(() => {
+    const handleBetConfirmed = (e: CustomEvent<BetConfirmation>) => {
+      setConfirmedBet(e.detail);
+    };
+    
+    window.addEventListener('suibets:bet-confirmed', handleBetConfirmed as EventListener);
+    return () => {
+      window.removeEventListener('suibets:bet-confirmed', handleBetConfirmed as EventListener);
+    };
+  }, []);
+
+  const copyBetId = (betId: string) => {
+    navigator.clipboard.writeText(betId);
+    toast({ title: "Copied!", description: "Bet ID copied to clipboard" });
+  };
+
+  const dismissConfirmation = () => {
+    setConfirmedBet(null);
+    clearBets(); // Clear bets after showing confirmation
+  };
 
   const handleStakeChange = (id: string, stake: string) => {
     const stakeValue = parseFloat(stake);
@@ -70,15 +106,12 @@ export function BetSlip() {
       });
       
       if (success) {
-        toast({
-          title: "Bet Placed!",
-          description: `Your ${betType} bet has been placed successfully`,
-        });
-        clearBets();
+        // Bet confirmation is shown via the event listener
+        // Bets will be cleared when user dismisses the confirmation
       } else {
         toast({
           title: "Bet Failed",
-          description: "There was an error placing your bet",
+          description: "There was an error placing your bet. Check your balance.",
           variant: "destructive",
         });
       }
@@ -92,6 +125,82 @@ export function BetSlip() {
       setIsLoading(false);
     }
   };
+
+  // Show confirmation slip if a bet was just confirmed
+  if (confirmedBet) {
+    return (
+      <div className="bg-[#111111] border border-green-500/50 rounded-lg shadow-xl" data-testid="bet-confirmation">
+        {/* Confirmation Header */}
+        <div className="bg-green-900/30 px-4 py-3 border-b border-green-500/30">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="text-green-400" size={24} />
+            <span className="text-green-400 font-bold text-lg">Bet Confirmed!</span>
+          </div>
+        </div>
+        
+        {/* Bet Details */}
+        <div className="px-4 py-4 space-y-3">
+          <div className="text-white text-sm font-medium">{confirmedBet.eventName}</div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm">Selection:</span>
+            <span className="text-cyan-400 font-medium">{confirmedBet.prediction} @{confirmedBet.odds.toFixed(2)}</span>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm">Stake:</span>
+            <span className="text-white font-medium">{confirmedBet.stake.toFixed(4)} {confirmedBet.currency}</span>
+          </div>
+          
+          <div className="flex justify-between items-center">
+            <span className="text-gray-400 text-sm">Potential Win:</span>
+            <span className="text-green-400 font-bold">{confirmedBet.potentialWin.toFixed(4)} {confirmedBet.currency}</span>
+          </div>
+          
+          <div className="border-t border-gray-700 pt-3 mt-3">
+            <div className="flex justify-between items-center">
+              <span className="text-gray-400 text-sm">Bet ID:</span>
+              <div className="flex items-center gap-2">
+                <span className="text-gray-300 text-xs font-mono">
+                  {confirmedBet.betId?.slice(0, 12)}...
+                </span>
+                <button 
+                  onClick={() => copyBetId(confirmedBet.betId)}
+                  className="text-gray-400 hover:text-cyan-400 transition-colors"
+                  data-testid="btn-copy-bet-id"
+                >
+                  <Copy size={14} />
+                </button>
+              </div>
+            </div>
+            
+            {confirmedBet.txHash && (
+              <div className="flex justify-between items-center mt-2">
+                <span className="text-gray-400 text-sm">TX:</span>
+                <a 
+                  href={`https://suiscan.xyz/mainnet/tx/${confirmedBet.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-xs font-mono"
+                >
+                  {confirmedBet.txHash.slice(0, 12)}...
+                  <ExternalLink size={12} />
+                </a>
+              </div>
+            )}
+          </div>
+          
+          <button
+            onClick={dismissConfirmation}
+            className="w-full mt-4 bg-cyan-500 hover:bg-cyan-600 text-black font-bold py-3 px-4 rounded-lg transition-colors"
+            data-testid="btn-dismiss-confirmation"
+          >
+            Place Another Bet
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Don't render if no bets
   if (selectedBets.length === 0) {

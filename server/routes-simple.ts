@@ -503,6 +503,53 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.status(500).json({ error: 'Failed to fetch live events' });
     }
   });
+
+  // Live events lite endpoint - returns minimal event data for sidebars
+  app.get("/api/events/live-lite", async (req: Request, res: Response) => {
+    try {
+      const sportId = req.query.sportId ? Number(req.query.sportId) : undefined;
+      console.log(`[live-lite] Fetching live events (sportId: ${sportId || 'all'})`);
+      
+      // Use the same logic as the main events endpoint but return lighter data
+      const sportsToFetch = getSportsToFetch();
+      const allLiveEvents: any[] = [];
+      
+      await Promise.all(sportsToFetch.map(async (sport) => {
+        try {
+          const events = await apiSportsService.getLiveEvents(sport);
+          if (events && events.length > 0) {
+            allLiveEvents.push(...events);
+          }
+        } catch (err) {
+          // Silently skip failed sport fetches
+        }
+      }));
+      
+      // Filter by sport if specified
+      let filteredEvents = allLiveEvents;
+      if (sportId) {
+        filteredEvents = allLiveEvents.filter(e => e.sportId === sportId);
+      }
+      
+      // Return minimal data for performance
+      const liteEvents = filteredEvents.map(e => ({
+        id: e.id,
+        sportId: e.sportId,
+        homeTeam: e.homeTeam,
+        awayTeam: e.awayTeam,
+        homeScore: e.homeScore,
+        awayScore: e.awayScore,
+        status: e.status,
+        isLive: e.isLive,
+        leagueName: e.leagueName
+      }));
+      
+      res.json(liteEvents);
+    } catch (error) {
+      console.error('Error in live-lite events:', error);
+      res.json([]); // Return empty array instead of error to prevent UI issues
+    }
+  });
   
   // Get individual event by ID
   app.get("/api/events/:id", async (req: Request, res: Response) => {
@@ -1124,6 +1171,112 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     } catch (error: any) {
       console.error("Wallet connect error:", error?.message || error);
       res.status(500).json({ message: "Failed to connect wallet", error: error?.message || "Unknown error" });
+    }
+  });
+
+  // Auth wallet connect endpoint (alias for /api/wallet/connect for client compatibility)
+  app.post("/api/auth/wallet-connect", async (req: Request, res: Response) => {
+    try {
+      const { walletAddress, walletType } = req.body;
+      
+      if (!walletAddress) {
+        return res.status(400).json({ success: false, message: "Wallet address is required" });
+      }
+      
+      const normalizedAddress = walletAddress.toLowerCase();
+      console.log(`[Auth Wallet Connect] Processing: ${normalizedAddress.substring(0, 10)}...`);
+      
+      let user = await storage.getUserByWalletAddress(normalizedAddress);
+      
+      if (!user) {
+        const placeholderPassword = `wallet_${Date.now()}_${Math.random().toString(36).substring(2)}`;
+        user = await storage.createUser({
+          username: normalizedAddress.substring(0, 8),
+          password: placeholderPassword,
+          walletAddress: normalizedAddress,
+          walletType: walletType || 'sui'
+        });
+        console.log(`[Auth Wallet Connect] Created new user: ${normalizedAddress.substring(0, 10)}...`);
+      }
+      
+      const balance = await balanceService.getBalanceAsync(normalizedAddress);
+      
+      res.json({
+        success: true,
+        user: {
+          id: user.id,
+          username: user.username,
+          walletAddress: user.walletAddress,
+          walletType: user.walletType || walletType || 'sui',
+          balance: balance
+        }
+      });
+    } catch (error: any) {
+      console.error("Auth wallet connect error:", error?.message || error);
+      res.status(500).json({ success: false, message: "Failed to connect wallet" });
+    }
+  });
+
+  // Auth wallet disconnect endpoint
+  app.post("/api/auth/wallet-disconnect", async (req: Request, res: Response) => {
+    res.json({ success: true, message: "Wallet disconnected" });
+  });
+
+  // Auth wallet status endpoint
+  app.get("/api/auth/wallet-status", async (req: Request, res: Response) => {
+    try {
+      // Check if wallet is connected based on session or query param
+      const walletAddress = req.query.walletAddress as string;
+      
+      if (walletAddress) {
+        const normalizedAddress = walletAddress.toLowerCase();
+        const user = await storage.getUserByWalletAddress(normalizedAddress);
+        
+        if (user) {
+          const balance = await balanceService.getBalanceAsync(normalizedAddress);
+          return res.json({
+            authenticated: true,
+            walletAddress: user.walletAddress,
+            walletType: user.walletType,
+            balance: balance
+          });
+        }
+      }
+      
+      res.json({ authenticated: false });
+    } catch (error) {
+      res.json({ authenticated: false });
+    }
+  });
+
+  // Auth profile endpoint
+  app.get("/api/auth/profile", async (req: Request, res: Response) => {
+    try {
+      const walletAddress = req.query.walletAddress as string;
+      
+      if (walletAddress) {
+        const normalizedAddress = walletAddress.toLowerCase();
+        const user = await storage.getUserByWalletAddress(normalizedAddress);
+        
+        if (user) {
+          const balance = await balanceService.getBalanceAsync(normalizedAddress);
+          return res.json({
+            success: true,
+            profile: {
+              id: user.id,
+              username: user.username,
+              walletAddress: user.walletAddress,
+              walletType: user.walletType,
+              suiBalance: balance?.SUI || 0,
+              sbetsBalance: balance?.SBETS || 0
+            }
+          });
+        }
+      }
+      
+      res.json({ success: false, profile: null });
+    } catch (error) {
+      res.json({ success: false, profile: null });
     }
   });
 

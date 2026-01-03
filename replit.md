@@ -45,15 +45,23 @@ Preferred communication style: Simple, everyday language.
   - **Treasury Wallet**: `0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50`
   - **Admin Wallet**: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
 
-#### Fund Flow (SUI and SBETS - same logic for both)
-1. **User Deposit**: User transfers SUI/SBETS on-chain directly to treasury wallet → internal balance credited
-2. **Bet Placement**: Internal balance deducted (funds are ALREADY in treasury from deposit)
-3. **If Bet LOST**: Stake stays in treasury (already there) → recorded as platform revenue
-4. **If Bet WON**: Winnings credited to internal balance (1% platform fee deducted) → user can withdraw from treasury
-5. **Withdrawal**: On-chain transfer from treasury to user wallet (admin keypair signs)
+#### Fund Flow - DUAL SETTLEMENT SYSTEM
 
-- **Key Point**: Lost bet funds don't need to be "transferred" to treasury - they're already there from the deposit. Settlement just updates accounting.
-- **Gas Payment**: Users pay gas for deposits. Platform (admin wallet) pays gas for automated withdrawals. Betting settlements are off-chain and incur no gas fees.
+**SUI Bets (On-Chain via Smart Contract):**
+1. **User places bet** → SUI goes directly to contract treasury
+2. **If Bet WON** → `settle_bet` pays user from contract treasury (1% fee on profit)
+3. **If Bet LOST** → Stake stays in contract treasury (added to `accrued_fees`)
+4. **Admin can** → Call `withdraw_fees` to withdraw platform revenue
+
+**SBETS Bets (Off-Chain Hybrid Model):**
+1. **User deposits** → SBETS transferred to treasury wallet → internal balance credited
+2. **Bet Placement** → Internal balance deducted
+3. **If Bet LOST** → Stake stays in treasury → recorded as database revenue
+4. **If Bet WON** → Winnings credited to internal balance → user can withdraw
+5. **Withdrawal** → Admin keypair signs transfer from treasury to user
+
+- **Key Point**: SUI uses smart contract for settlements (full on-chain). SBETS uses hybrid custodial model (off-chain tracking).
+- **Gas Payment**: Users pay gas for deposits/bets. Platform pays gas for on-chain settlements and withdrawals.
 
 ### Monitoring Endpoints
 - `/api/contract/info`: Provides blockchain contract details.

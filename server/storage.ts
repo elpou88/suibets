@@ -476,6 +476,7 @@ export class DatabaseStorage implements IStorage {
         placedAt: bet.createdAt?.toISOString() || new Date().toISOString(),
         settledAt: bet.settledAt?.toISOString(),
         txHash: bet.txHash,
+        betObjectId: bet.betObjectId, // On-chain Sui bet object ID for contract settlement
         currency: bet.feeCurrency,
         betType: bet.betType,
         platformFee: bet.platformFee,

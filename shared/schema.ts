@@ -137,6 +137,7 @@ export const bets = pgTable("bets", {
   parlayId: integer("parlay_id").references(() => parlays.id),
   // Wurlus protocol integration
   wurlusBetId: text("wurlus_bet_id"), // Blockchain bet ID
+  betObjectId: text("bet_object_id"), // On-chain Sui bet object ID (for contract-based settlement)
   txHash: text("tx_hash"), // Transaction hash for bet placement
   platformFee: real("platform_fee"), // Platform fee in SUI
   networkFee: real("network_fee"), // Network fee in SUI

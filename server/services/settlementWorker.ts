@@ -1,5 +1,6 @@
 import { storage } from '../storage';
 import balanceService from './balanceService';
+import { blockchainBetService } from './blockchainBetService';
 import { db } from '../db';
 import { settledEvents } from '../../shared/schema';
 import { eq, sql } from 'drizzle-orm';
@@ -26,6 +27,7 @@ interface UnsettledBet {
   potentialWin: number;
   userId: string;
   currency: string;
+  betObjectId?: string; // On-chain Sui bet object ID (for SUI bets placed via contract)
 }
 
 const REVENUE_WALLET = 'platform_revenue';
@@ -306,7 +308,8 @@ class SettlementWorkerService {
           stake: bet.stake || bet.betAmount,
           potentialWin: bet.potentialWin || bet.potentialPayout,
           userId: bet.walletAddress || bet.userId || 'unknown',
-          currency: bet.currency || 'SUI'
+          currency: bet.currency || 'SUI',
+          betObjectId: bet.betObjectId || undefined // On-chain bet object ID for SUI bets
         }));
     } catch (error) {
       console.error('Error getting unsettled bets:', error);
@@ -329,34 +332,66 @@ class SettlementWorkerService {
         const platformFee = grossPayout > 0 ? grossPayout * 0.01 : 0;
         const netPayout = grossPayout - platformFee;
 
-        // DOUBLE PAYOUT PREVENTION: Only process winnings if status update succeeded
-        const statusUpdated = await storage.updateBetStatus(bet.id, status, grossPayout);
+        // DUAL SETTLEMENT: On-chain for SUI with betObjectId, off-chain for SBETS or fallback
+        const isSuiOnChainBet = bet.currency === 'SUI' && bet.betObjectId && blockchainBetService.isAdminKeyConfigured();
 
-        if (statusUpdated) {
-          if (isWinner && netPayout > 0) {
-            const winningsAdded = await balanceService.addWinnings(bet.userId, netPayout, bet.currency as 'SUI' | 'SBETS');
-            if (!winningsAdded) {
-              // CRITICAL: Revert bet status if balance credit failed - allows retry next cycle
-              await storage.updateBetStatus(bet.id, 'pending');
-              console.error(`❌ SETTLEMENT REVERTED: Failed to credit winnings for bet ${bet.id} - will retry`);
-              continue; // Don't mark as settled, allow retry
-            }
-            // CRITICAL: Record 1% platform fee as revenue
-            await balanceService.addRevenue(platformFee, bet.currency as 'SUI' | 'SBETS');
-            console.log(`💰 WINNER (DB): ${bet.userId} won ${netPayout} ${bet.currency} (fee: ${platformFee} ${bet.currency} -> revenue)`);
-          } else {
-            // Lost bet - add full stake to platform revenue
-            await balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
-            console.log(`📉 LOST (DB): ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
-          }
-          console.log(`✅ Settled bet ${bet.id}: ${status} (${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam})`);
+        if (isSuiOnChainBet) {
+          // ============ ON-CHAIN SETTLEMENT (SUI via smart contract) ============
+          // Contract handles payout directly - winner gets SUI from contract treasury
+          // Lost bets stay in contract treasury as accrued fees
+          console.log(`🔗 ON-CHAIN SETTLEMENT: Bet ${bet.id} (${bet.currency}) via smart contract`);
           
-          // ONLY mark as settled after successful payout processing
-          this.settledBetIds.add(bet.id);
+          const settlementResult = await blockchainBetService.executeSettleBetOnChain(
+            bet.betObjectId!,
+            isWinner
+          );
+
+          if (settlementResult.success) {
+            // Update database status to reflect on-chain settlement
+            const statusUpdated = await storage.updateBetStatus(bet.id, status, grossPayout);
+            if (statusUpdated) {
+              console.log(`✅ ON-CHAIN SETTLED: ${bet.id} ${status} | TX: ${settlementResult.txHash}`);
+              this.settledBetIds.add(bet.id);
+            }
+          } else {
+            console.error(`❌ ON-CHAIN SETTLEMENT FAILED: ${bet.id} - ${settlementResult.error}`);
+            // Don't mark as settled - will retry next cycle
+            continue;
+          }
         } else {
-          // Bet was already settled (by concurrent process) - mark to skip future attempts
-          console.log(`⚠️ DUPLICATE SETTLEMENT PREVENTED: Bet ${bet.id} already settled - no payout applied`);
-          this.settledBetIds.add(bet.id);
+          // ============ OFF-CHAIN SETTLEMENT (SBETS or SUI fallback) ============
+          // Uses internal balance tracking - funds managed via hybrid custodial model
+          console.log(`📊 OFF-CHAIN SETTLEMENT: Bet ${bet.id} (${bet.currency}) via database`);
+
+          // DOUBLE PAYOUT PREVENTION: Only process winnings if status update succeeded
+          const statusUpdated = await storage.updateBetStatus(bet.id, status, grossPayout);
+
+          if (statusUpdated) {
+            if (isWinner && netPayout > 0) {
+              const winningsAdded = await balanceService.addWinnings(bet.userId, netPayout, bet.currency as 'SUI' | 'SBETS');
+              if (!winningsAdded) {
+                // CRITICAL: Revert bet status if balance credit failed - allows retry next cycle
+                await storage.updateBetStatus(bet.id, 'pending');
+                console.error(`❌ SETTLEMENT REVERTED: Failed to credit winnings for bet ${bet.id} - will retry`);
+                continue; // Don't mark as settled, allow retry
+              }
+              // CRITICAL: Record 1% platform fee as revenue
+              await balanceService.addRevenue(platformFee, bet.currency as 'SUI' | 'SBETS');
+              console.log(`💰 WINNER (DB): ${bet.userId} won ${netPayout} ${bet.currency} (fee: ${platformFee} ${bet.currency} -> revenue)`);
+            } else {
+              // Lost bet - add full stake to platform revenue
+              await balanceService.addRevenue(bet.stake, bet.currency as 'SUI' | 'SBETS');
+              console.log(`📉 LOST (DB): ${bet.userId} lost ${bet.stake} ${bet.currency} - added to platform revenue`);
+            }
+            console.log(`✅ Settled bet ${bet.id}: ${status} (${match.homeTeam} ${match.homeScore}-${match.awayScore} ${match.awayTeam})`);
+            
+            // ONLY mark as settled after successful payout processing
+            this.settledBetIds.add(bet.id);
+          } else {
+            // Bet was already settled (by concurrent process) - mark to skip future attempts
+            console.log(`⚠️ DUPLICATE SETTLEMENT PREVENTED: Bet ${bet.id} already settled - no payout applied`);
+            this.settledBetIds.add(bet.id);
+          }
         }
       } catch (error) {
         console.error(`❌ Error settling bet ${bet.id}:`, error);

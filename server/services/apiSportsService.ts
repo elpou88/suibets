@@ -532,14 +532,19 @@ export class ApiSportsService {
       'formula-1': 13, // Support either format
       cycling: 14,
       american_football: 15,
+      'american-football': 15, // Support hyphenated format
       nfl: 15, // NFL maps to american_football
       afl: 16, // Australian Football League
+      'aussie-rules': 16, // Support hyphenated format
       aussie_rules: 16, // Alternative name for AFL
       snooker: 17,
       darts: 18,
-      table_tennis: 18,
-      badminton: 19,
-      esports: 20
+      'table-tennis': 19, // Support hyphenated format
+      table_tennis: 19,
+      badminton: 20,
+      esports: 21,
+      motorsport: 22,
+      netball: 23
     };
     
     return sportIdMap[sport] || 1; // Default to football if not found

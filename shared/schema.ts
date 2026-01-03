@@ -142,7 +142,9 @@ export const bets = pgTable("bets", {
   networkFee: real("network_fee"), // Network fee in SUI
   feeCurrency: text("fee_currency").default("SUI"), // Currency of fees
   // Event display name for bet history
-  eventName: text("event_name") // Store event name for display in bet history
+  eventName: text("event_name"), // Store event name for display in bet history
+  // Withdrawal tracking
+  winningsWithdrawn: boolean("winnings_withdrawn").default(false) // Track if winnings have been withdrawn
 });
 
 // Parlay bets (combines multiple bets into one wager)

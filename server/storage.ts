@@ -569,7 +569,8 @@ export class DatabaseStorage implements IStorage {
         .set({ 
           status: 'winnings_withdrawn',
           txHash: txHash,
-          settledAt: new Date()
+          settledAt: new Date(),
+          winningsWithdrawn: true
         })
         .where(eq(bets.id, betId));
       console.log(`Marked bet ${betId} winnings as withdrawn with tx hash: ${txHash}`);

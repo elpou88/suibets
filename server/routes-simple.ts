@@ -332,6 +332,59 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Platform revenue endpoint
+  app.get("/api/admin/revenue", async (req: Request, res: Response) => {
+    try {
+      const revenue = await balanceService.getPlatformRevenue();
+      const contractInfo = await blockchainBetService.getPlatformInfo();
+      res.json({
+        offChainRevenue: {
+          sui: revenue.suiBalance,
+          sbets: revenue.sbetsBalance
+        },
+        onChainContract: contractInfo || {
+          treasuryBalance: 0,
+          totalBets: 0,
+          totalVolume: 0,
+          accruedFees: 0
+        },
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch revenue" });
+    }
+  });
+
+  // Withdraw fees from contract (admin only)
+  app.post("/api/admin/withdraw-fees", async (req: Request, res: Response) => {
+    try {
+      const { amount, adminPassword } = req.body;
+      const authHeader = req.headers.authorization;
+      const token = authHeader?.replace('Bearer ', '');
+      
+      const hasValidToken = token && isValidAdminSession(token);
+      const actualPassword = process.env.ADMIN_PASSWORD || 'change-me-in-production';
+      const hasValidPassword = adminPassword === actualPassword;
+      
+      if (!hasValidToken && !hasValidPassword) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ message: "Valid amount required" });
+      }
+      
+      const result = await blockchainBetService.withdrawFeesOnChain(amount);
+      if (result.success) {
+        res.json({ success: true, txHash: result.txHash, amount });
+      } else {
+        res.status(400).json({ success: false, error: result.error });
+      }
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   // Notifications endpoints
   app.get("/api/notifications", async (req: Request, res: Response) => {
     try {

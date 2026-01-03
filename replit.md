@@ -41,10 +41,19 @@ Preferred communication style: Simple, everyday language.
 - **Authentication Flow**: Wallet connection, address verification, session creation, balance synchronization from blockchain, and transaction authorization.
 
 ### Architecture Model
-- **Hybrid Custodial Model**: Users deposit SUI to a platform treasury wallet. Bets are tracked in PostgreSQL, and winnings are settled off-chain. Withdrawals can be automated or manual.
+- **Hybrid Custodial Model**: Users deposit SUI/SBETS to the platform treasury wallet. Bets are tracked in PostgreSQL, and settlements are processed off-chain. Withdrawals can be automated or manual.
   - **Treasury Wallet**: `0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50`
   - **Admin Wallet**: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
-- **Gas Payment**: Users pay gas for deposits and on-chain bet placement. The platform (admin wallet) pays gas for automated withdrawals and revenue transfers. Betting operations themselves (settlements, crediting winnings) are off-chain and incur no gas fees.
+
+#### Fund Flow (SUI and SBETS - same logic for both)
+1. **User Deposit**: User transfers SUI/SBETS on-chain directly to treasury wallet → internal balance credited
+2. **Bet Placement**: Internal balance deducted (funds are ALREADY in treasury from deposit)
+3. **If Bet LOST**: Stake stays in treasury (already there) → recorded as platform revenue
+4. **If Bet WON**: Winnings credited to internal balance (1% platform fee deducted) → user can withdraw from treasury
+5. **Withdrawal**: On-chain transfer from treasury to user wallet (admin keypair signs)
+
+- **Key Point**: Lost bet funds don't need to be "transferred" to treasury - they're already there from the deposit. Settlement just updates accounting.
+- **Gas Payment**: Users pay gas for deposits. Platform (admin wallet) pays gas for automated withdrawals. Betting settlements are off-chain and incur no gas fees.
 
 ### Monitoring Endpoints
 - `/api/contract/info`: Provides blockchain contract details.

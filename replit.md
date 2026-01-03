@@ -84,35 +84,36 @@ Preferred communication style: Simple, everyday language.
 - **Sui Network**: Layer 1 blockchain (mainnet).
 - **Move Language**: For smart contract development.
 - **SBETS Token (Mainnet)**: `0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS`
-- **Contract Source**: `sources/betting.move` (full-featured dual-token contract)
-- **Deployed Contract (Mainnet)** - NEEDS REDEPLOYMENT with full contract:
-    - Current Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa` (legacy - missing functions)
-    - Platform Object ID: `0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89`
-    - Admin Wallet: `0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f`
+- **Contract Source**: `sources/betting.move` (capability-based dual-token contract with OTW)
+- **Security Model**: Capability-based access control using One-Time Witness (OTW) pattern
+    - **AdminCap**: Single capability minted at deployment, required for all admin operations
+    - **OracleCap**: Can be minted by admin for settlement oracles
+- **Deployed Contract (Mainnet)** - NEEDS REDEPLOYMENT with capability pattern:
+    - Current Package ID: `0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa` (legacy)
     - Module: `betting`
-- **Full Contract Functions (SUI)**:
-    - `place_bet` - Place bet with SUI (user callable)
-    - `settle_bet` - Settle SUI bet win/lose (admin/oracle)
-    - `void_bet` - Void and refund SUI bet (admin/oracle)
-    - `withdraw_fees` - Extract SUI platform revenue (admin only)
-    - `deposit_liquidity` - Add SUI to treasury (admin only)
-- **Full Contract Functions (SBETS)**:
-    - `place_bet_sbets` - Place bet with SBETS (user callable)
-    - `settle_bet_sbets` - Settle SBETS bet win/lose (admin/oracle)
-    - `void_bet_sbets` - Void and refund SBETS bet (admin/oracle)
-    - `withdraw_fees_sbets` - Extract SBETS platform revenue (admin only)
-    - `deposit_liquidity_sbets` - Add SBETS to treasury (admin only)
-- **Admin Functions**:
-    - `add_oracle` / `remove_oracle` - Manage oracles (admin only)
-    - `set_pause` - Pause/unpause platform (admin only)
-    - `update_fee` - Change fee percentage (admin only)
-    - `update_limits` - Change min/max bet (admin only)
-    - `propose_admin` / `accept_admin` - Transfer admin role
+- **SUI Betting Functions**:
+    - `place_bet` - Place bet with SUI (any user)
+    - `settle_bet` / `settle_bet_admin` - Settle SUI bet (OracleCap / AdminCap)
+    - `void_bet` / `void_bet_admin` - Void SUI bet (OracleCap / AdminCap)
+    - `withdraw_fees` - Extract SUI revenue (AdminCap)
+    - `deposit_liquidity` - Add SUI to treasury (AdminCap)
+- **SBETS Betting Functions**:
+    - `place_bet_sbets` - Place bet with SBETS (any user)
+    - `settle_bet_sbets` / `settle_bet_sbets_admin` - Settle SBETS bet (OracleCap / AdminCap)
+    - `void_bet_sbets` / `void_bet_sbets_admin` - Void SBETS bet (OracleCap / AdminCap)
+    - `withdraw_fees_sbets` - Extract SBETS revenue (AdminCap)
+    - `deposit_liquidity_sbets` - Add SBETS to treasury (AdminCap)
+- **Admin Functions (all require AdminCap)**:
+    - `mint_oracle_cap` / `revoke_oracle_cap` - Manage oracle capabilities
+    - `set_pause` - Pause/unpause platform
+    - `update_fee` - Change fee percentage
+    - `update_limits` - Change min/max bet
     - `emergency_withdraw` / `emergency_withdraw_sbets` - Emergency withdrawal (paused only)
 - **Deployment Guide**: See `DEPLOY_CONTRACT.md` for deployment instructions
 - **Environment Variables** (update after deployment):
     - `BETTING_PACKAGE_ID` / `VITE_BETTING_PACKAGE_ID` - New package ID
     - `BETTING_PLATFORM_ID` / `VITE_BETTING_PLATFORM_ID` - New platform object ID
+    - `ADMIN_CAP_ID` - AdminCap object ID (for backend settlement)
 
 ### Payment Integration
 - **Stripe**: Optional fiat payment processing.

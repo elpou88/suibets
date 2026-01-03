@@ -6,8 +6,8 @@ module suibets::betting {
     use sui::sui::SUI;
     use sui::balance::{Self, Balance};
     use sui::event;
-    use sui::table::{Self, Table};
     use sui::clock::{Self, Clock};
+    use sui::types;
     
     use sbets_token::sbets::SBETS;
 
@@ -22,6 +22,7 @@ module suibets::betting {
     const EPlatformPaused: u64 = 7;
     const EExceedsMaxBet: u64 = 8;
     const EExceedsMinBet: u64 = 9;
+    const ENotOneTimeWitness: u64 = 10;
 
     // Bet status constants
     const STATUS_PENDING: u8 = 0;
@@ -42,6 +43,19 @@ module suibets::betting {
     const DEFAULT_MAX_BET: u64 = 100_000_000_000; // 100 SUI/SBETS
     const MAX_FEE_BPS: u64 = 1000; // 10% max fee
 
+    // One-Time Witness for init verification
+    public struct BETTING has drop {}
+
+    // Admin capability - only one exists, minted during init
+    public struct AdminCap has key, store {
+        id: UID,
+    }
+
+    // Oracle capability - can be minted by admin for settlement oracles
+    public struct OracleCap has key, store {
+        id: UID,
+    }
+
     // Betting platform shared object with dual treasury (SUI + SBETS)
     public struct BettingPlatform has key {
         id: UID,
@@ -58,9 +72,6 @@ module suibets::betting {
         // Shared settings
         platform_fee_bps: u64,
         total_bets: u64,
-        admin: address,
-        pending_admin: address,
-        oracles: Table<address, bool>,
         paused: bool,
         min_bet: u64,
         max_bet: u64,
@@ -81,7 +92,7 @@ module suibets::betting {
         placed_at: u64,
         settled_at: u64,
         walrus_blob_id: vector<u8>,
-        coin_type: u8, // 0 = SUI, 1 = SBETS
+        coin_type: u8,
     }
 
     // Events
@@ -108,7 +119,7 @@ module suibets::betting {
 
     public struct PlatformCreated has copy, drop {
         platform_id: ID,
-        admin: address,
+        admin_cap_id: ID,
         fee_bps: u64,
     }
 
@@ -118,10 +129,14 @@ module suibets::betting {
         timestamp: u64,
     }
 
-    public struct AdminTransferred has copy, drop {
-        platform_id: ID,
-        old_admin: address,
-        new_admin: address,
+    public struct OracleCapMinted has copy, drop {
+        oracle_cap_id: ID,
+        recipient: address,
+        timestamp: u64,
+    }
+
+    public struct OracleCapRevoked has copy, drop {
+        oracle_cap_id: ID,
         timestamp: u64,
     }
 
@@ -135,7 +150,6 @@ module suibets::betting {
 
     public struct EmergencyWithdrawal has copy, drop {
         platform_id: ID,
-        admin: address,
         amount: u64,
         coin_type: u8,
         timestamp: u64,
@@ -143,33 +157,36 @@ module suibets::betting {
 
     public struct FeesWithdrawn has copy, drop {
         platform_id: ID,
-        admin: address,
         amount: u64,
         coin_type: u8,
         timestamp: u64,
     }
 
-    // Initialize the betting platform
-    fun init(ctx: &mut TxContext) {
-        let admin_addr = tx_context::sender(ctx);
+    // Initialize the betting platform with OTW verification
+    fun init(witness: BETTING, ctx: &mut TxContext) {
+        assert!(types::is_one_time_witness(&witness), ENotOneTimeWitness);
+        
+        let deployer = tx_context::sender(ctx);
+        
+        // Create AdminCap for deployer
+        let admin_cap = AdminCap {
+            id: object::new(ctx),
+        };
+        let admin_cap_id = object::id(&admin_cap);
+        
+        // Create platform
         let platform = BettingPlatform {
             id: object::new(ctx),
-            // SUI treasury
             treasury_sui: balance::zero(),
             total_volume_sui: 0,
             total_potential_liability_sui: 0,
             accrued_fees_sui: 0,
-            // SBETS treasury
             treasury_sbets: balance::zero(),
             total_volume_sbets: 0,
             total_potential_liability_sbets: 0,
             accrued_fees_sbets: 0,
-            // Shared settings
             platform_fee_bps: PLATFORM_FEE_BPS,
             total_bets: 0,
-            admin: admin_addr,
-            pending_admin: admin_addr,
-            oracles: table::new(ctx),
             paused: false,
             min_bet: DEFAULT_MIN_BET,
             max_bet: DEFAULT_MAX_BET,
@@ -177,16 +194,18 @@ module suibets::betting {
 
         event::emit(PlatformCreated {
             platform_id: object::id(&platform),
-            admin: admin_addr,
+            admin_cap_id,
             fee_bps: PLATFORM_FEE_BPS,
         });
 
+        // Share platform, transfer AdminCap to deployer
         transfer::share_object(platform);
+        transfer::transfer(admin_cap, deployer);
     }
 
     // ============ SUI BETTING ============
 
-    // Place a bet with SUI
+    // Place a bet with SUI (anyone can call)
     public entry fun place_bet(
         platform: &mut BettingPlatform,
         payment: Coin<SUI>,
@@ -208,7 +227,6 @@ module suibets::betting {
 
         let potential_payout = (stake * odds) / 100;
         
-        // Check solvency for SUI treasury
         let current_treasury = balance::value(&platform.treasury_sui);
         assert!(
             current_treasury + stake >= platform.total_potential_liability_sui + potential_payout,
@@ -259,19 +277,15 @@ module suibets::betting {
         transfer::transfer(bet, bettor);
     }
 
-    // Settle a SUI bet
+    // Settle a SUI bet (requires OracleCap)
     public entry fun settle_bet(
+        _oracle_cap: &OracleCap,
         platform: &mut BettingPlatform,
         bet: &mut Bet,
         won: bool,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(
-            caller == platform.admin || table::contains(&platform.oracles, caller),
-            EUnauthorized
-        );
         assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
         assert!(bet.coin_type == COIN_TYPE_SUI, EInvalidAmount);
 
@@ -319,18 +333,104 @@ module suibets::betting {
         }
     }
 
-    // Void a SUI bet
+    // Settle a SUI bet with AdminCap (admin can also settle)
+    public entry fun settle_bet_admin(
+        _admin_cap: &AdminCap,
+        platform: &mut BettingPlatform,
+        bet: &mut Bet,
+        won: bool,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
+        assert!(bet.coin_type == COIN_TYPE_SUI, EInvalidAmount);
+
+        let timestamp = clock::timestamp_ms(clock);
+        bet.settled_at = timestamp;
+        
+        platform.total_potential_liability_sui = platform.total_potential_liability_sui - bet.potential_payout;
+
+        if (won) {
+            bet.status = STATUS_WON;
+            
+            let profit = bet.potential_payout - bet.stake;
+            let win_fee = (profit * platform.platform_fee_bps) / BPS_DENOMINATOR;
+            let net_payout = bet.potential_payout - win_fee;
+            
+            platform.accrued_fees_sui = platform.accrued_fees_sui + win_fee;
+            bet.platform_fee = win_fee;
+            
+            assert!(balance::value(&platform.treasury_sui) >= net_payout, EInsufficientBalance);
+            
+            let payout_balance = balance::split(&mut platform.treasury_sui, net_payout);
+            let payout_coin = coin::from_balance(payout_balance, ctx);
+            transfer::public_transfer(payout_coin, bet.bettor);
+
+            event::emit(BetSettled {
+                bet_id: object::id(bet),
+                bettor: bet.bettor,
+                status: STATUS_WON,
+                payout: net_payout,
+                coin_type: COIN_TYPE_SUI,
+                timestamp,
+            });
+        } else {
+            bet.status = STATUS_LOST;
+            platform.accrued_fees_sui = platform.accrued_fees_sui + bet.stake;
+
+            event::emit(BetSettled {
+                bet_id: object::id(bet),
+                bettor: bet.bettor,
+                status: STATUS_LOST,
+                payout: 0,
+                coin_type: COIN_TYPE_SUI,
+                timestamp,
+            });
+        }
+    }
+
+    // Void a SUI bet (requires OracleCap)
     public entry fun void_bet(
+        _oracle_cap: &OracleCap,
         platform: &mut BettingPlatform,
         bet: &mut Bet,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(
-            caller == platform.admin || table::contains(&platform.oracles, caller),
-            EUnauthorized
-        );
+        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
+        assert!(bet.coin_type == COIN_TYPE_SUI, EInvalidAmount);
+
+        bet.status = STATUS_VOID;
+        bet.settled_at = clock::timestamp_ms(clock);
+        
+        platform.total_potential_liability_sui = platform.total_potential_liability_sui - bet.potential_payout;
+
+        let refund_amount = bet.stake;
+        
+        if (balance::value(&platform.treasury_sui) >= refund_amount) {
+            let refund_balance = balance::split(&mut platform.treasury_sui, refund_amount);
+            let refund_coin = coin::from_balance(refund_balance, ctx);
+            transfer::public_transfer(refund_coin, bet.bettor);
+        };
+
+        event::emit(BetSettled {
+            bet_id: object::id(bet),
+            bettor: bet.bettor,
+            status: STATUS_VOID,
+            payout: refund_amount,
+            coin_type: COIN_TYPE_SUI,
+            timestamp: bet.settled_at,
+        });
+    }
+
+    // Void a SUI bet with AdminCap
+    public entry fun void_bet_admin(
+        _admin_cap: &AdminCap,
+        platform: &mut BettingPlatform,
+        bet: &mut Bet,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
         assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
         assert!(bet.coin_type == COIN_TYPE_SUI, EInvalidAmount);
 
@@ -359,7 +459,7 @@ module suibets::betting {
 
     // ============ SBETS BETTING ============
 
-    // Place a bet with SBETS
+    // Place a bet with SBETS (anyone can call)
     public entry fun place_bet_sbets(
         platform: &mut BettingPlatform,
         payment: Coin<SBETS>,
@@ -381,7 +481,6 @@ module suibets::betting {
 
         let potential_payout = (stake * odds) / 100;
         
-        // Check solvency for SBETS treasury
         let current_treasury = balance::value(&platform.treasury_sbets);
         assert!(
             current_treasury + stake >= platform.total_potential_liability_sbets + potential_payout,
@@ -432,19 +531,15 @@ module suibets::betting {
         transfer::transfer(bet, bettor);
     }
 
-    // Settle a SBETS bet
+    // Settle a SBETS bet (requires OracleCap)
     public entry fun settle_bet_sbets(
+        _oracle_cap: &OracleCap,
         platform: &mut BettingPlatform,
         bet: &mut Bet,
         won: bool,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(
-            caller == platform.admin || table::contains(&platform.oracles, caller),
-            EUnauthorized
-        );
         assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
         assert!(bet.coin_type == COIN_TYPE_SBETS, EInvalidAmount);
 
@@ -492,18 +587,70 @@ module suibets::betting {
         }
     }
 
-    // Void a SBETS bet
+    // Settle a SBETS bet with AdminCap
+    public entry fun settle_bet_sbets_admin(
+        _admin_cap: &AdminCap,
+        platform: &mut BettingPlatform,
+        bet: &mut Bet,
+        won: bool,
+        clock: &Clock,
+        ctx: &mut TxContext
+    ) {
+        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
+        assert!(bet.coin_type == COIN_TYPE_SBETS, EInvalidAmount);
+
+        let timestamp = clock::timestamp_ms(clock);
+        bet.settled_at = timestamp;
+        
+        platform.total_potential_liability_sbets = platform.total_potential_liability_sbets - bet.potential_payout;
+
+        if (won) {
+            bet.status = STATUS_WON;
+            
+            let profit = bet.potential_payout - bet.stake;
+            let win_fee = (profit * platform.platform_fee_bps) / BPS_DENOMINATOR;
+            let net_payout = bet.potential_payout - win_fee;
+            
+            platform.accrued_fees_sbets = platform.accrued_fees_sbets + win_fee;
+            bet.platform_fee = win_fee;
+            
+            assert!(balance::value(&platform.treasury_sbets) >= net_payout, EInsufficientBalance);
+            
+            let payout_balance = balance::split(&mut platform.treasury_sbets, net_payout);
+            let payout_coin = coin::from_balance(payout_balance, ctx);
+            transfer::public_transfer(payout_coin, bet.bettor);
+
+            event::emit(BetSettled {
+                bet_id: object::id(bet),
+                bettor: bet.bettor,
+                status: STATUS_WON,
+                payout: net_payout,
+                coin_type: COIN_TYPE_SBETS,
+                timestamp,
+            });
+        } else {
+            bet.status = STATUS_LOST;
+            platform.accrued_fees_sbets = platform.accrued_fees_sbets + bet.stake;
+
+            event::emit(BetSettled {
+                bet_id: object::id(bet),
+                bettor: bet.bettor,
+                status: STATUS_LOST,
+                payout: 0,
+                coin_type: COIN_TYPE_SBETS,
+                timestamp,
+            });
+        }
+    }
+
+    // Void a SBETS bet (requires OracleCap)
     public entry fun void_bet_sbets(
+        _oracle_cap: &OracleCap,
         platform: &mut BettingPlatform,
         bet: &mut Bet,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(
-            caller == platform.admin || table::contains(&platform.oracles, caller),
-            EUnauthorized
-        );
         assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
         assert!(bet.coin_type == COIN_TYPE_SBETS, EInvalidAmount);
 
@@ -530,38 +677,88 @@ module suibets::betting {
         });
     }
 
-    // ============ ADMIN FUNCTIONS ============
-
-    // Add an oracle
-    public entry fun add_oracle(
+    // Void a SBETS bet with AdminCap
+    public entry fun void_bet_sbets_admin(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
-        oracle_address: address,
-        ctx: &TxContext
+        bet: &mut Bet,
+        clock: &Clock,
+        ctx: &mut TxContext
     ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
-        table::add(&mut platform.oracles, oracle_address, true);
+        assert!(bet.status == STATUS_PENDING, EBetAlreadySettled);
+        assert!(bet.coin_type == COIN_TYPE_SBETS, EInvalidAmount);
+
+        bet.status = STATUS_VOID;
+        bet.settled_at = clock::timestamp_ms(clock);
+        
+        platform.total_potential_liability_sbets = platform.total_potential_liability_sbets - bet.potential_payout;
+
+        let refund_amount = bet.stake;
+        
+        if (balance::value(&platform.treasury_sbets) >= refund_amount) {
+            let refund_balance = balance::split(&mut platform.treasury_sbets, refund_amount);
+            let refund_coin = coin::from_balance(refund_balance, ctx);
+            transfer::public_transfer(refund_coin, bet.bettor);
+        };
+
+        event::emit(BetSettled {
+            bet_id: object::id(bet),
+            bettor: bet.bettor,
+            status: STATUS_VOID,
+            payout: refund_amount,
+            coin_type: COIN_TYPE_SBETS,
+            timestamp: bet.settled_at,
+        });
     }
 
-    // Remove an oracle
-    public entry fun remove_oracle(
-        platform: &mut BettingPlatform,
-        oracle_address: address,
-        ctx: &TxContext
+    // ============ ADMIN FUNCTIONS (require AdminCap) ============
+
+    // Mint a new OracleCap for a settlement oracle
+    public entry fun mint_oracle_cap(
+        _admin_cap: &AdminCap,
+        recipient: address,
+        clock: &Clock,
+        ctx: &mut TxContext
     ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
-        table::remove(&mut platform.oracles, oracle_address);
+        let oracle_cap = OracleCap {
+            id: object::new(ctx),
+        };
+        
+        event::emit(OracleCapMinted {
+            oracle_cap_id: object::id(&oracle_cap),
+            recipient,
+            timestamp: clock::timestamp_ms(clock),
+        });
+        
+        transfer::transfer(oracle_cap, recipient);
+    }
+
+    // Revoke an OracleCap by burning it (oracle must send it back)
+    public entry fun revoke_oracle_cap(
+        _admin_cap: &AdminCap,
+        oracle_cap: OracleCap,
+        clock: &Clock,
+        _ctx: &mut TxContext
+    ) {
+        let oracle_cap_id = object::id(&oracle_cap);
+        let OracleCap { id } = oracle_cap;
+        object::delete(id);
+        
+        event::emit(OracleCapRevoked {
+            oracle_cap_id,
+            timestamp: clock::timestamp_ms(clock),
+        });
     }
 
     // Withdraw SUI platform fees
     public entry fun withdraw_fees(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         amount: u64,
+        recipient: address,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
-        
         let treasury_value = balance::value(&platform.treasury_sui);
         let reserved = platform.total_potential_liability_sui;
         
@@ -574,11 +771,10 @@ module suibets::betting {
         
         let withdraw_balance = balance::split(&mut platform.treasury_sui, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
-        transfer::public_transfer(withdraw_coin, platform.admin);
+        transfer::public_transfer(withdraw_coin, recipient);
         
         event::emit(FeesWithdrawn {
             platform_id: object::id(platform),
-            admin: caller,
             amount,
             coin_type: COIN_TYPE_SUI,
             timestamp: clock::timestamp_ms(clock),
@@ -587,14 +783,13 @@ module suibets::betting {
 
     // Withdraw SBETS platform fees
     public entry fun withdraw_fees_sbets(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         amount: u64,
+        recipient: address,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
-        
         let treasury_value = balance::value(&platform.treasury_sbets);
         let reserved = platform.total_potential_liability_sbets;
         
@@ -607,11 +802,10 @@ module suibets::betting {
         
         let withdraw_balance = balance::split(&mut platform.treasury_sbets, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
-        transfer::public_transfer(withdraw_coin, platform.admin);
+        transfer::public_transfer(withdraw_coin, recipient);
         
         event::emit(FeesWithdrawn {
             platform_id: object::id(platform),
-            admin: caller,
             amount,
             coin_type: COIN_TYPE_SBETS,
             timestamp: clock::timestamp_ms(clock),
@@ -620,23 +814,23 @@ module suibets::betting {
 
     // Update platform fee
     public entry fun update_fee(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         new_fee_bps: u64,
-        ctx: &TxContext
+        _ctx: &TxContext
     ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
         assert!(new_fee_bps <= MAX_FEE_BPS, EInvalidAmount);
         platform.platform_fee_bps = new_fee_bps;
     }
 
     // Pause/unpause platform
     public entry fun set_pause(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         paused: bool,
         clock: &Clock,
-        ctx: &TxContext
+        _ctx: &TxContext
     ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
         platform.paused = paused;
         
         event::emit(PlatformPaused {
@@ -646,47 +840,14 @@ module suibets::betting {
         });
     }
 
-    // Propose new admin
-    public entry fun propose_admin(
-        platform: &mut BettingPlatform,
-        new_admin: address,
-        ctx: &TxContext
-    ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
-        platform.pending_admin = new_admin;
-    }
-
-    // Accept admin role
-    public entry fun accept_admin(
-        platform: &mut BettingPlatform,
-        clock: &Clock,
-        ctx: &TxContext
-    ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.pending_admin, EUnauthorized);
-        
-        let old_admin = platform.admin;
-        platform.admin = caller;
-        platform.pending_admin = caller;
-        
-        event::emit(AdminTransferred {
-            platform_id: object::id(platform),
-            old_admin,
-            new_admin: caller,
-            timestamp: clock::timestamp_ms(clock),
-        });
-    }
-
     // Deposit SUI liquidity
     public entry fun deposit_liquidity(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         funds: Coin<SUI>,
         clock: &Clock,
         ctx: &TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
-        
         let amount = coin::value(&funds);
         assert!(amount > 0, EInvalidAmount);
         
@@ -695,7 +856,7 @@ module suibets::betting {
         
         event::emit(LiquidityDeposited {
             platform_id: object::id(platform),
-            depositor: caller,
+            depositor: tx_context::sender(ctx),
             amount,
             coin_type: COIN_TYPE_SUI,
             timestamp: clock::timestamp_ms(clock),
@@ -704,14 +865,12 @@ module suibets::betting {
 
     // Deposit SBETS liquidity
     public entry fun deposit_liquidity_sbets(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         funds: Coin<SBETS>,
         clock: &Clock,
         ctx: &TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
-        
         let amount = coin::value(&funds);
         assert!(amount > 0, EInvalidAmount);
         
@@ -720,7 +879,7 @@ module suibets::betting {
         
         event::emit(LiquidityDeposited {
             platform_id: object::id(platform),
-            depositor: caller,
+            depositor: tx_context::sender(ctx),
             amount,
             coin_type: COIN_TYPE_SBETS,
             timestamp: clock::timestamp_ms(clock),
@@ -729,13 +888,13 @@ module suibets::betting {
 
     // Emergency withdrawal SUI (requires paused)
     public entry fun emergency_withdraw(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         amount: u64,
+        recipient: address,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
         assert!(platform.paused, EPlatformPaused);
         
         let treasury_value = balance::value(&platform.treasury_sui);
@@ -750,11 +909,10 @@ module suibets::betting {
         
         let withdraw_balance = balance::split(&mut platform.treasury_sui, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
-        transfer::public_transfer(withdraw_coin, platform.admin);
+        transfer::public_transfer(withdraw_coin, recipient);
         
         event::emit(EmergencyWithdrawal {
             platform_id: object::id(platform),
-            admin: caller,
             amount,
             coin_type: COIN_TYPE_SUI,
             timestamp: clock::timestamp_ms(clock),
@@ -763,13 +921,13 @@ module suibets::betting {
 
     // Emergency withdrawal SBETS (requires paused)
     public entry fun emergency_withdraw_sbets(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         amount: u64,
+        recipient: address,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
-        let caller = tx_context::sender(ctx);
-        assert!(caller == platform.admin, EUnauthorized);
         assert!(platform.paused, EPlatformPaused);
         
         let treasury_value = balance::value(&platform.treasury_sbets);
@@ -784,11 +942,10 @@ module suibets::betting {
         
         let withdraw_balance = balance::split(&mut platform.treasury_sbets, amount);
         let withdraw_coin = coin::from_balance(withdraw_balance, ctx);
-        transfer::public_transfer(withdraw_coin, platform.admin);
+        transfer::public_transfer(withdraw_coin, recipient);
         
         event::emit(EmergencyWithdrawal {
             platform_id: object::id(platform),
-            admin: caller,
             amount,
             coin_type: COIN_TYPE_SBETS,
             timestamp: clock::timestamp_ms(clock),
@@ -797,12 +954,12 @@ module suibets::betting {
 
     // Update bet limits
     public entry fun update_limits(
+        _admin_cap: &AdminCap,
         platform: &mut BettingPlatform,
         new_min_bet: u64,
         new_max_bet: u64,
-        ctx: &TxContext
+        _ctx: &TxContext
     ) {
-        assert!(tx_context::sender(ctx) == platform.admin, EUnauthorized);
         assert!(new_min_bet > 0, EInvalidAmount);
         assert!(new_max_bet > 0, EInvalidAmount);
         assert!(new_min_bet <= new_max_bet, EInvalidAmount);
@@ -826,12 +983,7 @@ module suibets::betting {
         (platform.total_bets, platform.total_volume_sbets, balance::value(&platform.treasury_sbets))
     }
 
-    public fun is_oracle(platform: &BettingPlatform, addr: address): bool {
-        table::contains(&platform.oracles, addr)
-    }
-
     public fun is_paused(platform: &BettingPlatform): bool { platform.paused }
-    public fun get_admin(platform: &BettingPlatform): address { platform.admin }
     public fun get_bet_limits(platform: &BettingPlatform): (u64, u64) { (platform.min_bet, platform.max_bet) }
     public fun get_fee_bps(platform: &BettingPlatform): u64 { platform.platform_fee_bps }
 
@@ -857,7 +1009,6 @@ module suibets::betting {
 
     #[test_only]
     public fun create_platform_for_testing(ctx: &mut TxContext): BettingPlatform {
-        let admin_addr = tx_context::sender(ctx);
         BettingPlatform {
             id: object::new(ctx),
             treasury_sui: balance::zero(),
@@ -870,12 +1021,23 @@ module suibets::betting {
             accrued_fees_sbets: 0,
             platform_fee_bps: PLATFORM_FEE_BPS,
             total_bets: 0,
-            admin: admin_addr,
-            pending_admin: admin_addr,
-            oracles: table::new(ctx),
             paused: false,
             min_bet: DEFAULT_MIN_BET,
             max_bet: DEFAULT_MAX_BET,
+        }
+    }
+
+    #[test_only]
+    public fun create_admin_cap_for_testing(ctx: &mut TxContext): AdminCap {
+        AdminCap {
+            id: object::new(ctx),
+        }
+    }
+
+    #[test_only]
+    public fun create_oracle_cap_for_testing(ctx: &mut TxContext): OracleCap {
+        OracleCap {
+            id: object::new(ctx),
         }
     }
 }

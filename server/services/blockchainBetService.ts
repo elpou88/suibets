@@ -5,6 +5,7 @@ import { Transaction } from '@mysten/sui/transactions';
 const SBETS_PACKAGE_ID = process.env.SBETS_TOKEN_ADDRESS?.split('::')[0] || '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285';
 const BETTING_PACKAGE_ID = process.env.BETTING_PACKAGE_ID || '0xf8209567df9e80789ec7036f747d6386a8935b50f065e955a715e364f4f893aa';
 const BETTING_PLATFORM_ID = process.env.BETTING_PLATFORM_ID || '0x5fe75eab8aef1c209e0d2b8d53cd601d4efaf22511e82d8504b0f7f6c754df89';
+const ADMIN_CAP_ID = process.env.ADMIN_CAP_ID || '';
 const PLATFORM_REVENUE_WALLET = process.env.PLATFORM_REVENUE_WALLET || '0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50';
 const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || '0x747c44940ec9f0136e3accdd81f37d5b3cc1d62d7747968d633cabb6aa5aa45f';
 const REVENUE_WALLET = process.env.REVENUE_WALLET_ADDRESS || PLATFORM_REVENUE_WALLET;
@@ -18,6 +19,7 @@ if (!BETTING_PACKAGE_ID || !BETTING_PLATFORM_ID) {
 }
 console.log(`📦 Betting Package ID: ${BETTING_PACKAGE_ID}`);
 console.log(`🏛️ Platform Object ID: ${BETTING_PLATFORM_ID}`);
+console.log(`🎫 Admin Cap ID: ${ADMIN_CAP_ID || 'NOT SET'}`);
 console.log(`👤 Admin Wallet: ${ADMIN_WALLET}`);
 
 // SECURITY: Only log existence, never the key itself
@@ -416,14 +418,20 @@ export class BlockchainBetService {
       return { success: false, error };
     }
 
+    if (!ADMIN_CAP_ID) {
+      const error = 'ADMIN_CAP_ID not configured - cannot execute on-chain settlement with capability pattern';
+      console.error(`❌ SETTLEMENT BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
     try {
       const tx = new Transaction();
       
-      // Call settle_bet(platform, bet, won, clock) - full contract signature
       tx.moveCall({
-        target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
+        target: `${BETTING_PACKAGE_ID}::betting::settle_bet_admin`,
         arguments: [
-          tx.object(BETTING_PLATFORM_ID),  // platform: &mut Platform
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap (owned by signer)
+          tx.object(BETTING_PLATFORM_ID),   // platform: &mut Platform
           tx.object(betObjectId),           // bet: &mut Bet
           tx.pure.bool(won),                // won: bool
           tx.object('0x6'),                 // clock: &Clock
@@ -470,14 +478,18 @@ export class BlockchainBetService {
       return { success: false, error };
     }
 
+    if (!ADMIN_CAP_ID) {
+      return { success: false, error: 'ADMIN_CAP_ID not configured' };
+    }
+
     try {
       const tx = new Transaction();
       
-      // Call void_bet(platform, bet, clock)
       tx.moveCall({
-        target: `${BETTING_PACKAGE_ID}::betting::void_bet`,
+        target: `${BETTING_PACKAGE_ID}::betting::void_bet_admin`,
         arguments: [
-          tx.object(BETTING_PLATFORM_ID),  // platform: &mut BettingPlatform
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap
+          tx.object(BETTING_PLATFORM_ID),   // platform: &mut BettingPlatform
           tx.object(betObjectId),           // bet: &mut Bet
           tx.object('0x6'),                 // clock: &Clock
         ],
@@ -512,23 +524,30 @@ export class BlockchainBetService {
    * @returns Transaction result
    */
   async withdrawFeesOnChain(
-    amountSui: number
+    amountSui: number,
+    recipientAddress?: string
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     const keypair = this.getAdminKeypair();
     if (!keypair) {
       return { success: false, error: 'Admin private key not configured' };
     }
 
+    if (!ADMIN_CAP_ID) {
+      return { success: false, error: 'ADMIN_CAP_ID not configured' };
+    }
+
     try {
       const amountMist = Math.floor(amountSui * 1e9);
+      const recipient = recipientAddress || REVENUE_WALLET;
       const tx = new Transaction();
       
-      // Call withdraw_fees(platform, amount, clock)
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::withdraw_fees`,
         arguments: [
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap
           tx.object(BETTING_PLATFORM_ID),
           tx.pure.u64(amountMist),
+          tx.pure.address(recipient),       // recipient: address
           tx.object('0x6'),
         ],
       });
@@ -568,13 +587,19 @@ export class BlockchainBetService {
       return { success: false, error };
     }
 
+    if (!ADMIN_CAP_ID) {
+      const error = 'ADMIN_CAP_ID not configured - cannot execute on-chain SBETS settlement';
+      console.error(`❌ SBETS SETTLEMENT BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
     try {
       const tx = new Transaction();
       
-      // Call settle_bet_sbets(platform, bet, won, clock)
       tx.moveCall({
-        target: `${BETTING_PACKAGE_ID}::betting::settle_bet_sbets`,
+        target: `${BETTING_PACKAGE_ID}::betting::settle_bet_sbets_admin`,
         arguments: [
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap
           tx.object(BETTING_PLATFORM_ID),
           tx.object(betObjectId),
           tx.pure.bool(won),
@@ -619,12 +644,17 @@ export class BlockchainBetService {
       return { success: false, error: 'Admin private key not configured' };
     }
 
+    if (!ADMIN_CAP_ID) {
+      return { success: false, error: 'ADMIN_CAP_ID not configured' };
+    }
+
     try {
       const tx = new Transaction();
       
       tx.moveCall({
-        target: `${BETTING_PACKAGE_ID}::betting::void_bet_sbets`,
+        target: `${BETTING_PACKAGE_ID}::betting::void_bet_sbets_admin`,
         arguments: [
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap
           tx.object(BETTING_PLATFORM_ID),
           tx.object(betObjectId),
           tx.object('0x6'),
@@ -654,22 +684,30 @@ export class BlockchainBetService {
    * @returns Transaction result
    */
   async withdrawFeesSbetsOnChain(
-    amount: number
+    amount: number,
+    recipientAddress?: string
   ): Promise<{ success: boolean; txHash?: string; error?: string }> {
     const keypair = this.getAdminKeypair();
     if (!keypair) {
       return { success: false, error: 'Admin private key not configured' };
     }
 
+    if (!ADMIN_CAP_ID) {
+      return { success: false, error: 'ADMIN_CAP_ID not configured' };
+    }
+
     try {
       const amountMist = Math.floor(amount * 1e9);
+      const recipient = recipientAddress || REVENUE_WALLET;
       const tx = new Transaction();
       
       tx.moveCall({
         target: `${BETTING_PACKAGE_ID}::betting::withdraw_fees_sbets`,
         arguments: [
+          tx.object(ADMIN_CAP_ID),          // admin_cap: &AdminCap
           tx.object(BETTING_PLATFORM_ID),
           tx.pure.u64(amountMist),
+          tx.pure.address(recipient),       // recipient: address
           tx.object('0x6'),
         ],
       });

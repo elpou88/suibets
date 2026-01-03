@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { Search, Clock, TrendingUp, Wallet, LogOut, RefreshCw } from "lucide-react";
 import { useBetting } from "@/context/BettingContext";
 import { useToast } from "@/hooks/use-toast";
-import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import { useCurrentAccount, useDisconnectWallet, useSuiClientQuery } from "@mysten/dapp-kit";
 import { ConnectWalletModal } from "@/components/modals/ConnectWalletModal";
 import Footer from "@/components/layout/Footer";
 import { useLiveEvents, useUpcomingEvents } from "@/hooks/useEvents";
@@ -92,13 +92,25 @@ export default function CleanHome() {
   const walletAddress = currentAccount?.address;
   const isConnected = !!walletAddress;
   
-  // Fetch real balance from API when wallet is connected
+  // Fetch on-chain wallet balance (what's in user's Sui wallet)
+  const { data: onChainBalance } = useSuiClientQuery(
+    'getBalance',
+    { owner: walletAddress || '' },
+    { enabled: !!walletAddress }
+  );
+  
+  // Convert from MIST to SUI (1 SUI = 1,000,000,000 MIST)
+  const walletSuiBalance = onChainBalance?.totalBalance 
+    ? Number(onChainBalance.totalBalance) / 1_000_000_000 
+    : 0;
+  
+  // Fetch platform deposited balance from API (what's available to bet)
   const { data: balanceData } = useQuery<{ SUI: number; SBETS: number; suiBalance: number; sbetsBalance: number }>({
     queryKey: [`/api/user/balance?userId=${walletAddress}`],
     enabled: !!walletAddress,
   });
   
-  const balances = {
+  const platformBalances = {
     SUI: balanceData?.SUI ?? balanceData?.suiBalance ?? 0,
     SBETS: balanceData?.SBETS ?? balanceData?.sbetsBalance ?? 0
   };
@@ -153,7 +165,12 @@ export default function CleanHome() {
             {isConnected && walletAddress ? (
               <>
                 <div className="text-right">
-                  <div className="text-cyan-400 text-xs">{balances.SUI.toFixed(4)} SUI | {balances.SBETS.toFixed(2)} SBETS</div>
+                  <div className="text-cyan-400 text-xs" title="Platform balance (deposited for betting)">
+                    💰 {platformBalances.SUI.toFixed(4)} SUI | {platformBalances.SBETS.toFixed(2)} SBETS
+                  </div>
+                  <div className="text-green-400 text-xs" title="Wallet balance (on-chain)">
+                    🔗 Wallet: {walletSuiBalance.toFixed(4)} SUI
+                  </div>
                   <div className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</div>
                 </div>
                 <button 

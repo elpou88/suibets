@@ -1037,15 +1037,14 @@ export class ApiSportsService {
   private transformEventsData(events: any[], sport: string, isLive: boolean): SportEvent[] {
     if (!events || !Array.isArray(events)) return [];
     
+    // Get the correct sportId for this sport - ALWAYS use this, don't trust event data
+    const correctSportId = this.getSportId(sport);
+    
     // For all sports, use the appropriate transformer
     return events.map((event, index) => {
-      // Ensure the correct sportId is set
-      if (event.sportId === undefined) {
-        event.sportId = this.getSportId(sport);
-      }
-      if (event._sportName === undefined) {
-        event._sportName = sport;
-      }
+      // ALWAYS set the correct sportId based on the sport parameter - override any existing value
+      event.sportId = correctSportId;
+      event._sportName = sport;
       
       if (sport === 'football' || sport === 'soccer') {
         return this.transformFootballEvent(event, isLive, index);
@@ -2149,7 +2148,7 @@ export class ApiSportsService {
    * Transform generic event data for other sports
    */
   private transformGenericEvent(event: any, sport: string, isLive: boolean, index: number): SportEvent {
-    // Map sport to sport ID
+    // Map sport to sport ID - support both underscore and hyphen formats
     const sportIdMap: Record<string, number> = {
       football: 1,
       soccer: 1,
@@ -2164,20 +2163,30 @@ export class ApiSportsService {
       golf: 10,
       boxing: 11,
       mma: 12,
+      'mma-ufc': 12,
+      'formula-1': 13,
+      formula_1: 13,
       motorsport: 13,
       cycling: 14,
       american_football: 15,
-      snooker: 16,
-      darts: 17,
-      table_tennis: 18,
-      badminton: 19,
-      esports: 20,
-      surfing: 21,
-      horse_racing: 22,
-      swimming: 23,
-      skiing: 24,
-      water_polo: 25,
-      // Add more as needed
+      'american-football': 15,
+      nfl: 15,
+      afl: 16,
+      'aussie-rules': 16,
+      aussie_rules: 16,
+      snooker: 17,
+      darts: 18,
+      table_tennis: 19,
+      'table-tennis': 19,
+      badminton: 20,
+      esports: 21,
+      motorsport_other: 22,
+      netball: 23,
+      surfing: 24,
+      horse_racing: 25,
+      swimming: 26,
+      skiing: 27,
+      water_polo: 28,
     };
     
     // Get the sportId from the mapping or use the numeric value if sport is a number

@@ -45,6 +45,7 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
   const [potentialWinnings, setPotentialWinnings] = useState<number>(0);
   const [betFees, setBetFees] = useState({ platformFee: 0, networkFee: 0 });
   const [selectedCurrency, setSelectedCurrency] = useState<'SUI' | 'SBETS'>('SUI');
+  const [paymentMethod, setPaymentMethod] = useState<'platform' | 'wallet'>('platform');
 
   // Clear error when selections or amount changes
   useEffect(() => {
@@ -112,15 +113,19 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
       return;
     }
 
-    // Check balance based on selected currency
-    const userBalance = selectedCurrency === 'SUI' 
-      ? (user.suiBalance !== undefined ? user.suiBalance : user.balance || 0)
-      : (user.sbetsBalance !== undefined ? user.sbetsBalance : 0);
-      
-    if (amountValue > userBalance) {
-      setError(`Insufficient ${selectedCurrency} balance`);
-      return;
+    // Check balance based on payment method and selected currency
+    if (paymentMethod === 'platform') {
+      // Only check deposited balance for platform payment
+      const userBalance = selectedCurrency === 'SUI' 
+        ? (user.suiBalance !== undefined ? user.suiBalance : user.balance || 0)
+        : (user.sbetsBalance !== undefined ? user.sbetsBalance : 0);
+        
+      if (amountValue > userBalance) {
+        setError(`Insufficient deposited ${selectedCurrency}. Deposit funds or use "Direct Wallet" payment.`);
+        return;
+      }
     }
+    // For 'wallet' payment, we don't check balance - the on-chain transaction will fail if insufficient
 
     setIsSubmitting(true);
     setError(null);
@@ -140,7 +145,8 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
           market: selection.marketName,
           marketId: parseInt(selection.marketId),
           outcomeId: parseInt(selection.outcomeId),
-          currency: selectedCurrency // Include selected currency
+          currency: selectedCurrency,
+          paymentMethod: paymentMethod // 'platform' or 'wallet'
         });
         
         // Clear the bet slip after adding to context
@@ -162,7 +168,8 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
         outcomeId: selection.outcomeId,
         betAmount: amountValue, // Using betAmount to match backend expectation
         odds: selection.odds,
-        feeCurrency: selectedCurrency // Include currency for backend processing
+        feeCurrency: selectedCurrency, // Include currency for backend processing
+        paymentMethod: paymentMethod // 'platform' or 'wallet' - determines if funds come from deposited balance or on-chain
       });
 
       if (response.data.success) {
@@ -283,6 +290,38 @@ export const WalBetSlip: React.FC<WalBetSlipProps> = ({
                     </div>
                   </Button>
                 </div>
+              </div>
+              
+              {/* Payment Method Selector */}
+              <div className="mt-3">
+                <Label htmlFor="payment-method">Payment Method</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'platform' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center text-xs ${paymentMethod === 'platform' ? 'bg-cyan-600 text-white border-2 border-cyan-600' : 'hover:border-cyan-600'}`}
+                    onClick={() => setPaymentMethod('platform')}
+                  >
+                    <div className="flex items-center">
+                      <span className="font-medium">💰 Deposited</span>
+                    </div>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === 'wallet' ? 'default' : 'outline'}
+                    className={`flex items-center justify-center text-xs ${paymentMethod === 'wallet' ? 'bg-green-600 text-white border-2 border-green-600' : 'hover:border-green-600'}`}
+                    onClick={() => setPaymentMethod('wallet')}
+                  >
+                    <div className="flex items-center">
+                      <span className="font-medium">🔗 Direct Wallet</span>
+                    </div>
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {paymentMethod === 'platform' 
+                    ? 'Uses your deposited balance' 
+                    : 'Pays directly from your wallet (on-chain)'}
+                </p>
               </div>
             </div>
 

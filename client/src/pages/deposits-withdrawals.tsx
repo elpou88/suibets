@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useCurrentAccount, useSuiClient, useSignAndExecuteTransaction } from '@mysten/dapp-kit';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 const suibetsLogo = "/images/suibets-logo.png";
 import { 
@@ -19,6 +19,9 @@ import {
   ArrowLeft
 } from 'lucide-react';
 
+// Platform treasury wallet address for deposits
+const TREASURY_WALLET = '0x20850db591c4d575b5238baf975e54580d800e69b8b5b421de796a311d3bea50';
+
 interface Transaction {
   id: string;
   type: 'deposit' | 'withdrawal';
@@ -32,12 +35,16 @@ interface Transaction {
 export default function DepositsWithdrawalsPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
-  const { currentWallet } = useWalrusProtocolContext();
+  const currentAccount = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { mutate: signAndExecute } = useSignAndExecuteTransaction();
+  const walletAddress = currentAccount?.address;
   const [activeTab, setActiveTab] = useState<'deposit' | 'withdraw'>('deposit');
   const [depositAmount, setDepositAmount] = useState('');
   const [withdrawAmount, setWithdrawAmount] = useState('');
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isDepositing, setIsDepositing] = useState(false);
 
   const { data: rawTransactions, refetch: refetchTransactions } = useQuery({
     queryKey: ['/api/transactions'],
@@ -51,14 +58,12 @@ export default function DepositsWithdrawalsPage() {
   
   const transactions: Transaction[] = Array.isArray(rawTransactions) ? rawTransactions : [];
 
-  const depositAddress = currentWallet?.address || '0x7a3c4f2e8b1d9c5a6f4e3d2c1b0a9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c3b2a1';
+  // Treasury address where users should send deposits
+  const depositAddress = TREASURY_WALLET;
 
   const depositMutation = useMutation({
     mutationFn: async (amount: number) => {
-      return apiRequest('/api/transactions/deposit', {
-        method: 'POST',
-        body: JSON.stringify({ amount, currency: 'SUI', address: currentWallet?.address }),
-      });
+      return apiRequest('POST', '/api/transactions/deposit', { amount, currency: 'SUI', address: walletAddress });
     },
     onSuccess: () => {
       toast({ title: 'Deposit Initiated', description: `Awaiting ${depositAmount} SUI deposit confirmation` });
@@ -73,10 +78,7 @@ export default function DepositsWithdrawalsPage() {
 
   const withdrawMutation = useMutation({
     mutationFn: async (data: { amount: number; address: string }) => {
-      return apiRequest('/api/transactions/withdraw', {
-        method: 'POST',
-        body: JSON.stringify({ ...data, currency: 'SUI', fromAddress: currentWallet?.address }),
-      });
+      return apiRequest('POST', '/api/transactions/withdraw', { ...data, currency: 'SUI', fromAddress: walletAddress });
     },
     onSuccess: () => {
       toast({ title: 'Withdrawal Submitted', description: `${withdrawAmount} SUI withdrawal is processing on-chain` });
@@ -100,7 +102,7 @@ export default function DepositsWithdrawalsPage() {
       toast({ title: 'Enter Amount', description: 'Please enter a valid deposit amount', variant: 'destructive' });
       return;
     }
-    if (!currentWallet?.address) {
+    if (!walletAddress) {
       toast({ title: 'Wallet Required', description: 'Please connect your wallet first', variant: 'destructive' });
       return;
     }
@@ -189,10 +191,10 @@ export default function DepositsWithdrawalsPage() {
             <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
-            {currentWallet?.address ? (
+            {walletAddress ? (
               <div className="text-right">
                 <p className="text-cyan-400 text-sm font-medium">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
-                <p className="text-gray-500 text-xs">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</p>
+                <p className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
               </div>
             ) : (
               <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">
@@ -209,7 +211,7 @@ export default function DepositsWithdrawalsPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Deposits & Withdrawals</h1>
           <p className="text-gray-400">Manage your funds securely on the Sui blockchain</p>
-          {currentWallet?.address && (
+          {walletAddress && (
             <div className="mt-4 p-4 bg-[#111111] border border-cyan-900/30 rounded-xl">
               <p className="text-gray-400 text-sm">Available Balance</p>
               <p className="text-3xl font-bold text-cyan-400">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
@@ -402,7 +404,7 @@ export default function DepositsWithdrawalsPage() {
 
               <button
                 onClick={handleWithdraw}
-                disabled={withdrawMutation.isPending || !currentWallet?.address}
+                disabled={withdrawMutation.isPending || !walletAddress}
                 className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-600 text-black font-bold py-4 rounded-xl transition-colors text-lg"
                 data-testid="btn-withdraw"
               >

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useBetting } from '@/context/BettingContext';
-import { useWalrusProtocolContext } from '@/context/WalrusProtocolContext';
+import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 const suibetsLogo = "/images/suibets-logo.png";
@@ -30,12 +30,26 @@ export default function ParlayPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const { selectedBets, removeBet, clearBets } = useBetting();
-  const { currentWallet } = useWalrusProtocolContext();
+  const currentAccount = useCurrentAccount();
+  const walletAddress = currentAccount?.address;
   const [stake, setStake] = useState('10');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Fetch on-chain wallet balance (what's in user's Sui wallet)
+  const { data: onChainBalance, refetch: refetchOnChain } = useSuiClientQuery(
+    'getBalance',
+    { owner: walletAddress || '' },
+    { enabled: !!walletAddress }
+  );
+  
+  // Convert from MIST to SUI (1 SUI = 1,000,000,000 MIST)
+  const walletSuiBalance = onChainBalance?.totalBalance 
+    ? Number(onChainBalance.totalBalance) / 1_000_000_000 
+    : 0;
+
   const { data: balanceData } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
-    queryKey: ['/api/user/balance'],
+    queryKey: [`/api/user/balance?userId=${walletAddress}`],
+    enabled: !!walletAddress,
     refetchInterval: 15000,
   });
 
@@ -77,7 +91,7 @@ export default function ParlayPage() {
       toast({ title: 'Not Enough Selections', description: 'A parlay requires at least 2 selections', variant: 'destructive' });
       return;
     }
-    if (!currentWallet?.address) {
+    if (!walletAddress) {
       window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
       return;
     }
@@ -86,15 +100,15 @@ export default function ParlayPage() {
       toast({ title: 'Invalid Stake', description: 'Please enter a valid stake amount', variant: 'destructive' });
       return;
     }
-    const balance = balanceData?.suiBalance || 0;
-    if (stakeAmount > balance) {
-      toast({ title: 'Insufficient Balance', description: `You only have ${balance.toFixed(4)} SUI available`, variant: 'destructive' });
+    // Use on-chain wallet balance for direct betting
+    if (stakeAmount > walletSuiBalance) {
+      toast({ title: 'Insufficient Balance', description: `You only have ${walletSuiBalance.toFixed(4)} SUI in your wallet`, variant: 'destructive' });
       return;
     }
 
     const betData = {
       type: 'parlay',
-      walletAddress: currentWallet.address,
+      walletAddress: walletAddress,
       stake: stakeAmount,
       totalOdds,
       potentialWin: potentialPayout,
@@ -112,10 +126,11 @@ export default function ParlayPage() {
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] }),
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/user/balance') }),
       queryClient.invalidateQueries({ queryKey: ['/api/bets'] }),
+      refetchOnChain(),
     ]);
-    toast({ title: 'Refreshed', description: 'Balance updated' });
+    toast({ title: 'Refreshed', description: 'Balance updated from blockchain' });
     setIsRefreshing(false);
   };
 
@@ -160,10 +175,10 @@ export default function ParlayPage() {
             <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
-            {currentWallet?.address ? (
+            {walletAddress ? (
               <div className="text-right">
-                <p className="text-cyan-400 text-sm font-medium">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
-                <p className="text-gray-500 text-xs">{currentWallet.address.slice(0, 6)}...{currentWallet.address.slice(-4)}</p>
+                <p className="text-green-400 text-xs" title="On-chain wallet balance">Wallet: {walletSuiBalance.toFixed(4)} SUI</p>
+                <p className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
               </div>
             ) : (
               <button onClick={handleConnectWallet} className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-4 py-2 rounded-lg text-sm flex items-center gap-2" data-testid="btn-connect">

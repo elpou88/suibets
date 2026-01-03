@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { useCurrentAccount } from '@mysten/dapp-kit';
+import { useCurrentAccount, useSuiClientQuery } from '@mysten/dapp-kit';
 import { queryClient, apiRequest } from '@/lib/queryClient';
 const suibetsLogo = "/images/suibets-logo.png";
 import { 
@@ -36,13 +36,27 @@ export default function DepositsWithdrawalsPage() {
   const [withdrawAddress, setWithdrawAddress] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Fetch on-chain wallet balance (what's in user's Sui wallet)
+  const { data: onChainBalance, refetch: refetchOnChain } = useSuiClientQuery(
+    'getBalance',
+    { owner: walletAddress || '' },
+    { enabled: !!walletAddress }
+  );
+  
+  // Convert from MIST to SUI (1 SUI = 1,000,000,000 MIST)
+  const walletSuiBalance = onChainBalance?.totalBalance 
+    ? Number(onChainBalance.totalBalance) / 1_000_000_000 
+    : 0;
+
   const { data: rawTransactions, refetch: refetchTransactions } = useQuery({
     queryKey: ['/api/transactions'],
     refetchInterval: 15000,
   });
 
+  // Platform balance (for withdrawal of deposited funds)
   const { data: balanceData, refetch: refetchBalance } = useQuery<{ suiBalance: number; sbetsBalance: number }>({
-    queryKey: ['/api/user/balance'],
+    queryKey: [`/api/user/balance?userId=${walletAddress}`],
+    enabled: !!walletAddress,
     refetchInterval: 15000,
   });
   
@@ -57,7 +71,10 @@ export default function DepositsWithdrawalsPage() {
       setWithdrawAmount('');
       setWithdrawAddress('');
       queryClient.invalidateQueries({ queryKey: ['/api/transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/user/balance'] });
+      // Invalidate all balance queries to ensure refresh
+      queryClient.invalidateQueries({ predicate: (query) => String(query.queryKey[0]).includes('/api/user/balance') });
+      // Also refetch on-chain balance
+      refetchOnChain();
     },
     onError: () => {
       toast({ title: 'Withdrawal Failed', description: 'Please check your balance and try again', variant: 'destructive' });
@@ -87,8 +104,8 @@ export default function DepositsWithdrawalsPage() {
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await Promise.all([refetchTransactions(), refetchBalance()]);
-    toast({ title: 'Refreshed', description: 'Data updated successfully' });
+    await Promise.all([refetchTransactions(), refetchBalance(), refetchOnChain()]);
+    toast({ title: 'Refreshed', description: 'Balances updated from blockchain' });
     setIsRefreshing(false);
   };
 
@@ -148,7 +165,8 @@ export default function DepositsWithdrawalsPage() {
             </button>
             {walletAddress ? (
               <div className="text-right">
-                <p className="text-cyan-400 text-sm font-medium">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
+                <p className="text-green-400 text-xs" title="On-chain wallet balance">Wallet: {walletSuiBalance.toFixed(4)} SUI</p>
+                <p className="text-cyan-400 text-xs" title="Platform balance available to withdraw">Platform: {(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
                 <p className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</p>
               </div>
             ) : (
@@ -178,9 +196,17 @@ export default function DepositsWithdrawalsPage() {
             </p>
           </div>
           {walletAddress && (
-            <div className="mt-4 p-4 bg-[#111111] border border-cyan-900/30 rounded-xl">
-              <p className="text-gray-400 text-sm">Available Balance</p>
-              <p className="text-3xl font-bold text-cyan-400">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="p-4 bg-[#111111] border border-green-900/30 rounded-xl">
+                <p className="text-gray-400 text-sm">Wallet Balance (On-Chain)</p>
+                <p className="text-3xl font-bold text-green-400">{walletSuiBalance.toFixed(4)} SUI</p>
+                <p className="text-gray-500 text-xs mt-1">Available in your connected wallet for betting</p>
+              </div>
+              <div className="p-4 bg-[#111111] border border-cyan-900/30 rounded-xl">
+                <p className="text-gray-400 text-sm">Platform Balance (Withdrawable)</p>
+                <p className="text-3xl font-bold text-cyan-400">{(balanceData?.suiBalance || 0).toFixed(4)} SUI</p>
+                <p className="text-gray-500 text-xs mt-1">Previously deposited funds you can withdraw</p>
+              </div>
             </div>
           )}
         </div>

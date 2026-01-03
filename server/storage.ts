@@ -295,7 +295,10 @@ export class DatabaseStorage implements IStorage {
         platformFee: bet.platformFee,
         networkFee: bet.networkFee,
         feeCurrency: bet.currency || 'SUI',
-        eventName: bet.eventName || 'Unknown Event' // Store event name for display
+        eventName: bet.eventName || 'Unknown Event', // Store event name for display
+        externalEventId: String(bet.eventId || ''), // Store external API event ID for settlement
+        homeTeam: bet.homeTeam || '', // Store home team for settlement matching
+        awayTeam: bet.awayTeam || '' // Store away team for settlement matching
       }).returning();
       
       console.log(`✅ BET STORED IN DB: ${bet.id} (db id: ${inserted.id}) tx: ${inserted.txHash}`);
@@ -460,8 +463,12 @@ export class DatabaseStorage implements IStorage {
         userId: bet.userId,
         walletAddress: bet.walletAddress,
         eventId: bet.eventId,
+        externalEventId: bet.externalEventId, // External API event ID for settlement
         eventName: bet.eventName || 'Unknown Event',
+        homeTeam: bet.homeTeam, // For settlement matching
+        awayTeam: bet.awayTeam, // For settlement matching
         selection: bet.prediction,
+        prediction: bet.prediction, // Include both for compatibility
         odds: bet.odds,
         stake: bet.betAmount,
         potentialWin: bet.potentialPayout,

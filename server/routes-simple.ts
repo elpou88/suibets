@@ -635,7 +635,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      const { userId, eventId, eventName, marketId, outcomeId, odds, betAmount, prediction, feeCurrency, paymentMethod, txHash, onChainBetId, status } = validation.data!;
+      const { userId, eventId, eventName, homeTeam, awayTeam, marketId, outcomeId, odds, betAmount, prediction, feeCurrency, paymentMethod, txHash, onChainBetId, status } = validation.data!;
       
       // Determine currency (default to SUI)
       const currency: 'SUI' | 'SBETS' = feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
@@ -675,6 +675,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         userId,
         eventId,
         eventName: eventName || 'Sports Event',
+        homeTeam: homeTeam || '', // Store for settlement matching
+        awayTeam: awayTeam || '', // Store for settlement matching
         marketId,
         outcomeId,
         odds,
@@ -711,8 +713,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Notify user of bet placement
       notificationService.notifyBetPlaced(userId, {
         ...bet,
-        homeTeam: 'Team A',
-        awayTeam: 'Team B'
+        homeTeam: homeTeam || 'Home Team',
+        awayTeam: awayTeam || 'Away Team'
       });
 
 

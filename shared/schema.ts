@@ -143,6 +143,11 @@ export const bets = pgTable("bets", {
   feeCurrency: text("fee_currency").default("SUI"), // Currency of fees
   // Event display name for bet history
   eventName: text("event_name"), // Store event name for display in bet history
+  // External API event ID for settlement matching (e.g., API-Sports fixture ID)
+  externalEventId: text("external_event_id"), // String event ID from sports API for settlement
+  // Team names for settlement matching
+  homeTeam: text("home_team"), // Home team name for settlement
+  awayTeam: text("away_team"), // Away team name for settlement
   // Withdrawal tracking
   winningsWithdrawn: boolean("winnings_withdrawn").default(false) // Track if winnings have been withdrawn
 });
@@ -492,3 +497,20 @@ export type BetLeg = typeof betLegs.$inferSelect;
 
 // Wallet type for Sui
 export type WalletType = 'Sui' | 'Suiet' | 'Nightly' | 'WalletConnect';
+
+// Settled events tracking table (for bet settlement persistence)
+export const settledEvents = pgTable("settled_events", {
+  id: serial("id").primaryKey(),
+  externalEventId: text("external_event_id").notNull().unique(), // API event ID
+  homeTeam: text("home_team"),
+  awayTeam: text("away_team"),
+  homeScore: integer("home_score"),
+  awayScore: integer("away_score"),
+  winner: text("winner"), // 'home', 'away', 'draw'
+  settledAt: timestamp("settled_at").defaultNow(),
+  betsSettled: integer("bets_settled").default(0) // Number of bets settled for this event
+});
+
+export const insertSettledEventSchema = createInsertSchema(settledEvents).omit({ id: true, settledAt: true });
+export type InsertSettledEvent = z.infer<typeof insertSettledEventSchema>;
+export type SettledEvent = typeof settledEvents.$inferSelect;

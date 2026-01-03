@@ -22,6 +22,8 @@ export const PlaceBetSchema = z.object({
   walletAddress: z.string().optional(),
   eventId: z.string().min(1, 'Event ID required'),
   eventName: z.string().optional(), // Event name for bet history display
+  homeTeam: z.string().optional(), // Home team name for settlement matching
+  awayTeam: z.string().optional(), // Away team name for settlement matching
   marketId: z.string().min(1, 'Market ID required'),
   outcomeId: z.string().min(1, 'Outcome ID required'),
   odds: OddsSchema,

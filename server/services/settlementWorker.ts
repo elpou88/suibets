@@ -1,5 +1,8 @@
 import { storage } from '../storage';
 import balanceService from './balanceService';
+import { db } from '../db';
+import { settledEvents } from '../../shared/schema';
+import { eq, sql } from 'drizzle-orm';
 
 interface FinishedMatch {
   eventId: string;
@@ -14,6 +17,9 @@ interface FinishedMatch {
 interface UnsettledBet {
   id: string;
   eventId: string;
+  externalEventId: string;
+  homeTeam: string;
+  awayTeam: string;
   prediction: string;
   odds: number;
   stake: number;
@@ -27,14 +33,17 @@ const REVENUE_WALLET = 'platform_revenue';
 class SettlementWorkerService {
   private isRunning = false;
   private intervalId: NodeJS.Timeout | null = null;
-  private settledEventIds = new Set<string>();
+  private settledEventIdsCache = new Set<string>(); // In-memory cache, synced from DB
   private checkInterval = 30 * 1000; // 30 seconds
 
-  start() {
+  async start() {
     if (this.isRunning) {
       console.log('⚙️ SettlementWorker already running');
       return;
     }
+
+    // Load settled events from database on startup (survives restarts)
+    await this.loadSettledEventsFromDB();
 
     this.isRunning = true;
     console.log('🚀 SettlementWorker started - checking for finished matches every 30s');
@@ -48,6 +57,52 @@ class SettlementWorkerService {
     }, this.checkInterval);
 
     this.checkAndSettleBets();
+  }
+
+  private async loadSettledEventsFromDB() {
+    try {
+      const settledFromDB = await db.select().from(settledEvents);
+      for (const event of settledFromDB) {
+        this.settledEventIdsCache.add(event.externalEventId);
+      }
+      console.log(`📋 Loaded ${settledFromDB.length} settled events from database`);
+    } catch (error) {
+      console.error('Failed to load settled events from DB:', error);
+    }
+  }
+
+  private async markEventAsSettled(match: FinishedMatch, betsSettledCount: number) {
+    try {
+      // Check if already exists in DB
+      const existing = await db.select().from(settledEvents).where(eq(settledEvents.externalEventId, match.eventId));
+      if (existing.length === 0) {
+        // Insert new settled event
+        await db.insert(settledEvents).values({
+          externalEventId: match.eventId,
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          homeScore: match.homeScore,
+          awayScore: match.awayScore,
+          winner: match.winner,
+          betsSettled: betsSettledCount
+        });
+        console.log(`📝 Persisted settled event: ${match.eventId} (${betsSettledCount} bets settled)`);
+      } else {
+        // Update betsSettled count for existing event (upsert pattern)
+        const newTotal = (existing[0].betsSettled || 0) + betsSettledCount;
+        await db.update(settledEvents)
+          .set({ betsSettled: newTotal })
+          .where(eq(settledEvents.externalEventId, match.eventId));
+        console.log(`📝 Updated settled event: ${match.eventId} (total ${newTotal} bets settled)`);
+      }
+      this.settledEventIdsCache.add(match.eventId);
+    } catch (error) {
+      console.error(`Failed to persist settled event ${match.eventId}:`, error);
+    }
+  }
+
+  private isEventSettled(eventId: string): boolean {
+    return this.settledEventIdsCache.has(eventId);
   }
 
   stop() {
@@ -82,11 +137,40 @@ class SettlementWorkerService {
       console.log(`🎯 SettlementWorker: Processing ${unsettledBets.length} unsettled bets`);
 
       for (const match of finishedMatches) {
-        const betsForMatch = unsettledBets.filter(bet => 
-          bet.eventId === match.eventId || 
-          bet.prediction?.toLowerCase().includes(match.homeTeam.toLowerCase()) ||
-          bet.prediction?.toLowerCase().includes(match.awayTeam.toLowerCase())
-        );
+        // IMPROVED MATCHING: Use multiple strategies to find bets for this match
+        const betsForMatch = unsettledBets.filter(bet => {
+          // Strategy 1: Exact external event ID match (most reliable)
+          if (bet.externalEventId && bet.externalEventId === match.eventId) {
+            return true;
+          }
+          
+          // Strategy 2: Match by stored team names (reliable for newer bets)
+          if (bet.homeTeam && bet.awayTeam) {
+            const betHome = bet.homeTeam.toLowerCase();
+            const betAway = bet.awayTeam.toLowerCase();
+            const matchHome = match.homeTeam.toLowerCase();
+            const matchAway = match.awayTeam.toLowerCase();
+            if ((betHome === matchHome || matchHome.includes(betHome) || betHome.includes(matchHome)) &&
+                (betAway === matchAway || matchAway.includes(betAway) || betAway.includes(matchAway))) {
+              return true;
+            }
+          }
+          
+          // Strategy 3: Match by prediction containing team name (fallback for older bets)
+          const prediction = bet.prediction?.toLowerCase() || '';
+          const matchHome = match.homeTeam.toLowerCase();
+          const matchAway = match.awayTeam.toLowerCase();
+          if (prediction.includes(matchHome) || prediction.includes(matchAway)) {
+            return true;
+          }
+          
+          // Strategy 4: Legacy eventId match
+          if (bet.eventId && bet.eventId === match.eventId) {
+            return true;
+          }
+          
+          return false;
+        });
 
         if (betsForMatch.length > 0) {
           console.log(`⚽ Settling ${betsForMatch.length} bets for ${match.homeTeam} vs ${match.awayTeam} (${match.homeScore}-${match.awayScore})`);
@@ -113,7 +197,7 @@ class SettlementWorkerService {
         }
       }
 
-      return finishedMatches.filter(match => !this.settledEventIds.has(match.eventId));
+      return finishedMatches.filter(match => !this.isEventSettled(match.eventId));
     } catch (error) {
       console.error('Error fetching finished matches:', error);
       return [];
@@ -214,6 +298,9 @@ class SettlementWorkerService {
         .map(bet => ({
           id: bet.id,
           eventId: bet.eventId || '',
+          externalEventId: bet.externalEventId || String(bet.eventId || ''),
+          homeTeam: bet.homeTeam || '',
+          awayTeam: bet.awayTeam || '',
           prediction: bet.selection || bet.prediction || '',
           odds: bet.odds,
           stake: bet.stake || bet.betAmount,
@@ -277,7 +364,8 @@ class SettlementWorkerService {
       }
     }
 
-    this.settledEventIds.add(match.eventId);
+    // Persist event as settled in database (survives restarts)
+    await this.markEventAsSettled(match, bets.length);
   }
 
   private determineBetOutcome(bet: UnsettledBet, match: FinishedMatch): boolean {
@@ -349,7 +437,8 @@ class SettlementWorkerService {
   getStatus() {
     return {
       isRunning: this.isRunning,
-      settledEvents: this.settledEventIds.size,
+      settledEventsInMemory: this.settledEventIdsCache.size,
+      settledBetsInMemory: this.settledBetIds.size,
       checkInterval: this.checkInterval / 1000
     };
   }

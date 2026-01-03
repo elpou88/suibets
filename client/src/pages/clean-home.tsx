@@ -92,16 +92,29 @@ export default function CleanHome() {
   const walletAddress = currentAccount?.address;
   const isConnected = !!walletAddress;
   
-  // Fetch on-chain wallet balance (what's in user's Sui wallet)
+  // Fetch on-chain wallet SUI balance
   const { data: onChainBalance } = useSuiClientQuery(
     'getBalance',
     { owner: walletAddress || '' },
     { enabled: !!walletAddress }
   );
   
+  // Fetch on-chain SBETS token balance
+  const SBETS_COIN_TYPE = '0x6a4d9c0eab7ac40371a7453d1aa6c89b130950e8af6868ba975fdd81371a7285::sbets::SBETS';
+  const { data: onChainSbetsBalance } = useSuiClientQuery(
+    'getBalance',
+    { owner: walletAddress || '', coinType: SBETS_COIN_TYPE },
+    { enabled: !!walletAddress }
+  );
+  
   // Convert from MIST to SUI (1 SUI = 1,000,000,000 MIST)
   const walletSuiBalance = onChainBalance?.totalBalance 
     ? Number(onChainBalance.totalBalance) / 1_000_000_000 
+    : 0;
+  
+  // SBETS token balance (assuming 9 decimals like SUI)
+  const walletSbetsBalance = onChainSbetsBalance?.totalBalance 
+    ? Number(onChainSbetsBalance.totalBalance) / 1_000_000_000 
     : 0;
   
   // Fetch platform deposited balance from API (what's available to bet)
@@ -168,7 +181,7 @@ export default function CleanHome() {
                     💰 {platformBalances.SUI.toFixed(4)} SUI | {platformBalances.SBETS.toFixed(2)} SBETS
                   </div>
                   <div className="text-green-400 text-xs" title="Wallet balance (on-chain)">
-                    🔗 Wallet: {walletSuiBalance.toFixed(4)} SUI
+                    🔗 Wallet: {walletSuiBalance.toFixed(4)} SUI | {walletSbetsBalance.toFixed(2)} SBETS
                   </div>
                   <div className="text-gray-500 text-xs">{walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}</div>
                 </div>

@@ -391,6 +391,193 @@ export class BlockchainBetService {
   async getTreasuryBalance(): Promise<{ sui: number; sbets: number }> {
     return this.getWalletBalance(PLATFORM_REVENUE_WALLET);
   }
+
+  /**
+   * Execute on-chain bet settlement via smart contract
+   * Calls the settle_bet function which pays winners directly from contract treasury
+   * @param betObjectId - The on-chain Bet object ID
+   * @param won - Whether the bet won or lost
+   * @returns Transaction result with hash or error
+   */
+  async executeSettleBetOnChain(
+    betObjectId: string,
+    won: boolean
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      const error = 'Admin private key not configured - cannot execute on-chain settlement';
+      console.error(`❌ SETTLEMENT BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
+    try {
+      const tx = new Transaction();
+      
+      // Call settle_bet(platform, bet, won, clock)
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::settle_bet`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),  // platform: &mut BettingPlatform
+          tx.object(betObjectId),           // bet: &mut Bet
+          tx.pure.bool(won),                // won: bool
+          tx.object('0x6'),                 // clock: &Clock
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        const outcome = won ? 'WON (payout sent)' : 'LOST (stake kept in treasury)';
+        console.log(`✅ ON-CHAIN SETTLEMENT: Bet ${betObjectId.slice(0, 12)}... ${outcome} | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        const errorMsg = result.effects?.status?.error || 'Unknown error';
+        console.error(`❌ ON-CHAIN SETTLEMENT FAILED: ${errorMsg}`);
+        return { success: false, error: errorMsg };
+      }
+    } catch (error: any) {
+      console.error('❌ Settlement execution error:', error);
+      return { success: false, error: error.message || 'Failed to execute on-chain settlement' };
+    }
+  }
+
+  /**
+   * Execute on-chain bet void via smart contract
+   * Calls the void_bet function which refunds the bettor
+   * @param betObjectId - The on-chain Bet object ID
+   * @returns Transaction result with hash or error
+   */
+  async executeVoidBetOnChain(
+    betObjectId: string
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      const error = 'Admin private key not configured - cannot execute on-chain void';
+      console.error(`❌ VOID BLOCKED: ${error}`);
+      return { success: false, error };
+    }
+
+    try {
+      const tx = new Transaction();
+      
+      // Call void_bet(platform, bet, clock)
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::void_bet`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),  // platform: &mut BettingPlatform
+          tx.object(betObjectId),           // bet: &mut Bet
+          tx.object('0x6'),                 // clock: &Clock
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: {
+          showEffects: true,
+          showEvents: true,
+        },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        console.log(`✅ ON-CHAIN VOID: Bet ${betObjectId.slice(0, 12)}... refunded | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        const errorMsg = result.effects?.status?.error || 'Unknown error';
+        console.error(`❌ ON-CHAIN VOID FAILED: ${errorMsg}`);
+        return { success: false, error: errorMsg };
+      }
+    } catch (error: any) {
+      console.error('❌ Void execution error:', error);
+      return { success: false, error: error.message || 'Failed to execute on-chain void' };
+    }
+  }
+
+  /**
+   * Withdraw accrued fees from contract to admin wallet
+   * @param amountSui - Amount of SUI to withdraw
+   * @returns Transaction result
+   */
+  async withdrawFeesOnChain(
+    amountSui: number
+  ): Promise<{ success: boolean; txHash?: string; error?: string }> {
+    const keypair = this.getAdminKeypair();
+    if (!keypair) {
+      return { success: false, error: 'Admin private key not configured' };
+    }
+
+    try {
+      const amountMist = Math.floor(amountSui * 1e9);
+      const tx = new Transaction();
+      
+      // Call withdraw_fees(platform, amount, clock)
+      tx.moveCall({
+        target: `${BETTING_PACKAGE_ID}::betting::withdraw_fees`,
+        arguments: [
+          tx.object(BETTING_PLATFORM_ID),
+          tx.pure.u64(amountMist),
+          tx.object('0x6'),
+        ],
+      });
+
+      const result = await this.client.signAndExecuteTransaction({
+        signer: keypair,
+        transaction: tx,
+        options: { showEffects: true },
+      });
+
+      if (result.effects?.status?.status === 'success') {
+        console.log(`✅ FEES WITHDRAWN: ${amountSui} SUI | TX: ${result.digest}`);
+        return { success: true, txHash: result.digest };
+      } else {
+        return { success: false, error: result.effects?.status?.error || 'Failed' };
+      }
+    } catch (error: any) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  /**
+   * Get platform contract info (treasury balance, stats)
+   */
+  async getPlatformInfo(): Promise<{
+    treasuryBalance: number;
+    totalBets: number;
+    totalVolume: number;
+    totalLiability: number;
+    accruedFees: number;
+    paused: boolean;
+  } | null> {
+    try {
+      const platformObj = await this.client.getObject({
+        id: BETTING_PLATFORM_ID,
+        options: { showContent: true },
+      });
+
+      if (platformObj.data?.content?.dataType === 'moveObject') {
+        const fields = (platformObj.data.content as any).fields;
+        return {
+          treasuryBalance: parseInt(fields.treasury || '0') / 1e9,
+          totalBets: parseInt(fields.total_bets || '0'),
+          totalVolume: parseInt(fields.total_volume || '0') / 1e9,
+          totalLiability: parseInt(fields.total_potential_liability || '0') / 1e9,
+          accruedFees: parseInt(fields.accrued_fees || '0') / 1e9,
+          paused: fields.paused || false,
+        };
+      }
+      return null;
+    } catch (error) {
+      console.error('Failed to get platform info:', error);
+      return null;
+    }
+  }
 }
 
 export const blockchainBetService = new BlockchainBetService();

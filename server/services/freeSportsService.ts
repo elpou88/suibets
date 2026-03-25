@@ -2538,28 +2538,31 @@ export class FreeSportsService {
 
     const homeNameHash = homeTeam.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
     const awayNameHash = awayTeam.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
-    const homeStrength = (Math.abs(homeNameHash) % 40) + 55;
-    const awayStrength = (Math.abs(awayNameHash) % 40) + 55;
+    const homeStr = (Math.abs(homeNameHash) % 20) + 40;
+    const awayStr = (Math.abs(awayNameHash) % 20) + 40;
 
-    let homeAdv = homeStrength - awayStrength;
-    homeAdv += 3;
+    let diff = (homeStr - awayStr) * 0.4;
+    diff += 1.5;
 
     if (homeRank > 0 && awayRank > 0) {
-      homeAdv += (awayRank - homeRank) * 1.5;
+      diff += (awayRank - homeRank) * 0.5;
     }
 
-    const noise = (rand(1) - 0.5) * 8;
-    homeAdv += noise;
+    const noise = (rand(1) - 0.5) * 5;
+    diff += noise;
 
-    const homeAdv2 = Math.max(-35, Math.min(35, homeAdv));
-    const homeProb = 1 / (1 + Math.pow(10, -homeAdv2 / 16));
+    diff = Math.max(-12, Math.min(12, diff));
+    const homeProb = 1 / (1 + Math.pow(10, -diff / 10));
 
-    const MARGIN = 1.055;
-    let hOdds = parseFloat((MARGIN / Math.max(0.08, homeProb)).toFixed(2));
-    let aOdds = parseFloat((MARGIN / Math.max(0.08, 1 - homeProb)).toFixed(2));
+    const clampedHome = Math.max(0.18, Math.min(0.82, homeProb));
+    const clampedAway = 1 - clampedHome;
 
-    hOdds = parseFloat(Math.max(1.04, Math.min(15.00, hOdds)).toFixed(2));
-    aOdds = parseFloat(Math.max(1.04, Math.min(15.00, aOdds)).toFixed(2));
+    const MARGIN = 1.05;
+    let hOdds = parseFloat((MARGIN / clampedHome).toFixed(2));
+    let aOdds = parseFloat((MARGIN / clampedAway).toFixed(2));
+
+    hOdds = parseFloat(Math.max(1.12, Math.min(5.50, hOdds)).toFixed(2));
+    aOdds = parseFloat(Math.max(1.12, Math.min(5.50, aOdds)).toFixed(2));
 
     return [hOdds, aOdds];
   }

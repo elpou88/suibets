@@ -719,7 +719,6 @@ class SettlementWorkerService {
           let match = finishedMatchMap.get(eventId);
           
           if (!match) {
-            // On-demand lookup: if this is a free sports event, fetch its result directly from API
             const fetchedResult = await this.fetchFreeSportsLegResult(eventId);
             if (fetchedResult) {
               match = fetchedResult;
@@ -729,7 +728,6 @@ class SettlementWorkerService {
           }
           
           if (!match) {
-            // Direct API-Sports fixture lookup by ID (handles minor leagues not in batch results)
             const directResult = await this.fetchFootballFixtureById(eventId);
             if (directResult) {
               match = directResult;
@@ -741,10 +739,9 @@ class SettlementWorkerService {
           if (!match) {
             console.log(`⏳ Parlay leg ${eventId} not yet finished`);
             allLegsFinished = false;
-            break;
+            continue;
           }
           
-          // Evaluate this leg's prediction
           const prediction = leg.prediction || leg.selection || '';
           const legWon = this.evaluateLegPrediction(prediction, match, leg.marketId, leg.outcomeId);
           
@@ -758,7 +755,9 @@ class SettlementWorkerService {
           }
         }
         
-        if (!allLegsFinished) {
+        if (anyLegLost) {
+          console.log(`🎰 EARLY PARLAY LOSS: ${bet.id.slice(0, 10)}... has ${legResults.filter(l => !l.won).length} lost legs — settling as LOST immediately (${legResults.length}/${legs.length} legs resolved)`);
+        } else if (!allLegsFinished) {
           console.log(`⏳ Parlay bet ${bet.id.slice(0, 10)}... waiting for ${legs.length - legResults.length} more legs to finish`);
           continue;
         }
@@ -781,8 +780,7 @@ class SettlementWorkerService {
           console.warn(`[Settlement] Could not store leg results for ${bet.id}:`, e);
         }
         
-        // Use the first leg's match for settlement (for event tracking)
-        const firstMatch = legResults[0]?.match;
+        const firstMatch = legResults.find(lr => lr.match)?.match;
         if (firstMatch) {
           const modifiedBet: UnsettledBet = {
             ...bet,

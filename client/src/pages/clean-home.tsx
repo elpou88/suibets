@@ -520,41 +520,41 @@ export default function CleanHome() {
       {/* Stats Bar */}
       <FadeInSection>
         <div className="w-full glass-card-strong border-y border-cyan-900/20">
-          <div className="max-w-5xl mx-auto px-4 py-5 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="max-w-5xl mx-auto px-4 py-6 grid grid-cols-2 md:grid-cols-4 gap-6">
             <div className="flex items-center gap-3 justify-center" data-testid="stat-markets">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                <BarChart3 size={20} className="text-cyan-400" />
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                <BarChart3 size={22} className="text-cyan-400" />
               </div>
               <div>
-                <div className="text-cyan-300 font-extrabold text-2xl leading-tight stat-glow"><AnimatedCounter end={2100} suffix="+" /></div>
-                <div className="text-gray-400 text-xs font-medium tracking-wide uppercase">Live Markets</div>
+                <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow"><AnimatedCounter end={2100} suffix="+" /></div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Live Markets</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-sports">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                <Trophy size={20} className="text-cyan-400" />
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                <Trophy size={22} className="text-cyan-400" />
               </div>
               <div>
-                <div className="text-cyan-300 font-extrabold text-2xl leading-tight stat-glow"><AnimatedCounter end={20} /></div>
-                <div className="text-gray-400 text-xs font-medium tracking-wide uppercase">Sports</div>
+                <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow"><AnimatedCounter end={20} /></div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Sports</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-settlement">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                <Zap size={20} className="text-cyan-400" />
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                <Zap size={22} className="text-cyan-400" />
               </div>
               <div>
-                <div className="text-cyan-300 font-extrabold text-2xl leading-tight stat-glow">&lt;1s</div>
-                <div className="text-gray-400 text-xs font-medium tracking-wide uppercase">Settlement</div>
+                <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow">&lt;1s</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Settlement</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-onchain">
-              <div className="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-                <Shield size={20} className="text-cyan-400" />
+              <div className="w-11 h-11 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+                <Shield size={22} className="text-cyan-400" />
               </div>
               <div>
-                <div className="text-cyan-300 font-extrabold text-2xl leading-tight stat-glow">100%</div>
-                <div className="text-gray-400 text-xs font-medium tracking-wide uppercase">On-Chain</div>
+                <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow">100%</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">On-Chain</div>
               </div>
             </div>
           </div>
@@ -563,14 +563,14 @@ export default function CleanHome() {
 
       {/* Platform Trust Stats */}
       <FadeInSection delay={50}>
-        <div className="max-w-5xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-center gap-6 flex-wrap text-xs">
-            <div className="flex items-center gap-1.5 text-gray-400">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-center gap-3 md:gap-5 flex-wrap text-xs">
+            <div className="trust-badge rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-all">
               <Shield size={12} className="text-green-400" />
-              <span>Verified on Sui</span>
+              <span className="text-green-300 font-medium">Verified on Sui</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
               <span>183+ Bets Settled</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-400">
@@ -651,7 +651,7 @@ export default function CleanHome() {
           </button>
           <div
             id="sport-tabs-row"
-            className="flex gap-2 overflow-x-auto px-9 pb-1 sport-tabs-scroll"
+            className="flex gap-2 overflow-x-auto px-9 pb-1 sport-tabs-scroll scroll-fade-container"
           >
             {SPORTS_LIST.map((sport) => {
               const count = sportEventCounts[sport.id] || 0;

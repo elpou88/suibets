@@ -5,7 +5,8 @@ import {
   TwitterIcon, 
   CheckCircle, 
   Info, 
-  HelpCircle
+  HelpCircle,
+  Shield
 } from "lucide-react";
 
 export default function Footer() {
@@ -95,6 +96,18 @@ export default function Footer() {
       </div>
       
       <div className="mt-8 pt-8 border-t border-[#04363E] text-center text-sm text-gray-400">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <a
+            href="https://suiscan.xyz/mainnet/object/0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="trust-badge rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-all text-xs"
+            data-testid="link-verified-sui-footer"
+          >
+            <Shield size={12} className="text-green-400" />
+            <span className="text-green-300 font-medium">Verified on Sui</span>
+          </a>
+        </div>
         <p>© {new Date().getFullYear()} SuiBets. All rights reserved.</p>
         <p className="mt-2">
           SuiBets is a sports betting platform built on the Sui blockchain.

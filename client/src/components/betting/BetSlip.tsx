@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useBetting } from '@/context/BettingContext';
 import { useAuth } from '@/context/AuthContext';
 import { useCurrentAccount } from '@mysten/dapp-kit';
@@ -118,12 +118,14 @@ export function BetSlip() {
     };
   }, []);
 
-  // Auto-dismiss confirmation after 5 seconds
+  const confirmTimestampRef = useRef<number>(0);
+
   useEffect(() => {
     if (confirmedBet) {
+      confirmTimestampRef.current = Date.now();
       const timer = setTimeout(() => {
         dismissConfirmation();
-      }, 5000);
+      }, 8000);
       return () => clearTimeout(timer);
     }
   }, [confirmedBet]);

@@ -78,9 +78,9 @@ const config: AppConfig = {
   },
   
   security: {
-    encryptionKey: process.env.ENCRYPTION_KEY || 'your-fallback-encryption-key-for-dev',
-    passwordSalt: process.env.PASSWORD_SALT || 'your-fallback-salt-for-dev',
-    sessionSecret: process.env.SESSION_SECRET || 'your-fallback-session-secret-for-dev',
+    encryptionKey: process.env.ENCRYPTION_KEY || require('crypto').randomBytes(32).toString('hex'),
+    passwordSalt: process.env.PASSWORD_SALT || require('crypto').randomBytes(16).toString('hex'),
+    sessionSecret: process.env.SESSION_SECRET || require('crypto').randomBytes(32).toString('hex'),
     enableCsrf: process.env.NODE_ENV === 'production',
     rateLimit: {
       max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),

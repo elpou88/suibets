@@ -812,7 +812,24 @@ class SettlementWorkerService {
       return cached;
     }
 
-    console.log(`⏳ Parlay leg ${eventId} not in nightly cache - will settle after next 11 PM UTC results fetch`);
+    if (eventId.startsWith('basketball_api_') || eventId.startsWith('ice-hockey_api_') || eventId.startsWith('baseball_api_') ||
+        eventId.startsWith('handball_api_') || eventId.startsWith('volleyball_api_') || eventId.startsWith('rugby_api_')) {
+      const directResult = await this.fetchFreeSportsGameById(eventId);
+      if (directResult) {
+        console.log(`✅ Found parlay leg ${eventId} via direct API lookup`);
+        return directResult;
+      }
+    }
+
+    if (/^\d+$/.test(eventId)) {
+      const footballResult = await this.fetchFootballFixtureById(eventId);
+      if (footballResult) {
+        console.log(`✅ Found parlay leg ${eventId} via football fixture lookup`);
+        return footballResult;
+      }
+    }
+
+    console.log(`⏳ Parlay leg ${eventId} not yet resolved - will retry next cycle`);
     return null;
   }
 
@@ -877,6 +894,9 @@ class SettlementWorkerService {
       'basketball_api_': { endpoint: 'https://v1.basketball.api-sports.io/games', apiHost: 'v1.basketball.api-sports.io' },
       'ice-hockey_api_': { endpoint: 'https://v1.hockey.api-sports.io/games', apiHost: 'v1.hockey.api-sports.io' },
       'baseball_api_': { endpoint: 'https://v1.baseball.api-sports.io/games', apiHost: 'v1.baseball.api-sports.io' },
+      'handball_api_': { endpoint: 'https://v1.handball.api-sports.io/games', apiHost: 'v1.handball.api-sports.io' },
+      'volleyball_api_': { endpoint: 'https://v1.volleyball.api-sports.io/games', apiHost: 'v1.volleyball.api-sports.io' },
+      'rugby_api_': { endpoint: 'https://v1.rugby.api-sports.io/games', apiHost: 'v1.rugby.api-sports.io' },
     };
 
     let matchedPrefix = '';
@@ -898,7 +918,7 @@ class SettlementWorkerService {
       const axios = await import('axios');
       const response = await axios.default.get(config.endpoint, {
         params: { id: gameId },
-        headers: { 'x-apisports-key': apiKey, 'Accept': 'application/json' },
+        headers: { 'x-rapidapi-key': apiKey, 'x-rapidapi-host': config.apiHost, 'Accept': 'application/json' },
         timeout: 10000
       });
 
@@ -963,9 +983,7 @@ class SettlementWorkerService {
       }
       
       if (!onChainInfo) {
-        console.warn(`⚠️ PARLAY BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - marking for manual resolution`);
-        await storage.updateBetStatus(bet.id, isWinner ? 'won' : 'lost', grossPayout);
-        this.settledBetIds.add(bet.id);
+        console.warn(`⚠️ PARLAY BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - will retry next cycle`);
         return;
       }
       
@@ -1831,9 +1849,8 @@ class SettlementWorkerService {
             const platformInfo = await blockchainBetService.getPlatformInfo();
             if (platformInfo && platformInfo.treasuryBalanceSui < grossPayout) {
               console.warn(`⚠️ INSUFFICIENT TREASURY: Need ${grossPayout} SUI but only ${platformInfo.treasuryBalanceSui} SUI available`);
-              console.warn(`   Bet ${bet.id} requires manual admin resolution - marking as won in DB`);
+              console.warn(`   Bet ${bet.id} requires manual admin resolution - marking as won in DB (will retry next cycle)`);
               await storage.updateBetStatus(bet.id, 'won', grossPayout);
-              this.settledBetIds.add(bet.id);
               continue;
             }
           }
@@ -1849,9 +1866,7 @@ class SettlementWorkerService {
           }
           
           if (!onChainInfo) {
-            console.warn(`⚠️ BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - marking for manual resolution`);
-            await storage.updateBetStatus(bet.id, isWinner ? 'won' : 'lost', grossPayout);
-            this.settledBetIds.add(bet.id);
+            console.warn(`⚠️ BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - will retry next cycle`);
             continue;
           } else {
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1883,10 +1898,8 @@ class SettlementWorkerService {
                   this.settledBetIds.add(bet.id);
                   continue;
                 } else if (isWinner) {
-                  // Bet not settled, likely insufficient treasury - mark as 'won' for manual resolution
-                  console.warn(`⚠️ SETTLEMENT FAILED (insufficient treasury): ${bet.id} - marking as 'won' for manual resolution`);
+                  console.warn(`⚠️ SETTLEMENT FAILED (insufficient treasury): ${bet.id} - marking as 'won' for retry next cycle`);
                   await storage.updateBetStatus(bet.id, 'won', grossPayout);
-                  this.settledBetIds.add(bet.id);
                   continue;
                 } else {
                   // Loser bet with error 6 but not settled on-chain - mark as lost (no payout needed anyway)
@@ -1924,9 +1937,8 @@ class SettlementWorkerService {
             const platformInfo = await blockchainBetService.getPlatformInfo();
             if (platformInfo && platformInfo.treasuryBalanceSbets < grossPayout) {
               console.warn(`⚠️ INSUFFICIENT SBETS TREASURY: Need ${grossPayout} SBETS but only ${platformInfo.treasuryBalanceSbets} SBETS available`);
-              console.warn(`   Bet ${bet.id} requires manual admin resolution - marking as won in DB`);
+              console.warn(`   Bet ${bet.id} requires manual admin resolution - marking as won in DB (will retry next cycle)`);
               await storage.updateBetStatus(bet.id, 'won', grossPayout);
-              this.settledBetIds.add(bet.id);
               continue;
             }
           }
@@ -1942,9 +1954,7 @@ class SettlementWorkerService {
           }
           
           if (!onChainInfo) {
-            console.warn(`⚠️ SBETS BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - marking for manual resolution`);
-            await storage.updateBetStatus(bet.id, isWinner ? 'won' : 'lost', grossPayout);
-            this.settledBetIds.add(bet.id);
+            console.warn(`⚠️ SBETS BET OBJECT NOT FOUND ON-CHAIN: ${bet.betObjectId} - will retry next cycle`);
             continue;
           } else {
             await new Promise(resolve => setTimeout(resolve, 2000));
@@ -1976,13 +1986,10 @@ class SettlementWorkerService {
                   this.settledBetIds.add(bet.id);
                   continue;
                 } else if (isWinner) {
-                  // Bet not settled, likely insufficient treasury - mark as 'won' for manual resolution
-                  console.warn(`⚠️ SBETS SETTLEMENT FAILED (insufficient treasury): ${bet.id} - marking as 'won' for manual resolution`);
+                  console.warn(`⚠️ SBETS SETTLEMENT FAILED (insufficient treasury): ${bet.id} - marking as 'won' for retry next cycle`);
                   await storage.updateBetStatus(bet.id, 'won', grossPayout);
-                  this.settledBetIds.add(bet.id);
                   continue;
                 } else {
-                  // Loser bet with error 6 but not settled on-chain - mark as lost (no payout needed anyway)
                   console.warn(`⚠️ SBETS SETTLEMENT ERROR for losing bet: ${bet.id} - marking as lost (no payout needed)`);
                   await storage.updateBetStatus(bet.id, 'lost', 0);
                   this.settledBetIds.add(bet.id);

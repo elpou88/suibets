@@ -10,6 +10,8 @@ import { blockchainStorage } from "./blockchain-storage";
 
 const app = express();
 
+app.set('trust proxy', 1);
+
 // Early health check — must respond BEFORE any middleware that might redirect or block
 app.get('/api/health', (_req, res) => {
   res.status(200).json({ status: 'ok', timestamp: Date.now() });

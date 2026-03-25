@@ -69,9 +69,11 @@ export class SettlementService {
   static calculateCashOut(bet: Bet, currentOdds: number, percentageWinning: number): number {
     if (bet.status !== 'pending') return 0;
 
-    // Cash-out formula: stake * (percentage of original odds / original odds) * 0.95 (5% house cut)
-    const cashOutValue = bet.betAmount * (currentOdds / bet.odds) * percentageWinning * 0.95;
-    return Math.max(Math.round(cashOutValue * 100) / 100, bet.betAmount * 0.1); // Min 10% of stake
+    const stake = Number(bet.betAmount) || 0;
+    if (stake <= 0) return 0;
+
+    const cashOutValue = stake * percentageWinning;
+    return Math.max(Math.round(cashOutValue * 100) / 100, stake * 0.1);
   }
 
   /**

@@ -31,7 +31,7 @@ interface Bet {
   odds: number;
   stake: number;
   potentialWin: number;
-  status: 'pending' | 'won' | 'lost' | 'paid_out';
+  status: 'pending' | 'won' | 'lost' | 'paid_out' | 'cashed_out';
   placedAt: string;
   settledAt?: string;
   txHash?: string;
@@ -63,18 +63,26 @@ export default function BetHistoryPage() {
 
   const [cashingOut, setCashingOut] = useState<string | null>(null);
   
+  const getCashOutEstimate = (bet: Bet) => {
+    const stake = bet.stake || 0;
+    const gross = stake * 0.75;
+    const fee = gross * 0.01;
+    return Math.round((gross - fee) * 100) / 100;
+  };
+
   const cashOutMutation = useMutation({
     mutationFn: async ({ betId, stake, odds }: { betId: string; stake: number; odds: number }) => {
-      const percentageWinning = 0.75;
       const res = await apiRequest('POST', `/api/bets/${betId}/cash-out`, {
         currentOdds: odds,
-        percentageWinning,
+        percentageWinning: 0.75,
         walletAddress: walletAddress,
       });
       return res.json();
     },
     onSuccess: (data) => {
-      toast({ title: 'Cash Out Successful', description: `You received ${data.cashOut?.netAmount?.toFixed(2)} ${data.cashOut?.currency || 'SUI'}` });
+      const amount = data.cashOut?.netAmount;
+      const currency = data.cashOut?.currency || 'SUI';
+      toast({ title: 'Cash Out Successful', description: `You received ${typeof amount === 'number' ? amount.toFixed(2) : amount} ${currency}` });
       queryClient.invalidateQueries({ queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress] });
       setCashingOut(null);
     },
@@ -129,6 +137,7 @@ export default function BetHistoryPage() {
     switch (status) {
       case 'won': return <CheckCircle className="h-5 w-5 text-green-400" />;
       case 'paid_out': return <CheckCircle className="h-5 w-5 text-emerald-400" />;
+      case 'cashed_out': return <DollarSign className="h-5 w-5 text-orange-400" />;
       case 'lost': return <XCircle className="h-5 w-5 text-red-400" />;
       case 'pending': return <Clock className="h-5 w-5 text-yellow-400 animate-pulse" />;
       default: return null;
@@ -139,6 +148,7 @@ export default function BetHistoryPage() {
     switch (status) {
       case 'won': return 'Won';
       case 'paid_out': return 'Paid Out';
+      case 'cashed_out': return 'Cashed Out';
       case 'lost': return 'Lost';
       case 'pending': return 'Pending';
       default: return status;
@@ -454,20 +464,31 @@ export default function BetHistoryPage() {
                         <ExternalLink className="h-3 w-3" />
                       </Link>
                     )}
-                    {bet.status === 'pending' && (
-                      <button
-                        onClick={() => handleCashOut(bet)}
-                        disabled={cashOutMutation.isPending}
-                        className={`mt-2 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
-                          cashingOut === bet.id
-                            ? 'bg-orange-500 hover:bg-orange-600 text-black'
-                            : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
-                        }`}
-                        data-testid={`btn-cashout-${bet.id}`}
-                      >
-                        <DollarSign className="h-3.5 w-3.5" />
-                        {cashOutMutation.isPending ? 'Processing...' : cashingOut === bet.id ? 'Confirm Cash Out' : 'Cash Out'}
-                      </button>
+                    {bet.status === 'pending' && bet.stake > 0 && (
+                      <div className="mt-2">
+                        <button
+                          onClick={() => handleCashOut(bet)}
+                          disabled={cashOutMutation.isPending}
+                          className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-all ${
+                            cashOutMutation.isPending
+                              ? 'bg-gray-600 text-gray-300 cursor-not-allowed'
+                              : cashingOut === bet.id
+                                ? 'bg-orange-500 hover:bg-orange-400 text-black shadow-lg shadow-orange-500/20'
+                                : 'bg-yellow-500/15 text-yellow-400 hover:bg-yellow-500/25 border border-yellow-500/30'
+                          }`}
+                          data-testid={`btn-cashout-${bet.id}`}
+                        >
+                          <DollarSign className="h-3.5 w-3.5" />
+                          {cashOutMutation.isPending 
+                            ? 'Processing...' 
+                            : cashingOut === bet.id 
+                              ? `Confirm: ${getCashOutEstimate(bet).toFixed(2)} ${bet.currency || 'SUI'}` 
+                              : `Cash Out ~${getCashOutEstimate(bet).toFixed(2)} ${bet.currency || 'SUI'}`}
+                        </button>
+                        {cashingOut === bet.id && (
+                          <p className="text-[10px] text-gray-500 mt-1">75% of stake minus 1% fee. Tap to confirm.</p>
+                        )}
+                      </div>
                     )}
                     <button
                       onClick={() => setShareBet(bet)}

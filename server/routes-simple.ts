@@ -6364,28 +6364,39 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (!storedBet.userId) {
         return res.status(400).json({ message: "Bet has no userId - cannot cash out" });
       }
+      const parsedBetAmount = Number(storedBet.betAmount) || Number(storedBet.stake) || 0;
+      const parsedOdds = Number(storedBet.odds) || 2.0;
+      
+      if (parsedBetAmount <= 0) {
+        return res.status(400).json({ message: "Bet has no valid stake amount" });
+      }
+
       const bet = {
         id: storedBet.id,
         userId: storedBet.userId,
         eventId: storedBet.eventId,
         marketId: storedBet.marketId || 'match-winner',
         outcomeId: storedBet.outcomeId || 'home',
-        odds: storedBet.odds || 2.0,
-        betAmount: storedBet.betAmount || 100,
+        odds: parsedOdds,
+        betAmount: parsedBetAmount,
         currency: (storedBet as any).currency || 'SUI' as 'SUI' | 'SBETS',
         status: storedBet.status as 'pending' | 'won' | 'lost' | 'void' | 'cashed_out',
         prediction: storedBet.prediction || 'home',
         placedAt: storedBet.placedAt || Date.now(),
-        potentialPayout: storedBet.potentialPayout || (storedBet.betAmount || 100) * (storedBet.odds || 2.0)
+        potentialPayout: Number(storedBet.potentialPayout) || parsedBetAmount * parsedOdds
       };
       
-      if (bet.status !== 'pending') {
+      if (bet.status !== 'pending' && bet.status !== 'cashed_out') {
         return res.status(400).json({ message: "Only pending bets can be cashed out" });
+      }
+      
+      if (bet.status === 'cashed_out') {
+        return res.status(400).json({ message: "Bet already cashed out" });
       }
 
       const cashOutValue = SettlementService.calculateCashOut(bet, currentOdds, percentageWinning);
-      const platformFee = cashOutValue * 0.01; // 1% cash-out fee
-      const netCashOut = cashOutValue - platformFee;
+      const platformFee = Math.round(cashOutValue * 0.01 * 100) / 100;
+      const netCashOut = Math.round((cashOutValue - platformFee) * 100) / 100;
 
       // Update bet status FIRST - only add winnings if status update succeeds (prevents double cash-out)
       const statusUpdated = await storage.updateBetStatus(betId, 'cashed_out', netCashOut);

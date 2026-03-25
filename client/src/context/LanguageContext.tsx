@@ -42,7 +42,10 @@ type TranslationKey =
   | 'over' | 'under' | 'cashOut' | 'cashOutConfirm' | 'notifications'
   | 'noNotifications' | 'betWon' | 'betLost' | 'betSettled' | 'clearAll'
   | 'verifiedOnSui' | 'poweredBy' | 'language' | 'starTeams' | 'formulaNote'
-  | 'mmaNote' | 'clear' | 'viewAll';
+  | 'mmaNote' | 'clear' | 'viewAll'
+  | 'heroTitle' | 'heroSui' | 'heroSubtitle' | 'liveMarkets' | 'sports'
+  | 'settlement' | 'onChain' | 'betsSettled' | 'sbetsVolume' | 'viewContract'
+  | 'more' | 'buyNow' | 'checkBackLater' | 'noEventsTab';
 
 const translations: Record<Language, Record<TranslationKey, string>> = {
   en: {
@@ -64,6 +67,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Language', starTeams: 'Star some teams to see them here!',
     formulaNote: 'Formula 1 races update weekly', mmaNote: 'MMA events update periodically',
     clear: 'Clear', viewAll: 'View All',
+    heroTitle: 'Decentralized Sports Betting on', heroSui: 'Sui',
+    heroSubtitle: 'Bet with SBETS or SUI \u00b7 Transparent odds \u00b7 Instant on-chain settlement',
+    liveMarkets: 'Live Markets', sports: 'Sports', settlement: 'Settlement', onChain: 'On-Chain',
+    betsSettled: 'Bets Settled', sbetsVolume: 'SBETS Volume', viewContract: 'View Contract',
+    more: 'More', buyNow: 'Buy Now', checkBackLater: 'Check back later for more events',
+    noEventsTab: 'No {tab} events available',
   },
   es: {
     bets: 'Apuestas', predict: 'Predecir', aiBetting: 'IA Apuestas', myBets: 'Mis Apuestas',
@@ -84,6 +93,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Idioma', starTeams: '¡Marca equipos como favoritos para verlos aquí!',
     formulaNote: 'Las carreras de F1 se actualizan semanalmente', mmaNote: 'Los eventos de MMA se actualizan periódicamente',
     clear: 'Borrar', viewAll: 'Ver Todo',
+    heroTitle: 'Apuestas Deportivas Descentralizadas en', heroSui: 'Sui',
+    heroSubtitle: 'Apuesta con SBETS o SUI \u00b7 Cuotas transparentes \u00b7 Liquidación instantánea on-chain',
+    liveMarkets: 'Mercados en Vivo', sports: 'Deportes', settlement: 'Liquidación', onChain: 'On-Chain',
+    betsSettled: 'Apuestas Liquidadas', sbetsVolume: 'Volumen SBETS', viewContract: 'Ver Contrato',
+    more: 'Más', buyNow: 'Comprar', checkBackLater: 'Vuelve más tarde para más eventos',
+    noEventsTab: 'No hay eventos {tab} disponibles',
   },
   fr: {
     bets: 'Paris', predict: 'Prédire', aiBetting: 'Paris IA', myBets: 'Mes Paris',
@@ -104,6 +119,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Langue', starTeams: 'Ajoutez des équipes en favoris pour les voir ici !',
     formulaNote: 'Les courses de F1 sont mises à jour chaque semaine', mmaNote: 'Les événements MMA sont mis à jour périodiquement',
     clear: 'Effacer', viewAll: 'Voir Tout',
+    heroTitle: 'Paris Sportifs Décentralisés sur', heroSui: 'Sui',
+      heroSubtitle: 'Pariez avec SBETS ou SUI \u00b7 Cotes transparentes \u00b7 Règlement instantané on-chain',
+      liveMarkets: 'Marchés en Direct', sports: 'Sports', settlement: 'Règlement', onChain: 'On-Chain',
+      betsSettled: 'Paris Réglés', sbetsVolume: 'Volume SBETS', viewContract: 'Voir le Contrat',
+      more: 'Plus', buyNow: 'Acheter', checkBackLater: 'Revenez plus tard pour plus d\'événements',
+      noEventsTab: 'Aucun événement {tab} disponible',
   },
   de: {
     bets: 'Wetten', predict: 'Vorhersagen', aiBetting: 'KI-Wetten', myBets: 'Meine Wetten',
@@ -124,6 +145,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Sprache', starTeams: 'Markiere Teams als Favoriten!',
     formulaNote: 'F1-Rennen werden wöchentlich aktualisiert', mmaNote: 'MMA-Events werden periodisch aktualisiert',
     clear: 'Löschen', viewAll: 'Alle ansehen',
+    heroTitle: 'Dezentrales Sportwetten auf', heroSui: 'Sui',
+      heroSubtitle: 'Wette mit SBETS oder SUI \u00b7 Transparente Quoten \u00b7 Sofortige On-Chain-Abrechnung',
+      liveMarkets: 'Live-Märkte', sports: 'Sportarten', settlement: 'Abrechnung', onChain: 'On-Chain',
+      betsSettled: 'Wetten abgerechnet', sbetsVolume: 'SBETS Volumen', viewContract: 'Vertrag ansehen',
+      more: 'Mehr', buyNow: 'Kaufen', checkBackLater: 'Schauen Sie später nach weiteren Events',
+      noEventsTab: 'Keine {tab} Events verfügbar',
   },
   pt: {
     bets: 'Apostas', predict: 'Prever', aiBetting: 'Apostas IA', myBets: 'Minhas Apostas',
@@ -144,6 +171,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Idioma', starTeams: 'Marque times como favoritos para vê-los aqui!',
     formulaNote: 'Corridas de F1 são atualizadas semanalmente', mmaNote: 'Eventos de MMA são atualizados periodicamente',
     clear: 'Limpar', viewAll: 'Ver Tudo',
+    heroTitle: 'Apostas Esportivas Descentralizadas em', heroSui: 'Sui',
+      heroSubtitle: 'Aposte com SBETS ou SUI \u00b7 Odds transparentes \u00b7 Liquidação instantânea on-chain',
+      liveMarkets: 'Mercados ao Vivo', sports: 'Esportes', settlement: 'Liquidação', onChain: 'On-Chain',
+      betsSettled: 'Apostas Liquidadas', sbetsVolume: 'Volume SBETS', viewContract: 'Ver Contrato',
+      more: 'Mais', buyNow: 'Comprar', checkBackLater: 'Volte mais tarde para mais eventos',
+      noEventsTab: 'Nenhum evento {tab} disponível',
   },
   it: {
     bets: 'Scommesse', predict: 'Prevedere', aiBetting: 'IA Scommesse', myBets: 'Le Mie Scommesse',
@@ -164,6 +197,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Lingua', starTeams: 'Aggiungi squadre ai preferiti per vederle qui!',
     formulaNote: 'Le gare di F1 vengono aggiornate settimanalmente', mmaNote: 'Gli eventi MMA vengono aggiornati periodicamente',
     clear: 'Cancella', viewAll: 'Vedi Tutto',
+    heroTitle: 'Scommesse Sportive Decentralizzate su', heroSui: 'Sui',
+      heroSubtitle: 'Scommetti con SBETS o SUI \u00b7 Quote trasparenti \u00b7 Regolamento istantaneo on-chain',
+      liveMarkets: 'Mercati Live', sports: 'Sport', settlement: 'Regolamento', onChain: 'On-Chain',
+      betsSettled: 'Scommesse Regolate', sbetsVolume: 'Volume SBETS', viewContract: 'Vedi Contratto',
+      more: 'Altro', buyNow: 'Acquista', checkBackLater: 'Torna più tardi per altri eventi',
+      noEventsTab: 'Nessun evento {tab} disponibile',
   },
   ja: {
     bets: 'ベット', predict: '予測', aiBetting: 'AIベッティング', myBets: 'マイベット',
@@ -184,6 +223,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: '言語', starTeams: 'チームをお気に入りに追加してここに表示！',
     formulaNote: 'F1レースは毎週更新されます', mmaNote: 'MMAイベントは定期的に更新されます',
     clear: 'クリア', viewAll: 'すべて表示',
+    heroTitle: '分散型スポーツベッティング', heroSui: 'Sui',
+      heroSubtitle: 'SBETSまたはSUIで賭ける \u00b7 透明なオッズ \u00b7 即時オンチェーン決済',
+      liveMarkets: 'ライブマーケット', sports: 'スポーツ', settlement: '決済', onChain: 'オンチェーン',
+      betsSettled: '決済済みベット', sbetsVolume: 'SBETSボリューム', viewContract: 'コントラクトを見る',
+      more: 'もっと見る', buyNow: '購入', checkBackLater: '後でもう一度確認してください',
+      noEventsTab: '{tab}イベントがありません',
   },
   ko: {
     bets: '베팅', predict: '예측', aiBetting: 'AI 베팅', myBets: '내 베팅',
@@ -204,6 +249,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: '언어', starTeams: '팀을 즐겨찾기에 추가하세요!',
     formulaNote: 'F1 레이스는 매주 업데이트됩니다', mmaNote: 'MMA 이벤트는 주기적으로 업데이트됩니다',
     clear: '삭제', viewAll: '모두 보기',
+    heroTitle: '탈중앙화 스포츠 베팅', heroSui: 'Sui',
+      heroSubtitle: 'SBETS 또는 SUI로 베팅 \u00b7 투명한 배당 \u00b7 즉시 온체인 정산',
+      liveMarkets: '라이브 마켓', sports: '스포츠', settlement: '정산', onChain: '온체인',
+      betsSettled: '정산된 베팅', sbetsVolume: 'SBETS 거래량', viewContract: '컨트랙트 보기',
+      more: '더보기', buyNow: '구매', checkBackLater: '나중에 다시 확인해주세요',
+      noEventsTab: '{tab} 이벤트가 없습니다',
   },
   zh: {
     bets: '投注', predict: '预测', aiBetting: 'AI投注', myBets: '我的投注',
@@ -224,6 +275,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: '语言', starTeams: '收藏球队以在此查看！',
     formulaNote: 'F1赛事每周更新', mmaNote: 'MMA赛事定期更新',
     clear: '清除', viewAll: '查看全部',
+    heroTitle: '去中心化体育博彩', heroSui: 'Sui',
+      heroSubtitle: '使用SBETS或SUI投注 \u00b7 透明赔率 \u00b7 即时链上结算',
+      liveMarkets: '实时市场', sports: '体育', settlement: '结算', onChain: '链上',
+      betsSettled: '已结算投注', sbetsVolume: 'SBETS交易量', viewContract: '查看合约',
+      more: '更多', buyNow: '购买', checkBackLater: '稍后再来查看更多赛事',
+      noEventsTab: '暂无{tab}赛事',
   },
   ar: {
     bets: 'رهانات', predict: 'تنبؤ', aiBetting: 'رهانات الذكاء الاصطناعي', myBets: 'رهاناتي',
@@ -244,6 +301,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'اللغة', starTeams: 'أضف فرقاً للمفضلة لرؤيتها هنا!',
     formulaNote: 'يتم تحديث سباقات الفورمولا 1 أسبوعياً', mmaNote: 'يتم تحديث أحداث MMA بشكل دوري',
     clear: 'مسح', viewAll: 'عرض الكل',
+    heroTitle: 'مراهنات رياضية لامركزية على', heroSui: 'Sui',
+      heroSubtitle: 'راهن بـ SBETS أو SUI \u00b7 احتمالات شفافة \u00b7 تسوية فورية على السلسلة',
+      liveMarkets: 'أسواق مباشرة', sports: 'رياضات', settlement: 'تسوية', onChain: 'على السلسلة',
+      betsSettled: 'رهانات مسوّاة', sbetsVolume: 'حجم SBETS', viewContract: 'عرض العقد',
+      more: 'المزيد', buyNow: 'اشتري', checkBackLater: 'عد لاحقاً لمزيد من الأحداث',
+      noEventsTab: 'لا توجد أحداث {tab} متاحة',
   },
   ru: {
     bets: 'Ставки', predict: 'Прогноз', aiBetting: 'ИИ Ставки', myBets: 'Мои Ставки',
@@ -264,6 +327,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Язык', starTeams: 'Добавьте команды в избранное!',
     formulaNote: 'Гонки Ф1 обновляются еженедельно', mmaNote: 'MMA события обновляются периодически',
     clear: 'Очистить', viewAll: 'Смотреть все',
+    heroTitle: 'Децентрализованные спортивные ставки на', heroSui: 'Sui',
+      heroSubtitle: 'Ставьте с SBETS или SUI \u00b7 Прозрачные коэффициенты \u00b7 Мгновенный расчёт on-chain',
+      liveMarkets: 'Живые рынки', sports: 'Виды спорта', settlement: 'Расчёт', onChain: 'On-Chain',
+      betsSettled: 'Рассчитанные ставки', sbetsVolume: 'Объём SBETS', viewContract: 'Смотреть контракт',
+      more: 'Ещё', buyNow: 'Купить', checkBackLater: 'Зайдите позже для новых событий',
+      noEventsTab: 'Нет {tab} событий',
   },
   tr: {
     bets: 'Bahisler', predict: 'Tahmin', aiBetting: 'AI Bahis', myBets: 'Bahislerim',
@@ -284,6 +353,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Dil', starTeams: 'Takımları favorilere ekleyin!',
     formulaNote: 'F1 yarışları haftalık güncellenir', mmaNote: 'MMA etkinlikleri periyodik güncellenir',
     clear: 'Temizle', viewAll: 'Tümünü Gör',
+    heroTitle: 'Merkezi Olmayan Spor Bahisleri', heroSui: 'Sui',
+      heroSubtitle: 'SBETS veya SUI ile bahis yapın \u00b7 Şeffaf oranlar \u00b7 Anında on-chain uzlaşma',
+      liveMarkets: 'Canlı Pazarlar', sports: 'Sporlar', settlement: 'Uzlaşma', onChain: 'On-Chain',
+      betsSettled: 'Sonuçlanan Bahisler', sbetsVolume: 'SBETS Hacmi', viewContract: 'Sözleşmeyi Gör',
+      more: 'Daha Fazla', buyNow: 'Satın Al', checkBackLater: 'Daha fazla etkinlik için sonra gelin',
+      noEventsTab: '{tab} etkinlik bulunmuyor',
   },
   hi: {
     bets: 'शर्तें', predict: 'भविष्यवाणी', aiBetting: 'AI सट्टेबाजी', myBets: 'मेरी शर्तें',
@@ -304,6 +379,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'भाषा', starTeams: 'यहां देखने के लिए टीमों को पसंदीदा में जोड़ें!',
     formulaNote: 'F1 रेस साप्ताहिक अपडेट होती हैं', mmaNote: 'MMA इवेंट समय-समय पर अपडेट होते हैं',
     clear: 'साफ करें', viewAll: 'सभी देखें',
+    heroTitle: 'विकेंद्रीकृत खेल सट्टेबाजी', heroSui: 'Sui',
+      heroSubtitle: 'SBETS या SUI से दांव लगाएं \u00b7 पारदर्शी ऑड्स \u00b7 तत्काल ऑन-चेन निपटान',
+      liveMarkets: 'लाइव मार्केट', sports: 'खेल', settlement: 'निपटान', onChain: 'ऑन-चेन',
+      betsSettled: 'निपटाए गए दांव', sbetsVolume: 'SBETS वॉल्यूम', viewContract: 'कॉन्ट्रैक्ट देखें',
+      more: 'और', buyNow: 'खरीदें', checkBackLater: 'अधिक इवेंट के लिए बाद में आएं',
+      noEventsTab: 'कोई {tab} इवेंट उपलब्ध नहीं',
   },
   nl: {
     bets: 'Weddenschappen', predict: 'Voorspellen', aiBetting: 'AI Wedden', myBets: 'Mijn Weddenschappen',
@@ -324,6 +405,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Taal', starTeams: 'Voeg teams toe aan favorieten!',
     formulaNote: 'F1 races worden wekelijks bijgewerkt', mmaNote: 'MMA evenementen worden periodiek bijgewerkt',
     clear: 'Wissen', viewAll: 'Alles bekijken',
+    heroTitle: 'Gedecentraliseerd Sportwedden op', heroSui: 'Sui',
+      heroSubtitle: 'Wed met SBETS of SUI \u00b7 Transparante odds \u00b7 Directe on-chain afwikkeling',
+      liveMarkets: 'Live Markten', sports: 'Sporten', settlement: 'Afwikkeling', onChain: 'On-Chain',
+      betsSettled: 'Afgewikkelde Weddenschappen', sbetsVolume: 'SBETS Volume', viewContract: 'Contract Bekijken',
+      more: 'Meer', buyNow: 'Kopen', checkBackLater: 'Kom later terug voor meer evenementen',
+      noEventsTab: 'Geen {tab} evenementen beschikbaar',
   },
   pl: {
     bets: 'Zakłady', predict: 'Przewidywanie', aiBetting: 'AI Zakłady', myBets: 'Moje Zakłady',
@@ -344,6 +431,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Język', starTeams: 'Dodaj drużyny do ulubionych!',
     formulaNote: 'Wyścigi F1 aktualizowane co tydzień', mmaNote: 'Wydarzenia MMA aktualizowane okresowo',
     clear: 'Wyczyść', viewAll: 'Zobacz wszystko',
+    heroTitle: 'Zdecentralizowane Zakłady Sportowe na', heroSui: 'Sui',
+      heroSubtitle: 'Obstawiaj SBETS lub SUI \u00b7 Przejrzyste kursy \u00b7 Natychmiastowe rozliczenie on-chain',
+      liveMarkets: 'Rynki na Żywo', sports: 'Sporty', settlement: 'Rozliczenie', onChain: 'On-Chain',
+      betsSettled: 'Rozliczone Zakłady', sbetsVolume: 'Wolumen SBETS', viewContract: 'Zobacz Kontrakt',
+      more: 'Więcej', buyNow: 'Kup', checkBackLater: 'Wróć później po więcej wydarzeń',
+      noEventsTab: 'Brak wydarzeń {tab}',
   },
   sv: {
     bets: 'Spel', predict: 'Förutsäga', aiBetting: 'AI-spel', myBets: 'Mina Spel',
@@ -364,6 +457,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Språk', starTeams: 'Lägg till lag som favoriter!',
     formulaNote: 'F1-lopp uppdateras veckovis', mmaNote: 'MMA-evenemang uppdateras periodiskt',
     clear: 'Rensa', viewAll: 'Visa alla',
+    heroTitle: 'Decentraliserat Sportspel på', heroSui: 'Sui',
+      heroSubtitle: 'Satsa med SBETS eller SUI \u00b7 Transparenta odds \u00b7 Omedelbar on-chain-avräkning',
+      liveMarkets: 'Live-marknader', sports: 'Sporter', settlement: 'Avräkning', onChain: 'On-Chain',
+      betsSettled: 'Avgjorda Spel', sbetsVolume: 'SBETS Volym', viewContract: 'Visa Kontrakt',
+      more: 'Mer', buyNow: 'Köp', checkBackLater: 'Kom tillbaka senare för fler evenemang',
+      noEventsTab: 'Inga {tab} evenemang tillgängliga',
   },
   th: {
     bets: 'เดิมพัน', predict: 'ทำนาย', aiBetting: 'AI เดิมพัน', myBets: 'เดิมพันของฉัน',
@@ -384,6 +483,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'ภาษา', starTeams: 'เพิ่มทีมในรายการโปรด!',
     formulaNote: 'อัพเดท F1 ทุกสัปดาห์', mmaNote: 'อัพเดท MMA เป็นระยะ',
     clear: 'ล้าง', viewAll: 'ดูทั้งหมด',
+    heroTitle: 'การเดิมพันกีฬาแบบกระจายศูนย์บน', heroSui: 'Sui',
+      heroSubtitle: 'เดิมพันด้วย SBETS หรือ SUI \u00b7 อัตราต่อรองโปร่งใส \u00b7 การชำระเงินทันทีบนเชน',
+      liveMarkets: 'ตลาดสด', sports: 'กีฬา', settlement: 'การชำระ', onChain: 'บนเชน',
+      betsSettled: 'การเดิมพันที่ชำระแล้ว', sbetsVolume: 'ปริมาณ SBETS', viewContract: 'ดูสัญญา',
+      more: 'เพิ่มเติม', buyNow: 'ซื้อ', checkBackLater: 'กลับมาภายหลังเพื่อดูเหตุการณ์เพิ่มเติม',
+      noEventsTab: 'ไม่มีเหตุการณ์{tab}',
   },
   vi: {
     bets: 'Cược', predict: 'Dự đoán', aiBetting: 'AI Cá Cược', myBets: 'Cược Của Tôi',
@@ -404,6 +509,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Ngôn ngữ', starTeams: 'Thêm đội yêu thích để xem tại đây!',
     formulaNote: 'Đua F1 cập nhật hàng tuần', mmaNote: 'Sự kiện MMA cập nhật định kỳ',
     clear: 'Xóa', viewAll: 'Xem tất cả',
+    heroTitle: 'Cá Cược Thể Thao Phi Tập Trung trên', heroSui: 'Sui',
+      heroSubtitle: 'Đặt cược bằng SBETS hoặc SUI \u00b7 Tỷ lệ cược minh bạch \u00b7 Thanh toán tức thì on-chain',
+      liveMarkets: 'Thị Trường Trực Tiếp', sports: 'Thể Thao', settlement: 'Thanh Toán', onChain: 'On-Chain',
+      betsSettled: 'Cược Đã Thanh Toán', sbetsVolume: 'Khối Lượng SBETS', viewContract: 'Xem Hợp Đồng',
+      more: 'Thêm', buyNow: 'Mua', checkBackLater: 'Quay lại sau để xem thêm sự kiện',
+      noEventsTab: 'Không có sự kiện {tab} nào',
   },
   id: {
     bets: 'Taruhan', predict: 'Prediksi', aiBetting: 'AI Taruhan', myBets: 'Taruhan Saya',
@@ -424,6 +535,12 @@ const translations: Record<Language, Record<TranslationKey, string>> = {
     language: 'Bahasa', starTeams: 'Tambahkan tim ke favorit untuk melihatnya di sini!',
     formulaNote: 'Balapan F1 diperbarui setiap minggu', mmaNote: 'Acara MMA diperbarui secara berkala',
     clear: 'Hapus', viewAll: 'Lihat Semua',
+    heroTitle: 'Taruhan Olahraga Terdesentralisasi di', heroSui: 'Sui',
+      heroSubtitle: 'Taruhan dengan SBETS atau SUI \u00b7 Odds transparan \u00b7 Penyelesaian instan on-chain',
+      liveMarkets: 'Pasar Live', sports: 'Olahraga', settlement: 'Penyelesaian', onChain: 'On-Chain',
+      betsSettled: 'Taruhan Diselesaikan', sbetsVolume: 'Volume SBETS', viewContract: 'Lihat Kontrak',
+      more: 'Lainnya', buyNow: 'Beli', checkBackLater: 'Kembali lagi nanti untuk lebih banyak acara',
+      noEventsTab: 'Tidak ada acara {tab} tersedia',
   },
 };
 

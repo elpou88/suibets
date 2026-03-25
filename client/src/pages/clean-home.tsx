@@ -442,55 +442,55 @@ export default function CleanHome() {
 
           {/* Center Navigation - Desktop Only */}
           <div className="hidden md:flex items-center gap-6">
-            <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium" data-testid="nav-bets">Bets</Link>
-            <Link href="/network" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold flex items-center gap-1" data-testid="nav-predict">Predict<span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /></Link>
+            <Link href="/" className="text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-medium" data-testid="nav-bets">{t('bets')}</Link>
+            <Link href="/network" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold flex items-center gap-1" data-testid="nav-predict">{t('predict')}<span className="inline-block w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" /></Link>
             <Link href="/ai-betting" className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-bold" data-testid="nav-ai-betting">
-              AI Betting
+              {t('aiBetting')}
               <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
             </Link>
-            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">My Bets</Link>
-            <Link href="/revenue" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-revenue">Revenue</Link>
+            <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">{t('myBets')}</Link>
+            <Link href="/revenue" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-revenue">{t('revenue')}</Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium flex items-center gap-1 outline-none" data-testid="nav-more">
-                More
+                {t('more')}
                 <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-[#0b1618] border border-cyan-900/30 min-w-[180px] z-[9999]">
                 <DropdownMenuItem className="cursor-pointer text-cyan-300 hover:text-cyan-200 flex items-center px-4 py-3 text-sm font-medium" onClick={() => setLocation('/trading')} data-testid="nav-more-trade">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Trade
+                  {t('trade')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/wallet-dashboard')} data-testid="nav-more-dashboard">
                   <Wallet className="h-4 w-4 mr-2" />
-                  Dashboard
+                  {t('dashboard')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/promotions')} data-testid="nav-more-promotions">
                   <Target className="h-4 w-4 mr-2" />
-                  Promotions
+                  {t('promotions')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/streaming')} data-testid="nav-more-streaming">
                   <TrendingUp className="h-4 w-4 mr-2" />
-                  Streaming
+                  {t('streaming')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/leaderboard')} data-testid="nav-more-leaderboard">
                   <Trophy className="h-4 w-4 mr-2" />
-                  Leaderboard
+                  {t('leaderboard')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/results')} data-testid="nav-more-activity">
                   <Activity className="h-4 w-4 mr-2" />
-                  Activity
+                  {t('activity')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/parlay')} data-testid="nav-more-parlays">
                   <Target className="h-4 w-4 mr-2" />
-                  Parlays
+                  {t('parlays')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/deposits-withdrawals')} data-testid="nav-more-withdraw">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
-                  Withdraw
+                  {t('withdraw')}
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-gray-200 hover:text-white flex items-center px-4 py-3 text-sm" onClick={() => setLocation('/whitepaper')} data-testid="nav-more-whitepaper">
                   <FileText className="h-4 w-4 mr-2" />
-                  Whitepaper
+                  {t('whitepaper')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -505,7 +505,7 @@ export default function CleanHome() {
               className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-3 md:px-4 py-2 rounded-lg text-sm transition-colors"
               data-testid="btn-buy-now"
             >
-              Buy Now
+              {t('buyNow')}
             </a>
             
             {/* Language Switcher */}
@@ -628,7 +628,7 @@ export default function CleanHome() {
                   data-testid="btn-disconnect"
                 >
                   <LogOut size={16} />
-                  Disconnect
+                  {t('disconnect')}
                 </button>
               </>
             ) : (
@@ -638,7 +638,7 @@ export default function CleanHome() {
                 data-testid="btn-connect-wallet"
               >
                 <Wallet size={16} />
-                Connect Wallet
+                {t('connectWallet')}
               </button>
             )}
           </div>
@@ -648,22 +648,22 @@ export default function CleanHome() {
         {isMobileMenuOpen && (
           <div id="mobile-nav-menu" role="navigation" aria-label="Mobile navigation" className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-b border-cyan-900/30 py-4 px-4 z-50" data-testid="mobile-menu">
             <div className="flex flex-col gap-3">
-              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-bets">Bets</Link>
-              <Link href="/network" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-predict">Predict</Link>
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-bets">{t('bets')}</Link>
+              <Link href="/network" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-predict">{t('predict')}</Link>
               <Link href="/ai-betting" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-ai-betting-main">
-                AI Betting <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
+                {t('aiBetting')} <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
               </Link>
-              <Link href="/bet-history" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-my-bets">My Bets</Link>
-              <Link href="/revenue" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-revenue">Revenue</Link>
-              <Link href="/wallet-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-dashboard">Dashboard</Link>
-              <Link href="/promotions" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-promotions">Promotions</Link>
-              <Link href="/trading" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-trade">Trade</Link>
-              <Link href="/streaming" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-streaming">Streaming</Link>
-              <Link href="/leaderboard" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-leaderboard">Leaderboard</Link>
-              <Link href="/results" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-activity">Activity</Link>
-              <Link href="/parlay" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-parlays">Parlays</Link>
-              <Link href="/deposits-withdrawals" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-withdraw">Withdraw</Link>
-              <Link href="/whitepaper" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2" data-testid="mobile-nav-whitepaper">Whitepaper</Link>
+              <Link href="/bet-history" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-my-bets">{t('myBets')}</Link>
+              <Link href="/revenue" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-revenue">{t('revenue')}</Link>
+              <Link href="/wallet-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-dashboard">{t('dashboard')}</Link>
+              <Link href="/promotions" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-promotions">{t('promotions')}</Link>
+              <Link href="/trading" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-trade">{t('trade')}</Link>
+              <Link href="/streaming" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-streaming">{t('streaming')}</Link>
+              <Link href="/leaderboard" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-leaderboard">{t('leaderboard')}</Link>
+              <Link href="/results" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-activity">{t('activity')}</Link>
+              <Link href="/parlay" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-parlays">{t('parlays')}</Link>
+              <Link href="/deposits-withdrawals" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-withdraw">{t('withdraw')}</Link>
+              <Link href="/whitepaper" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2" data-testid="mobile-nav-whitepaper">{t('whitepaper')}</Link>
             </div>
           </div>
         )}
@@ -700,10 +700,10 @@ export default function CleanHome() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0a0e1a] via-[#0a0e1a]/40 to-transparent pointer-events-none" />
         <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pb-5 md:pb-8 px-4">
           <h1 className="text-white text-xl md:text-3xl font-extrabold text-center mb-1 drop-shadow-lg" data-testid="hero-title">
-            Decentralized Sports Betting on <span className="text-[#00FFFF]">Sui</span>
+            {t('heroTitle')} <span className="text-[#00FFFF]">{t('heroSui')}</span>
           </h1>
           <p className="text-gray-300 text-xs md:text-sm text-center max-w-xl drop-shadow" data-testid="hero-subtitle">
-            Bet with SBETS or SUI &middot; Transparent odds &middot; Instant on-chain settlement
+            {t('heroSubtitle')}
           </p>
         </div>
       </div>
@@ -718,7 +718,7 @@ export default function CleanHome() {
               </div>
               <div>
                 <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow"><AnimatedCounter end={2100} suffix="+" /></div>
-                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Live Markets</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">{t('liveMarkets')}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-sports">
@@ -727,7 +727,7 @@ export default function CleanHome() {
               </div>
               <div>
                 <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow"><AnimatedCounter end={20} /></div>
-                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Sports</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">{t('sports')}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-settlement">
@@ -736,7 +736,7 @@ export default function CleanHome() {
               </div>
               <div>
                 <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow">&lt;1s</div>
-                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">Settlement</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">{t('settlement')}</div>
               </div>
             </div>
             <div className="flex items-center gap-3 justify-center" data-testid="stat-onchain">
@@ -745,7 +745,7 @@ export default function CleanHome() {
               </div>
               <div>
                 <div className="text-cyan-300 font-black text-3xl leading-tight stat-glow">100%</div>
-                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">On-Chain</div>
+                <div className="text-gray-400 text-[11px] font-medium tracking-widest uppercase">{t('onChain')}</div>
               </div>
             </div>
           </div>
@@ -758,15 +758,15 @@ export default function CleanHome() {
           <div className="flex items-center justify-center gap-3 md:gap-5 flex-wrap text-xs">
             <div className="trust-badge rounded-full px-3 py-1.5 flex items-center gap-1.5 transition-all">
               <Shield size={12} className="text-green-400" />
-              <span className="text-green-300 font-medium">Verified on Sui</span>
+              <span className="text-green-300 font-medium">{t('verifiedOnSui')}</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-              <span>183+ Bets Settled</span>
+              <span>183+ {t('betsSettled')}</span>
             </div>
             <div className="flex items-center gap-1.5 text-gray-400">
               <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-              <span>152K+ SBETS Volume</span>
+              <span>152K+ {t('sbetsVolume')}</span>
             </div>
             <a 
               href="https://suiscan.xyz/mainnet/object/0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76" 
@@ -776,7 +776,7 @@ export default function CleanHome() {
               data-testid="link-view-contract"
             >
               <Activity size={12} />
-              <span>View Contract</span>
+              <span>{t('viewContract')}</span>
             </a>
           </div>
         </div>
@@ -790,7 +790,7 @@ export default function CleanHome() {
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500" size={18} />
             <input
               type="text"
-              placeholder="Search teams, leagues..."
+              placeholder={t('searchTeams')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full bg-[#0a0f19]/60 backdrop-blur-md border border-cyan-900/25 rounded-lg py-3 pl-12 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
@@ -807,7 +807,7 @@ export default function CleanHome() {
             data-testid="btn-favorites-filter"
           >
             <Star size={16} fill={showFavoritesOnly ? "currentColor" : "none"} />
-            <span className="hidden md:inline">Favorites</span>
+            <span className="hidden md:inline">{t('favorites')}</span>
             {favorites.size > 0 && (
               <span className="bg-yellow-500/30 text-yellow-400 text-xs px-1.5 py-0.5 rounded-full">
                 {favorites.size}
@@ -824,7 +824,7 @@ export default function CleanHome() {
             data-testid="btn-odds-filter"
           >
             <TrendingUp size={16} />
-            <span className="hidden md:inline">With Odds</span>
+            <span className="hidden md:inline">{t('withOdds')}</span>
           </button>
         </div>
 
@@ -901,7 +901,7 @@ export default function CleanHome() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
               </span>
-              Live ({liveEvents.length})
+              {t('live')} ({liveEvents.length})
             </button>
           )}
           <button
@@ -914,7 +914,7 @@ export default function CleanHome() {
             data-testid="tab-upcoming"
           >
             <TrendingUp size={16} />
-            Upcoming ({upcomingEvents.length})
+            {t('upcoming')} ({upcomingEvents.length})
           </button>
         </div>
 
@@ -959,20 +959,20 @@ export default function CleanHome() {
           {isLoading ? (
             <div className="text-center py-12">
               <div className="animate-spin w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-              <p className="text-gray-400">Loading events...</p>
+              <p className="text-gray-400">{t('loading')}</p>
             </div>
           ) : events.length === 0 ? (
             <div className="text-center py-12 bg-[#111111] rounded-xl border border-cyan-900/30">
-              <p className="text-gray-400 mb-2">No {activeTab} events available</p>
+              <p className="text-gray-400 mb-2">{t('noEventsTab').replace('{tab}', activeTab)}</p>
               <p className="text-gray-500 text-sm">
-                {showFavoritesOnly ? "Star some teams to see them here!" : 
-                  selectedSport === 11 ? "Formula 1 races update weekly. Check back closer to race weekend!" :
-                  selectedSport === 8 ? "Boxing fights update weekly. Check back closer to fight night!" :
-                  selectedSport === 9 ? "No esports matches scheduled right now. Check back soon!" :
-                  selectedSport === 3 ? "Tennis events coming soon!" :
-                  selectedSport === 7 ? "MMA fights update weekly. Check back closer to fight night!" :
-                  selectedSport === 17 ? "Horse Racing events appear closer to race times!" :
-                  "Check back later for more events"}
+                {showFavoritesOnly ? t('starTeams') : 
+                  selectedSport === 11 ? t('formulaNote') :
+                  selectedSport === 8 ? t('checkBackLater') :
+                  selectedSport === 9 ? t('checkBackLater') :
+                  selectedSport === 3 ? t('checkBackLater') :
+                  selectedSport === 7 ? t('mmaNote') :
+                  selectedSport === 17 ? t('checkBackLater') :
+                  t('checkBackLater')}
               </p>
             </div>
           ) : (

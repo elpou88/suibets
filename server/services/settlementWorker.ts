@@ -971,21 +971,35 @@ class SettlementWorkerService {
       
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const settlementResult = await blockchainBetService.executeSettleBetOnChain(
-        bet.betObjectId!,
-        isWinner
-      );
+      const settlementResult = isSbetsOnChainBet
+        ? await blockchainBetService.executeSettleBetSbetsOnChain(bet.betObjectId!, isWinner)
+        : await blockchainBetService.executeSettleBetOnChain(bet.betObjectId!, isWinner);
       
       if (settlementResult.success) {
         const finalStatus = isWinner ? 'paid_out' : 'lost';
         const statusUpdated = await storage.updateBetStatus(bet.id, finalStatus, grossPayout, settlementResult.txHash);
         if (statusUpdated) {
-          console.log(`✅ ON-CHAIN PARLAY SETTLED: ${bet.id.slice(0, 10)}... ${finalStatus} | TX: ${settlementResult.txHash}`);
+          console.log(`✅ ON-CHAIN PARLAY SETTLED: ${bet.id.slice(0, 10)}... ${finalStatus} (${bet.currency}) | TX: ${settlementResult.txHash}`);
           this.settledBetIds.add(bet.id);
         }
         return;
       } else {
-        console.error(`❌ ON-CHAIN PARLAY SETTLEMENT FAILED: ${settlementResult.error}`);
+        console.error(`❌ ON-CHAIN PARLAY SETTLEMENT FAILED (${bet.currency}): ${settlementResult.error}`);
+        if (settlementResult.error?.includes('cannot settle owned objects')) {
+          console.warn(`🛑 PARLAY PERMANENTLY SKIPPED (owned object): Bet ${bet.id}`);
+          this.ownedBetIds.add(bet.id);
+          await storage.updateBetStatus(bet.id, isWinner ? 'won' : 'lost', grossPayout);
+          this.settledBetIds.add(bet.id);
+          return;
+        }
+        const onChainRecheck = await blockchainBetService.getOnChainBetInfo(bet.betObjectId!);
+        if (onChainRecheck?.settled) {
+          console.log(`⚠️ PARLAY ACTUALLY SETTLED ON-CHAIN (recheck): ${bet.betObjectId}`);
+          const finalStatus = isWinner ? 'paid_out' : 'lost';
+          await storage.updateBetStatus(bet.id, finalStatus, grossPayout, `contract-settled-parlay-${bet.betObjectId?.slice(0,16)}`);
+          this.settledBetIds.add(bet.id);
+          return;
+        }
         if (isWinner) {
           console.warn(`⚠️ PARLAY WINNER PAYOUT DEFERRED: Bet ${bet.id} - keeping as 'won' for retry (do NOT mark as lost)`);
           await storage.updateBetStatus(bet.id, 'won', grossPayout);

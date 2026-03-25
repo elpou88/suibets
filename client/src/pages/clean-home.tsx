@@ -1445,6 +1445,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
   const [selectedOutcome, setSelectedOutcome] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState(false);
   const [showMoreMarkets, setShowMoreMarkets] = useState(false);
+  const tooltipTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { addBet } = useBetting();
   const { toast } = useToast();
   
@@ -1623,8 +1624,14 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
     <div 
       className="px-4 py-3 hover:bg-white/[0.04] hover:backdrop-blur-sm transition-all duration-200 relative group" 
       data-testid={`compact-event-${event.id}`}
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
+      onMouseEnter={() => {
+        if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+        tooltipTimeout.current = setTimeout(() => setShowTooltip(true), 300);
+      }}
+      onMouseLeave={() => {
+        if (tooltipTimeout.current) clearTimeout(tooltipTimeout.current);
+        tooltipTimeout.current = setTimeout(() => setShowTooltip(false), 150);
+      }}
     >
       <div className="flex items-center justify-between gap-2 md:gap-4">
         {/* Time / Live indicator */}
@@ -1763,7 +1770,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 5 }}
             transition={{ duration: 0.15 }}
-            className="absolute right-0 top-full mt-1 glass-card-strong rounded-lg p-3 z-50 min-w-[200px] shadow-xl"
+            className="absolute right-0 top-full mt-1 glass-card-strong rounded-lg p-3 z-50 min-w-[200px] shadow-xl pointer-events-none"
           >
             <div className="text-xs space-y-2">
               <div className="flex justify-between gap-4">

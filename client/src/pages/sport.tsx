@@ -12,7 +12,6 @@ import { format, isSameDay } from 'date-fns';
 import { BetSlip } from '@/components/betting/BetSlip';
 import { formatOdds } from '@/lib/utils';
 import { useBetting } from '@/context/BettingContext';
-import { SportPageOverlays } from '@/components/betting/SportPageOverlays';
 import SportsSidebar from '@/components/layout/SportsSidebar';
 const suiBetsHero = "/images/sui-hero2.png";
 
@@ -155,8 +154,6 @@ export default function Sport() {
         {/* Sports sidebar */}
         <SportsSidebar />
         
-        {/* Add the sport page overlays component for clickable bets without changing UI */}
-        <SportPageOverlays sportSlug={sportSlug} />
         
         <div className="flex-1">
           <div className="flex items-center mb-6">

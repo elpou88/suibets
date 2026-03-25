@@ -6411,6 +6411,30 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue} ${bet.currency}, Fee: ${platformFee} ${bet.currency}, Net: ${netCashOut} ${bet.currency}`);
 
+      // Attempt on-chain payout to wallet
+      let onChainTxHash: string | undefined;
+      try {
+        if (bet.currency === 'SBETS') {
+          const onChainResult = await blockchainBetService.sendSbetsToUser(walletAddress, netCashOut);
+          if (onChainResult.success) {
+            onChainTxHash = onChainResult.txHash;
+            console.log(`✅ CASH OUT ON-CHAIN: ${netCashOut} SBETS -> ${walletAddress.slice(0,10)}... | TX: ${onChainTxHash}`);
+          } else {
+            console.warn(`⚠️ CASH OUT on-chain failed (DB balance credited): ${onChainResult.error}`);
+          }
+        } else {
+          const onChainResult = await blockchainBetService.sendSuiToUser(walletAddress, netCashOut);
+          if (onChainResult.success) {
+            onChainTxHash = onChainResult.txHash;
+            console.log(`✅ CASH OUT ON-CHAIN: ${netCashOut} SUI -> ${walletAddress.slice(0,10)}... | TX: ${onChainTxHash}`);
+          } else {
+            console.warn(`⚠️ CASH OUT on-chain failed (DB balance credited): ${onChainResult.error}`);
+          }
+        }
+      } catch (onChainErr: any) {
+        console.error(`❌ CASH OUT on-chain error (DB balance credited): ${onChainErr.message}`);
+      }
+
       res.json({
         success: true,
         betId,
@@ -6421,7 +6445,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           platformFee: platformFee,
           netAmount: netCashOut,
           cashOutAt: Date.now(),
-          status: 'cashed_out'
+          status: 'cashed_out',
+          txHash: onChainTxHash || null
         }
       });
     } catch (error) {

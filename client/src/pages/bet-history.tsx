@@ -82,7 +82,11 @@ export default function BetHistoryPage() {
     onSuccess: (data) => {
       const amount = data.cashOut?.netAmount;
       const currency = data.cashOut?.currency || 'SUI';
-      toast({ title: 'Cash Out Successful', description: `You received ${typeof amount === 'number' ? amount.toFixed(2) : amount} ${currency}` });
+      const txHash = data.cashOut?.txHash;
+      const desc = txHash 
+        ? `${typeof amount === 'number' ? amount.toFixed(2) : amount} ${currency} sent to your wallet`
+        : `${typeof amount === 'number' ? amount.toFixed(2) : amount} ${currency} credited to your balance`;
+      toast({ title: 'Cash Out Successful', description: desc });
       queryClient.invalidateQueries({ queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress] });
       setCashingOut(null);
     },

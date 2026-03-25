@@ -2922,15 +2922,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const isParlay = eventIdStr.startsWith('parlay_');
       const submittedOddsDecimal = oddsBps / 100;
       if (!isParlay) {
-        // LIVE MATCH SCORE-CHANGE DETECTION: If score changed since odds were cached, reject immediately
-        // FAIL-CLOSED: If live event has NO cached odds, also reject (stale or never fetched)
         if (isLiveEvent && liveScore) {
           const liveOddsCheck = apiSportsService.getOddsFromCacheLive(eventIdStr, liveScore);
-          if (!liveOddsCheck) {
-            console.log(`❌ ORACLE SIGN BLOCKED (no cached live odds): event=${eventIdStr}, wallet=${walletAddress.slice(0,12)}...`);
-            return res.status(400).json({ success: false, message: "Live odds not available. Please refresh and try again." });
-          }
-          if (liveOddsCheck.stale) {
+          if (liveOddsCheck && liveOddsCheck.stale) {
             console.log(`❌ ORACLE SIGN BLOCKED (live odds stale): ${liveOddsCheck.reason}, event=${eventIdStr}, wallet=${walletAddress.slice(0,12)}...`);
             apiSportsService.invalidateOddsForEvent(eventIdStr);
             return res.status(400).json({ success: false, message: "Odds have changed due to in-game action. Please refresh and try again." });
@@ -4078,14 +4072,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (footballCheck.found && footballCheck.source === 'live') {
         const currentScore = `${footballCheck.homeScore ?? 0}-${footballCheck.awayScore ?? 0}`;
         const liveOddsCheck = apiSportsService.getOddsFromCacheLive(eventId, currentScore);
-        if (!liveOddsCheck) {
-          console.log(`❌ BET BLOCKED (no cached live odds): event=${eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
-          return res.status(400).json({
-            message: "Live odds not available. Please refresh and try again.",
-            code: "ODDS_STALE_LIVE"
-          });
-        }
-        if (liveOddsCheck.stale) {
+        if (liveOddsCheck && liveOddsCheck.stale) {
           console.log(`❌ BET BLOCKED (live odds stale): ${liveOddsCheck.reason}, event=${eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
           apiSportsService.invalidateOddsForEvent(eventId);
           return res.status(400).json({

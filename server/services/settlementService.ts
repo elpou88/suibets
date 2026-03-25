@@ -21,13 +21,7 @@ export interface SettlementResult {
   payout: number;
 }
 
-/**
- * Settlement Service - Handles automatic bet settlement based on event results
- */
 export class SettlementService {
-  /**
-   * Settle a bet based on event result
-   */
   static settleBet(bet: Bet, eventResult: any): SettlementResult {
     const settled: SettlementResult = {
       betId: bet.id,
@@ -36,19 +30,17 @@ export class SettlementService {
     };
 
     try {
-      // Check if outcome matches the bet prediction
       if (!eventResult) {
         settled.status = 'void';
-        settled.payout = bet.betAmount; // Return stake
+        settled.payout = bet.betAmount;
         return settled;
       }
 
-      // Determine if bet won based on outcome
       const betWon = this.isBetWon(bet, eventResult);
 
       if (betWon) {
         settled.status = 'won';
-        settled.payout = Math.round(bet.betAmount * bet.odds * 100) / 100; // Apply odds
+        settled.payout = Math.round(bet.betAmount * bet.odds * 100) / 100;
       } else {
         settled.status = 'lost';
         settled.payout = 0;
@@ -58,27 +50,63 @@ export class SettlementService {
     } catch (error) {
       console.error('Settlement error:', error);
       settled.status = 'void';
-      settled.payout = bet.betAmount; // Refund on error
+      settled.payout = bet.betAmount;
       return settled;
     }
   }
 
-  /**
-   * Calculate cash-out value based on current odds and bet status
-   */
   static calculateCashOut(bet: Bet, currentOdds: number, percentageWinning: number): number {
     if (bet.status !== 'pending') return 0;
 
     const stake = Number(bet.betAmount) || 0;
     if (stake <= 0) return 0;
 
-    const cashOutValue = stake * percentageWinning;
-    return Math.max(Math.round(cashOutValue * 100) / 100, stake * 0.1);
+    const originalOdds = Number(bet.odds) || 2.0;
+    const clampedCurrentOdds = Math.max(currentOdds, 1.01);
+
+    const oddsRatio = originalOdds / clampedCurrentOdds;
+
+    const hedgeFactor = 0.85;
+    let cashOutValue = stake * oddsRatio * hedgeFactor;
+
+    const maxPayout = stake * originalOdds * 0.9;
+    const minPayout = stake * 0.1;
+    cashOutValue = Math.min(cashOutValue, maxPayout);
+    cashOutValue = Math.max(cashOutValue, minPayout);
+
+    return Math.round(cashOutValue * 100) / 100;
   }
 
-  /**
-   * Settle a parlay bet (all legs must win)
-   */
+  static calculateParlayCashOut(
+    stake: number,
+    totalOdds: number,
+    legs: Array<{ odds: number; won: boolean | null }>
+  ): number {
+    if (stake <= 0) return 0;
+
+    const wonLegs = legs.filter(l => l.won === true);
+    const pendingLegs = legs.filter(l => l.won === null);
+
+    if (pendingLegs.length === 0 && wonLegs.length === legs.length) {
+      return Math.round(stake * totalOdds * 0.9 * 100) / 100;
+    }
+
+    const wonOddsProduct = wonLegs.reduce((acc, l) => acc * l.odds, 1);
+
+    const pendingOddsProduct = pendingLegs.reduce((acc, l) => acc * l.odds, 1);
+    const pendingRisk = pendingOddsProduct > 0 ? 1 / pendingOddsProduct : 0.5;
+
+    const hedgeFactor = 0.85;
+    let cashOutValue = stake * wonOddsProduct * (1 + pendingRisk) * 0.5 * hedgeFactor;
+
+    const maxPayout = stake * totalOdds * 0.9;
+    const minPayout = stake * 0.1;
+    cashOutValue = Math.min(cashOutValue, maxPayout);
+    cashOutValue = Math.max(cashOutValue, minPayout);
+
+    return Math.round(cashOutValue * 100) / 100;
+  }
+
   static settleParlay(bets: Bet[], eventResults: any[]): SettlementResult {
     const settled: SettlementResult = {
       betId: `parlay-${bets.map(b => b.id).join('-')}`,
@@ -87,7 +115,6 @@ export class SettlementService {
     };
 
     try {
-      // All bets must win for parlay to win
       const allWon = bets.every((bet, index) => {
         const result = eventResults[index];
         return this.isBetWon(bet, result);
@@ -95,7 +122,6 @@ export class SettlementService {
 
       if (allWon) {
         settled.status = 'won';
-        // Calculate combined parlay odds
         const parlayOdds = bets.reduce((acc, bet) => acc * bet.odds, 1);
         settled.payout = Math.round(bets[0].betAmount * parlayOdds * 100) / 100;
       } else {
@@ -107,30 +133,24 @@ export class SettlementService {
     } catch (error) {
       console.error('Parlay settlement error:', error);
       settled.status = 'void';
-      settled.payout = bets[0].betAmount; // Refund first bet stake
+      settled.payout = bets[0].betAmount;
       return settled;
     }
   }
 
-  /**
-   * Check if a bet won based on event result
-   */
   private static isBetWon(bet: Bet, eventResult: any): boolean {
     if (!eventResult) return false;
 
     const prediction = bet.prediction.toLowerCase();
-    // Handle both string and object eventResult
     const result = typeof eventResult === 'string' 
       ? eventResult.toLowerCase()
       : (eventResult.result || eventResult.winner || '').toLowerCase();
     const score = typeof eventResult === 'object' ? eventResult.score : undefined;
 
-    // Direct match on prediction
     if (result === prediction || result === bet.outcomeId.toLowerCase()) {
       return true;
     }
 
-    // Match Winner bets
     if (bet.marketId.includes('match-winner') || bet.marketId.includes('1x2')) {
       if (prediction === 'home' || prediction === '1') {
         return result === 'home' || result === '1' || (eventResult.homeScore > eventResult.awayScore);
@@ -143,14 +163,12 @@ export class SettlementService {
       }
     }
 
-    // Both Teams to Score (BTTS)
     if (bet.marketId.includes('btts')) {
       const bothScored = (eventResult.homeScore > 0 && eventResult.awayScore > 0);
       if (prediction === 'yes') return bothScored;
       if (prediction === 'no') return !bothScored;
     }
 
-    // Double Chance
     if (bet.marketId.includes('double-chance')) {
       const isHomeWin = eventResult.homeScore > eventResult.awayScore;
       const isAwayWin = eventResult.awayScore > eventResult.homeScore;
@@ -161,9 +179,7 @@ export class SettlementService {
       if (prediction === '12' || prediction === 'home_away') return isHomeWin || isAwayWin;
     }
 
-    // Half-Time Result
     if (bet.marketId.includes('half-time')) {
-      // Use halftime scores if available, otherwise fallback to fulltime (less accurate but safe)
       const htHome = eventResult.score?.halftime?.home ?? eventResult.htHomeScore;
       const htAway = eventResult.score?.halftime?.away ?? eventResult.htAwayScore;
       
@@ -174,7 +190,6 @@ export class SettlementService {
       }
     }
 
-    // Over/Under bets
     if (bet.marketId.includes('over-under') || bet.marketId.includes('o/u')) {
       const totalGoals = (eventResult.homeScore || 0) + (eventResult.awayScore || 0);
       const threshold = parseFloat(bet.marketId.match(/\d+\.?\d*/)?.[0] || '2.5');

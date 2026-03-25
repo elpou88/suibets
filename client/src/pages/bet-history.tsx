@@ -62,19 +62,30 @@ export default function BetHistoryPage() {
   const bets: Bet[] = Array.isArray(rawBets) ? rawBets : [];
 
   const [cashingOut, setCashingOut] = useState<string | null>(null);
-  
+  const [cashOutEstimates, setCashOutEstimates] = useState<Record<string, { estimate: number; available: boolean; legs?: any[] }>>({});
+
+  const fetchCashOutEstimate = async (betId: string) => {
+    try {
+      const res = await fetch(`/api/bets/${betId}/cash-out-estimate?wallet=${walletAddress}`);
+      if (res.ok) {
+        const data = await res.json();
+        setCashOutEstimates(prev => ({ ...prev, [betId]: data }));
+        return data;
+      }
+    } catch {}
+    return null;
+  };
+
   const getCashOutEstimate = (bet: Bet) => {
+    const cached = cashOutEstimates[bet.id];
+    if (cached && cached.available) return cached.estimate;
     const stake = bet.stake || 0;
-    const gross = stake * 0.75;
-    const fee = gross * 0.01;
-    return Math.round((gross - fee) * 100) / 100;
+    return Math.round(stake * 0.85 * 0.99 * 100) / 100;
   };
 
   const cashOutMutation = useMutation({
-    mutationFn: async ({ betId, stake, odds }: { betId: string; stake: number; odds: number }) => {
+    mutationFn: async ({ betId }: { betId: string }) => {
       const res = await apiRequest('POST', `/api/bets/${betId}/cash-out`, {
-        currentOdds: odds,
-        percentageWinning: 0.75,
         walletAddress: walletAddress,
       });
       return res.json();
@@ -96,12 +107,13 @@ export default function BetHistoryPage() {
     },
   });
 
-  const handleCashOut = (bet: Bet) => {
+  const handleCashOut = async (bet: Bet) => {
     if (cashingOut === bet.id) {
-      cashOutMutation.mutate({ betId: bet.id, stake: bet.stake, odds: bet.odds });
+      cashOutMutation.mutate({ betId: bet.id });
     } else {
       setCashingOut(bet.id);
-      setTimeout(() => setCashingOut(null), 5000);
+      fetchCashOutEstimate(bet.id);
+      setTimeout(() => setCashingOut(null), 8000);
     }
   };
 
@@ -490,7 +502,14 @@ export default function BetHistoryPage() {
                               : `Cash Out ~${getCashOutEstimate(bet).toFixed(2)} ${bet.currency || 'SUI'}`}
                         </button>
                         {cashingOut === bet.id && (
-                          <p className="text-[10px] text-gray-500 mt-1">75% of stake minus 1% fee. Tap to confirm.</p>
+                          <>
+                            {cashOutEstimates[bet.id]?.legs && (
+                              <p className="text-[10px] text-green-400 mt-1">
+                                {cashOutEstimates[bet.id].legs!.filter((l: any) => l.won === true).length}/{cashOutEstimates[bet.id].legs!.length} legs won - value updated
+                              </p>
+                            )}
+                            <p className="text-[10px] text-gray-500 mt-0.5">Server-computed odds. 1% fee. Tap to confirm.</p>
+                          </>
                         )}
                       </div>
                     )}

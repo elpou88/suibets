@@ -6335,21 +6335,145 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  // Cash-out estimate endpoint - returns server-computed cash-out value
+  app.get("/api/bets/:id/cash-out-estimate", async (req: Request, res: Response) => {
+    try {
+      const betId = req.params.id;
+      const walletParam = (req.query.wallet as string || '').toLowerCase();
+      if (!walletParam || !walletParam.startsWith('0x') || walletParam.length < 10) {
+        return res.status(400).json({ message: "Valid wallet address required" });
+      }
+
+      const storedBet = await storage.getBet(betId);
+      if (!storedBet) return res.status(404).json({ message: "Bet not found" });
+
+      if (storedBet.walletAddress && storedBet.walletAddress.toLowerCase() !== walletParam) {
+        return res.status(403).json({ message: "Not your bet" });
+      }
+      if (storedBet.status !== 'pending') return res.json({ estimate: 0, available: false });
+
+      const parsedBetAmount = Number(storedBet.betAmount) || Number((storedBet as any).stake) || 0;
+      const parsedOdds = Number(storedBet.odds) || 2.0;
+      if (parsedBetAmount <= 0) return res.json({ estimate: 0, available: false });
+
+      const isParlay = (storedBet as any).betType === 'parlay' || 
+        (storedBet.prediction && storedBet.prediction.startsWith('['));
+
+      let cashOutValue: number;
+      let legStatuses: Array<{ eventId: string; odds: number; won: boolean | null; eventName?: string }> = [];
+
+      if (isParlay) {
+        let legs: any[] = [];
+        try {
+          if (storedBet.prediction && storedBet.prediction.startsWith('[')) {
+            legs = JSON.parse(storedBet.prediction);
+          }
+        } catch {}
+
+        if (legs.length > 0) {
+          for (const leg of legs) {
+            const eventId = String(leg.eventId || '').trim();
+            const legOdds = Number(leg.odds) || 1.5;
+
+            let legWon: boolean | null = null;
+            try {
+              const numericId = Number(eventId);
+              const event = (!isNaN(numericId) && numericId > 0) ? await storage.getEvent(numericId) : null;
+              if (event && (event as any).status === 'finished') {
+                const prediction = (leg.prediction || leg.selection || '').toLowerCase().trim();
+                const homeScore = Number((event as any).homeScore) || 0;
+                const awayScore = Number((event as any).awayScore) || 0;
+                const totalGoals = homeScore + awayScore;
+                const marketId = (leg.marketId || '').toLowerCase();
+
+                if (marketId.includes('btts')) {
+                  const bothScored = homeScore > 0 && awayScore > 0;
+                  legWon = prediction === 'yes' ? bothScored : prediction === 'no' ? !bothScored : null;
+                } else if (marketId.includes('over-under') || marketId.includes('o/u')) {
+                  const threshold = parseFloat(marketId.match(/\d+\.?\d*/)?.[0] || '2.5');
+                  legWon = prediction.includes('over') ? totalGoals > threshold : prediction.includes('under') ? totalGoals < threshold : null;
+                } else if (marketId.includes('double-chance')) {
+                  const isHomeWin = homeScore > awayScore;
+                  const isAwayWin = awayScore > homeScore;
+                  const isDraw = homeScore === awayScore;
+                  if (prediction === '1x' || prediction === 'home_draw') legWon = isHomeWin || isDraw;
+                  else if (prediction === 'x2' || prediction === 'draw_away') legWon = isAwayWin || isDraw;
+                  else if (prediction === '12' || prediction === 'home_away') legWon = isHomeWin || isAwayWin;
+                } else {
+                  if (prediction === 'home' || prediction === '1') legWon = homeScore > awayScore;
+                  else if (prediction === 'away' || prediction === '2') legWon = awayScore > homeScore;
+                  else if (prediction === 'draw' || prediction === 'x') legWon = homeScore === awayScore;
+                }
+              }
+            } catch {}
+
+            legStatuses.push({
+              eventId,
+              odds: legOdds,
+              won: legWon,
+              eventName: leg.eventName || leg.homeTeam || eventId
+            });
+          }
+
+          const anyLost = legStatuses.some(l => l.won === false);
+          if (anyLost) {
+            return res.json({ estimate: 0, available: false, reason: 'A parlay leg has lost' });
+          }
+
+          cashOutValue = SettlementService.calculateParlayCashOut(
+            parsedBetAmount, parsedOdds, legStatuses
+          );
+        } else {
+          cashOutValue = SettlementService.calculateCashOut(
+            { id: betId, userId: '', eventId: '', marketId: '', outcomeId: '', odds: parsedOdds, betAmount: parsedBetAmount, status: 'pending', prediction: '', placedAt: 0, potentialPayout: parsedBetAmount * parsedOdds },
+            parsedOdds, 0.75
+          );
+        }
+      } else {
+        const eventId = storedBet.eventId || (storedBet as any).externalEventId || '';
+        const cachedOdds = eventId ? apiSportsService.getOddsFromCache(String(eventId)) : null;
+        const prediction = (storedBet.prediction || '').toLowerCase().trim();
+
+        let serverCurrentOdds = parsedOdds;
+        if (cachedOdds) {
+          if (prediction === 'home' || prediction === '1') serverCurrentOdds = cachedOdds.homeOdds;
+          else if (prediction === 'away' || prediction === '2') serverCurrentOdds = cachedOdds.awayOdds;
+          else if (prediction === 'draw' || prediction === 'x') serverCurrentOdds = cachedOdds.drawOdds || parsedOdds;
+        }
+
+        cashOutValue = SettlementService.calculateCashOut(
+          { id: betId, userId: '', eventId: '', marketId: '', outcomeId: '', odds: parsedOdds, betAmount: parsedBetAmount, status: 'pending', prediction: '', placedAt: 0, potentialPayout: parsedBetAmount * parsedOdds },
+          serverCurrentOdds, 0.75
+        );
+      }
+
+      const platformFee = Math.round(cashOutValue * 0.01 * 100) / 100;
+      const netAmount = Math.round((cashOutValue - platformFee) * 100) / 100;
+
+      res.json({
+        estimate: netAmount,
+        gross: cashOutValue,
+        fee: platformFee,
+        available: netAmount > 0,
+        isParlay,
+        legs: legStatuses.length > 0 ? legStatuses : undefined
+      });
+    } catch (error) {
+      console.error("Cash-out estimate error:", error);
+      res.status(500).json({ message: "Failed to compute cash-out estimate" });
+    }
+  });
+
   // Cash-out endpoint - Allow early cash-out of pending bets
   app.post("/api/bets/:id/cash-out", async (req: Request, res: Response) => {
     try {
       const betId = req.params.id;
-      const { currentOdds = 2.0, percentageWinning = 0.8, walletAddress } = req.body;
-
-      if (!currentOdds || !percentageWinning) {
-        return res.status(400).json({ message: "Current odds and percentage winning required" });
-      }
+      const { walletAddress } = req.body;
 
       if (!walletAddress || typeof walletAddress !== 'string' || !walletAddress.startsWith('0x') || walletAddress.length < 10) {
         return res.status(400).json({ message: "Valid wallet address required for cash-out" });
       }
 
-      // Fetch actual bet from storage
       const storedBet = await storage.getBet(betId);
       
       if (!storedBet) {
@@ -6364,7 +6488,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (!storedBet.userId) {
         return res.status(400).json({ message: "Bet has no userId - cannot cash out" });
       }
-      const parsedBetAmount = Number(storedBet.betAmount) || Number(storedBet.stake) || 0;
+      const parsedBetAmount = Number(storedBet.betAmount) || Number((storedBet as any).stake) || 0;
       const parsedOdds = Number(storedBet.odds) || 2.0;
       
       if (parsedBetAmount <= 0) {
@@ -6394,7 +6518,87 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ message: "Bet already cashed out" });
       }
 
-      const cashOutValue = SettlementService.calculateCashOut(bet, currentOdds, percentageWinning);
+      const isParlay = (storedBet as any).betType === 'parlay' || 
+        (storedBet.prediction && storedBet.prediction.startsWith('['));
+
+      let cashOutValue: number;
+
+      if (isParlay) {
+        let legs: any[] = [];
+        try {
+          if (storedBet.prediction && storedBet.prediction.startsWith('[')) {
+            legs = JSON.parse(storedBet.prediction);
+          }
+        } catch {}
+
+        if (legs.length > 0) {
+          const legStatuses: Array<{ odds: number; won: boolean | null }> = [];
+          for (const leg of legs) {
+            const eventId = String(leg.eventId || '').trim();
+            const legOdds = Number(leg.odds) || 1.5;
+
+            let legWon: boolean | null = null;
+            try {
+              const numericId = Number(eventId);
+              const event = (!isNaN(numericId) && numericId > 0) ? await storage.getEvent(numericId) : null;
+              if (event && (event as any).status === 'finished') {
+                const prediction = (leg.prediction || leg.selection || '').toLowerCase().trim();
+                const homeScore = Number((event as any).homeScore) || 0;
+                const awayScore = Number((event as any).awayScore) || 0;
+                const totalGoals = homeScore + awayScore;
+                const marketId = (leg.marketId || '').toLowerCase();
+
+                if (marketId.includes('btts')) {
+                  const bothScored = homeScore > 0 && awayScore > 0;
+                  legWon = prediction === 'yes' ? bothScored : prediction === 'no' ? !bothScored : null;
+                } else if (marketId.includes('over-under') || marketId.includes('o/u')) {
+                  const threshold = parseFloat(marketId.match(/\d+\.?\d*/)?.[0] || '2.5');
+                  legWon = prediction.includes('over') ? totalGoals > threshold : prediction.includes('under') ? totalGoals < threshold : null;
+                } else if (marketId.includes('double-chance')) {
+                  const isHomeWin = homeScore > awayScore;
+                  const isAwayWin = awayScore > homeScore;
+                  const isDraw = homeScore === awayScore;
+                  if (prediction === '1x' || prediction === 'home_draw') legWon = isHomeWin || isDraw;
+                  else if (prediction === 'x2' || prediction === 'draw_away') legWon = isAwayWin || isDraw;
+                  else if (prediction === '12' || prediction === 'home_away') legWon = isHomeWin || isAwayWin;
+                } else {
+                  if (prediction === 'home' || prediction === '1') legWon = homeScore > awayScore;
+                  else if (prediction === 'away' || prediction === '2') legWon = awayScore > homeScore;
+                  else if (prediction === 'draw' || prediction === 'x') legWon = homeScore === awayScore;
+                }
+              }
+            } catch {}
+
+            legStatuses.push({ odds: legOdds, won: legWon });
+          }
+
+          const anyLost = legStatuses.some(l => l.won === false);
+          if (anyLost) {
+            return res.status(400).json({ message: "Cannot cash out - a parlay leg has already lost" });
+          }
+
+          cashOutValue = SettlementService.calculateParlayCashOut(
+            parsedBetAmount, parsedOdds, legStatuses
+          );
+          console.log(`🎰 PARLAY CASH-OUT: ${betId} - ${legStatuses.filter(l => l.won === true).length}/${legs.length} legs won, ${legStatuses.filter(l => l.won === null).length} pending`);
+        } else {
+          cashOutValue = SettlementService.calculateCashOut(bet, parsedOdds, 0.75);
+        }
+      } else {
+        const eventId = storedBet.eventId || (storedBet as any).externalEventId || '';
+        const cachedOdds = eventId ? apiSportsService.getOddsFromCache(String(eventId)) : null;
+        const prediction = (storedBet.prediction || '').toLowerCase().trim();
+
+        let serverCurrentOdds = parsedOdds;
+        if (cachedOdds) {
+          if (prediction === 'home' || prediction === '1') serverCurrentOdds = cachedOdds.homeOdds;
+          else if (prediction === 'away' || prediction === '2') serverCurrentOdds = cachedOdds.awayOdds;
+          else if (prediction === 'draw' || prediction === 'x') serverCurrentOdds = cachedOdds.drawOdds || parsedOdds;
+        }
+
+        cashOutValue = SettlementService.calculateCashOut(bet, serverCurrentOdds, 0.75);
+      }
+
       const platformFee = Math.round(cashOutValue * 0.01 * 100) / 100;
       const netCashOut = Math.round((cashOutValue - platformFee) * 100) / 100;
 

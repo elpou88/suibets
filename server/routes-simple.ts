@@ -2725,6 +2725,20 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  const oracleSignRateLimits = new Map<string, { count: number; timestamps: number[] }>();
+  const ORACLE_MAX_SIGNS_PER_DAY = 7;
+  const ORACLE_SIGN_COOLDOWN_MS = 60_000;
+  const ORACLE_MAX_PER_EVENT = 2;
+
+  setInterval(() => {
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    for (const [key, data] of oracleSignRateLimits.entries()) {
+      data.timestamps = data.timestamps.filter(t => t > cutoff);
+      data.count = data.timestamps.length;
+      if (data.count === 0) oracleSignRateLimits.delete(key);
+    }
+  }, 10 * 60 * 1000);
+
   app.post("/api/oracle/sign-bet", async (req: Request, res: Response) => {
     try {
       if (!oracleSigningService.isReady()) {
@@ -2738,6 +2752,41 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       if (!walletAddress || typeof walletAddress !== 'string' || !/^0x[0-9a-fA-F]{64}$/.test(walletAddress)) {
         return res.status(400).json({ success: false, message: "Valid 32-byte Sui address required" });
+      }
+
+      const walletKey = walletAddress.toLowerCase();
+      const now = Date.now();
+      const cutoff24h = now - 24 * 60 * 60 * 1000;
+
+      if (!oracleSignRateLimits.has(walletKey)) {
+        oracleSignRateLimits.set(walletKey, { count: 0, timestamps: [] });
+      }
+      const walletData = oracleSignRateLimits.get(walletKey)!;
+      walletData.timestamps = walletData.timestamps.filter(t => t > cutoff24h);
+      walletData.count = walletData.timestamps.length;
+
+      if (walletData.count >= ORACLE_MAX_SIGNS_PER_DAY) {
+        console.log(`❌ ORACLE RATE LIMIT: ${walletKey.slice(0, 12)}... hit daily limit (${walletData.count}/${ORACLE_MAX_SIGNS_PER_DAY})`);
+        return res.status(429).json({ success: false, message: `Daily bet limit reached (${ORACLE_MAX_SIGNS_PER_DAY} per 24h). Try again later.` });
+      }
+
+      const lastSign = walletData.timestamps.length > 0 ? walletData.timestamps[walletData.timestamps.length - 1] : 0;
+      if (now - lastSign < ORACLE_SIGN_COOLDOWN_MS) {
+        const secsLeft = Math.ceil((ORACLE_SIGN_COOLDOWN_MS - (now - lastSign)) / 1000);
+        console.log(`❌ ORACLE COOLDOWN: ${walletKey.slice(0, 12)}... must wait ${secsLeft}s`);
+        return res.status(429).json({ success: false, message: `Please wait ${secsLeft}s between bets.` });
+      }
+
+      const eventKey = `${walletKey}:${String(eventId)}`;
+      if (!oracleSignRateLimits.has(eventKey)) {
+        oracleSignRateLimits.set(eventKey, { count: 0, timestamps: [] });
+      }
+      const eventData = oracleSignRateLimits.get(eventKey)!;
+      eventData.timestamps = eventData.timestamps.filter(t => t > cutoff24h);
+      eventData.count = eventData.timestamps.length;
+      if (eventData.count >= ORACLE_MAX_PER_EVENT) {
+        console.log(`❌ ORACLE EVENT LIMIT: ${walletKey.slice(0, 12)}... already signed ${eventData.count}x for event ${String(eventId).slice(0, 20)}`);
+        return res.status(429).json({ success: false, message: "Maximum bets per event reached." });
       }
 
       if (!prediction || typeof prediction !== 'string') {
@@ -2916,6 +2965,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (!result) {
         return res.status(500).json({ success: false, message: "Failed to sign quote" });
       }
+
+      walletData.timestamps.push(now);
+      walletData.count = walletData.timestamps.length;
+      eventData.timestamps.push(now);
+      eventData.count = eventData.timestamps.length;
+      console.log(`✅ ORACLE SIGNED: wallet=${walletKey.slice(0, 12)}... event=${String(eventId).slice(0, 20)} (${walletData.count}/${ORACLE_MAX_SIGNS_PER_DAY} daily)`);
 
       res.json({ success: true, ...result });
     } catch (err: any) {

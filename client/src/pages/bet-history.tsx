@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'wouter';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import SuiNSName from '@/components/SuiNSName';
 const suibetsLogo = "/images/suibets-logo.png";
 import { 
@@ -18,7 +19,8 @@ import {
   Filter,
   ArrowLeft,
   Share2,
-  Gift
+  Gift,
+  DollarSign
 } from 'lucide-react';
 import { ShareableBetCard } from '@/components/betting/ShareableBetCard';
 
@@ -58,7 +60,39 @@ export default function BetHistoryPage() {
   });
   
   const bets: Bet[] = Array.isArray(rawBets) ? rawBets : [];
+
+  const [cashingOut, setCashingOut] = useState<string | null>(null);
   
+  const cashOutMutation = useMutation({
+    mutationFn: async ({ betId, stake, odds }: { betId: string; stake: number; odds: number }) => {
+      const percentageWinning = 0.75;
+      const res = await apiRequest('POST', `/api/bets/${betId}/cash-out`, {
+        currentOdds: odds,
+        percentageWinning,
+        walletAddress: walletAddress,
+      });
+      return res.json();
+    },
+    onSuccess: (data) => {
+      toast({ title: 'Cash Out Successful', description: `You received ${data.cashOut?.netAmount?.toFixed(2)} ${data.cashOut?.currency || 'SUI'}` });
+      queryClient.invalidateQueries({ queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress] });
+      setCashingOut(null);
+    },
+    onError: (error: any) => {
+      toast({ title: 'Cash Out Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+      setCashingOut(null);
+    },
+  });
+
+  const handleCashOut = (bet: Bet) => {
+    if (cashingOut === bet.id) {
+      cashOutMutation.mutate({ betId: bet.id, stake: bet.stake, odds: bet.odds });
+    } else {
+      setCashingOut(bet.id);
+      setTimeout(() => setCashingOut(null), 5000);
+    }
+  };
+
   const filteredBets = filter === 'all' ? bets : bets.filter(b => b.status === filter);
 
   const stats = {
@@ -419,6 +453,21 @@ export default function BetHistoryPage() {
                         🐋 {bet.walrusBlobId.startsWith('local_') ? 'Receipt on file' : `${bet.walrusBlobId.slice(0, 10)}...`} View Receipt
                         <ExternalLink className="h-3 w-3" />
                       </Link>
+                    )}
+                    {bet.status === 'pending' && (
+                      <button
+                        onClick={() => handleCashOut(bet)}
+                        disabled={cashOutMutation.isPending}
+                        className={`mt-2 flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                          cashingOut === bet.id
+                            ? 'bg-orange-500 hover:bg-orange-600 text-black'
+                            : 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                        }`}
+                        data-testid={`btn-cashout-${bet.id}`}
+                      >
+                        <DollarSign className="h-3.5 w-3.5" />
+                        {cashOutMutation.isPending ? 'Processing...' : cashingOut === bet.id ? 'Confirm Cash Out' : 'Cash Out'}
+                      </button>
                     )}
                     <button
                       onClick={() => setShareBet(bet)}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { Search, Clock, TrendingUp, TrendingDown, Wallet, LogOut, RefreshCw, Menu, X, Star, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trash2, Info, MoreHorizontal, FileText, Activity, ArrowUpDown, Target, Trophy, Brain, Zap, Users, BarChart3, Shield } from "lucide-react";
+import { Search, Clock, TrendingUp, TrendingDown, Wallet, LogOut, RefreshCw, Menu, X, Star, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, Trash2, Info, MoreHorizontal, FileText, Activity, ArrowUpDown, Target, Trophy, Brain, Zap, Users, BarChart3, Shield, Bell, Globe, DollarSign, CheckCircle, XCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +18,7 @@ import Footer from "@/components/layout/Footer";
 import { useLiveEvents, useUpcomingEvents } from "@/hooks/useEvents";
 import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useLanguage, LANGUAGES, type Language } from "@/context/LanguageContext";
 const suibetsHeroImage = "/images/hero-banner-original.png";
 
 function FadeInSection({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) {
@@ -150,6 +151,88 @@ interface Event {
   sportId: number;
 }
 
+interface BetNotification {
+  id: string;
+  type: 'won' | 'lost' | 'settled';
+  message: string;
+  amount?: string;
+  timestamp: number;
+  read: boolean;
+}
+
+function useNotifications(walletAddress?: string) {
+  const [notifications, setNotifications] = useState<BetNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem('suibets-notifications');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+  const [lastChecked, setLastChecked] = useState<number>(() => {
+    return parseInt(localStorage.getItem('suibets-notif-last') || '0');
+  });
+
+  useEffect(() => {
+    if (!walletAddress) return;
+    const checkBets = async () => {
+      try {
+        const res = await fetch(`/api/bets?wallet=${walletAddress}&limit=20`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const bets = Array.isArray(data) ? data : data.bets || [];
+        const newNotifs: BetNotification[] = [];
+        for (const bet of bets) {
+          const settledAt = new Date(bet.settledAt || bet.updatedAt || 0).getTime();
+          if (settledAt <= lastChecked) continue;
+          if (bet.status === 'won' || bet.status === 'lost') {
+            const exists = notifications.some(n => n.id === `bet-${bet.id}`);
+            if (!exists) {
+              newNotifs.push({
+                id: `bet-${bet.id}`,
+                type: bet.status as 'won' | 'lost',
+                message: bet.status === 'won'
+                  ? `${bet.homeTeam || 'Bet'} vs ${bet.awayTeam || ''} - You won!`
+                  : `${bet.homeTeam || 'Bet'} vs ${bet.awayTeam || ''} - Better luck next time`,
+                amount: bet.status === 'won' ? `+${(bet.potentialPayout || bet.potentialWin || 0).toFixed(2)} ${bet.currency || 'SBETS'}` : undefined,
+                timestamp: settledAt,
+                read: false,
+              });
+            }
+          }
+        }
+        if (newNotifs.length > 0) {
+          setNotifications(prev => {
+            const updated = [...newNotifs, ...prev].slice(0, 50);
+            localStorage.setItem('suibets-notifications', JSON.stringify(updated));
+            return updated;
+          });
+          setLastChecked(Date.now());
+          localStorage.setItem('suibets-notif-last', Date.now().toString());
+        }
+      } catch {}
+    };
+    checkBets();
+    const interval = setInterval(checkBets, 30000);
+    return () => clearInterval(interval);
+  }, [walletAddress, lastChecked]);
+
+  const markAllRead = useCallback(() => {
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      localStorage.setItem('suibets-notifications', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+    localStorage.setItem('suibets-notifications', '[]');
+  }, []);
+
+  const unreadCount = notifications.filter(n => !n.read).length;
+
+  return { notifications, unreadCount, markAllRead, clearNotifications };
+}
+
 export default function CleanHome() {
   const [, setLocation] = useLocation();
   const [selectedSport, setSelectedSport] = useState<number | null>(1);
@@ -157,11 +240,15 @@ export default function CleanHome() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isBetSlipOpen, setIsBetSlipOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isLanguageOpen, setIsLanguageOpen] = useState(false);
   const [favorites, setFavorites] = useState<Set<string>>(() => getFavorites());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [showOddsOnly, setShowOddsOnly] = useState(false); // Default to showing all matches, toggle ON to filter
+  const [showOddsOnly, setShowOddsOnly] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const matchesSectionRef = useRef<HTMLDivElement>(null);
+  
+  const { language, setLanguage, t } = useLanguage();
   
   // Betting context for bet slip
   const { selectedBets, removeBet, clearBets } = useBetting();
@@ -194,6 +281,8 @@ export default function CleanHome() {
   const { isZkLoginActive, zkLoginAddress, logout: zkLogout } = useZkLogin();
   const walletAddress = currentAccount?.address || (isZkLoginActive ? zkLoginAddress : null);
   const isConnected = !!walletAddress;
+  
+  const { notifications, unreadCount, markAllRead, clearNotifications } = useNotifications(walletAddress || undefined);
   
   // Fetch on-chain wallet SUI balance
   const { data: onChainBalance } = useSuiClientQuery(
@@ -340,6 +429,9 @@ export default function CleanHome() {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden p-2 text-gray-400 hover:text-cyan-400 transition-colors"
               data-testid="btn-mobile-menu"
+              aria-expanded={isMobileMenuOpen}
+              aria-controls="mobile-nav-menu"
+              aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -415,6 +507,103 @@ export default function CleanHome() {
             >
               Buy Now
             </a>
+            
+            {/* Language Switcher */}
+            <div className="relative">
+              <button
+                onClick={() => { setIsLanguageOpen(!isLanguageOpen); setIsNotificationsOpen(false); }}
+                className="p-2 text-gray-400 hover:text-cyan-400 transition-colors"
+                data-testid="btn-language"
+                aria-label={t('language')}
+                aria-expanded={isLanguageOpen}
+                aria-controls="language-panel"
+              >
+                <Globe size={18} />
+              </button>
+              {isLanguageOpen && (
+                <div id="language-panel" role="listbox" aria-label={t('language')} className="absolute right-0 top-full mt-2 w-56 max-h-80 overflow-y-auto bg-[#0b1618] border border-cyan-900/30 rounded-xl shadow-2xl z-[9999]" data-testid="language-panel">
+                  <div className="p-3 border-b border-cyan-900/20">
+                    <span className="text-cyan-400 text-sm font-semibold">{t('language')}</span>
+                  </div>
+                  <div className="py-1">
+                    {LANGUAGES.map(lang => (
+                      <button
+                        key={lang.code}
+                        onClick={() => { setLanguage(lang.code); setIsLanguageOpen(false); }}
+                        className={`w-full text-left px-4 py-2.5 text-sm flex items-center gap-3 transition-colors ${
+                          language === lang.code ? 'bg-cyan-500/10 text-cyan-400' : 'text-gray-300 hover:bg-white/5'
+                        }`}
+                        data-testid={`lang-${lang.code}`}
+                      >
+                        <span className="text-lg" aria-hidden="true">{lang.flag}</span>
+                        <span>{lang.nativeName}</span>
+                        {language === lang.code && <CheckCircle size={14} className="ml-auto text-cyan-400" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Notification Bell */}
+            {isConnected && (
+              <div className="relative">
+                <button
+                  onClick={() => { setIsNotificationsOpen(!isNotificationsOpen); setIsLanguageOpen(false); if (!isNotificationsOpen) markAllRead(); }}
+                  className="p-2 text-gray-400 hover:text-cyan-400 transition-colors relative"
+                  data-testid="btn-notifications"
+                  aria-label={t('notifications')}
+                  aria-expanded={isNotificationsOpen}
+                  aria-controls="notifications-panel"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-0.5 -right-0.5 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center" data-testid="notification-badge">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+                {isNotificationsOpen && (
+                  <div id="notifications-panel" role="log" aria-label={t('notifications')} className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto bg-[#0b1618] border border-cyan-900/30 rounded-xl shadow-2xl z-[9999]" data-testid="notifications-panel">
+                    <div className="p-3 border-b border-cyan-900/20 flex items-center justify-between">
+                      <span className="text-cyan-400 text-sm font-semibold">{t('notifications')}</span>
+                      {notifications.length > 0 && (
+                        <button onClick={clearNotifications} className="text-gray-500 hover:text-red-400 text-xs" data-testid="btn-clear-notifications">
+                          {t('clearAll')}
+                        </button>
+                      )}
+                    </div>
+                    {notifications.length === 0 ? (
+                      <div className="p-6 text-center text-gray-500 text-sm">{t('noNotifications')}</div>
+                    ) : (
+                      <div className="divide-y divide-cyan-900/10">
+                        {notifications.slice(0, 20).map(notif => (
+                          <div key={notif.id} className={`p-3 flex items-start gap-3 ${!notif.read ? 'bg-cyan-500/5' : ''}`} data-testid={`notification-${notif.id}`}>
+                            {notif.type === 'won' ? (
+                              <CheckCircle size={18} className="text-green-400 flex-shrink-0 mt-0.5" />
+                            ) : (
+                              <XCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-sm ${notif.type === 'won' ? 'text-green-400' : 'text-red-400'} font-medium`}>
+                                {notif.type === 'won' ? t('betWon') : t('betLost')}
+                              </p>
+                              <p className="text-gray-400 text-xs truncate">{notif.message}</p>
+                              {notif.amount && (
+                                <p className="text-green-400 text-xs font-semibold mt-1">{notif.amount}</p>
+                              )}
+                              <p className="text-gray-600 text-[10px] mt-1">
+                                {new Date(notif.timestamp).toLocaleString()}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             {isConnected && walletAddress ? (
               <>
                 <div className="text-right">
@@ -457,7 +646,7 @@ export default function CleanHome() {
 
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-b border-cyan-900/30 py-4 px-4 z-50" data-testid="mobile-menu">
+          <div id="mobile-nav-menu" role="navigation" aria-label="Mobile navigation" className="md:hidden absolute top-full left-0 right-0 bg-black/95 backdrop-blur-md border-b border-cyan-900/30 py-4 px-4 z-50" data-testid="mobile-menu">
             <div className="flex flex-col gap-3">
               <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-bets">Bets</Link>
               <Link href="/network" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-predict">Predict</Link>
@@ -1142,14 +1331,20 @@ interface LeagueGroupProps {
 
 function LeagueGroup({ leagueName, events, defaultExpanded = false, favorites, toggleFavorite }: LeagueGroupProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const leagueId = leagueName.replace(/\s+/g, '-').toLowerCase();
   
   return (
     <div className="glass-card rounded-xl overflow-hidden transition-all duration-300">
       {/* League Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsExpanded(!isExpanded); }}}
         className="w-full px-4 py-3 flex items-center justify-between bg-white/[0.03] hover:bg-white/[0.06] transition-colors"
-        data-testid={`league-header-${leagueName.replace(/\s+/g, '-').toLowerCase()}`}
+        data-testid={`league-header-${leagueId}`}
+        aria-expanded={isExpanded}
+        aria-controls={`league-events-${leagueId}`}
+        role="button"
+        tabIndex={0}
       >
         <div className="flex items-center gap-3">
           <span className="text-cyan-400 font-semibold">{leagueName}</span>
@@ -1157,14 +1352,14 @@ function LeagueGroup({ leagueName, events, defaultExpanded = false, favorites, t
             {events.length} {events.length === 1 ? 'match' : 'matches'}
           </span>
         </div>
-        <span className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+        <span className={`text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} aria-hidden="true">
           ▼
         </span>
       </button>
       
       {/* Events List */}
       {isExpanded && (
-        <div className="divide-y divide-cyan-900/20">
+        <div id={`league-events-${leagueId}`} className="divide-y divide-cyan-900/20" role="list">
           {events.map((event, index) => (
             (event.sportId === 17 || event.sportId === 11 || event.sportId === 19) ? (
               <RaceEventCard
@@ -1461,7 +1656,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
                 className={isHomeFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-yellow-400'} 
               />
             </button>
-            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse">{score.home}</span>}
+            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse" aria-live="polite" aria-atomic="true">{score.home}</span>}
           </div>
           <div className="flex items-center gap-2 mt-1">
             {event.awayLogo && (
@@ -1479,7 +1674,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
                 className={isAwayFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-yellow-400'} 
               />
             </button>
-            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse">{score.away}</span>}
+            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse" aria-live="polite" aria-atomic="true">{score.away}</span>}
           </div>
         </div>
         

@@ -27,6 +27,7 @@ import { BlockchainAuthProvider } from "@/hooks/useBlockchainAuth";
 import { ZkLoginProvider } from "@/context/ZkLoginContext";
 import { BettingProvider } from "@/context/BettingContext";
 import { SettingsProvider } from "@/context/SettingsContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 import { WalProvider } from "@/components/ui/wal-components";
 import { WalrusProtocolProvider } from "@/context/WalrusProtocolContext";
 import { SpecialLinks } from "@/components/ui/SpecialLinks";
@@ -162,6 +163,7 @@ function App() {
         {/* SuiDappKitProvider - single source of truth for Sui wallet connection */}
         <SuiDappKitProvider>
           <WalProvider>
+            <LanguageProvider>
               <WalrusProtocolProvider>
                 <BlockchainAuthProvider>
                   <ZkLoginProvider>
@@ -274,6 +276,7 @@ function App() {
                 </ZkLoginProvider>
                 </BlockchainAuthProvider>
               </WalrusProtocolProvider>
+            </LanguageProvider>
           </WalProvider>
         </SuiDappKitProvider>
       </ErrorBoundary>

@@ -2943,7 +2943,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           console.log(`❌ ORACLE SIGN BLOCKED (unverifiable): event ${eventIdStr} found (${oddsCheck.source}) but selection unmappable, oddsBps=${oddsBps}`);
           return res.status(400).json({ success: false, message: "Unable to verify odds. Please refresh and try again." });
         } else {
-          const conservativeMaxBps = 1000; // 10.0x max when no reference odds
+          const conservativeMaxBps = 400; // 4.0x max when no reference odds
           if (oddsBps > conservativeMaxBps) {
             console.log(`❌ ORACLE SIGN BLOCKED (conservative cap): oddsBps=${oddsBps} > ${conservativeMaxBps}, event=${eventIdStr}`);
             return res.status(400).json({ success: false, message: "Odds appear unusually high. Please refresh and try again." });
@@ -4111,7 +4111,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         } else {
           // For events without cached odds data (api-sports-no-odds or truly unknown):
           // Cap at conservative max to prevent abuse
-          const conservativeMaxOdds = 10.0;
+          const conservativeMaxOdds = 4.0;
           if (odds > conservativeMaxOdds) {
             console.log(`❌ ODDS CAP (no reference): submitted=${odds} > conservative max ${conservativeMaxOdds}, event=${eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
             return res.status(400).json({
@@ -5056,8 +5056,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
               code: "ODDS_MISMATCH"
             });
           }
-        } else if (sel.odds > 10.0) {
-          console.log(`❌ PARLAY ODDS CAP: selection ${selEventId} odds ${sel.odds} > conservative max 10.0, wallet=${userIdStr.slice(0,12)}...`);
+        } else if (sel.odds > 4.0) {
+          console.log(`❌ PARLAY ODDS CAP: selection ${selEventId} odds ${sel.odds} > conservative max 4.0, wallet=${userIdStr.slice(0,12)}...`);
           return res.status(400).json({
             message: "Odds appear unusually high for one or more selections. Please refresh and try again.",
             code: "ODDS_TOO_HIGH"
@@ -5470,8 +5470,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
                   code: "ODDS_MISMATCH"
                 });
               }
-            } else if (leg.odds > 10.0) {
-              console.log(`❌ ON-CHAIN PARLAY ODDS CAP: leg ${legEventId} odds ${leg.odds} > conservative max 10.0, wallet=${walletAddress.slice(0,12)}...`);
+            } else if (leg.odds > 4.0) {
+              console.log(`❌ ON-CHAIN PARLAY ODDS CAP: leg ${legEventId} odds ${leg.odds} > conservative max 4.0, wallet=${walletAddress.slice(0,12)}...`);
               return res.status(400).json({
                 message: "Odds appear unusually high. Please refresh and try again.",
                 code: "ODDS_TOO_HIGH"

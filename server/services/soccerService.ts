@@ -143,9 +143,10 @@ class SoccerService {
       const league = match.league || {};
       const score = match.score || {};
       
-      // Extract team names
       const homeTeam = teams.home?.name || 'Home Team';
       const awayTeam = teams.away?.name || 'Away Team';
+      const homeLogo = teams.home?.logo || '';
+      const awayLogo = teams.away?.logo || '';
       
       // Calculate the current score
       let currentScore = `${goals.home || 0}-${goals.away || 0}`;
@@ -184,6 +185,8 @@ class SoccerService {
         leagueName: league.name || 'Soccer League',
         homeTeam: homeTeam,
         awayTeam: awayTeam,
+        homeLogo: homeLogo,
+        awayLogo: awayLogo,
         startTime: fixture.date || new Date().toISOString(),
         status: status,
         score: currentScore,

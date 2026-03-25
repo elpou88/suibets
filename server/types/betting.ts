@@ -6,9 +6,11 @@ export interface SportEvent {
   leagueSlug?: string; // Optional league slug for URL-friendly identifiers
   homeTeam: string;
   awayTeam: string;
-  homeOdds?: number; // Main odds for home team
-  awayOdds?: number; // Main odds for away team
-  drawOdds?: number | null; // Main odds for draw (null for sports with no draws)
+  homeLogo?: string;
+  awayLogo?: string;
+  homeOdds?: number;
+  awayOdds?: number;
+  drawOdds?: number | null;
   startTime: string;
   status: 'scheduled' | 'live' | 'finished' | 'upcoming';
   score?: string;

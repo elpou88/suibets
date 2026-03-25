@@ -1706,11 +1706,13 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       const stats = await treasuryAutoWithdrawService.getTreasuryStats();
       const serviceStatus = treasuryAutoWithdrawService.getStatus();
+      const health = treasuryAutoWithdrawService.getLastHealthStatus();
       
       res.json({
         success: true,
         autoWithdrawService: serviceStatus,
         treasury: stats,
+        health: health || { overall: 'unknown', alerts: [], timestamp: 0 },
       });
     } catch (error: any) {
       console.error(`[Admin] Treasury status error:`, error);
@@ -3653,6 +3655,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         sportId: e.sportId,
         homeTeam: e.homeTeam,
         awayTeam: e.awayTeam,
+        homeLogo: (e as any).homeLogo || '',
+        awayLogo: (e as any).awayLogo || '',
         homeScore: e.homeScore,
         awayScore: e.awayScore,
         status: e.status,

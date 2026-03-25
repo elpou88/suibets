@@ -12,7 +12,7 @@ Preferred communication style: Simple, everyday language.
 - **Frameworks**: React 18 (TypeScript), Vite
 - **Styling & UI**: Tailwind CSS, Framer Motion for animations, Radix UI for components
 - **Data & Routing**: TanStack Query for data fetching, Wouter for routing
-- **UI/UX Decisions**: Redesigned event cards with inline odds buttons, collapsible league sections, major leagues prioritized and expanded by default, quick bet functionality.
+- **UI/UX Decisions**: Redesigned event cards with inline odds buttons, collapsible league sections, major leagues prioritized and expanded by default, quick bet functionality. Team logos from API-Sports displayed next to team names in event cards (football + basketball). Live score pulse animation on live event scores. Mobile-responsive bet slip with safe-area-inset-bottom for notched phones. Enhanced leaderboard with podium display, expandable rows, and glassmorphism styling.
 
 ### Backend
 - **Framework**: Express.js (TypeScript)

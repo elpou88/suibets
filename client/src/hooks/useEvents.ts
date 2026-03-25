@@ -6,6 +6,8 @@ export interface SportEvent {
   sportId: number;
   homeTeam: string;
   awayTeam: string;
+  homeLogo?: string;
+  awayLogo?: string;
   leagueName?: string;
   leagueSlug?: string;
   league?: string;
@@ -36,14 +38,13 @@ function mergeEventsStably(prevEvents: SportEvent[], newEvents: SportEvent[]): S
     const prevEvent = prevMap.get(String(newEvent.id));
     if (!prevEvent) return newEvent;
     
-    // Compare key fields - if same, return prev object to avoid re-render
     const sameScore = prevEvent.homeScore === newEvent.homeScore && 
                       prevEvent.awayScore === newEvent.awayScore;
     const sameMinute = prevEvent.minute === newEvent.minute;
     const sameStatus = prevEvent.status === newEvent.status;
+    const logosAdded = !prevEvent.homeLogo && newEvent.homeLogo;
     
-    if (sameScore && sameMinute && sameStatus) {
-      // Return previous object to prevent re-render
+    if (sameScore && sameMinute && sameStatus && !logosAdded) {
       return prevEvent;
     }
     
@@ -99,10 +100,10 @@ export function useLiveEvents(sportId?: string | number | null) {
         return Array.isArray(data) ? data : [];
       }
     },
-    refetchInterval: 30000, // Reduced from 10s to conserve API quota
-    staleTime: 25000,
+    refetchInterval: 15000,
+    staleTime: 10000,
     gcTime: 60000,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     placeholderData: (previousData) => previousData ?? [],
     retry: 2,
     retryDelay: 1000,

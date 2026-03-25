@@ -132,6 +132,8 @@ interface Event {
   id: string | number;
   homeTeam: string;
   awayTeam: string;
+  homeLogo?: string;
+  awayLogo?: string;
   leagueName?: string;
   league?: string;
   startTime: string;
@@ -871,30 +873,28 @@ function FloatingBetSlip({ isOpen, onToggle, bets, onRemoveBet, onClearAll }: Fl
   const isParlay = bets.length > 1;
   
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50">
-      {/* Toggle Bar - Always visible */}
+    <div className="fixed bottom-0 left-0 right-0 z-50 safe-area-bottom">
       <button
         onClick={onToggle}
-        className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-black font-bold px-4 py-3 flex items-center justify-between"
+        className="w-full bg-gradient-to-r from-cyan-600 to-cyan-500 text-black font-bold px-3 md:px-4 py-2.5 md:py-3 flex items-center justify-between"
         data-testid="btn-betslip-toggle"
       >
-        <div className="flex items-center gap-3">
-          <span className="bg-black/20 px-2 py-0.5 rounded-full text-sm">
-            {bets.length} {bets.length === 1 ? 'bet' : 'bets'}
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="bg-black/20 px-2 py-0.5 rounded-full text-xs md:text-sm">
+            {bets.length}
           </span>
-          <span>{isParlay ? 'Parlay Slip' : 'Bet Slip'}</span>
+          <span className="text-sm md:text-base">{isParlay ? 'Parlay' : 'Bet Slip'}</span>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
           {bets.length > 0 && (
-            <span className="text-sm">
-              {isParlay ? `Combined: ${combinedOdds.toFixed(2)}` : `Odds: ${combinedOdds.toFixed(2)}`}
+            <span className="text-xs md:text-sm font-medium">
+              {combinedOdds.toFixed(2)}x
             </span>
           )}
-          {isOpen ? <ChevronDown size={20} /> : <ChevronUp size={20} />}
+          {isOpen ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
         </div>
       </button>
       
-      {/* Expandable Content */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -904,28 +904,28 @@ function FloatingBetSlip({ isOpen, onToggle, bets, onRemoveBet, onClearAll }: Fl
             transition={{ duration: 0.2 }}
             className="glass-card-strong border-t border-cyan-900/30 overflow-hidden"
           >
-            <div className="max-h-48 overflow-y-auto p-4">
+            <div className="max-h-40 md:max-h-48 overflow-y-auto p-3 md:p-4">
               {bets.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">
-                  No bets added yet. Click on odds to add bets.
+                <p className="text-gray-500 text-center py-3 text-sm">
+                  Tap on odds to add selections
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-1.5 md:space-y-2">
                   {bets.map((bet, index) => (
                     <div 
                       key={bet.id || index}
-                      className="bg-[#111111] rounded-lg p-3 flex items-center justify-between gap-2"
+                      className="bg-[#111111] rounded-lg p-2.5 md:p-3 flex items-center justify-between gap-2"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="text-white text-sm truncate">{bet.eventName}</p>
-                        <p className="text-cyan-400 text-xs">{bet.selectionName} @ {bet.odds?.toFixed(2)}</p>
+                        <p className="text-white text-xs md:text-sm truncate">{bet.eventName}</p>
+                        <p className="text-cyan-400 text-[11px] md:text-xs">{bet.selectionName} @ {bet.odds?.toFixed(2)}</p>
                       </div>
                       <button
                         onClick={() => onRemoveBet(bet.id)}
-                        className="text-red-400 hover:text-red-300 p-1"
+                        className="text-red-400 hover:text-red-300 p-1 flex-shrink-0"
                         data-testid={`btn-remove-bet-${index}`}
                       >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   ))}
@@ -933,54 +933,52 @@ function FloatingBetSlip({ isOpen, onToggle, bets, onRemoveBet, onClearAll }: Fl
               )}
             </div>
             {bets.length > 0 && (
-              <div className="p-4 border-t border-cyan-900/30 space-y-3">
-                {/* Stake Input */}
-                <div className="flex items-center gap-3">
+              <div className="p-3 md:p-4 border-t border-cyan-900/30 space-y-2.5 md:space-y-3">
+                <div className="flex items-center gap-2 md:gap-3">
                   <div className="flex-1">
-                    <label className="text-gray-400 text-xs mb-1 block">Stake (SUI)</label>
+                    <label className="text-gray-400 text-[10px] md:text-xs mb-0.5 md:mb-1 block">Stake (SUI)</label>
                     <input
                       type="number"
                       value={stake}
                       onChange={(e) => setStake(e.target.value)}
-                      placeholder="Enter stake..."
-                      className="w-full bg-[#111111] border border-cyan-900/30 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
+                      placeholder="Amount..."
+                      className="w-full bg-[#111111] border border-cyan-900/30 rounded-lg px-2.5 md:px-3 py-2 text-white text-sm focus:outline-none focus:border-cyan-500"
                       data-testid="input-stake"
                       min="0"
                       step="0.1"
+                      inputMode="decimal"
                     />
                   </div>
                   <div className="flex-1">
-                    <label className="text-gray-400 text-xs mb-1 block">Potential Win</label>
-                    <div className="bg-[#111111] border border-cyan-900/30 rounded-lg px-3 py-2 text-green-400 text-sm font-bold">
+                    <label className="text-gray-400 text-[10px] md:text-xs mb-0.5 md:mb-1 block">Potential Win</label>
+                    <div className="bg-[#111111] border border-cyan-900/30 rounded-lg px-2.5 md:px-3 py-2 text-green-400 text-sm font-bold truncate">
                       {potentialWin > 0 ? `${potentialWin.toFixed(2)} SUI` : '-'}
                     </div>
                   </div>
                 </div>
                 
-                {/* Combined Odds Display for Parlay */}
                 {isParlay && (
-                  <div className="flex items-center justify-between text-sm bg-[#111111] rounded-lg p-2">
-                    <span className="text-gray-400">Combined Odds ({bets.length} legs)</span>
-                    <span className="text-cyan-400 font-bold">{combinedOdds.toFixed(2)}</span>
+                  <div className="flex items-center justify-between text-xs md:text-sm bg-[#111111] rounded-lg p-2">
+                    <span className="text-gray-400">Combined ({bets.length} legs)</span>
+                    <span className="text-cyan-400 font-bold">{combinedOdds.toFixed(2)}x</span>
                   </div>
                 )}
                 
-                {/* Actions */}
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <button
                     onClick={onClearAll}
-                    className="text-red-400 hover:text-red-300 text-sm"
+                    className="text-red-400 hover:text-red-300 text-xs md:text-sm py-2 px-3"
                     data-testid="btn-clear-bets"
                   >
-                    Clear All
+                    Clear
                   </button>
                   <button
                     onClick={handlePlaceBet}
                     disabled={bets.length === 0}
-                    className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-bold px-6 py-2 rounded-lg text-sm"
+                    className="bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-600 disabled:cursor-not-allowed text-black font-bold px-4 md:px-6 py-2 rounded-lg text-sm flex-1 max-w-[200px]"
                     data-testid="btn-place-bet"
                   >
-                    {isParlay ? `Place Parlay (${bets.length} legs)` : 'Place Bet'}
+                    {isParlay ? `Place Parlay` : 'Place Bet'}
                   </button>
                 </div>
               </div>
@@ -1428,7 +1426,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
   
   return (
     <div 
-      className="px-4 py-3 hover:bg-white/[0.04] transition-colors relative group" 
+      className="px-4 py-3 hover:bg-white/[0.04] hover:backdrop-blur-sm transition-all duration-200 relative group" 
       data-testid={`compact-event-${event.id}`}
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
@@ -1446,10 +1444,11 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
           )}
         </div>
         
-        {/* Teams with Logos and Favorites */}
         <div className="flex-1 min-w-0">
-          {/* Home Team */}
           <div className="flex items-center gap-2">
+            {event.homeLogo && (
+              <img src={event.homeLogo} alt="" className="w-4 h-4 object-contain flex-shrink-0" loading="lazy" />
+            )}
             <span className="text-white text-sm truncate flex-1">{event.homeTeam}</span>
             <button
               onClick={(e) => { e.stopPropagation(); toggleFavorite(event.homeTeam); }}
@@ -1462,10 +1461,12 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
                 className={isHomeFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-yellow-400'} 
               />
             </button>
-            {event.isLive && <span className="text-cyan-400 font-bold text-sm">{score.home}</span>}
+            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse">{score.home}</span>}
           </div>
-          {/* Away Team */}
           <div className="flex items-center gap-2 mt-1">
+            {event.awayLogo && (
+              <img src={event.awayLogo} alt="" className="w-4 h-4 object-contain flex-shrink-0" loading="lazy" />
+            )}
             <span className="text-gray-400 text-sm truncate flex-1">{event.awayTeam}</span>
             <button
               onClick={(e) => { e.stopPropagation(); toggleFavorite(event.awayTeam); }}
@@ -1478,7 +1479,7 @@ function CompactEventCard({ event, favorites, toggleFavorite }: CompactEventCard
                 className={isAwayFavorite ? 'text-yellow-400 fill-yellow-400' : 'text-gray-600 hover:text-yellow-400'} 
               />
             </button>
-            {event.isLive && <span className="text-cyan-400 font-bold text-sm">{score.away}</span>}
+            {event.isLive && <span className="text-cyan-400 font-bold text-sm score-pulse">{score.away}</span>}
           </div>
         </div>
         

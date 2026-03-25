@@ -276,6 +276,8 @@ export class BasketballService {
       startTime: game.date,
       homeTeam: game.teams?.home?.name || 'Unknown Team',
       awayTeam: game.teams?.away?.name || 'Unknown Team',
+      homeLogo: game.teams?.home?.logo || '',
+      awayLogo: game.teams?.away?.logo || '',
       homeScore: game.scores?.home?.total || 0,
       awayScore: game.scores?.away?.total || 0,
       leagueName: game.league?.name || 'Basketball League',

@@ -1591,6 +1591,7 @@ class SettlementWorkerService {
   }
 
   private payoutRetryCount = new Map<string, number>();
+  private payoutLastRetryTime = new Map<string, number>();
   private static MAX_PAYOUT_RETRIES = 20;
 
   private static BLOCKED_WALLETS = new Set<string>([
@@ -1634,7 +1635,13 @@ class SettlementWorkerService {
         this.settledBetIds.add(bet.id);
         continue;
       }
+      const lastRetry = this.payoutLastRetryTime.get(bet.id) || 0;
+      const backoffMs = Math.min(30000 * Math.pow(2, Math.min(retries, 5)), 600000);
+      if (Date.now() - lastRetry < backoffMs) {
+        continue;
+      }
       this.payoutRetryCount.set(bet.id, retries + 1);
+      this.payoutLastRetryTime.set(bet.id, Date.now());
 
       try {
         const currentBet = await storage.getBet(bet.id);

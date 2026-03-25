@@ -14,11 +14,37 @@
 import { blockchainBetService } from './blockchainBetService';
 
 const WITHDRAW_INTERVAL_MS = 10 * 60 * 1000; // Every 10 minutes
+const HEALTH_CHECK_INTERVAL_MS = 5 * 60 * 1000; // Every 5 minutes
 const MIN_SUI_FEES_TO_WITHDRAW = 0.001; // Minimum 0.001 SUI to bother withdrawing
 const MIN_SBETS_FEES_TO_WITHDRAW = 100; // Minimum 100 SBETS to bother withdrawing
 
+const TREASURY_SUI_LOW_THRESHOLD = 1;
+const TREASURY_SUI_CRITICAL_THRESHOLD = 0.1;
+const TREASURY_SBETS_LOW_THRESHOLD = 100000;
+const TREASURY_SBETS_CRITICAL_THRESHOLD = 10000;
+const ADMIN_SUI_LOW_THRESHOLD = 0.05;
+
 let withdrawIntervalId: NodeJS.Timeout | null = null;
+let healthCheckIntervalId: NodeJS.Timeout | null = null;
 let lastWithdrawTime = 0;
+let lastHealthStatus: TreasuryHealthStatus | null = null;
+
+type HealthLevel = 'healthy' | 'warning' | 'critical';
+
+interface TreasuryHealthStatus {
+  overall: HealthLevel;
+  timestamp: number;
+  alerts: TreasuryAlert[];
+  stats: TreasuryStats | null;
+}
+
+interface TreasuryAlert {
+  level: 'warning' | 'critical';
+  component: string;
+  message: string;
+  value: number;
+  threshold: number;
+}
 
 interface TreasuryStats {
   accruedFeesSui: number;
@@ -162,6 +188,51 @@ async function runAutoWithdrawCycle(): Promise<void> {
 /**
  * Start the auto-withdraw scheduler
  */
+async function checkTreasuryHealth(): Promise<TreasuryHealthStatus> {
+  const alerts: TreasuryAlert[] = [];
+  const stats = await getTreasuryStats();
+
+  if (!stats) {
+    const status: TreasuryHealthStatus = {
+      overall: 'critical',
+      timestamp: Date.now(),
+      alerts: [{ level: 'critical', component: 'platform', message: 'Unable to fetch treasury stats', value: 0, threshold: 0 }],
+      stats: null,
+    };
+    lastHealthStatus = status;
+    return status;
+  }
+
+  if (stats.treasurySui < TREASURY_SUI_CRITICAL_THRESHOLD) {
+    alerts.push({ level: 'critical', component: 'treasury_sui', message: `SUI treasury critically low: ${stats.treasurySui.toFixed(4)} SUI`, value: stats.treasurySui, threshold: TREASURY_SUI_CRITICAL_THRESHOLD });
+  } else if (stats.treasurySui < TREASURY_SUI_LOW_THRESHOLD) {
+    alerts.push({ level: 'warning', component: 'treasury_sui', message: `SUI treasury low: ${stats.treasurySui.toFixed(4)} SUI`, value: stats.treasurySui, threshold: TREASURY_SUI_LOW_THRESHOLD });
+  }
+
+  if (stats.treasurySbets < TREASURY_SBETS_CRITICAL_THRESHOLD) {
+    alerts.push({ level: 'critical', component: 'treasury_sbets', message: `SBETS treasury critically low: ${stats.treasurySbets.toFixed(0)} SBETS`, value: stats.treasurySbets, threshold: TREASURY_SBETS_CRITICAL_THRESHOLD });
+  } else if (stats.treasurySbets < TREASURY_SBETS_LOW_THRESHOLD) {
+    alerts.push({ level: 'warning', component: 'treasury_sbets', message: `SBETS treasury low: ${stats.treasurySbets.toFixed(0)} SBETS`, value: stats.treasurySbets, threshold: TREASURY_SBETS_LOW_THRESHOLD });
+  }
+
+  if (stats.adminWalletSui < ADMIN_SUI_LOW_THRESHOLD) {
+    alerts.push({ level: 'critical', component: 'admin_gas', message: `Admin wallet gas critically low: ${stats.adminWalletSui.toFixed(4)} SUI`, value: stats.adminWalletSui, threshold: ADMIN_SUI_LOW_THRESHOLD });
+  }
+
+  const overall: HealthLevel = alerts.some(a => a.level === 'critical') ? 'critical' : alerts.some(a => a.level === 'warning') ? 'warning' : 'healthy';
+
+  if (alerts.length > 0) {
+    const icon = overall === 'critical' ? '🚨' : '⚠️';
+    console.log(`${icon} [TreasuryHealth] ${overall.toUpperCase()}: ${alerts.map(a => a.message).join(' | ')}`);
+  } else {
+    console.log(`✅ [TreasuryHealth] HEALTHY: SUI=${stats.treasurySui.toFixed(4)}, SBETS=${stats.treasurySbets.toFixed(0)}, AdminGas=${stats.adminWalletSui.toFixed(4)}`);
+  }
+
+  const status: TreasuryHealthStatus = { overall, timestamp: Date.now(), alerts, stats };
+  lastHealthStatus = status;
+  return status;
+}
+
 export function startTreasuryAutoWithdraw(): void {
   if (withdrawIntervalId) {
     console.log('[TreasuryAutoWithdraw] Already running');
@@ -170,11 +241,12 @@ export function startTreasuryAutoWithdraw(): void {
 
   console.log(`[TreasuryAutoWithdraw] Starting scheduler (interval: ${WITHDRAW_INTERVAL_MS / 1000}s)`);
   
-  // Run immediately on start
   setTimeout(() => runAutoWithdrawCycle(), 5000);
-  
-  // Then run periodically
   withdrawIntervalId = setInterval(runAutoWithdrawCycle, WITHDRAW_INTERVAL_MS);
+
+  setTimeout(() => checkTreasuryHealth(), 10000);
+  healthCheckIntervalId = setInterval(checkTreasuryHealth, HEALTH_CHECK_INTERVAL_MS);
+  console.log(`🛡️ [TreasuryHealth] Monitoring started (interval: ${HEALTH_CHECK_INTERVAL_MS / 1000}s)`);
 }
 
 /**
@@ -184,8 +256,12 @@ export function stopTreasuryAutoWithdraw(): void {
   if (withdrawIntervalId) {
     clearInterval(withdrawIntervalId);
     withdrawIntervalId = null;
-    console.log('[TreasuryAutoWithdraw] Stopped');
   }
+  if (healthCheckIntervalId) {
+    clearInterval(healthCheckIntervalId);
+    healthCheckIntervalId = null;
+  }
+  console.log('[TreasuryAutoWithdraw] Stopped');
 }
 
 /**
@@ -223,4 +299,6 @@ export const treasuryAutoWithdrawService = {
   getStatus: getTreasuryAutoWithdrawStatus,
   triggerManual: triggerManualWithdraw,
   getTreasuryStats,
+  checkHealth: checkTreasuryHealth,
+  getLastHealthStatus: () => lastHealthStatus,
 };

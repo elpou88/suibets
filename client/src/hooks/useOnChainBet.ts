@@ -18,8 +18,32 @@ const CLOCK_OBJECT_ID = '0x6';
 
 const SBETS_TOKEN_TYPE = import.meta.env.VITE_SBETS_TOKEN_TYPE || '0x999d696dad9e4684068fa74ef9c5d3afc411d3ba62973bd5d54830f324f29502::sbets::SBETS';
 
-// Backend API for treasury checks
 const API_BASE = '';
+
+function friendlyErrorMessage(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes('odds have changed') || lower.includes('odds_stale'))
+    return 'The odds changed during your bet. Please refresh and try again.';
+  if (lower.includes('rate limit') || lower.includes('too many'))
+    return 'You\'re placing bets too quickly. Please wait a moment and try again.';
+  if (lower.includes('insufficient') || lower.includes('not enough'))
+    return 'Your wallet balance is too low for this bet. Please add funds.';
+  if (lower.includes('treasury') || lower.includes('capacity'))
+    return 'The platform treasury can\'t cover this payout right now. Try a smaller bet.';
+  if (lower.includes('rejected') || lower.includes('user rejected') || lower.includes('user denied'))
+    return 'Transaction was cancelled in your wallet.';
+  if (lower.includes('oracle') || lower.includes('signature'))
+    return 'Could not verify this bet with the oracle. Please refresh and try again.';
+  if (lower.includes('timeout') || lower.includes('timed out'))
+    return 'The network is slow right now. Please try again in a moment.';
+  if (lower.includes('moveabort') || lower.includes('abort'))
+    return 'The smart contract rejected this transaction. Please try again.';
+  if (lower.includes('betting closed') || lower.includes('minute'))
+    return 'Betting is closed for this match. Live betting is only available in the first half.';
+  if (lower.includes('event not found'))
+    return 'This event is no longer available for betting.';
+  return raw;
+}
 
 export interface OnChainBetParams {
   eventId: string;
@@ -204,11 +228,11 @@ export function useOnChainBet() {
       });
       if (!oracleRes.ok) {
         const errData = await oracleRes.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to get oracle approval for bet');
+        throw new Error(friendlyErrorMessage(errData.message || 'Failed to get oracle approval for bet'));
       }
       const oracleData = await oracleRes.json();
       if (!oracleData.success || !oracleData.signature) {
-        throw new Error('Oracle signing failed — bet cannot be placed');
+        throw new Error(friendlyErrorMessage(oracleData.message || 'Oracle signing failed — bet cannot be placed'));
       }
       const { signature: oracleSignature, quoteExpiry } = oracleData;
       console.log('[useOnChainBet] Oracle signature received, expiry:', new Date(quoteExpiry).toISOString());
@@ -515,12 +539,13 @@ export function useOnChainBet() {
     } catch (err: any) {
       console.error('[useOnChainBet] Transaction failed:', err);
       console.error('[useOnChainBet] Error details:', JSON.stringify(err, Object.getOwnPropertyNames(err)));
-      const errorMessage = err.message || 'Failed to place bet on-chain';
+      const rawMessage = err.message || 'Failed to place bet on-chain';
+      const errorMessage = friendlyErrorMessage(rawMessage);
       setError(errorMessage);
       setIsLoading(false);
 
       toast({
-        title: "On-Chain Bet Failed",
+        title: "Bet Failed",
         description: errorMessage,
         variant: "destructive",
       });

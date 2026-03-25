@@ -6479,7 +6479,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   app.post("/api/bets/:id/cash-out", async (req: Request, res: Response) => {
     try {
       const betId = req.params.id;
-      const { walletAddress } = req.body;
+      const { walletAddress, expectedAmount } = req.body;
 
       if (!walletAddress || typeof walletAddress !== 'string' || !walletAddress.startsWith('0x') || walletAddress.length < 10) {
         return res.status(400).json({ message: "Valid wallet address required for cash-out" });
@@ -6552,10 +6552,27 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             const prediction = (storedBet.prediction || '').toLowerCase().trim();
             const homeScore = Number((event as any).homeScore) || 0;
             const awayScore = Number((event as any).awayScore) || 0;
+            const homeTeam = ((event as any).homeTeam || '').toLowerCase().trim();
+            const awayTeam = ((event as any).awayTeam || '').toLowerCase().trim();
+            const predNorm = prediction.replace(/\s+/g, ' ');
             let betWon = false;
-            if (prediction === 'home' || prediction === '1') betWon = homeScore > awayScore;
-            else if (prediction === 'away' || prediction === '2') betWon = awayScore > homeScore;
-            else if (prediction === 'draw' || prediction === 'x') betWon = homeScore === awayScore;
+            const isHomePred = prediction === 'home' || prediction === '1' || 
+                (homeTeam.length >= 4 && predNorm === homeTeam);
+            const isAwayPred = prediction === 'away' || prediction === '2' || 
+                (awayTeam.length >= 4 && predNorm === awayTeam);
+            if (isHomePred) {
+              betWon = homeScore > awayScore;
+            } else if (isAwayPred) {
+              betWon = awayScore > homeScore;
+            } else if (prediction === 'draw' || prediction === 'x') {
+              betWon = homeScore === awayScore;
+            } else if (prediction.includes('over')) {
+              const threshold = parseFloat(prediction.replace(/[^0-9.]/g, '')) || 2.5;
+              betWon = (homeScore + awayScore) > threshold;
+            } else if (prediction.includes('under')) {
+              const threshold = parseFloat(prediction.replace(/[^0-9.]/g, '')) || 2.5;
+              betWon = (homeScore + awayScore) < threshold;
+            }
             if (!betWon) {
               return res.status(400).json({ message: "Event has finished and your bet lost - cash-out not available" });
             }
@@ -6647,6 +6664,20 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       const platformFee = Math.round(cashOutValue * 0.02 * 100) / 100;
       const netCashOut = Math.round((cashOutValue - platformFee) * 100) / 100;
+
+      if (expectedAmount && Number(expectedAmount) > 0) {
+        const expected = Number(expectedAmount);
+        const tolerance = 0.05;
+        const diff = Math.abs(netCashOut - expected) / expected;
+        if (diff > tolerance) {
+          return res.status(409).json({ 
+            message: "Cash-out value has changed since your estimate. Please review the new amount.",
+            newEstimate: netCashOut,
+            previousEstimate: expected,
+            changed: true
+          });
+        }
+      }
 
       if (netCashOut <= 0) {
         return res.status(400).json({ message: "Cash-out net amount is zero after fees" });

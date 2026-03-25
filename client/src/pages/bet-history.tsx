@@ -84,11 +84,20 @@ export default function BetHistoryPage() {
   };
 
   const cashOutMutation = useMutation({
-    mutationFn: async ({ betId }: { betId: string }) => {
-      const res = await apiRequest('POST', `/api/bets/${betId}/cash-out`, {
-        walletAddress: walletAddress,
+    mutationFn: async ({ betId, expectedAmount }: { betId: string; expectedAmount?: number }) => {
+      const res = await fetch(`/api/bets/${betId}/cash-out`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress, expectedAmount }),
       });
-      return res.json();
+      const data = await res.json();
+      if (res.status === 409 && data.changed) {
+        throw { message: data.message, changed: true, newEstimate: data.newEstimate };
+      }
+      if (!res.ok) {
+        throw new Error(data.message || 'Cash-out failed');
+      }
+      return data;
     },
     onSuccess: (data) => {
       const amount = data.cashOut?.netAmount;
@@ -102,14 +111,23 @@ export default function BetHistoryPage() {
       setCashingOut(null);
     },
     onError: (error: any) => {
-      toast({ title: 'Cash Out Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+      if (error.changed && error.newEstimate) {
+        const betId = cashingOut;
+        if (betId) {
+          setCashOutEstimates(prev => ({ ...prev, [betId]: { estimate: error.newEstimate, available: true } }));
+        }
+        toast({ title: 'Value Changed', description: `Cash-out value updated to ${error.newEstimate}. Click again to confirm.`, variant: 'destructive' });
+      } else {
+        toast({ title: 'Cash Out Failed', description: error.message || 'Something went wrong', variant: 'destructive' });
+      }
       setCashingOut(null);
     },
   });
 
   const handleCashOut = async (bet: Bet) => {
     if (cashingOut === bet.id) {
-      cashOutMutation.mutate({ betId: bet.id });
+      const estimate = cashOutEstimates[bet.id]?.estimate;
+      cashOutMutation.mutate({ betId: bet.id, expectedAmount: estimate });
     } else {
       setCashingOut(bet.id);
       fetchCashOutEstimate(bet.id);

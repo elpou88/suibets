@@ -94,14 +94,18 @@ export class SettlementService {
     }
 
     const wonOddsProduct = wonLegs.reduce((acc, l) => acc * l.odds, 1);
-
     const pendingOddsProduct = pendingLegs.reduce((acc, l) => acc * l.odds, 1);
-    const pendingRisk = pendingOddsProduct > 0 ? 1 / pendingOddsProduct : 0.5;
+    const fullPayout = stake * totalOdds;
+
+    const pendingImpliedProb = 1 / pendingOddsProduct;
 
     const hedgeFactor = 0.85;
-    let cashOutValue = stake * wonOddsProduct * (1 + pendingRisk) * 0.5 * hedgeFactor;
+    let cashOutValue = stake * wonOddsProduct * (0.5 + 0.5 * pendingImpliedProb) * hedgeFactor;
 
-    const maxPayout = stake * totalOdds * 0.85;
+    const minCashOut = stake * wonOddsProduct * hedgeFactor * 0.3;
+    cashOutValue = Math.max(cashOutValue, minCashOut);
+
+    const maxPayout = fullPayout * hedgeFactor;
     cashOutValue = Math.min(cashOutValue, maxPayout);
     cashOutValue = Math.max(cashOutValue, 0);
 

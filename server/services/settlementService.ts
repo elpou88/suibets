@@ -62,17 +62,16 @@ export class SettlementService {
     if (stake <= 0) return 0;
 
     const originalOdds = Number(bet.odds) || 2.0;
-    const clampedCurrentOdds = Math.max(currentOdds, 1.01);
+    const clampedCurrentOdds = Math.max(currentOdds, 1.05);
 
     const oddsRatio = originalOdds / clampedCurrentOdds;
 
     const hedgeFactor = 0.85;
     let cashOutValue = stake * oddsRatio * hedgeFactor;
 
-    const maxPayout = stake * originalOdds * 0.9;
-    const minPayout = stake * 0.1;
+    const maxPayout = stake * originalOdds * 0.85;
     cashOutValue = Math.min(cashOutValue, maxPayout);
-    cashOutValue = Math.max(cashOutValue, minPayout);
+    cashOutValue = Math.max(cashOutValue, 0);
 
     return Math.round(cashOutValue * 100) / 100;
   }
@@ -86,9 +85,12 @@ export class SettlementService {
 
     const wonLegs = legs.filter(l => l.won === true);
     const pendingLegs = legs.filter(l => l.won === null);
+    const lostLegs = legs.filter(l => l.won === false);
+
+    if (lostLegs.length > 0) return 0;
 
     if (pendingLegs.length === 0 && wonLegs.length === legs.length) {
-      return Math.round(stake * totalOdds * 0.9 * 100) / 100;
+      return Math.round(stake * totalOdds * 0.85 * 100) / 100;
     }
 
     const wonOddsProduct = wonLegs.reduce((acc, l) => acc * l.odds, 1);
@@ -99,10 +101,9 @@ export class SettlementService {
     const hedgeFactor = 0.85;
     let cashOutValue = stake * wonOddsProduct * (1 + pendingRisk) * 0.5 * hedgeFactor;
 
-    const maxPayout = stake * totalOdds * 0.9;
-    const minPayout = stake * 0.1;
+    const maxPayout = stake * totalOdds * 0.85;
     cashOutValue = Math.min(cashOutValue, maxPayout);
-    cashOutValue = Math.max(cashOutValue, minPayout);
+    cashOutValue = Math.max(cashOutValue, 0);
 
     return Math.round(cashOutValue * 100) / 100;
   }

@@ -6447,7 +6447,15 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         );
       }
 
-      const platformFee = Math.round(cashOutValue * 0.01 * 100) / 100;
+      const estPlacedRaw = storedBet.placedAt || storedBet.createdAt || '';
+      const estPlacedMs = typeof estPlacedRaw === 'string' ? new Date(estPlacedRaw).getTime() : Number(estPlacedRaw);
+      const estBetAge = estPlacedMs > 0 ? Date.now() - estPlacedMs : Infinity;
+      if (estBetAge < 60000) {
+        const waitSec = Math.ceil((60000 - estBetAge) / 1000);
+        return res.json({ estimate: 0, available: false, reason: `Available in ${waitSec}s` });
+      }
+
+      const platformFee = Math.round(cashOutValue * 0.02 * 100) / 100;
       const netAmount = Math.round((cashOutValue - platformFee) * 100) / 100;
 
       res.json({
@@ -6464,7 +6472,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Cash-out endpoint - Allow early cash-out of pending bets
+  const cashOutRateLimit = new Map<string, number>();
+  const CASH_OUT_COOLDOWN_MS = 10000;
+  const MIN_BET_AGE_MS = 60000;
+
   app.post("/api/bets/:id/cash-out", async (req: Request, res: Response) => {
     try {
       const betId = req.params.id;
@@ -6474,13 +6485,19 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(400).json({ message: "Valid wallet address required for cash-out" });
       }
 
+      const walletKey = walletAddress.toLowerCase();
+      const lastCashOut = cashOutRateLimit.get(walletKey) || 0;
+      if (Date.now() - lastCashOut < CASH_OUT_COOLDOWN_MS) {
+        return res.status(429).json({ message: "Cash-out rate limited. Please wait before trying again." });
+      }
+
       const storedBet = await storage.getBet(betId);
       
       if (!storedBet) {
         return res.status(404).json({ message: "Bet not found" });
       }
 
-      if (storedBet.walletAddress && storedBet.walletAddress.toLowerCase() !== walletAddress.toLowerCase()) {
+      if (storedBet.walletAddress && storedBet.walletAddress.toLowerCase() !== walletKey) {
         console.warn(`🚫 CASH-OUT BLOCKED: Wallet ${walletAddress.slice(0, 12)}... tried to cash out bet ${betId} owned by ${(storedBet.walletAddress || '').slice(0, 12)}...`);
         return res.status(403).json({ message: "You can only cash out your own bets" });
       }
@@ -6488,6 +6505,19 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       if (!storedBet.userId) {
         return res.status(400).json({ message: "Bet has no userId - cannot cash out" });
       }
+
+      if (storedBet.status !== 'pending') {
+        return res.status(400).json({ message: storedBet.status === 'cashed_out' ? "Bet already cashed out" : "Only pending bets can be cashed out" });
+      }
+
+      const placedAtRaw = storedBet.placedAt || storedBet.createdAt || '';
+      const placedAtMs = typeof placedAtRaw === 'string' ? new Date(placedAtRaw).getTime() : Number(placedAtRaw);
+      const betAge = placedAtMs > 0 ? Date.now() - placedAtMs : Infinity;
+      if (betAge < MIN_BET_AGE_MS) {
+        const waitSec = Math.ceil((MIN_BET_AGE_MS - betAge) / 1000);
+        return res.status(400).json({ message: `Cash-out available in ${waitSec} seconds. Bets must be at least 1 minute old.` });
+      }
+
       const parsedBetAmount = Number(storedBet.betAmount) || Number((storedBet as any).stake) || 0;
       const parsedOdds = Number(storedBet.odds) || 2.0;
       
@@ -6504,22 +6534,34 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         odds: parsedOdds,
         betAmount: parsedBetAmount,
         currency: (storedBet as any).currency || 'SUI' as 'SUI' | 'SBETS',
-        status: storedBet.status as 'pending' | 'won' | 'lost' | 'void' | 'cashed_out',
+        status: 'pending' as const,
         prediction: storedBet.prediction || 'home',
         placedAt: storedBet.placedAt || Date.now(),
         potentialPayout: Number(storedBet.potentialPayout) || parsedBetAmount * parsedOdds
       };
-      
-      if (bet.status !== 'pending' && bet.status !== 'cashed_out') {
-        return res.status(400).json({ message: "Only pending bets can be cashed out" });
-      }
-      
-      if (bet.status === 'cashed_out') {
-        return res.status(400).json({ message: "Bet already cashed out" });
-      }
 
       const isParlay = (storedBet as any).betType === 'parlay' || 
         (storedBet.prediction && storedBet.prediction.startsWith('['));
+
+      if (!isParlay) {
+        const eventId = storedBet.eventId || (storedBet as any).externalEventId || '';
+        try {
+          const numericId = Number(eventId);
+          const event = (!isNaN(numericId) && numericId > 0) ? await storage.getEvent(numericId) : null;
+          if (event && ((event as any).status === 'finished' || (event as any).status === 'completed')) {
+            const prediction = (storedBet.prediction || '').toLowerCase().trim();
+            const homeScore = Number((event as any).homeScore) || 0;
+            const awayScore = Number((event as any).awayScore) || 0;
+            let betWon = false;
+            if (prediction === 'home' || prediction === '1') betWon = homeScore > awayScore;
+            else if (prediction === 'away' || prediction === '2') betWon = awayScore > homeScore;
+            else if (prediction === 'draw' || prediction === 'x') betWon = homeScore === awayScore;
+            if (!betWon) {
+              return res.status(400).json({ message: "Event has finished and your bet lost - cash-out not available" });
+            }
+          }
+        } catch {}
+      }
 
       let cashOutValue: number;
 
@@ -6599,44 +6641,62 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         cashOutValue = SettlementService.calculateCashOut(bet, serverCurrentOdds, 0.75);
       }
 
-      const platformFee = Math.round(cashOutValue * 0.01 * 100) / 100;
+      if (cashOutValue <= 0) {
+        return res.status(400).json({ message: "Cash-out value is zero - bet cannot be cashed out" });
+      }
+
+      const platformFee = Math.round(cashOutValue * 0.02 * 100) / 100;
       const netCashOut = Math.round((cashOutValue - platformFee) * 100) / 100;
 
-      // Update bet status FIRST - only add winnings if status update succeeds (prevents double cash-out)
+      if (netCashOut <= 0) {
+        return res.status(400).json({ message: "Cash-out net amount is zero after fees" });
+      }
+
       const statusUpdated = await storage.updateBetStatus(betId, 'cashed_out', netCashOut);
       
       if (!statusUpdated) {
         console.log(`⚠️ DUPLICATE CASH-OUT PREVENTED: Bet ${betId} already cashed out or settled`);
         return res.status(400).json({ message: "Bet already cashed out or settled - duplicate cash-out prevented" });
       }
-      
-      // Add cash out amount to user balance in the correct currency
-      await balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
+
+      cashOutRateLimit.set(walletKey, Date.now());
 
       console.log(`💸 CASH OUT: ${betId} - Value: ${cashOutValue} ${bet.currency}, Fee: ${platformFee} ${bet.currency}, Net: ${netCashOut} ${bet.currency}`);
 
-      // Attempt on-chain payout to wallet
       let onChainTxHash: string | undefined;
+      let onChainAttempted = false;
+      let onChainError = false;
       try {
+        onChainAttempted = true;
         if (bet.currency === 'SBETS') {
           const onChainResult = await blockchainBetService.sendSbetsToUser(walletAddress, netCashOut);
-          if (onChainResult.success) {
+          if (onChainResult.success && onChainResult.txHash) {
             onChainTxHash = onChainResult.txHash;
+            await storage.updateBetStatus(betId, 'cashed_out', netCashOut, onChainTxHash);
             console.log(`✅ CASH OUT ON-CHAIN: ${netCashOut} SBETS -> ${walletAddress.slice(0,10)}... | TX: ${onChainTxHash}`);
           } else {
-            console.warn(`⚠️ CASH OUT on-chain failed (DB balance credited): ${onChainResult.error}`);
+            onChainError = true;
+            console.warn(`⚠️ CASH OUT on-chain failed: ${onChainResult.error}`);
           }
         } else {
           const onChainResult = await blockchainBetService.sendSuiToUser(walletAddress, netCashOut);
-          if (onChainResult.success) {
+          if (onChainResult.success && onChainResult.txHash) {
             onChainTxHash = onChainResult.txHash;
+            await storage.updateBetStatus(betId, 'cashed_out', netCashOut, onChainTxHash);
             console.log(`✅ CASH OUT ON-CHAIN: ${netCashOut} SUI -> ${walletAddress.slice(0,10)}... | TX: ${onChainTxHash}`);
           } else {
-            console.warn(`⚠️ CASH OUT on-chain failed (DB balance credited): ${onChainResult.error}`);
+            onChainError = true;
+            console.warn(`⚠️ CASH OUT on-chain failed: ${onChainResult.error}`);
           }
         }
       } catch (onChainErr: any) {
-        console.error(`❌ CASH OUT on-chain error (DB balance credited): ${onChainErr.message}`);
+        onChainError = true;
+        console.error(`❌ CASH OUT on-chain error: ${onChainErr.message}`);
+      }
+
+      if (onChainError && !onChainTxHash) {
+        await balanceService.addWinnings(bet.userId, netCashOut, bet.currency);
+        console.log(`💰 CASH OUT fallback: credited ${netCashOut} ${bet.currency} to DB balance for ${bet.userId}`);
       }
 
       res.json({

@@ -397,6 +397,18 @@ export class FreeSportsService {
           return true;
         });
         
+        if (sportEvents.length === 0 && ['basketball', 'baseball', 'ice-hockey'].includes(sportSlug)) {
+          try {
+            const sofaFallback = await this.fetchSofaScoreScheduledSport(sportSlug, config.sportId, config.hasDraws);
+            if (sofaFallback.length > 0) {
+              sportEvents.push(...sofaFallback);
+              console.log(`[FreeSports] ${config.name}: ${sofaFallback.length} events from SofaScore fallback`);
+            }
+          } catch (sfErr: any) {
+            console.warn(`[FreeSports] SofaScore fallback failed for ${config.name}: ${sfErr.message}`);
+          }
+        }
+
         if (sportSlug === 'mma') {
           const mmaCount = sportEvents.filter(e => e.sportId === 7).length;
           const boxingCount = sportEvents.filter(e => e.sportId === 8).length;
@@ -744,28 +756,16 @@ export class FreeSportsService {
 
         if (!homeTeam || !awayTeam || homeTeam === awayTeam) continue;
 
-        // Seeded deterministic odds — consistent for the same game, realistic sportsbook margins
-        const seedStr = String(game.id || `${homeTeam}_${awayTeam}`);
-        const seedHash = seedStr.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
-        const seededRand = (offset: number) => { const x = Math.sin(Math.abs(seedHash) + offset) * 10000; return x - Math.floor(x); };
-        const MARGIN = 1.055; // 5.5% bookmaker margin
-        const r1 = seededRand(1);
-        const r2 = seededRand(2);
-        let hOdds: number, aOdds: number;
+        const [hOdds, aOdds] = this.generateRealisticOdds(
+          String(game.id || `${homeTeam}_${awayTeam}`), homeTeam, awayTeam, sportSlug, 0, 0
+        );
         let drawOdds: number | undefined;
         if (config.hasDraws) {
-          const drawProb = 0.18 + r2 * 0.12;
-          const remaining = 1 - drawProb;
-          const homeProb = remaining * (0.38 + r1 * 0.24);
-          const awayProb = remaining - homeProb;
-          hOdds = parseFloat(Math.max(1.20, MARGIN / homeProb).toFixed(2));
-          aOdds = parseFloat(Math.max(1.20, MARGIN / Math.max(0.15, awayProb)).toFixed(2));
-          drawOdds = parseFloat(Math.max(2.80, MARGIN / drawProb).toFixed(2));
-        } else {
-          const homeProb = 0.38 + r1 * 0.24;
-          const awayProb = 1 - homeProb;
-          hOdds = parseFloat(Math.max(1.15, MARGIN / homeProb).toFixed(2));
-          aOdds = parseFloat(Math.max(1.15, MARGIN / awayProb).toFixed(2));
+          const seedStr = String(game.id || `${homeTeam}_${awayTeam}`);
+          const seedHash = seedStr.split('').reduce((h: number, c: string) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+          const seededRand = (offset: number) => { const x = Math.sin(Math.abs(seedHash) + offset) * 10000; return x - Math.floor(x); };
+          const drawProb = 0.20 + seededRand(3) * 0.10;
+          drawOdds = parseFloat(Math.max(2.80, 1.055 / drawProb).toFixed(2));
         }
 
         const outcomes: OutcomeData[] = [
@@ -2529,6 +2529,128 @@ export class FreeSportsService {
    * Uses real player/team names and realistic tournament schedules.
    * Settlement auto-resolves based on seeded randomness once match time passes.
    */
+  private generateRealisticOdds(
+    seed: string, homeTeam: string, awayTeam: string, sport: string,
+    homeRank: number, awayRank: number
+  ): [number, number] {
+    const seedHash = seed.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const rand = (offset: number) => { const x = Math.sin(Math.abs(seedHash) + offset) * 10000; return x - Math.floor(x); };
+
+    const homeNameHash = homeTeam.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const awayNameHash = awayTeam.split('').reduce((h, c) => ((h << 5) - h + c.charCodeAt(0)) | 0, 0);
+    const homeStrength = (Math.abs(homeNameHash) % 40) + 55;
+    const awayStrength = (Math.abs(awayNameHash) % 40) + 55;
+
+    let homeAdv = homeStrength - awayStrength;
+    homeAdv += 3;
+
+    if (homeRank > 0 && awayRank > 0) {
+      homeAdv += (awayRank - homeRank) * 1.5;
+    }
+
+    const noise = (rand(1) - 0.5) * 8;
+    homeAdv += noise;
+
+    const homeAdv2 = Math.max(-35, Math.min(35, homeAdv));
+    const homeProb = 1 / (1 + Math.pow(10, -homeAdv2 / 16));
+
+    const MARGIN = 1.055;
+    let hOdds = parseFloat((MARGIN / Math.max(0.08, homeProb)).toFixed(2));
+    let aOdds = parseFloat((MARGIN / Math.max(0.08, 1 - homeProb)).toFixed(2));
+
+    hOdds = parseFloat(Math.max(1.04, Math.min(15.00, hOdds)).toFixed(2));
+    aOdds = parseFloat(Math.max(1.04, Math.min(15.00, aOdds)).toFixed(2));
+
+    return [hOdds, aOdds];
+  }
+
+  private async fetchSofaScoreScheduledSport(sportSlug: string, sportId: number, hasDraws: boolean): Promise<SportEvent[]> {
+    const sofaSportKey: Record<string, string> = {
+      'basketball': 'basketball',
+      'baseball': 'baseball',
+      'ice-hockey': 'ice-hockey',
+    };
+    const key = sofaSportKey[sportSlug];
+    if (!key) return [];
+
+    const events: SportEvent[] = [];
+    const now = Date.now();
+
+    for (let dayOffset = 0; dayOffset < 3; dayOffset++) {
+      try {
+        const fetchDate = new Date();
+        fetchDate.setUTCDate(fetchDate.getUTCDate() + dayOffset);
+        const dateStr = fetchDate.toISOString().split('T')[0];
+
+        const resp = await axios.get(
+          `${SOFASCORE_BASE_URL}/sport/${key}/scheduled-events/${dateStr}`,
+          { headers: SOFASCORE_HEADERS, timeout: 12000 }
+        );
+        const rawEvents: any[] = resp.data?.events || [];
+
+        for (const ev of rawEvents) {
+          try {
+            const statusType = (ev?.status?.type || '').toLowerCase();
+            if (statusType === 'finished' || statusType === 'canceled') continue;
+
+            const homeTeam: string = ev?.homeTeam?.name || ev?.homeTeam?.shortName || '';
+            const awayTeam: string = ev?.awayTeam?.name || ev?.awayTeam?.shortName || '';
+            if (!homeTeam || !awayTeam || homeTeam === awayTeam) continue;
+
+            const startTimestamp = ev?.startTimestamp;
+            if (!startTimestamp) continue;
+            const startMs = startTimestamp * 1000;
+            if (startMs <= now) continue;
+
+            const startTime = new Date(startMs).toISOString();
+            const league = ev?.tournament?.name || ev?.tournament?.uniqueTournament?.name || sportSlug;
+            const country = ev?.tournament?.category?.name || '';
+            const leagueName = country && !league.includes(country) ? `${league} (${country})` : league;
+
+            const sfId = ev?.id || `${homeTeam}_${awayTeam}_${startTimestamp}`;
+            const eventId = `${sportSlug}_sf_${sfId}`;
+
+            const homeRanking = ev?.homeTeam?.ranking || ev?.homeTeam?.position || 0;
+            const awayRanking = ev?.awayTeam?.ranking || ev?.awayTeam?.position || 0;
+
+            const [hOdds, aOdds] = this.generateRealisticOdds(
+              String(sfId), homeTeam, awayTeam, sportSlug, homeRanking, awayRanking
+            );
+            let drawOdds: number | undefined;
+
+            const outcomes: OutcomeData[] = [
+              { id: 'home', name: homeTeam, odds: hOdds, probability: 1 / hOdds },
+              { id: 'away', name: awayTeam, odds: aOdds, probability: 1 / aOdds },
+            ];
+            if (drawOdds) {
+              outcomes.push({ id: 'draw', name: 'Draw', odds: drawOdds, probability: 1 / drawOdds });
+            }
+
+            events.push({
+              id: eventId,
+              sportId,
+              leagueName,
+              homeTeam,
+              awayTeam,
+              startTime,
+              status: 'scheduled',
+              isLive: false,
+              homeOdds: hOdds,
+              awayOdds: aOdds,
+              markets: [{ id: 'match_winner', name: 'Match Winner', outcomes }],
+            } as SportEvent);
+          } catch {}
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 400));
+      } catch (dayErr: any) {
+        console.warn(`[FreeSports] SofaScore ${sportSlug} day+${dayOffset} failed: ${dayErr.message}`);
+      }
+    }
+
+    return events;
+  }
+
   private async fetchSofaScoreUpcoming(): Promise<SportEvent[]> {
     const events: SportEvent[] = [];
 

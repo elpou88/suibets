@@ -389,14 +389,7 @@ class SettlementWorkerService {
       const finishedMatches = await this.getFinishedMatches(pendingBets);
       
       if (finishedMatches.length === 0) {
-        const parlayBetsCheck = pendingBets.filter(bet => this.isParlayBet(bet));
-        if (parlayBetsCheck.length > 0) {
-          console.log(`📭 SettlementWorker: No batch finished matches, but ${parlayBetsCheck.length} parlays pending — trying direct fixture lookups`);
-          await this.settleParlayBets(parlayBetsCheck, []);
-        } else {
-          console.log('📭 SettlementWorker: No new finished matches to settle');
-        }
-        return;
+        console.log(`📭 SettlementWorker: No batch finished matches — trying direct lookups for all ${pendingBets.length} pending bets`);
       }
 
       console.log(`📋 SettlementWorker: Found ${finishedMatches.length} finished matches`);
@@ -487,7 +480,8 @@ class SettlementWorkerService {
           
           let directMatch: FinishedMatch | null = null;
           
-          if (extId.startsWith('basketball_api_') || extId.startsWith('ice-hockey_api_') || extId.startsWith('baseball_api_')) {
+          if (extId.startsWith('basketball_api_') || extId.startsWith('ice-hockey_api_') || extId.startsWith('baseball_api_') ||
+              extId.startsWith('handball_api_') || extId.startsWith('volleyball_api_') || extId.startsWith('rugby_api_')) {
             directMatch = await this.fetchFreeSportsGameById(extId);
           } else if (/^\d+$/.test(extId)) {
             directMatch = await this.fetchFootballFixtureById(extId);

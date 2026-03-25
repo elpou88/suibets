@@ -169,7 +169,7 @@ cp .env.example .env</pre>
 2. Connect your GitHub repository
 3. Set Environment Variables in Railway:
    - DATABASE_URL: PostgreSQL connection string
-   - API_SPORTS_KEY: 3ec255b133882788e32f6349eff77b21
+   - API_SPORTS_KEY: YOUR_API_SPORTS_KEY_HERE
    - SESSION_SECRET: Generate strong random string
    - SUI_NETWORK: testnet or mainnet
    - ADMIN_PASSWORD: 123Jamie88 (change in production!)
@@ -466,7 +466,7 @@ export type Sport = typeof sports.$inferSelect;</pre></div>
     <div class="file-name">server/services/apiSportsService.ts - Sports Data Provider (API-Sports)</div>
     <div class="file-content"><pre>import axios from 'axios';
 
-const API_KEY = process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
+const API_KEY = process.env.API_SPORTS_KEY || 'YOUR_API_SPORTS_KEY_HERE';
 const BASE_URL = 'https://v3.football.api-sports.io';
 
 export class ApiSportsService {
@@ -1411,7 +1411,7 @@ export default defineConfig({
 DATABASE_URL=postgresql://user:password@localhost:5432/suibets
 
 # API Keys
-API_SPORTS_KEY=3ec255b133882788e32f6349eff77b21
+API_SPORTS_KEY=YOUR_API_SPORTS_KEY_HERE
 SPORTSDATA_API_KEY=your_sportsdata_key
 
 # Sui Network
@@ -1450,7 +1450,7 @@ HOST=0.0.0.0
 <div class="info-box">
     <strong>For Production (Railway):</strong>
     <pre>DATABASE_URL: Get from Railway PostgreSQL addon
-API_SPORTS_KEY: 3ec255b133882788e32f6349eff77b21
+API_SPORTS_KEY: YOUR_API_SPORTS_KEY_HERE
 SESSION_SECRET: Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 SUI_NETWORK: mainnet (not testnet)
 NODE_ENV: production
@@ -1461,7 +1461,7 @@ All other keys same as development</pre>
 
 <div class="info-box">
     <strong>Get API-Sports Key (Already Provided):</strong>
-    <pre>Key: 3ec255b133882788e32f6349eff77b21
+    <pre>Key: YOUR_API_SPORTS_KEY_HERE
 Provider: api-sports.io
 Sports Supported: 30+ sports with real-time odds
 Rate Limit: Based on subscription tier</pre>

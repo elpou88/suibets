@@ -13,7 +13,7 @@ export class BoxingService {
   constructor() {
     this.apiSportsService = new ApiSportsService();
     // Use the existing API key from environment variables or default key
-    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '3ec255b133882788e32f6349eff77b21';
+    this.apiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
     if (!this.apiKey) {
       console.error('[BoxingService] No API key found for API-Sports');
     } else {

@@ -61,7 +61,7 @@ In Railway dashboard, go to your service → Variables, and add:
 | Variable | Value | Required |
 |----------|-------|----------|
 | `DATABASE_URL` | Auto-set by Railway PostgreSQL | Yes |
-| `API_SPORTS_KEY` | `3ec255b133882788e32f6349eff77b21` | Yes |
+| `API_SPORTS_KEY` | `YOUR_API_SPORTS_KEY_HERE` | Yes |
 | `SESSION_SECRET` | Generate a random 32+ character string | Yes |
 | `NODE_ENV` | `production` | Yes |
 | `PORT` | `5000` | Yes |

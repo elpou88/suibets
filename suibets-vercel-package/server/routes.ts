@@ -16,9 +16,9 @@ import { apiResilienceService } from "./services/apiResilienceService";
 
 // Ensure API key is available - prioritize SPORTSDATA_API_KEY but fallback to API_SPORTS_KEY
 // Now using a fixed API key which is shared among all services
-const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "3ec255b133882788e32f6349eff77b21";
+const sportsApiKey = process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
 
-console.log(`[Routes] Using sports API key: ${sportsApiKey}`);
+console.log(`[Routes] Sports API key: ${sportsApiKey ? 'configured' : 'NOT SET'}`);
 
 // Create instance of ApiSportsService with the API key
 const apiSportsService = new ApiSportsService(sportsApiKey);

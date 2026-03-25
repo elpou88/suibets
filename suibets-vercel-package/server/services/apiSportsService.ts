@@ -103,7 +103,7 @@ export class ApiSportsService {
 
   constructor(apiKey?: string) {
     // Use provided key, environment variables, or default to the known working key
-    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || "3ec255b133882788e32f6349eff77b21";
+    this.apiKey = apiKey || process.env.SPORTSDATA_API_KEY || process.env.API_SPORTS_KEY || '';
     
     // Log key information
     console.log(`[ApiSportsService] API key set, length: ${this.apiKey.length}`);

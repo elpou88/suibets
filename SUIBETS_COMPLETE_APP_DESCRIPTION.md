@@ -115,7 +115,7 @@ Abstraction layer enabling seamless switching between multiple data providers wi
 
 **1. API-Sports (ACTIVE - Primary)**
 - Status: ✅ Active & Configured
-- API Key: `3ec255b133882788e32f6349eff77b21`
+- API Key: `YOUR_API_SPORTS_KEY_HERE`
 - Coverage: 14 core sports
 - Features:
   - Real-time live event data

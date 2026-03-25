@@ -309,18 +309,6 @@ export default function CleanHome() {
     ? Number(onChainSbetsBalance.totalBalance) / 1_000_000_000 
     : 0;
   
-  // Fetch platform deposited balance from API (what's available to bet)
-  // Refetch every 30 seconds to show updated balances after settlements
-  const { data: balanceData } = useQuery<{ SUI: number; SBETS: number; suiBalance: number; sbetsBalance: number }>({
-    queryKey: [`/api/user/balance?userId=${walletAddress}`],
-    enabled: !!walletAddress,
-    refetchInterval: 30000, // Auto-refresh every 30 seconds to show settled bet winnings
-  });
-  
-  const platformBalances = {
-    SUI: balanceData?.SUI ?? balanceData?.suiBalance ?? 0,
-    SBETS: balanceData?.SBETS ?? balanceData?.sbetsBalance ?? 0
-  };
 
   // Fetch promotion status
   const { data: promotionData } = useQuery<{
@@ -607,11 +595,8 @@ export default function CleanHome() {
             {isConnected && walletAddress ? (
               <>
                 <div className="text-right">
-                  <div className="text-cyan-400 text-xs" title="Platform balance (deposited for betting)">
-                    💰 {platformBalances.SUI.toFixed(4)} SUI | {platformBalances.SBETS.toFixed(2)} SBETS
-                  </div>
-                  <div className="text-green-400 text-xs" title="Wallet balance (on-chain)">
-                    🔗 Wallet: {walletSuiBalance.toFixed(4)} SUI | {walletSbetsBalance.toFixed(2)} SBETS
+                  <div className="text-cyan-400 text-xs" title="Wallet balance (on-chain)">
+                    {walletSuiBalance.toFixed(4)} SUI | {walletSbetsBalance.toFixed(2)} SBETS
                   </div>
                   <div className="text-gray-500 text-xs"><SuiNSName address={walletAddress} className="text-gray-500 text-xs" /></div>
                 </div>

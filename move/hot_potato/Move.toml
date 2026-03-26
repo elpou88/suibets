@@ -1,0 +1,14 @@
+[package]
+name = "hot_potato"
+version = "1.0.0"
+edition = "2024.beta"
+
+[dependencies]
+Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/mainnet" }
+
+[dependencies.sbets_token]
+local = "../../sbets_token"
+
+[addresses]
+hot_potato = "0x0"
+sbets_token = "0x999d696dad9e4684068fa74ef9c5d3afc411d3ba62973bd5d54830f324f29502"

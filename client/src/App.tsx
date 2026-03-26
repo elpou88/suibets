@@ -61,6 +61,7 @@ import StreamingPage from "@/pages/streaming";
 import AuthCallback from "@/pages/auth-callback";
 const TradingPage = lazy(() => import("@/pages/trade"));
 import AIBettingPage from "@/pages/ai-betting";
+import HotPotatoPage from "@/pages/hot-potato";
 
 // Informational Pages
 import PrivacyPolicy from "@/pages/privacy";
@@ -236,6 +237,9 @@ function App() {
                           
                           {/* AI Betting Intelligence */}
                           <Route path="/ai-betting" component={AIBettingPage} />
+                          
+                          {/* Hot Potato Game */}
+                          <Route path="/hot-potato" component={HotPotatoPage} />
                           
                           {/* Streaming */}
                           <Route path="/streaming" component={StreamingPage} />

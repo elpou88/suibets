@@ -10154,6 +10154,219 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     }
   });
 
+  // ─── Hot Potato Game Routes ───
+  app.get('/api/hot-potato/games', async (_req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const games = await db.select().from(hotPotatoGames).orderBy(sql`created_at DESC`).limit(20);
+      res.json(games);
+    } catch (err: any) {
+      console.error('Hot Potato list error:', err.message);
+      res.status(500).json({ error: 'Failed to fetch games' });
+    }
+  });
+
+  app.get('/api/hot-potato/games/:id', async (req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const id = parseInt(req.params.id);
+      const [game] = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.id, id));
+      if (!game) return res.status(404).json({ error: 'Game not found' });
+      res.json(game);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch game' });
+    }
+  });
+
+  app.get('/api/hot-potato/games/:id/grabs', async (req: Request, res: Response) => {
+    try {
+      const { hotPotatoGrabs } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const id = parseInt(req.params.id);
+      const grabs = await db.select().from(hotPotatoGrabs)
+        .where(eq(hotPotatoGrabs.gameId, id))
+        .orderBy(sql`grab_number DESC`)
+        .limit(50);
+      res.json(grabs);
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to fetch grabs' });
+    }
+  });
+
+  app.post('/api/hot-potato/games', async (req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eventId, teamA, teamB, sportName, leagueName, matchTime,
+              minGrabAmount, timerDurationMs, gameDurationMs, createdBy, initialAmount, txHash } = req.body;
+
+      if (!eventId || !teamA || !teamB) {
+        return res.status(400).json({ error: 'eventId, teamA, teamB required' });
+      }
+
+      const now = Date.now();
+      const timer = timerDurationMs || 60000;
+      const duration = gameDurationMs || 3600000;
+
+      const [game] = await db.insert(hotPotatoGames).values({
+        eventId,
+        teamA,
+        teamB,
+        sportName: sportName || null,
+        leagueName: leagueName || null,
+        matchTime: matchTime ? new Date(matchTime) : null,
+        potAmount: initialAmount || 0,
+        currency: 'SBETS',
+        minGrabAmount: minGrabAmount || 100,
+        currentHolder: createdBy || null,
+        holderTeam: 0,
+        grabCount: initialAmount ? 1 : 0,
+        playerCount: initialAmount ? 1 : 0,
+        status: 'active',
+        timerDurationMs: timer,
+        explosionTimeMs: String(now + timer),
+        gameDeadlineMs: String(now + duration),
+        createdBy: createdBy || null,
+        txHash: txHash || null,
+      }).returning();
+
+      console.log(`🥔 Hot Potato game #${game.id} created: ${teamA} vs ${teamB}`);
+      res.json(game);
+    } catch (err: any) {
+      console.error('Hot Potato create error:', err.message);
+      res.status(500).json({ error: 'Failed to create game' });
+    }
+  });
+
+  app.post('/api/hot-potato/games/:id/grab', async (req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames, hotPotatoPlayers, hotPotatoGrabs } = await import('@shared/schema');
+      const { eq, and } = await import('drizzle-orm');
+      const id = parseInt(req.params.id);
+      const { wallet, amount, teamChosen, txHash } = req.body;
+
+      if (!wallet || !amount || teamChosen === undefined) {
+        return res.status(400).json({ error: 'wallet, amount, teamChosen required' });
+      }
+
+      const [game] = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.id, id));
+      if (!game) return res.status(404).json({ error: 'Game not found' });
+      if (game.status !== 'active') return res.status(400).json({ error: 'Game is not active' });
+
+      const now = Date.now();
+      if (game.explosionTimeMs && now >= parseInt(game.explosionTimeMs)) {
+        await db.update(hotPotatoGames).set({ status: 'exploded' }).where(eq(hotPotatoGames.id, id));
+        return res.status(400).json({ error: 'Game has exploded!', exploded: true });
+      }
+
+      if (game.gameDeadlineMs && now >= parseInt(game.gameDeadlineMs)) {
+        await db.update(hotPotatoGames).set({ status: 'exploded' }).where(eq(hotPotatoGames.id, id));
+        return res.status(400).json({ error: 'Game deadline passed', exploded: true });
+      }
+
+      if (amount < game.minGrabAmount) {
+        return res.status(400).json({ error: `Minimum grab amount is ${game.minGrabAmount} SBETS` });
+      }
+
+      if (game.currentHolder?.toLowerCase() === wallet.toLowerCase()) {
+        return res.status(400).json({ error: 'You already hold the potato!' });
+      }
+
+      const newPot = (game.potAmount || 0) + amount;
+      const newGrabCount = (game.grabCount || 0) + 1;
+      let newTimer = game.timerDurationMs || 60000;
+      const decrease = Math.floor(newTimer * 0.05);
+      const minTimer = 5000;
+      if (newTimer > minTimer + decrease) {
+        newTimer = newTimer - decrease;
+      } else {
+        newTimer = minTimer;
+      }
+
+      const newExplosion = String(now + newTimer);
+
+      const existingPlayer = await db.select().from(hotPotatoPlayers)
+        .where(and(eq(hotPotatoPlayers.gameId, id), eq(hotPotatoPlayers.wallet, wallet.toLowerCase())));
+
+      let newPlayerCount = game.playerCount || 0;
+      if (existingPlayer.length > 0) {
+        await db.update(hotPotatoPlayers).set({
+          totalContributed: (existingPlayer[0].totalContributed || 0) + amount,
+          grabCount: (existingPlayer[0].grabCount || 0) + 1,
+          lastTeam: teamChosen,
+          lastGrabAt: new Date(),
+        }).where(eq(hotPotatoPlayers.id, existingPlayer[0].id));
+      } else {
+        newPlayerCount += 1;
+        await db.insert(hotPotatoPlayers).values({
+          gameId: id,
+          wallet: wallet.toLowerCase(),
+          totalContributed: amount,
+          grabCount: 1,
+          lastTeam: teamChosen,
+          lastGrabAt: new Date(),
+        });
+      }
+
+      await db.insert(hotPotatoGrabs).values({
+        gameId: id,
+        wallet: wallet.toLowerCase(),
+        amount,
+        teamChosen,
+        grabNumber: newGrabCount,
+        timerAtGrab: newTimer,
+        potAfterGrab: newPot,
+        txHash: txHash || null,
+      });
+
+      await db.update(hotPotatoGames).set({
+        potAmount: newPot,
+        currentHolder: wallet.toLowerCase(),
+        holderTeam: teamChosen,
+        grabCount: newGrabCount,
+        playerCount: newPlayerCount,
+        timerDurationMs: newTimer,
+        explosionTimeMs: newExplosion,
+      }).where(eq(hotPotatoGames.id, id));
+
+      console.log(`🥔 Grab #${newGrabCount} on game #${id}: ${wallet.slice(0,10)}... added ${amount} SBETS (team ${teamChosen}), pot=${newPot}, timer=${newTimer}ms`);
+
+      res.json({
+        success: true,
+        grabNumber: newGrabCount,
+        potAmount: newPot,
+        timerDurationMs: newTimer,
+        explosionTimeMs: newExplosion,
+      });
+    } catch (err: any) {
+      console.error('Hot Potato grab error:', err.message);
+      res.status(500).json({ error: 'Failed to grab potato' });
+    }
+  });
+
+  app.post('/api/hot-potato/games/:id/check-explosion', async (req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const id = parseInt(req.params.id);
+      const [game] = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.id, id));
+      if (!game) return res.status(404).json({ error: 'Game not found' });
+
+      const now = Date.now();
+      if (game.status === 'active' &&
+          ((game.explosionTimeMs && now >= parseInt(game.explosionTimeMs)) ||
+           (game.gameDeadlineMs && now >= parseInt(game.gameDeadlineMs)))) {
+        await db.update(hotPotatoGames).set({ status: 'exploded' }).where(eq(hotPotatoGames.id, id));
+        console.log(`🥔💥 Game #${id} EXPLODED! Last holder: ${game.currentHolder?.slice(0,10)}...`);
+        res.json({ exploded: true, lastHolder: game.currentHolder, holderTeam: game.holderTeam });
+      } else {
+        res.json({ exploded: false, status: game.status });
+      }
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to check explosion' });
+    }
+  });
+
   // ─── Pool Stats (DISABLED — re-enable when new pools are added) ───
   const poolDisabledMsg = { error: 'Pool stats temporarily disabled', code: 'DISABLED' };
   app.get('/api/bluefin/pool-stats', (_req, res) => res.status(503).json(poolDisabledMsg));

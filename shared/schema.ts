@@ -723,3 +723,54 @@ export const adminSessions = pgTable("admin_sessions", {
   ipAddress: text("ip_address"),
   revoked: boolean("revoked").default(false),
 });
+
+export const hotPotatoGames = pgTable("hot_potato_games", {
+  id: serial("id").primaryKey(),
+  gameObjectId: text("game_object_id").unique(),
+  eventId: text("event_id").notNull(),
+  teamA: text("team_a").notNull(),
+  teamB: text("team_b").notNull(),
+  sportName: text("sport_name"),
+  leagueName: text("league_name"),
+  matchTime: timestamp("match_time"),
+  potAmount: real("pot_amount").default(0),
+  currency: text("currency").default("SBETS"),
+  minGrabAmount: real("min_grab_amount").default(100),
+  currentHolder: text("current_holder"),
+  holderTeam: integer("holder_team").default(0),
+  grabCount: integer("grab_count").default(0),
+  playerCount: integer("player_count").default(0),
+  status: text("status").default("active"),
+  timerDurationMs: integer("timer_duration_ms").default(60000),
+  explosionTimeMs: text("explosion_time_ms"),
+  gameDeadlineMs: text("game_deadline_ms"),
+  createdBy: text("created_by"),
+  createdAt: timestamp("created_at").defaultNow(),
+  settledAt: timestamp("settled_at"),
+  winningTeam: integer("winning_team"),
+  txHash: text("tx_hash"),
+});
+
+export const hotPotatoPlayers = pgTable("hot_potato_players", {
+  id: serial("id").primaryKey(),
+  gameId: integer("game_id").references(() => hotPotatoGames.id),
+  wallet: text("wallet").notNull(),
+  totalContributed: real("total_contributed").default(0),
+  grabCount: integer("grab_count").default(0),
+  lastTeam: integer("last_team").default(0),
+  lastGrabAt: timestamp("last_grab_at"),
+  joinedAt: timestamp("joined_at").defaultNow(),
+});
+
+export const hotPotatoGrabs = pgTable("hot_potato_grabs", {
+  id: serial("id").primaryKey(),
+  gameId: integer("game_id").references(() => hotPotatoGames.id),
+  wallet: text("wallet").notNull(),
+  amount: real("amount").notNull(),
+  teamChosen: integer("team_chosen").notNull(),
+  grabNumber: integer("grab_number").notNull(),
+  timerAtGrab: integer("timer_at_grab"),
+  potAfterGrab: real("pot_after_grab"),
+  txHash: text("tx_hash"),
+  createdAt: timestamp("created_at").defaultNow(),
+});

@@ -436,10 +436,6 @@ export default function CleanHome() {
               {t('aiBetting')}
               <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
             </Link>
-            <Link href="/hot-potato" className="flex items-center gap-1.5 text-orange-400 hover:text-orange-300 transition-colors text-sm font-bold" data-testid="nav-hot-potato">
-              Hot Potato Bets
-              <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
-            </Link>
             <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">{t('myBets')}</Link>
             <Link href="/revenue" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-revenue">{t('revenue')}</Link>
             <DropdownMenu>
@@ -448,6 +444,11 @@ export default function CleanHome() {
                 <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-[#0b1618] border border-cyan-900/30 min-w-[180px] z-[9999]">
+                <DropdownMenuItem className="cursor-pointer text-orange-400 hover:text-orange-300 flex items-center px-4 py-3 text-sm font-bold" onClick={() => setLocation('/hot-potato')} data-testid="nav-more-hot-potato">
+                  <Zap className="h-4 w-4 mr-2" />
+                  Hot Potato Bets
+                  <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[9px] font-bold px-1 py-0.5 rounded ml-1.5 animate-pulse">NEW</span>
+                </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer text-cyan-300 hover:text-cyan-200 flex items-center px-4 py-3 text-sm font-medium" onClick={() => setLocation('/trading')} data-testid="nav-more-trade">
                   <ArrowUpDown className="h-4 w-4 mr-2" />
                   {t('trade')}
@@ -642,14 +643,14 @@ export default function CleanHome() {
               <Link href="/ai-betting" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-ai-betting-main">
                 {t('aiBetting')} <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
               </Link>
-              <Link href="/hot-potato" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-hot-potato">
-                Hot Potato Bets <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
-              </Link>
               <Link href="/bet-history" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-my-bets">{t('myBets')}</Link>
               <Link href="/revenue" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-revenue">{t('revenue')}</Link>
               <Link href="/wallet-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-dashboard">{t('dashboard')}</Link>
               <Link href="/promotions" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-promotions">{t('promotions')}</Link>
               <Link href="/trading" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-trade">{t('trade')}</Link>
+              <Link href="/hot-potato" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-hot-potato">
+                Hot Potato Bets <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
+              </Link>
               <Link href="/streaming" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-streaming">{t('streaming')}</Link>
               <Link href="/leaderboard" onClick={() => setIsMobileMenuOpen(false)} className="text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-leaderboard">{t('leaderboard')}</Link>
               <Link href="/results" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-activity">{t('activity')}</Link>

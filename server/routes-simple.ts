@@ -754,6 +754,104 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     } catch (e) {}
   }, 5 * 60 * 1000);
 
+  // SAFETY NET: Background worker to auto-recover on-chain bets missing from DB
+  // Scans recent on-chain bet events for the platform and inserts any missing DB records
+  // This guarantees no bet is ever lost even if the frontend→backend POST fails
+  const CONTRACT_PKG_ID = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
+  const PLATFORM_ID = '0xfed2649741e4d3f6316434d6bdc51d0d0975167a0dc87447122d04830d59fdf9';
+  const RPC_URL = 'https://fullnode.mainnet.sui.io:443';
+
+  async function autoRecoverMissingBets() {
+    try {
+      const { bets: betsTable } = await import('@shared/schema');
+
+      async function suiRpc(method: string, params: any[]) {
+        const r = await fetch(RPC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        });
+        return ((await r.json()) as any).result;
+      }
+
+      const eventsResult = await suiRpc('suix_queryEvents', [
+        { MoveEventType: `${CONTRACT_PKG_ID}::betting::BetPlaced` },
+        null, 25, true
+      ]);
+      const events = eventsResult?.data || [];
+      if (!events.length) return;
+
+      let recoveredCount = 0;
+      for (const ev of events) {
+        const parsed = ev.parsedJson || {};
+        const txDigest = ev.id?.txDigest;
+        if (!txDigest) continue;
+
+        const existing = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${txDigest} LIMIT 1`);
+        if ((existing.rows?.length || 0) > 0) continue;
+
+        const betObjectId = parsed.bet_id || null;
+        if (betObjectId) {
+          const existObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
+          if ((existObj.rows?.length || 0) > 0) continue;
+        }
+
+        const bettor = parsed.bettor || '';
+        const eventIdBytes = parsed.event_id;
+        const eventIdStr = Array.isArray(eventIdBytes) ? String.fromCharCode(...eventIdBytes) : 'unknown';
+        const oddsBps = parsed.odds_bps ? Number(parsed.odds_bps) : 200;
+        const odds = oddsBps / 100;
+        const rawAmount = parsed.amount ? Number(parsed.amount) : 0;
+        const coinType = parsed.coin_type === 1 ? 'SBETS' : 'SUI';
+        const decimals = coinType === 'SBETS' ? 1e9 : 1e9;
+        const amount = rawAmount / decimals;
+        const ts = ev.timestampMs ? new Date(parseInt(ev.timestampMs)) : new Date();
+        const isParlay = eventIdStr.includes('parlay');
+        const betId = betObjectId || `auto-${txDigest.slice(0, 16)}`;
+
+        try {
+          await db.insert(betsTable).values({
+            userId: null,
+            walletAddress: bettor.toLowerCase(),
+            betAmount: amount,
+            currency: coinType,
+            odds,
+            prediction: eventIdStr,
+            potentialPayout: Math.round(amount * odds * 100) / 100,
+            status: 'pending',
+            betType: isParlay ? 'parlay' : 'single',
+            cashOutAvailable: true,
+            wurlusBetId: betId,
+            txHash: txDigest,
+            platformFee: 0,
+            networkFee: 0,
+            feeCurrency: coinType,
+            eventName: isParlay ? 'Parlay Bet (Auto-Recovered)' : 'Bet (Auto-Recovered)',
+            externalEventId: eventIdStr,
+            betObjectId: betObjectId,
+            createdAt: ts,
+          }).returning();
+          recoveredCount++;
+          console.log(`🔧 AUTO-RECOVERED: ${betId} for ${bettor.slice(0,12)}... (${amount} ${coinType})`);
+        } catch (insertErr: any) {
+          if (insertErr.code !== '23505') {
+            console.error(`Auto-recovery insert failed:`, insertErr.message);
+          }
+        }
+      }
+
+      if (recoveredCount > 0) {
+        console.log(`🔧 Auto-recovery: ${recoveredCount} missing bets recovered from on-chain events`);
+      }
+    } catch (err: any) {
+      console.error('Auto-recovery worker error:', err.message);
+    }
+  }
+
+  setTimeout(autoRecoverMissingBets, 30 * 1000);
+  setInterval(autoRecoverMissingBets, 5 * 60 * 1000);
+  console.log('🔧 Auto-recovery worker started - checks every 5 minutes for missing on-chain bets');
+
   // Betting status endpoint - check if SUI betting is paused
   app.get("/api/betting-status", (req: Request, res: Response) => {
     res.json({

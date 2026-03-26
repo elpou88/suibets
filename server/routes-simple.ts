@@ -10582,51 +10582,65 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   // 3. Auto-game creation — picks popular upcoming matches and creates HP games
   async function hotPotatoAutoGameCreator() {
     try {
-      const { hotPotatoGames, events: eventsTable } = await import('@shared/schema');
-      const { eq, and, gt, isNull, not, ne } = await import('drizzle-orm');
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
 
       const activeGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'active'));
-      if (activeGames.length >= 5) return;
+      console.log(`🥔🤖 Auto-creator: ${activeGames.length} active HP games`);
+      if (activeGames.length >= 5) {
+        console.log('🥔🤖 Already at max (5) active games, skipping');
+        return;
+      }
 
-      const now = new Date();
-      const in6hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+      const slotsAvailable = 5 - activeGames.length;
+      const now = Date.now();
 
-      const upcomingMatches = await db.select().from(eventsTable)
-        .where(and(
-          gt(eventsTable.startTime, now),
-        ))
-        .orderBy(sql`start_time ASC`)
-        .limit(20);
+      const snapshot = getUpcomingSnapshot();
+      if (!snapshot || !snapshot.events || snapshot.events.length === 0) {
+        console.log('🥔🤖 No upcoming events in snapshot cache yet');
+        return;
+      }
 
-      if (!upcomingMatches.length) return;
+      console.log(`🥔🤖 Upcoming snapshot has ${snapshot.events.length} events`);
 
-      const existingEventIds = new Set(activeGames.map(g => g.eventId));
+      const allHpGames = await db.select({ eventId: hotPotatoGames.eventId }).from(hotPotatoGames);
+      const existingEventIds = new Set(allHpGames.map(g => g.eventId));
 
-      const eligibleMatches = upcomingMatches.filter(m =>
-        (m.providerId || m.id) && !existingEventIds.has(String(m.providerId || m.id)) &&
-        m.homeTeam && m.awayTeam &&
-        new Date(m.startTime).getTime() > now.getTime() + 30 * 60 * 1000
-      );
+      const eligibleMatches = snapshot.events.filter((e: any) => {
+        const eventId = String(e.id);
+        const hasTeams = e.homeTeam && e.awayTeam;
+        const startTimeMs = e.startTime ? new Date(e.startTime).getTime() : 0;
+        const startsInFuture = startTimeMs > now + 60 * 60 * 1000;
+        const notTooFar = startTimeMs < now + 24 * 60 * 60 * 1000;
+        const notAlreadyUsed = !existingEventIds.has(eventId);
+        const isFootball = e.sportId === 1 || e.sportId === '1';
+        return hasTeams && startsInFuture && notTooFar && notAlreadyUsed && isFootball;
+      });
 
+      console.log(`🥔🤖 ${eligibleMatches.length} eligible football matches (start 1-24h, not already used)`);
       if (!eligibleMatches.length) return;
 
-      const gamesToCreate = eligibleMatches.slice(0, 3 - activeGames.length);
+      eligibleMatches.sort((a: any, b: any) => {
+        const aTime = new Date(a.startTime).getTime();
+        const bTime = new Date(b.startTime).getTime();
+        return aTime - bTime;
+      });
+
+      const gamesToCreate = eligibleMatches.slice(0, Math.min(3, slotsAvailable));
 
       for (const match of gamesToCreate) {
-        if (activeGames.length + gamesToCreate.indexOf(match) >= 5) break;
-
         const matchStartMs = new Date(match.startTime).getTime();
         const gameDeadlineMs = matchStartMs - 5 * 60 * 1000;
         const timerMs = 10 * 60 * 1000;
 
         try {
           const [newGame] = await db.insert(hotPotatoGames).values({
-            eventId: String(match.providerId || match.id),
+            eventId: String(match.id),
             teamA: match.homeTeam,
             teamB: match.awayTeam,
             sportName: 'Football',
             leagueName: match.leagueName || null,
-            matchTime: match.startTime,
+            matchTime: new Date(match.startTime),
             potAmount: 0,
             currency: 'SBETS',
             minGrabAmount: 1000,
@@ -10636,15 +10650,17 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
             playerCount: 0,
             status: 'active',
             timerDurationMs: timerMs,
-            explosionTimeMs: String(Date.now() + timerMs),
+            explosionTimeMs: null,
             gameDeadlineMs: String(gameDeadlineMs),
             createdBy: 'auto',
           }).returning();
 
-          console.log(`🥔🤖 Auto-created HP game #${newGame.id}: ${match.homeTeam} vs ${match.awayTeam} (${match.leagueName})`);
+          console.log(`🥔🤖 Auto-created HP game #${newGame.id}: ${match.homeTeam} vs ${match.awayTeam} (${match.leagueName}) — match starts ${match.startTime}`);
         } catch (createErr: any) {
           if (createErr.code !== '23505') {
             console.error(`Auto HP game create error:`, createErr.message);
+          } else {
+            console.log(`🥔🤖 Game already exists for event ${match.id}, skipping`);
           }
         }
       }
@@ -10653,7 +10669,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     }
   }
 
-  setTimeout(hotPotatoAutoGameCreator, 45 * 1000);
+  setTimeout(hotPotatoAutoGameCreator, 60 * 1000);
   setInterval(hotPotatoAutoGameCreator, 10 * 60 * 1000);
   console.log('🥔 Hot Potato auto-game creator started — checks every 10 minutes for upcoming matches');
 

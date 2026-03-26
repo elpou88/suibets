@@ -81,6 +81,16 @@ function CountdownTimer({ explosionTimeMs, status }: { explosionTimeMs: string |
 
   if (status !== "active") return null;
 
+  if (!explosionTimeMs) {
+    return (
+      <div className="text-center text-yellow-400">
+        <div className="text-xs uppercase tracking-wider opacity-70 mb-1" data-testid="text-timer-label">Timer Status</div>
+        <div className="text-2xl font-bold" data-testid="text-countdown">Waiting for first grab</div>
+        <div className="text-xs mt-1 opacity-60">Timer starts when someone grabs the potato</div>
+      </div>
+    );
+  }
+
   const seconds = Math.floor(timeLeft / 1000);
   const ms = Math.floor((timeLeft % 1000) / 100);
   const isUrgent = timeLeft < 10000;

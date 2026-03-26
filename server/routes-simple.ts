@@ -978,6 +978,30 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             } catch {}
           }
 
+          let resolvedStatus: string = 'pending';
+          let resolvedPayout: number = Math.round(amount * odds * 100) / 100;
+          let onChainPrediction: string | undefined;
+          if (betObjectId) {
+            try {
+              const onChainInfo = await blockchainBetService.getOnChainBetInfo(betObjectId);
+              if (onChainInfo) {
+                if (onChainInfo.prediction && onChainInfo.prediction !== eventIdStr) {
+                  onChainPrediction = onChainInfo.prediction;
+                  console.log(`📡 On-chain prediction for ${betObjectId.slice(0, 12)}...: "${onChainPrediction}"`);
+                }
+                if (onChainInfo.settled) {
+                  resolvedStatus = onChainInfo.status;
+                  if (onChainInfo.status === 'lost' || onChainInfo.status === 'void') {
+                    resolvedPayout = 0;
+                  }
+                  console.log(`📡 On-chain status for ${betObjectId.slice(0, 12)}...: ${onChainInfo.status} (already settled)`);
+                }
+              }
+            } catch (onChainErr: any) {
+              console.warn(`[Recovery] Could not check on-chain status for ${betObjectId.slice(0, 12)}...: ${onChainErr.message}`);
+            }
+          }
+
           try {
             await db.insert(betsTable).values({
               userId: null,
@@ -985,11 +1009,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
               betAmount: amount,
               currency: coinType,
               odds,
-              prediction: eventIdStr,
-              potentialPayout: Math.round(amount * odds * 100) / 100,
-              status: 'pending',
+              prediction: onChainPrediction || eventIdStr,
+              potentialPayout: resolvedStatus === 'pending' ? resolvedPayout : resolvedPayout,
+              status: resolvedStatus,
               betType: isParlay ? 'parlay' : 'single',
-              cashOutAvailable: true,
+              cashOutAvailable: resolvedStatus === 'pending',
               wurlusBetId: betId,
               txHash: digest,
               platformFee: 0,
@@ -1003,7 +1027,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
               createdAt: ts,
             }).returning();
             results.recovered++;
-            console.log(`🔧 WALLET-RECOVERED: ${betId} for ${walletAddress.slice(0,12)}... (${amount} ${coinType}) - ${eventName}`);
+            console.log(`🔧 WALLET-RECOVERED: ${betId} for ${walletAddress.slice(0,12)}... (${amount} ${coinType}) - ${eventName} [status=${resolvedStatus}]`);
           } catch (insertErr: any) {
             if (insertErr.code !== '23505') {
               console.error(`Wallet recovery insert failed:`, insertErr.message);
@@ -1025,6 +1049,58 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
     return results;
   }
+
+  async function fixRecoveredBetStatuses() {
+    try {
+      const { bets: betsTable } = await import('@shared/schema');
+      const { db } = await import('./db');
+      const { eq, and, like, isNotNull, sql } = await import('drizzle-orm');
+
+      const recoveredPending = await db.execute(sql`
+        SELECT id, bet_object_id, event_name, bet_amount, currency 
+        FROM bets 
+        WHERE status = 'pending' 
+          AND bet_object_id IS NOT NULL 
+          AND bet_object_id != ''
+          AND bet_object_id NOT LIKE 'auto-%'
+        LIMIT 100
+      `);
+
+      if (!recoveredPending.rows?.length) {
+        console.log('[FixRecovered] No recovered pending bets with betObjectId to check');
+        return { fixed: 0, checked: 0 };
+      }
+
+      console.log(`[FixRecovered] Checking ${recoveredPending.rows.length} recovered pending bets against on-chain status...`);
+      let fixed = 0;
+
+      for (const row of recoveredPending.rows as any[]) {
+        try {
+          const onChainInfo = await blockchainBetService.getOnChainBetInfo(row.bet_object_id);
+          if (onChainInfo && onChainInfo.settled) {
+            await db.execute(sql`
+              UPDATE bets 
+              SET status = ${onChainInfo.status}, 
+                  cash_out_available = false
+              WHERE id = ${row.id} AND status = 'pending'
+            `);
+            fixed++;
+            console.log(`[FixRecovered] ✅ Bet #${row.id} (${row.bet_object_id.slice(0, 12)}...): pending → ${onChainInfo.status}`);
+          }
+        } catch (err: any) {
+          console.warn(`[FixRecovered] Error checking bet #${row.id}: ${err.message}`);
+        }
+      }
+
+      console.log(`[FixRecovered] Fixed ${fixed}/${recoveredPending.rows.length} recovered bets`);
+      return { fixed, checked: recoveredPending.rows.length };
+    } catch (err: any) {
+      console.error('[FixRecovered] Error:', err.message);
+      return { fixed: 0, checked: 0 };
+    }
+  }
+
+  setTimeout(() => fixRecoveredBetStatuses(), 30000);
 
   app.post("/api/bets/sync-wallet", async (req: Request, res: Response) => {
     try {

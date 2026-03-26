@@ -1773,11 +1773,29 @@ class SettlementWorkerService {
         continue;
       }
       
-      // ANTI-EXPLOIT: Never settle bets on "Unknown Event" - these are likely fake/exploitative
-      if ((bet as any).eventName === "Unknown Event" || bet.homeTeam === "Unknown" || bet.awayTeam === "Unknown") {
+      const isRecoveredBet = (bet as any).eventName?.includes('Recovered') || (bet as any).betObjectId;
+      if (!isRecoveredBet && ((bet as any).eventName === "Unknown Event" || bet.homeTeam === "Unknown" || bet.awayTeam === "Unknown")) {
         console.warn(`🚫 EXPLOIT BLOCKED: Skipping settlement for bet ${bet.id} - Unknown Event/Teams`);
-        this.settledBetIds.add(bet.id); // Mark as processed to avoid retry spam
+        this.settledBetIds.add(bet.id);
         continue;
+      }
+      if (isRecoveredBet && (bet.homeTeam === "Unknown" || bet.awayTeam === "Unknown")) {
+        bet.homeTeam = match.homeTeam || bet.homeTeam;
+        bet.awayTeam = match.awayTeam || bet.awayTeam;
+        (bet as any).eventName = `${bet.homeTeam} vs ${bet.awayTeam}`;
+        console.log(`🔧 Enriched recovered bet ${bet.id} with match data: ${bet.homeTeam} vs ${bet.awayTeam}`);
+        if (bet.betObjectId && bet.prediction === bet.externalEventId) {
+          try {
+            const onChainData = await blockchainBetService.getOnChainBetInfo(bet.betObjectId);
+            if (onChainData?.prediction && onChainData.prediction !== bet.externalEventId) {
+              bet.prediction = onChainData.prediction;
+              console.log(`🔧 Enriched recovered bet prediction from on-chain: "${bet.prediction}"`);
+            }
+          } catch (e) { /* best effort */ }
+        }
+        try {
+          await db.execute(sql`UPDATE bets SET home_team = ${bet.homeTeam}, away_team = ${bet.awayTeam}, event_name = ${(bet as any).eventName}, prediction = ${bet.prediction} WHERE id = ${bet.id}`);
+        } catch (e) { /* best effort */ }
       }
       
       try {

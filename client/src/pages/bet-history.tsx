@@ -572,41 +572,7 @@ export default function BetHistoryPage() {
                     )}
                     <div className="mt-2 flex items-center gap-3">
                       <button
-                        onClick={async () => {
-                          const shareId = bet.numericId ?? bet.id;
-                          const shareUrl = `https://www.suibets.com/bet/${shareId}`;
-                          const isParlay = bet.betType === 'parlay';
-                          const legs = isParlay && bet.selection?.includes(' | ')
-                            ? bet.selection.split(' | ').map((s: string) => {
-                                const parts = s.split(': ');
-                                return { eventName: parts.length > 1 ? parts[0] : '', selection: parts.length > 1 ? parts[1] : parts[0], odds: bet.odds };
-                              })
-                            : [{ eventName: getBetDisplayName(bet), selection: getSelectionDisplay(bet), odds: bet.odds }];
-
-                          const lines = legs.map((leg: any, i: number) => {
-                            const name = leg.eventName && leg.eventName !== 'Unknown Event' ? leg.eventName : '';
-                            const sel = leg.selection || '';
-                            const display = name ? `${name}: ${sel}` : sel;
-                            return legs.length > 1 ? `  Leg ${i + 1}: ${display} @ ${(leg.odds || 1).toFixed(2)}` : display;
-                          });
-
-                          const text = [
-                            `SuiBets - Copy This Bet`,
-                            isParlay ? `Parlay (${legs.length} Legs)` : 'Single Bet',
-                            ...lines,
-                            `Combined Odds: ${(bet.odds || 1).toFixed(2)}`,
-                            `Stake: ${(bet.stake || 0).toLocaleString()} ${bet.currency || 'SUI'}`,
-                            `Potential Win: ${(bet.potentialWin || 0).toLocaleString()} ${bet.currency || 'SUI'}`,
-                            ``,
-                            `Copy this bet: ${shareUrl}`,
-                          ].join('\n');
-                          try {
-                            await navigator.clipboard.writeText(text);
-                            toast({ title: 'Bet Copied!', description: 'Bet link and details copied. Share with friends so they can copy your bet!' });
-                          } catch {
-                            toast({ title: 'Copy failed', description: 'Could not copy to clipboard', variant: 'destructive' });
-                          }
-                        }}
+                        onClick={() => setShareBet(bet)}
                         className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors"
                         data-testid={`button-copy-bet-${bet.id}`}
                       >

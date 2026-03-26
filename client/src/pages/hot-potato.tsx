@@ -10,8 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@/components/layout/Footer";
 
 const SBETS_TOKEN_TYPE = '0x999d696dad9e4684068fa74ef9c5d3afc411d3ba62973bd5d54830f324f29502::sbets::SBETS';
-const PLATFORM_ID = '0xfed2649741e4d3f6316434d6bdc51d0d0975167a0dc87447122d04830d59fdf9';
-const BETTING_PACKAGE_ID = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
+const ADMIN_WALLET = '0xa93e1f3064ad5ce96ad1db2b6ab18ff2237f2f4f0f0e14c93e32cd25ca174e43';
 
 interface HotPotatoGame {
   id: number;
@@ -223,7 +222,7 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
       }
       const [stakeCoin] = tx.splitCoins(primaryCoin, [tx.pure.u64(amountMist)]);
 
-      tx.transferObjects([stakeCoin], tx.pure.address(PLATFORM_ID));
+      tx.transferObjects([stakeCoin], tx.pure.address(ADMIN_WALLET));
 
       toast({ title: "Approve in Wallet", description: `Sending ${amount.toLocaleString()} SBETS to grab the potato...` });
 
@@ -564,6 +563,19 @@ export default function HotPotatoPage() {
     refetchInterval: 10000,
   });
 
+  const { data: treasury } = useQuery<{
+    activePot: number;
+    pendingPot: number;
+    totalSettled: number;
+    activeGames: number;
+    explodedGames: number;
+    settledGames: number;
+    totalVolume: number;
+  }>({
+    queryKey: ["/api/hot-potato/treasury"],
+    refetchInterval: 30000,
+  });
+
   const activeGames = useMemo(() => games?.filter(g => g.status === "active") || [], [games]);
   const pastGames = useMemo(() => games?.filter(g => g.status !== "active") || [], [games]);
 
@@ -625,6 +637,28 @@ export default function HotPotatoPage() {
             <div className="text-xs text-gray-400">Playing Now</div>
           </div>
         </div>
+
+        {treasury && treasury.totalVolume > 0 && (
+          <div className="mb-8 bg-gradient-to-r from-orange-950/20 via-gray-900/40 to-orange-950/20 border border-orange-500/10 rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-orange-400 mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4" /> Hot Potato Treasury (Separate from Betting)
+            </h3>
+            <div className="grid grid-cols-3 gap-3 text-center">
+              <div>
+                <div className="text-lg font-bold text-yellow-400">{formatSBETS(treasury.activePot)}</div>
+                <div className="text-[10px] text-gray-500">Active Pots</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-orange-400">{formatSBETS(treasury.pendingPot)}</div>
+                <div className="text-[10px] text-gray-500">Pending Settlement</div>
+              </div>
+              <div>
+                <div className="text-lg font-bold text-green-400">{formatSBETS(treasury.totalSettled)}</div>
+                <div className="text-[10px] text-gray-500">Total Settled</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {isLoading ? (
           <div className="flex items-center justify-center h-48">

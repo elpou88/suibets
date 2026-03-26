@@ -2466,7 +2466,7 @@ export default function AdminPanel() {
             <span>🥔</span> Hot Potato Game Management
           </h2>
           
-          <HotPotatoAdmin token={sessionStorage.getItem('admin_token') || ''} />
+          <HotPotatoAdmin token={sessionStorage.getItem('adminToken') || ''} />
         </div>
       </div>
     </Layout>
@@ -2556,6 +2556,25 @@ function HotPotatoAdmin({ token }: { token: string }) {
     setLeagueName(match.leagueName || '');
     setSportName(match.sportName || 'Football');
     toast({ title: "Match loaded", description: `${match.homeTeam} vs ${match.awayTeam} — fill in settings and create` });
+  };
+
+  const settleGame = async (gameId: number, winningTeam: number) => {
+    try {
+      const res = await fetch(`/api/hot-potato/games/${gameId}/settle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-password': token },
+        body: JSON.stringify({ winningTeam }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast({ title: "Game Settled!", description: `Payouts: ${data.payouts?.length || 0} | Fee: ${data.platformFee} SBETS` });
+        fetchGames();
+      } else {
+        toast({ title: "Settlement Failed", description: data.error || 'Unknown error', variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
   };
 
   return (
@@ -2661,14 +2680,29 @@ function HotPotatoAdmin({ token }: { token: string }) {
           ) : games.length > 0 ? (
             <div className="space-y-2">
               {games.map((g: any) => (
-                <div key={g.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 border border-gray-700">
-                  <div>
-                    <div className="text-white text-sm font-medium">#{g.id} {g.teamA} vs {g.teamB}</div>
-                    <div className="text-gray-400 text-xs">{g.leagueName} | Pot: {g.potAmount} SBETS | {g.grabCount} grabs</div>
+                <div key={g.id} className="p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="text-white text-sm font-medium">#{g.id} {g.teamA} vs {g.teamB}</div>
+                      <div className="text-gray-400 text-xs">{g.leagueName} | Pot: {g.potAmount} SBETS | {g.grabCount} grabs | Holder: {g.currentHolder?.slice(0,10) || 'none'}...</div>
+                    </div>
+                    <Badge className={g.status === 'active' ? 'bg-orange-500/20 text-orange-400' : g.status === 'exploded' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}>
+                      {g.status}
+                    </Badge>
                   </div>
-                  <Badge className={g.status === 'active' ? 'bg-orange-500/20 text-orange-400' : g.status === 'exploded' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}>
-                    {g.status}
-                  </Badge>
+                  {(g.status === 'exploded' || g.status === 'active' || g.status === 'settlement_failed') && g.potAmount > 0 && (
+                    <div className="flex gap-2 mt-2">
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => settleGame(g.id, 0)} data-testid={`button-settle-team-a-${g.id}`}>
+                        {g.teamA} Wins
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => settleGame(g.id, 1)} data-testid={`button-settle-team-b-${g.id}`}>
+                        {g.teamB} Wins
+                      </Button>
+                      <Button size="sm" variant="outline" className="text-xs" onClick={() => settleGame(g.id, -1)} data-testid={`button-settle-draw-${g.id}`}>
+                        Draw (Refund)
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

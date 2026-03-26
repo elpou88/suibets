@@ -10367,6 +10367,324 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     }
   });
 
+  // Admin manual settlement for Hot Potato games
+  app.post('/api/hot-potato/games/:id/settle', async (req: Request, res: Response) => {
+    try {
+      const adminPass = req.headers['x-admin-password'] || req.body?.adminPassword;
+      if (!process.env.ADMIN_PASSWORD || !adminPass || adminPass !== process.env.ADMIN_PASSWORD) {
+        return res.status(403).json({ error: 'Unauthorized' });
+      }
+
+      const { hotPotatoGames, hotPotatoPlayers } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const id = parseInt(req.params.id);
+      const [game] = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.id, id));
+      if (!game) return res.status(404).json({ error: 'Game not found' });
+      if (game.status === 'settled') return res.status(400).json({ error: 'Game already settled' });
+      if (game.status !== 'exploded' && game.status !== 'active' && game.status !== 'settlement_failed') {
+        return res.status(400).json({ error: `Cannot settle game with status: ${game.status}` });
+      }
+
+      const { winningTeam } = req.body;
+      if (winningTeam === undefined || winningTeam === null) {
+        return res.status(400).json({ error: 'winningTeam required (0=teamA, 1=teamB, -1=draw)' });
+      }
+
+      const totalPot = game.potAmount || 0;
+      const platformFee = Math.floor(totalPot * 0.05 * 100) / 100;
+      const winnerPot = totalPot - platformFee;
+      const payouts: Array<{ wallet: string; amount: number; success: boolean; txHash?: string; error?: string }> = [];
+
+      const players = await db.select().from(hotPotatoPlayers).where(eq(hotPotatoPlayers.gameId, game.id));
+
+      if (totalPot > 0 && players.length > 0) {
+        const { BlockchainBetService } = await import('./services/blockchainBetService');
+        const betService = new BlockchainBetService();
+
+        if (winningTeam === -1) {
+          for (const player of players) {
+            if ((player.totalContributed || 0) > 0) {
+              const refund = Math.floor((player.totalContributed! / totalPot) * winnerPot * 100) / 100;
+              if (refund > 0) {
+                const result = await betService.executePayoutSbetsOnChain(player.wallet, refund);
+                payouts.push({ wallet: player.wallet, amount: refund, success: result.success, txHash: result.txHash, error: result.error });
+              }
+            }
+          }
+        } else if (game.holderTeam === winningTeam) {
+          if (game.currentHolder && winnerPot > 0) {
+            const result = await betService.executePayoutSbetsOnChain(game.currentHolder, winnerPot);
+            payouts.push({ wallet: game.currentHolder, amount: winnerPot, success: result.success, txHash: result.txHash, error: result.error });
+          }
+        } else {
+          const otherPlayers = players.filter(p => p.wallet.toLowerCase() !== game.currentHolder?.toLowerCase());
+          if (otherPlayers.length > 0) {
+            const perPlayer = Math.floor((winnerPot / otherPlayers.length) * 100) / 100;
+            for (const player of otherPlayers) {
+              if (perPlayer > 0) {
+                const result = await betService.executePayoutSbetsOnChain(player.wallet, perPlayer);
+                payouts.push({ wallet: player.wallet, amount: perPlayer, success: result.success, txHash: result.txHash, error: result.error });
+              }
+            }
+          }
+        }
+      }
+
+      const failedPayouts = payouts.filter(p => !p.success);
+      const settleStatus = failedPayouts.length > 0 ? 'settlement_failed' : 'settled';
+
+      await db.update(hotPotatoGames).set({
+        status: settleStatus,
+        winningTeam: winningTeam,
+        settledAt: new Date(),
+      }).where(eq(hotPotatoGames.id, game.id));
+
+      console.log(`🥔${settleStatus === 'settled' ? '✅' : '⚠️'} Admin settled game #${id}: winner team ${winningTeam} | Payouts: ${payouts.length} (${failedPayouts.length} failed)`);
+      res.json({ success: true, winningTeam, payouts, platformFee, totalPot, failedPayouts: failedPayouts.length });
+    } catch (err: any) {
+      console.error('Admin HP settle error:', err.message);
+      res.status(500).json({ error: 'Failed to settle game' });
+    }
+  });
+
+  // ─── Hot Potato Background Workers ───
+
+  // 1. Auto-explosion checker — runs every 30 seconds
+  async function hotPotatoExplosionChecker() {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const activeGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'active'));
+      const now = Date.now();
+
+      for (const game of activeGames) {
+        const explodeTime = game.explosionTimeMs ? parseInt(game.explosionTimeMs) : 0;
+        const deadline = game.gameDeadlineMs ? parseInt(game.gameDeadlineMs) : 0;
+
+        if ((explodeTime && now >= explodeTime) || (deadline && now >= deadline)) {
+          await db.update(hotPotatoGames).set({ status: 'exploded' }).where(eq(hotPotatoGames.id, game.id));
+          console.log(`🥔💥 Auto-exploded game #${game.id}: ${game.teamA} vs ${game.teamB} | Holder: ${game.currentHolder?.slice(0,10)}... on team ${game.holderTeam}`);
+        }
+      }
+    } catch (err: any) {
+      console.error('Hot Potato explosion checker error:', err.message);
+    }
+  }
+
+  setInterval(hotPotatoExplosionChecker, 30 * 1000);
+  console.log('🥔 Hot Potato explosion checker started — runs every 30 seconds');
+
+  // 2. Settlement worker — settles exploded games when match results are available
+  async function hotPotatoSettlementWorker() {
+    try {
+      const { hotPotatoGames, hotPotatoPlayers } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const explodedGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'exploded'));
+      if (!explodedGames.length) return;
+
+      for (const game of explodedGames) {
+        try {
+          const apiKey = process.env.API_SPORTS_KEY;
+          if (!apiKey || !game.eventId) continue;
+
+          const fixtureRes = await fetch(`https://v3.football.api-sports.io/fixtures?id=${game.eventId}`, {
+            headers: { 'x-apisports-key': apiKey }
+          });
+          if (!fixtureRes.ok) continue;
+
+          const fixtureData: any = await fixtureRes.json();
+          const fixture = fixtureData?.response?.[0];
+          if (!fixture) continue;
+
+          const statusShort = fixture.fixture?.status?.short;
+          if (statusShort !== 'FT' && statusShort !== 'AET' && statusShort !== 'PEN') continue;
+
+          const homeGoals = fixture.goals?.home ?? 0;
+          const awayGoals = fixture.goals?.away ?? 0;
+
+          let winningTeam: number;
+          if (homeGoals > awayGoals) {
+            winningTeam = 0;
+          } else if (awayGoals > homeGoals) {
+            winningTeam = 1;
+          } else {
+            winningTeam = -1;
+          }
+
+          const totalPot = game.potAmount || 0;
+          const platformFee = Math.floor(totalPot * 0.05 * 100) / 100;
+          const winnerPot = totalPot - platformFee;
+
+          const players = await db.select().from(hotPotatoPlayers).where(eq(hotPotatoPlayers.gameId, game.id));
+
+          const { BlockchainBetService } = await import('./services/blockchainBetService');
+          const betService = new BlockchainBetService();
+
+          let payoutsFailed = 0;
+          let payoutsSuccess = 0;
+
+          if (winningTeam === -1) {
+            console.log(`🥔 Game #${game.id} DRAW — refunding all players proportionally`);
+            for (const player of players) {
+              if ((player.totalContributed || 0) > 0) {
+                const refundAmount = Math.floor((player.totalContributed! / totalPot) * winnerPot * 100) / 100;
+                if (refundAmount > 0) {
+                  const result = await betService.executePayoutSbetsOnChain(player.wallet, refundAmount);
+                  result.success ? payoutsSuccess++ : payoutsFailed++;
+                  console.log(`  🥔 Refund ${refundAmount} SBETS to ${player.wallet.slice(0,10)}... → ${result.success ? '✅' : '❌ ' + result.error}`);
+                }
+              }
+            }
+          } else if (game.holderTeam === winningTeam) {
+            console.log(`🥔🏆 Game #${game.id}: Last holder WINS! ${game.currentHolder?.slice(0,10)}... gets ${winnerPot} SBETS`);
+            if (game.currentHolder && winnerPot > 0) {
+              const result = await betService.executePayoutSbetsOnChain(game.currentHolder, winnerPot);
+              result.success ? payoutsSuccess++ : payoutsFailed++;
+              console.log(`  🥔 Payout ${winnerPot} SBETS to ${game.currentHolder.slice(0,10)}... → ${result.success ? '✅ TX: ' + result.txHash?.slice(0,16) : '❌ ' + result.error}`);
+            }
+          } else {
+            console.log(`🥔 Game #${game.id}: Last holder LOSES! Distributing ${winnerPot} SBETS among ${players.length - 1} players`);
+            const otherPlayers = players.filter(p => p.wallet.toLowerCase() !== game.currentHolder?.toLowerCase());
+            if (otherPlayers.length > 0) {
+              const perPlayer = Math.floor((winnerPot / otherPlayers.length) * 100) / 100;
+              for (const player of otherPlayers) {
+                if (perPlayer > 0) {
+                  const result = await betService.executePayoutSbetsOnChain(player.wallet, perPlayer);
+                  result.success ? payoutsSuccess++ : payoutsFailed++;
+                  console.log(`  🥔 Share ${perPlayer} SBETS to ${player.wallet.slice(0,10)}... → ${result.success ? '✅' : '❌ ' + result.error}`);
+                }
+              }
+            }
+          }
+
+          const settleStatus = payoutsFailed > 0 ? 'settlement_failed' : 'settled';
+          await db.update(hotPotatoGames).set({
+            status: settleStatus,
+            winningTeam,
+            settledAt: new Date(),
+          }).where(eq(hotPotatoGames.id, game.id));
+
+          console.log(`🥔${settleStatus === 'settled' ? '✅' : '⚠️'} Game #${game.id}: ${game.teamA} ${homeGoals}-${awayGoals} ${game.teamB} | ${payoutsSuccess} paid, ${payoutsFailed} failed`);
+        } catch (gameErr: any) {
+          console.error(`🥔 Settlement error for game #${game.id}:`, gameErr.message);
+        }
+      }
+    } catch (err: any) {
+      console.error('Hot Potato settlement worker error:', err.message);
+    }
+  }
+
+  setTimeout(hotPotatoSettlementWorker, 60 * 1000);
+  setInterval(hotPotatoSettlementWorker, 3 * 60 * 1000);
+  console.log('🥔 Hot Potato settlement worker started — checks every 3 minutes for finished matches');
+
+  // 3. Auto-game creation — picks popular upcoming matches and creates HP games
+  async function hotPotatoAutoGameCreator() {
+    try {
+      const { hotPotatoGames, events: eventsTable } = await import('@shared/schema');
+      const { eq, and, gt, isNull, not, ne } = await import('drizzle-orm');
+
+      const activeGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'active'));
+      if (activeGames.length >= 5) return;
+
+      const now = new Date();
+      const in6hours = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+
+      const upcomingMatches = await db.select().from(eventsTable)
+        .where(and(
+          gt(eventsTable.startTime, now),
+        ))
+        .orderBy(sql`start_time ASC`)
+        .limit(20);
+
+      if (!upcomingMatches.length) return;
+
+      const existingEventIds = new Set(activeGames.map(g => g.eventId));
+
+      const eligibleMatches = upcomingMatches.filter(m =>
+        (m.providerId || m.id) && !existingEventIds.has(String(m.providerId || m.id)) &&
+        m.homeTeam && m.awayTeam &&
+        new Date(m.startTime).getTime() > now.getTime() + 30 * 60 * 1000
+      );
+
+      if (!eligibleMatches.length) return;
+
+      const gamesToCreate = eligibleMatches.slice(0, 3 - activeGames.length);
+
+      for (const match of gamesToCreate) {
+        if (activeGames.length + gamesToCreate.indexOf(match) >= 5) break;
+
+        const matchStartMs = new Date(match.startTime).getTime();
+        const gameDeadlineMs = matchStartMs - 5 * 60 * 1000;
+        const timerMs = 60000;
+
+        try {
+          const [newGame] = await db.insert(hotPotatoGames).values({
+            eventId: String(match.providerId || match.id),
+            teamA: match.homeTeam,
+            teamB: match.awayTeam,
+            sportName: 'Football',
+            leagueName: match.leagueName || null,
+            matchTime: match.startTime,
+            potAmount: 0,
+            currency: 'SBETS',
+            minGrabAmount: 1000,
+            currentHolder: null,
+            holderTeam: 0,
+            grabCount: 0,
+            playerCount: 0,
+            status: 'active',
+            timerDurationMs: timerMs,
+            explosionTimeMs: String(Date.now() + timerMs),
+            gameDeadlineMs: String(gameDeadlineMs),
+            createdBy: 'auto',
+          }).returning();
+
+          console.log(`🥔🤖 Auto-created HP game #${newGame.id}: ${match.homeTeam} vs ${match.awayTeam} (${match.leagueName})`);
+        } catch (createErr: any) {
+          if (createErr.code !== '23505') {
+            console.error(`Auto HP game create error:`, createErr.message);
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Hot Potato auto-creator error:', err.message);
+    }
+  }
+
+  setTimeout(hotPotatoAutoGameCreator, 45 * 1000);
+  setInterval(hotPotatoAutoGameCreator, 10 * 60 * 1000);
+  console.log('🥔 Hot Potato auto-game creator started — checks every 10 minutes for upcoming matches');
+
+  // HP Treasury info endpoint (separate from betting treasury)
+  app.get('/api/hot-potato/treasury', async (_req: Request, res: Response) => {
+    try {
+      const { hotPotatoGames } = await import('@shared/schema');
+      const { eq } = await import('drizzle-orm');
+
+      const activeGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'active'));
+      const explodedGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'exploded'));
+      const settledGames = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.status, 'settled'));
+
+      const activePot = activeGames.reduce((sum, g) => sum + (g.potAmount || 0), 0);
+      const pendingPot = explodedGames.reduce((sum, g) => sum + (g.potAmount || 0), 0);
+      const totalSettled = settledGames.reduce((sum, g) => sum + (g.potAmount || 0), 0);
+
+      res.json({
+        activePot,
+        pendingPot,
+        totalSettled,
+        activeGames: activeGames.length,
+        explodedGames: explodedGames.length,
+        settledGames: settledGames.length,
+        totalVolume: activePot + pendingPot + totalSettled,
+      });
+    } catch (err: any) {
+      res.status(500).json({ error: 'Failed to get treasury info' });
+    }
+  });
+
   // ─── Pool Stats (DISABLED — re-enable when new pools are added) ───
   const poolDisabledMsg = { error: 'Pool stats temporarily disabled', code: 'DISABLED' };
   app.get('/api/bluefin/pool-stats', (_req, res) => res.status(503).json(poolDisabledMsg));

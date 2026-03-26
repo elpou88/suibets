@@ -406,7 +406,7 @@ export default function CleanHome() {
   };
 
   return (
-    <div className="min-h-screen" data-testid="clean-home">
+    <div className="min-h-screen overflow-x-hidden" data-testid="clean-home">
       {/* Top Navigation Bar */}
       <nav className="bg-black/40 backdrop-blur-md border-b border-cyan-900/30 px-4 py-3 relative z-50">
         <div className="flex items-center justify-between">

@@ -332,8 +332,7 @@ export class DatabaseStorage implements IStorage {
       // Generate mock tx hash (in production, this would be the real blockchain tx)
       const txHash = `0x${Date.now().toString(16)}${Math.random().toString(16).substr(2, 40)}`;
       
-      // NORMALIZE wallet address to lowercase for consistent retrieval
-      const normalizedWallet = bet.userId?.toLowerCase?.() || bet.userId;
+      const normalizedWallet = (bet.walletAddress || bet.userId)?.toLowerCase?.() || bet.userId;
       
       // Insert into PostgreSQL database - use null for userId to avoid FK constraint
       const [inserted] = await db.insert(bets).values({

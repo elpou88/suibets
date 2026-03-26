@@ -5,7 +5,7 @@ import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@
 import { Transaction } from "@mysten/sui/transactions";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { Flame, Timer, Users, Trophy, ChevronLeft, Zap, Shield, Crown, ArrowRight, Plus, Bomb, HandMetal, Coins, TrendingUp } from "lucide-react";
+import { Flame, Timer, Users, Trophy, ChevronLeft, Zap, Shield, Crown, ArrowRight, Plus, Bomb, HandMetal, Coins, TrendingUp, Sparkles, Target, Clock, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@/components/layout/Footer";
 
@@ -83,10 +83,17 @@ function CountdownTimer({ explosionTimeMs, status }: { explosionTimeMs: string |
 
   if (!explosionTimeMs) {
     return (
-      <div className="text-center text-yellow-400">
-        <div className="text-xs uppercase tracking-wider opacity-70 mb-1" data-testid="text-timer-label">Timer Status</div>
-        <div className="text-2xl font-bold" data-testid="text-countdown">Waiting for first grab</div>
-        <div className="text-xs mt-1 opacity-60">Timer starts when someone grabs the potato</div>
+      <div className="text-center">
+        <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/70 mb-2 font-medium" data-testid="text-timer-label">Timer Status</div>
+        <motion.div
+          animate={{ opacity: [0.6, 1, 0.6] }}
+          transition={{ repeat: Infinity, duration: 2 }}
+          className="text-2xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent"
+          data-testid="text-countdown"
+        >
+          Waiting for first grab
+        </motion.div>
+        <div className="text-xs mt-2 text-gray-500">Timer starts when someone grabs the potato</div>
       </div>
     );
   }
@@ -100,17 +107,23 @@ function CountdownTimer({ explosionTimeMs, status }: { explosionTimeMs: string |
     <motion.div
       animate={isCritical ? { scale: [1, 1.05, 1] } : {}}
       transition={{ repeat: Infinity, duration: 0.5 }}
-      className={`text-center ${isCritical ? "text-red-400" : isUrgent ? "text-orange-400" : "text-green-400"}`}
+      className="text-center"
     >
-      <div className="text-xs uppercase tracking-wider opacity-70 mb-1" data-testid="text-timer-label">Time Until Explosion</div>
-      <div className="text-5xl font-mono font-bold tabular-nums" data-testid="text-countdown">
+      <div className="text-[10px] uppercase tracking-[0.2em] text-amber-500/70 mb-2 font-medium" data-testid="text-timer-label">
+        {isCritical ? "⚠️ CRITICAL" : "Time Until Explosion"}
+      </div>
+      <div className={`text-5xl font-mono font-bold tabular-nums ${
+        isCritical ? "text-red-400 drop-shadow-[0_0_20px_rgba(248,113,113,0.5)]" 
+        : isUrgent ? "text-orange-400 drop-shadow-[0_0_15px_rgba(251,146,60,0.4)]" 
+        : "text-emerald-400 drop-shadow-[0_0_10px_rgba(52,211,153,0.3)]"
+      }`} data-testid="text-countdown">
         {seconds}.{ms}s
       </div>
       {isCritical && (
         <motion.div
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ repeat: Infinity, duration: 0.3 }}
-          className="text-xs mt-1 text-red-400 font-bold"
+          className="text-xs mt-2 text-red-400 font-bold uppercase tracking-wider"
         >
           ABOUT TO EXPLODE!
         </motion.div>
@@ -125,58 +138,64 @@ function GameCard({ game, onSelect }: { game: HotPotatoGame; onSelect: (id: numb
 
   return (
     <motion.div
-      whileHover={{ scale: 1.02 }}
+      whileHover={{ scale: 1.02, y: -2 }}
       whileTap={{ scale: 0.98 }}
       onClick={() => onSelect(game.id)}
-      className={`cursor-pointer rounded-xl border p-4 transition-all ${
+      className={`cursor-pointer rounded-2xl border p-5 transition-all relative overflow-hidden ${
         isActive
-          ? "border-orange-500/40 bg-gradient-to-br from-orange-950/30 to-red-950/20 hover:border-orange-400/60"
+          ? "border-amber-500/30 bg-gradient-to-br from-[#1a1208] via-[#141018] to-[#0d0a14] hover:border-amber-400/50 shadow-lg shadow-amber-900/10"
           : isExploded
-          ? "border-red-600/40 bg-gradient-to-br from-red-950/30 to-gray-900/50"
-          : "border-gray-700/40 bg-gray-900/50 opacity-60"
+          ? "border-red-600/30 bg-gradient-to-br from-red-950/20 to-[#0d0a14]"
+          : "border-gray-700/30 bg-[#0d0e14] opacity-70"
       }`}
       data-testid={`card-game-${game.id}`}
     >
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <div className="text-xs text-gray-400 mb-1">{game.leagueName || game.sportName || "Sports"}</div>
-          <div className="font-bold text-white text-sm">{game.teamA} vs {game.teamB}</div>
+      {isActive && (
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.03] to-transparent pointer-events-none" />
+      )}
+      
+      <div className="relative z-10">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <div className="text-[10px] text-amber-500/60 font-medium uppercase tracking-wider mb-1">{game.leagueName || game.sportName || "Sports"}</div>
+            <div className="font-bold text-white text-sm">{game.teamA} vs {game.teamB}</div>
+          </div>
+          {isActive ? (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 flex items-center gap-1">
+              <Flame className="w-3 h-3" /> LIVE
+            </span>
+          ) : isExploded ? (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-500/15 text-red-400 border border-red-500/25 flex items-center gap-1">
+              <Bomb className="w-3 h-3" /> EXPLODED
+            </span>
+          ) : (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+              SETTLED
+            </span>
+          )}
         </div>
-        {isActive ? (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
-            <Flame className="w-3 h-3" /> LIVE
-          </span>
-        ) : isExploded ? (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/30 flex items-center gap-1">
-            <Bomb className="w-3 h-3" /> EXPLODED
-          </span>
-        ) : (
-          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/30">
-            SETTLED
-          </span>
+
+        <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="bg-black/20 rounded-xl py-2">
+            <div className="text-lg font-bold text-amber-400" data-testid={`text-pot-${game.id}`}>{formatSBETS(game.potAmount)}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">SBETS Pot</div>
+          </div>
+          <div className="bg-black/20 rounded-xl py-2">
+            <div className="text-lg font-bold text-white">{game.grabCount}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Grabs</div>
+          </div>
+          <div className="bg-black/20 rounded-xl py-2">
+            <div className="text-lg font-bold text-white">{game.playerCount}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Players</div>
+          </div>
+        </div>
+
+        {isActive && (
+          <div className="mt-4 pt-3 border-t border-amber-500/10">
+            <CountdownTimer explosionTimeMs={game.explosionTimeMs} status={game.status} />
+          </div>
         )}
       </div>
-
-      <div className="grid grid-cols-3 gap-2 text-center">
-        <div>
-          <div className="text-lg font-bold text-yellow-400" data-testid={`text-pot-${game.id}`}>{formatSBETS(game.potAmount)}</div>
-          <div className="text-[10px] text-gray-500">SBETS POT</div>
-        </div>
-        <div>
-          <div className="text-lg font-bold text-white">{game.grabCount}</div>
-          <div className="text-[10px] text-gray-500">GRABS</div>
-        </div>
-        <div>
-          <div className="text-lg font-bold text-white">{game.playerCount}</div>
-          <div className="text-[10px] text-gray-500">PLAYERS</div>
-        </div>
-      </div>
-
-      {isActive && (
-        <div className="mt-3 pt-3 border-t border-gray-700/30">
-          <CountdownTimer explosionTimeMs={game.explosionTimeMs} status={game.status} />
-        </div>
-      )}
     </motion.div>
   );
 }
@@ -287,8 +306,8 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
         queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games", gameId, "grabs"] });
         queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games"] });
         toast({ title: "Potato Grabbed!", description: "You're now holding the hot potato!" });
-        setGrabAmount("");
-        setSelectedTeam(null);
+        setGrabAmount("1000");
+        setSelectedTeam(0);
       }
     } catch (err: any) {
       const msg = err.message || "Transaction failed";
@@ -307,7 +326,7 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
     return (
       <div className="flex items-center justify-center h-64">
         <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
-          <Flame className="w-8 h-8 text-orange-400" />
+          <Flame className="w-8 h-8 text-amber-400" />
         </motion.div>
       </div>
     );
@@ -318,147 +337,160 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
   const canGrab = isActive && account?.address && !isHolder && selectedTeam !== null && parseFloat(grabAmount) >= game.minGrabAmount;
 
   return (
-    <div className="space-y-6">
-      <button onClick={onBack} className="flex items-center gap-2 text-gray-400 hover:text-white transition" data-testid="button-back">
+    <div className="space-y-5">
+      <button onClick={onBack} className="flex items-center gap-2 text-amber-500/70 hover:text-amber-400 transition font-medium text-sm" data-testid="button-back">
         <ChevronLeft className="w-4 h-4" /> Back to Games
       </button>
 
-      <div className="rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-950/20 to-red-950/10 p-6">
+      <div className="rounded-2xl border border-amber-500/20 bg-gradient-to-br from-[#1a1208] via-[#12101a] to-[#0d0a14] p-6 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-500 via-orange-500 to-red-500" />
+        
         <div className="flex justify-between items-start mb-6">
           <div>
-            <div className="text-xs text-gray-400 mb-1">{game.leagueName || game.sportName}</div>
+            <div className="text-[10px] text-amber-500/60 font-medium uppercase tracking-wider mb-1">{game.leagueName || game.sportName}</div>
             <h2 className="text-2xl font-bold text-white">{game.teamA} vs {game.teamB}</h2>
           </div>
           {isActive ? (
-            <span className="px-3 py-1 rounded-full text-xs font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center gap-1">
+            <span className="px-3 py-1.5 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/25 flex items-center gap-1.5">
               <Flame className="w-4 h-4" /> LIVE
             </span>
           ) : (
-            <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-              game.status === "exploded" ? "bg-red-500/20 text-red-400 border border-red-500/30" : "bg-green-500/20 text-green-400 border border-green-500/30"
+            <span className={`px-3 py-1.5 rounded-full text-xs font-bold ${
+              game.status === "exploded" ? "bg-red-500/15 text-red-400 border border-red-500/25" : "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
             }`}>
               {game.status === "exploded" ? "EXPLODED" : "SETTLED"}
             </span>
           )}
         </div>
 
-        <div className="mb-6">
+        <div className="mb-6 py-4 px-6 rounded-2xl bg-black/30 border border-amber-500/10">
           <CountdownTimer explosionTimeMs={game.explosionTimeMs} status={game.status} />
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-          <div className="bg-black/30 rounded-xl p-3 text-center">
-            <Coins className="w-5 h-5 mx-auto mb-1 text-yellow-400" />
-            <div className="text-xl font-bold text-yellow-400" data-testid="text-pot-total">{formatSBETS(game.potAmount)}</div>
-            <div className="text-[10px] text-gray-500">TOTAL POT</div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+          <div className="bg-black/30 rounded-xl p-3 text-center border border-amber-500/10">
+            <Coins className="w-5 h-5 mx-auto mb-1 text-amber-400" />
+            <div className="text-xl font-bold text-amber-400" data-testid="text-pot-total">{formatSBETS(game.potAmount)}</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Total Pot</div>
           </div>
-          <div className="bg-black/30 rounded-xl p-3 text-center">
+          <div className="bg-black/30 rounded-xl p-3 text-center border border-gray-800/50">
             <HandMetal className="w-5 h-5 mx-auto mb-1 text-purple-400" />
             <div className="text-xl font-bold text-white">{game.grabCount}</div>
-            <div className="text-[10px] text-gray-500">TOTAL GRABS</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Total Grabs</div>
           </div>
-          <div className="bg-black/30 rounded-xl p-3 text-center">
+          <div className="bg-black/30 rounded-xl p-3 text-center border border-gray-800/50">
             <Users className="w-5 h-5 mx-auto mb-1 text-blue-400" />
             <div className="text-xl font-bold text-white">{game.playerCount}</div>
-            <div className="text-[10px] text-gray-500">PLAYERS</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Players</div>
           </div>
-          <div className="bg-black/30 rounded-xl p-3 text-center">
+          <div className="bg-black/30 rounded-xl p-3 text-center border border-gray-800/50">
             <Timer className="w-5 h-5 mx-auto mb-1 text-orange-400" />
             <div className="text-xl font-bold text-white">{Math.round(game.timerDurationMs / 1000)}s</div>
-            <div className="text-[10px] text-gray-500">FUSE LENGTH</div>
+            <div className="text-[9px] text-gray-500 uppercase tracking-wider">Fuse Length</div>
           </div>
         </div>
 
-        <div className="bg-black/20 rounded-xl p-4 mb-6">
-          <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
-            <Crown className="w-3 h-3" /> CURRENT HOLDER
+        <div className="bg-black/30 rounded-xl p-4 mb-6 border border-amber-500/10">
+          <div className="text-[10px] text-amber-500/60 mb-3 flex items-center gap-1.5 font-medium uppercase tracking-wider">
+            <Crown className="w-3.5 h-3.5 text-amber-400" /> Current Holder
           </div>
           {game.currentHolder ? (
             <div className="flex items-center justify-between">
               <div>
-                <div className={`font-mono font-bold ${isHolder ? "text-orange-400" : "text-white"}`} data-testid="text-holder">
+                <div className={`font-mono font-bold text-lg ${isHolder ? "text-amber-400" : "text-white"}`} data-testid="text-holder">
                   {isHolder ? "YOU!" : shortenWallet(game.currentHolder)}
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  Betting on: <span className={game.holderTeam === 0 ? "text-blue-400" : "text-red-400"}>
+                <div className="text-xs text-gray-500 mt-1">
+                  Betting on: <span className={game.holderTeam === 0 ? "text-blue-400 font-bold" : "text-red-400 font-bold"}>
                     {game.holderTeam === 0 ? game.teamA : game.teamB}
                   </span>
                 </div>
               </div>
               {isHolder && (
                 <motion.div
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 1 }}
+                  animate={{ scale: [1, 1.2, 1], rotate: [0, 5, -5, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.5 }}
                 >
-                  <Flame className="w-8 h-8 text-orange-500" />
+                  <Flame className="w-10 h-10 text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.5)]" />
                 </motion.div>
               )}
             </div>
           ) : (
-            <div className="text-center py-2">
-              <div className="text-yellow-400 font-bold" data-testid="text-holder">No one yet!</div>
-              <div className="text-xs text-gray-500 mt-0.5">Be the first to grab the potato</div>
+            <div className="text-center py-3">
+              <motion.div
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <Target className="w-8 h-8 mx-auto mb-2 text-amber-400/50" />
+              </motion.div>
+              <div className="text-amber-400 font-bold text-lg" data-testid="text-holder">No one yet!</div>
+              <div className="text-xs text-gray-500 mt-1">Be the first to grab the potato</div>
             </div>
           )}
         </div>
 
         {isActive && !account?.address && (
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-center">
-            <div className="text-yellow-400 font-bold mb-1">Connect Your Wallet to Play</div>
-            <div className="text-xs text-gray-400">Connect a Sui wallet to grab the potato and join the game</div>
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-5 mb-6 text-center">
+            <AlertTriangle className="w-8 h-8 mx-auto mb-2 text-amber-400" />
+            <div className="text-amber-400 font-bold text-lg mb-1">Connect Your Wallet to Play</div>
+            <div className="text-sm text-gray-400">Connect a Sui wallet to grab the potato and join the game</div>
           </div>
         )}
 
         {isActive && !isHolder && account?.address && (
-          <div className="space-y-4">
-            <div className="text-sm font-bold text-white mb-2 flex items-center gap-2">
-              <Zap className="w-4 h-4 text-yellow-400" /> GRAB THE POTATO
+          <div className="space-y-4 bg-gradient-to-br from-amber-500/[0.05] to-transparent rounded-2xl border border-amber-500/15 p-5">
+            <div className="text-sm font-bold text-white mb-1 flex items-center gap-2">
+              <Zap className="w-4 h-4 text-amber-400" /> GRAB THE POTATO
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setSelectedTeam(0)}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-4 rounded-xl border text-center transition-all ${
                   selectedTeam === 0
-                    ? "border-blue-500 bg-blue-500/20 text-blue-400"
-                    : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-blue-500/50"
+                    ? "border-blue-500 bg-blue-500/15 text-blue-400 shadow-lg shadow-blue-500/10"
+                    : "border-gray-700/50 bg-black/20 text-gray-400 hover:border-blue-500/40 hover:text-blue-300"
                 }`}
                 data-testid="button-team-a"
               >
-                <div className="text-xs text-gray-400 mb-1">Team A</div>
-                <div className="font-bold text-sm">{game.teamA}</div>
+                <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Team A</div>
+                <div className="font-bold">{game.teamA}</div>
               </button>
               <button
                 onClick={() => setSelectedTeam(1)}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-4 rounded-xl border text-center transition-all ${
                   selectedTeam === 1
-                    ? "border-red-500 bg-red-500/20 text-red-400"
-                    : "border-gray-700 bg-gray-800/50 text-gray-300 hover:border-red-500/50"
+                    ? "border-red-500 bg-red-500/15 text-red-400 shadow-lg shadow-red-500/10"
+                    : "border-gray-700/50 bg-black/20 text-gray-400 hover:border-red-500/40 hover:text-red-300"
                 }`}
                 data-testid="button-team-b"
               >
-                <div className="text-xs text-gray-400 mb-1">Team B</div>
-                <div className="font-bold text-sm">{game.teamB}</div>
+                <div className="text-[10px] text-gray-500 mb-1 uppercase tracking-wider">Team B</div>
+                <div className="font-bold">{game.teamB}</div>
               </button>
             </div>
 
             <div>
-              <label className="text-xs text-gray-400 block mb-1">SBETS Amount (min: {formatSBETS(game.minGrabAmount)})</label>
+              <label className="text-[10px] text-amber-500/60 block mb-1.5 font-medium uppercase tracking-wider">SBETS Amount (min: {formatSBETS(game.minGrabAmount)})</label>
               <div className="flex gap-2">
                 <input
                   type="number"
                   value={grabAmount}
                   onChange={(e) => setGrabAmount(e.target.value)}
                   placeholder={`Min ${game.minGrabAmount}`}
-                  className="flex-1 bg-black/40 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-orange-500"
+                  className="flex-1 bg-black/40 border border-gray-700/50 rounded-xl px-4 py-2.5 text-white text-sm focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition"
                   data-testid="input-grab-amount"
                 />
-                <div className="flex gap-1">
+                <div className="flex gap-1.5">
                   {[game.minGrabAmount, game.minGrabAmount * 5, game.minGrabAmount * 10].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => setGrabAmount(String(amt))}
-                      className="px-2 py-1 text-xs bg-gray-800 border border-gray-700 rounded-lg text-gray-300 hover:bg-gray-700 hover:text-white"
+                      className={`px-3 py-1.5 text-xs rounded-xl border transition-all ${
+                        grabAmount === String(amt) 
+                          ? "bg-amber-500/15 border-amber-500/30 text-amber-400" 
+                          : "bg-black/30 border-gray-700/50 text-gray-400 hover:border-amber-500/30 hover:text-amber-300"
+                      }`}
                       data-testid={`button-quick-amount-${amt}`}
                     >
                       {formatSBETS(amt)}
@@ -469,7 +501,7 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
             </div>
 
             <motion.button
-              whileHover={canGrab ? { scale: 1.02 } : {}}
+              whileHover={canGrab ? { scale: 1.01 } : {}}
               whileTap={canGrab ? { scale: 0.98 } : {}}
               disabled={!canGrab || grabMutation.isPending}
               onClick={() => {
@@ -479,8 +511,8 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
               }}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${
                 canGrab
-                  ? "bg-gradient-to-r from-orange-600 to-red-600 text-white hover:from-orange-500 hover:to-red-500 shadow-lg shadow-orange-500/20"
-                  : "bg-gray-800 text-gray-500 cursor-not-allowed"
+                  ? "bg-gradient-to-r from-amber-600 via-orange-600 to-red-600 text-white hover:from-amber-500 hover:via-orange-500 hover:to-red-500 shadow-xl shadow-amber-500/20"
+                  : "bg-gray-800/50 text-gray-600 cursor-not-allowed"
               }`}
               data-testid="button-grab-potato"
             >
@@ -496,22 +528,18 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
                 </>
               )}
             </motion.button>
-
-            {!account?.address && (
-              <p className="text-xs text-center text-gray-500">Connect wallet to play</p>
-            )}
           </div>
         )}
 
         {isHolder && isActive && (
-          <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4 text-center">
+          <div className="bg-amber-500/10 border border-amber-500/25 rounded-2xl p-5 text-center">
             <motion.div
-              animate={{ y: [0, -5, 0] }}
+              animate={{ y: [0, -5, 0], scale: [1, 1.1, 1] }}
               transition={{ repeat: Infinity, duration: 1.5 }}
             >
-              <Flame className="w-12 h-12 mx-auto mb-2 text-orange-400" />
+              <Flame className="w-14 h-14 mx-auto mb-3 text-amber-400 drop-shadow-[0_0_20px_rgba(245,158,11,0.5)]" />
             </motion.div>
-            <div className="text-lg font-bold text-orange-400 mb-1">You're Holding the Hot Potato!</div>
+            <div className="text-xl font-bold text-amber-400 mb-2">You're Holding the Hot Potato!</div>
             <div className="text-sm text-gray-400">
               If the timer runs out, your fate is tied to <span className={game.holderTeam === 0 ? "text-blue-400 font-bold" : "text-red-400 font-bold"}>
                 {game.holderTeam === 0 ? game.teamA : game.teamB}
@@ -521,67 +549,93 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
         )}
 
         {game.status === "exploded" && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-center">
-            <Bomb className="w-12 h-12 mx-auto mb-2 text-red-400" />
-            <div className="text-lg font-bold text-red-400 mb-1">BOOM! The Potato Exploded!</div>
+          <div className="bg-red-500/10 border border-red-500/25 rounded-2xl p-5 text-center">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", bounce: 0.5 }}
+            >
+              <Bomb className="w-14 h-14 mx-auto mb-3 text-red-400 drop-shadow-[0_0_15px_rgba(248,113,113,0.4)]" />
+            </motion.div>
+            <div className="text-xl font-bold text-red-400 mb-2">BOOM! The Potato Exploded!</div>
             <div className="text-sm text-gray-400">
-              Last holder: <span className="text-white font-mono">{shortenWallet(game.currentHolder)}</span>
+              Last holder: <span className="text-white font-mono font-bold">{shortenWallet(game.currentHolder)}</span>
             </div>
-            <div className="text-sm text-gray-400 mt-1">
+            <div className="text-sm text-gray-500 mt-1">
               Waiting for match result to settle...
             </div>
           </div>
         )}
 
         {game.status === "settled" && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-4 text-center">
-            <Trophy className="w-12 h-12 mx-auto mb-2 text-green-400" />
-            <div className="text-lg font-bold text-green-400 mb-1">Game Settled!</div>
+          <div className="bg-emerald-500/10 border border-emerald-500/25 rounded-2xl p-5 text-center">
+            <Trophy className="w-14 h-14 mx-auto mb-3 text-emerald-400 drop-shadow-[0_0_15px_rgba(52,211,153,0.4)]" />
+            <div className="text-xl font-bold text-emerald-400 mb-2">Game Settled!</div>
             <div className="text-sm text-gray-400">
-              Winning team: <span className="text-white font-bold">
-                {game.winningTeam === 0 ? game.teamA : game.teamB}
+              Winning team: <span className="text-white font-bold text-lg">
+                {game.winningTeam === 0 ? game.teamA : game.winningTeam === 1 ? game.teamB : "Draw"}
               </span>
             </div>
           </div>
         )}
       </div>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
-        <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-          <TrendingUp className="w-4 h-4 text-purple-400" /> Grab History
+      <div className="rounded-2xl border border-gray-800/50 bg-[#0d0e14] p-5">
+        <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+          <TrendingUp className="w-4 h-4 text-amber-400" /> Grab History
         </h3>
         <div className="space-y-2 max-h-64 overflow-y-auto">
-          {grabs && grabs.length > 0 ? grabs.map((grab) => (
-            <div
+          {grabs && grabs.length > 0 ? grabs.map((grab, i) => (
+            <motion.div
               key={grab.id}
-              className="flex items-center justify-between py-2 px-3 rounded-lg bg-black/30 text-sm"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: i * 0.05 }}
+              className="flex items-center justify-between py-2.5 px-4 rounded-xl bg-black/30 text-sm border border-gray-800/30"
               data-testid={`row-grab-${grab.id}`}
             >
-              <div className="flex items-center gap-2">
-                <span className="text-gray-500 text-xs">#{grab.grabNumber}</span>
+              <div className="flex items-center gap-3">
+                <span className="text-amber-500/60 text-xs font-mono">#{grab.grabNumber}</span>
                 <span className="font-mono text-gray-300 text-xs">{shortenWallet(grab.wallet)}</span>
               </div>
               <div className="flex items-center gap-3">
                 <span className={`text-xs font-bold ${grab.teamChosen === 0 ? "text-blue-400" : "text-red-400"}`}>
                   {grab.teamChosen === 0 ? game.teamA : game.teamB}
                 </span>
-                <span className="text-yellow-400 font-bold text-xs">+{formatSBETS(grab.amount)}</span>
+                <span className="text-amber-400 font-bold text-xs">+{formatSBETS(grab.amount)}</span>
               </div>
-            </div>
+            </motion.div>
           )) : (
-            <div className="text-center text-gray-500 text-sm py-4">No grabs yet</div>
+            <div className="text-center text-gray-600 text-sm py-8">No grabs yet — be the first!</div>
           )}
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-800 bg-gray-900/50 p-4">
-        <h3 className="text-sm font-bold text-white mb-3">How It Works</h3>
-        <div className="space-y-2 text-xs text-gray-400">
-          <p>1. Each grab adds SBETS to the pot and resets the countdown timer (which gets shorter each time).</p>
-          <p>2. You choose a team when you grab — your bet is tied to that team winning.</p>
-          <p>3. When the timer hits zero, the potato EXPLODES. The last holder's fate depends on the match result.</p>
-          <p>4. If the last holder's chosen team wins, they take the entire pot (minus 5% platform fee).</p>
-          <p>5. If the last holder's team loses, the pot is split among all other players.</p>
+      <div className="rounded-2xl border border-amber-500/10 bg-gradient-to-br from-amber-500/[0.03] to-transparent p-5">
+        <h3 className="text-sm font-bold text-amber-400 mb-3 flex items-center gap-2">
+          <Sparkles className="w-4 h-4" /> How It Works
+        </h3>
+        <div className="space-y-3 text-sm text-gray-400">
+          <div className="flex gap-3 items-start">
+            <span className="text-amber-500 font-bold text-xs mt-0.5 shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">1</span>
+            <p>Each grab adds SBETS to the pot and resets the countdown timer (which gets shorter each time).</p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <span className="text-amber-500 font-bold text-xs mt-0.5 shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">2</span>
+            <p>You choose a team when you grab — your bet is tied to that team winning.</p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <span className="text-amber-500 font-bold text-xs mt-0.5 shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">3</span>
+            <p>When the timer hits zero, the potato EXPLODES. The last holder's fate depends on the match result.</p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <span className="text-amber-500 font-bold text-xs mt-0.5 shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">4</span>
+            <p>If the last holder's chosen team wins, they take the entire pot (minus 5% platform fee).</p>
+          </div>
+          <div className="flex gap-3 items-start">
+            <span className="text-amber-500 font-bold text-xs mt-0.5 shrink-0 w-5 h-5 rounded-full bg-amber-500/10 flex items-center justify-center">5</span>
+            <p>If the last holder's team loses, the pot is split among all other players.</p>
+          </div>
         </div>
       </div>
     </div>
@@ -629,67 +683,73 @@ export default function HotPotatoPage() {
     <div className="min-h-screen bg-[#0a0e17]">
       <div className="max-w-4xl mx-auto px-4 py-6 pb-24">
         <div className="mb-8">
-          <Link href="/" className="flex items-center gap-2 text-gray-400 hover:text-white transition mb-4" data-testid="link-back-home">
+          <Link href="/" className="flex items-center gap-2 text-amber-500/70 hover:text-amber-400 transition mb-6 text-sm font-medium" data-testid="link-back-home">
             <ChevronLeft className="w-4 h-4" /> Back to Sports
           </Link>
 
-          <div className="flex items-center gap-3 mb-2">
-            <motion.div
-              animate={{ rotate: [0, 10, -10, 0] }}
-              transition={{ repeat: Infinity, duration: 2 }}
-            >
-              <Flame className="w-8 h-8 text-orange-500" />
-            </motion.div>
-            <h1 className="text-3xl font-bold text-white">Hot Potato Bets</h1>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
-              SUI-NATIVE
-            </span>
+          <div className="relative mb-6">
+            <div className="absolute -left-4 top-0 w-1 h-full bg-gradient-to-b from-amber-500 to-orange-600 rounded-full" />
+            <div className="flex items-center gap-3 mb-3">
+              <motion.div
+                animate={{ rotate: [0, 10, -10, 0] }}
+                transition={{ repeat: Infinity, duration: 2 }}
+              >
+                <Flame className="w-9 h-9 text-amber-500 drop-shadow-[0_0_15px_rgba(245,158,11,0.4)]" />
+              </motion.div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-amber-400 via-orange-400 to-red-400 bg-clip-text text-transparent">Hot Potato Bets</h1>
+              <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 uppercase tracking-wider">
+                SUI-NATIVE
+              </span>
+            </div>
+            <p className="text-gray-500 text-sm max-w-xl leading-relaxed">
+              Grab the potato, add SBETS, choose your team. When the timer explodes, the last holder's fate
+              depends on the match result. Win the entire pot or lose it all.
+            </p>
           </div>
-          <p className="text-gray-400 text-sm max-w-xl">
-            Grab the potato, add SBETS, choose your team. When the timer explodes, the last holder's fate
-            depends on the match result. Win the entire pot or lose it all. A game of chicken powered by Sui's unique object model.
-          </p>
         </div>
 
         <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-orange-950/30 to-red-950/20 border border-orange-500/20 rounded-xl p-4 text-center">
-            <Flame className="w-6 h-6 mx-auto mb-2 text-orange-400" />
-            <div className="text-2xl font-bold text-white">{activeGames.length}</div>
-            <div className="text-xs text-gray-400">Active Games</div>
+          <div className="bg-gradient-to-br from-[#1a1208] to-[#12101a] border border-amber-500/15 rounded-2xl p-5 text-center relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/[0.05] to-transparent" />
+            <div className="relative">
+              <Flame className="w-6 h-6 mx-auto mb-2 text-amber-400" />
+              <div className="text-2xl font-bold text-white">{activeGames.length}</div>
+              <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Active Games</div>
+            </div>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
-            <Coins className="w-6 h-6 mx-auto mb-2 text-yellow-400" />
-            <div className="text-2xl font-bold text-yellow-400" data-testid="text-total-pot">
+          <div className="bg-[#0d0e14] border border-amber-500/10 rounded-2xl p-5 text-center">
+            <Coins className="w-6 h-6 mx-auto mb-2 text-amber-400" />
+            <div className="text-2xl font-bold text-amber-400" data-testid="text-total-pot">
               {formatSBETS(activeGames.reduce((sum, g) => sum + g.potAmount, 0))}
             </div>
-            <div className="text-xs text-gray-400">Total in Pots</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Total in Pots</div>
           </div>
-          <div className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
+          <div className="bg-[#0d0e14] border border-gray-800/50 rounded-2xl p-5 text-center">
             <Users className="w-6 h-6 mx-auto mb-2 text-blue-400" />
             <div className="text-2xl font-bold text-white">
               {activeGames.reduce((sum, g) => sum + g.playerCount, 0)}
             </div>
-            <div className="text-xs text-gray-400">Playing Now</div>
+            <div className="text-[10px] text-gray-500 uppercase tracking-wider mt-1">Playing Now</div>
           </div>
         </div>
 
         {treasury && treasury.totalVolume > 0 && (
-          <div className="mb-8 bg-gradient-to-r from-orange-950/20 via-gray-900/40 to-orange-950/20 border border-orange-500/10 rounded-xl p-4">
-            <h3 className="text-sm font-semibold text-orange-400 mb-3 flex items-center gap-2">
-              <Shield className="w-4 h-4" /> Hot Potato Treasury (Separate from Betting)
+          <div className="mb-8 bg-gradient-to-r from-[#1a1208]/50 via-[#12101a] to-[#1a1208]/50 border border-amber-500/10 rounded-2xl p-5">
+            <h3 className="text-[10px] font-bold text-amber-500/60 mb-3 flex items-center gap-2 uppercase tracking-wider">
+              <Shield className="w-3.5 h-3.5 text-amber-400" /> Hot Potato Treasury
             </h3>
-            <div className="grid grid-cols-3 gap-3 text-center">
+            <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-lg font-bold text-yellow-400">{formatSBETS(treasury.activePot)}</div>
-                <div className="text-[10px] text-gray-500">Active Pots</div>
+                <div className="text-lg font-bold text-amber-400">{formatSBETS(treasury.activePot)}</div>
+                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Active Pots</div>
               </div>
               <div>
                 <div className="text-lg font-bold text-orange-400">{formatSBETS(treasury.pendingPot)}</div>
-                <div className="text-[10px] text-gray-500">Pending Settlement</div>
+                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Pending</div>
               </div>
               <div>
-                <div className="text-lg font-bold text-green-400">{formatSBETS(treasury.totalSettled)}</div>
-                <div className="text-[10px] text-gray-500">Total Settled</div>
+                <div className="text-lg font-bold text-emerald-400">{formatSBETS(treasury.totalSettled)}</div>
+                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Settled</div>
               </div>
             </div>
           </div>
@@ -698,15 +758,15 @@ export default function HotPotatoPage() {
         {isLoading ? (
           <div className="flex items-center justify-center h-48">
             <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1 }}>
-              <Flame className="w-8 h-8 text-orange-400" />
+              <Flame className="w-8 h-8 text-amber-400" />
             </motion.div>
           </div>
         ) : (
           <>
             {activeGames.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Flame className="w-5 h-5 text-orange-400" /> Active Games
+                <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                  <Flame className="w-4 h-4 text-amber-400" /> Active Games
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {activeGames.map(game => (
@@ -717,17 +777,17 @@ export default function HotPotatoPage() {
             )}
 
             {activeGames.length === 0 && (
-              <div className="text-center py-16">
-                <Flame className="w-16 h-16 mx-auto mb-4 text-gray-600" />
-                <h3 className="text-xl font-bold text-gray-400 mb-2">No Active Games</h3>
-                <p className="text-gray-500 text-sm mb-6">Games are created by the platform around upcoming matches.</p>
+              <div className="text-center py-20 rounded-2xl border border-dashed border-gray-800/50">
+                <Flame className="w-16 h-16 mx-auto mb-4 text-gray-700" />
+                <h3 className="text-xl font-bold text-gray-500 mb-2">No Active Games</h3>
+                <p className="text-gray-600 text-sm">Games are created automatically around upcoming matches.</p>
               </div>
             )}
 
             {pastGames.length > 0 && (
               <div>
-                <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-gray-400" /> Past Games
+                <h2 className="text-sm font-bold text-white mb-4 flex items-center gap-2 uppercase tracking-wider">
+                  <Trophy className="w-4 h-4 text-gray-500" /> Past Games
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {pastGames.slice(0, 6).map(game => (

@@ -4731,20 +4731,21 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const bet = {
         id: betId,
         userId,
+        walletAddress: resolvedWallet,
         eventId,
         eventName: eventName || 'Sports Event',
-        homeTeam: resolvedHomeTeam || '', // Store for settlement matching
-        awayTeam: resolvedAwayTeam || '', // Store for settlement matching
+        homeTeam: resolvedHomeTeam || '',
+        awayTeam: resolvedAwayTeam || '',
         marketId,
         outcomeId,
         odds,
         betAmount,
-        currency: betCurrency, // Use computed betCurrency (from feeCurrency || currency || 'SUI')
+        currency: betCurrency,
         status: (paymentMethod === 'wallet' ? 'confirmed' : 'pending') as 'pending' | 'confirmed',
         prediction,
         placedAt: Date.now(),
         potentialPayout,
-        platformFee: paymentMethod === 'wallet' ? 0 : platformFee, // No platform fee for on-chain bets (paid in gas)
+        platformFee: paymentMethod === 'wallet' ? 0 : platformFee,
         totalDebit: paymentMethod === 'wallet' ? betAmount : totalDebit,
         txHash: txHash || undefined,
         onChainBetId: onChainBetId || undefined,
@@ -10238,6 +10239,29 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     }
   });
 
+  const hotPotatoGameLocks = new Map<number, Promise<any>>();
+  function acquireGameLock(gameId: number): { execute: <T>(fn: () => Promise<T>) => Promise<T> } {
+    return {
+      execute: async <T>(fn: () => Promise<T>): Promise<T> => {
+        const existingLock = hotPotatoGameLocks.get(gameId) || Promise.resolve();
+        let resolve: () => void;
+        const newLock = new Promise<void>(r => { resolve = r; });
+        hotPotatoGameLocks.set(gameId, newLock);
+        try {
+          await existingLock;
+          return await fn();
+        } finally {
+          resolve!();
+          if (hotPotatoGameLocks.get(gameId) === newLock) {
+            hotPotatoGameLocks.delete(gameId);
+          }
+        }
+      }
+    };
+  }
+
+  const usedHpTxHashes = new Set<string>();
+
   app.post('/api/hot-potato/games/:id/grab', async (req: Request, res: Response) => {
     try {
       const { hotPotatoGames, hotPotatoPlayers, hotPotatoGrabs } = await import('@shared/schema');
@@ -10248,6 +10272,55 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       if (!wallet || !amount || teamChosen === undefined) {
         return res.status(400).json({ error: 'wallet, amount, teamChosen required' });
       }
+
+      if (!txHash || typeof txHash !== 'string' || txHash.length < 20) {
+        return res.status(400).json({ error: 'Valid transaction hash required' });
+      }
+
+      if (typeof teamChosen !== 'number' || (teamChosen !== 0 && teamChosen !== 1)) {
+        return res.status(400).json({ error: 'teamChosen must be 0 or 1' });
+      }
+
+      if (typeof amount !== 'number' || amount <= 0 || !isFinite(amount)) {
+        return res.status(400).json({ error: 'Invalid amount' });
+      }
+
+      if (!/^0x[0-9a-fA-F]{64}$/.test(wallet)) {
+        return res.status(400).json({ error: 'Invalid Sui wallet address' });
+      }
+
+      const ADMIN_WALLET = process.env.ADMIN_WALLET_ADDRESS || '0xa93e1f3064ad5ce96ad1db2b6ab18ff2237f2f4f0f0e14c93e32cd25ca174e43';
+      try {
+        const { BlockchainBetService } = await import('./services/blockchainBetService');
+        const betService = new BlockchainBetService();
+        const verification = await betService.verifySbetsTransfer(txHash, wallet, amount);
+        if (!verification.verified) {
+          console.log(`🥔🚫 FAKE TX REJECTED: game #${id}, wallet ${wallet.slice(0,10)}..., txHash ${txHash.slice(0,16)}... — ${verification.error}`);
+          return res.status(400).json({ error: `Transaction verification failed: ${verification.error}` });
+        }
+        if (verification.recipient && verification.recipient.toLowerCase() !== ADMIN_WALLET.toLowerCase()) {
+          console.log(`🥔🚫 WRONG RECIPIENT: game #${id}, sent to ${verification.recipient.slice(0,10)}... instead of admin`);
+          return res.status(400).json({ error: 'Transaction sent to wrong recipient' });
+        }
+        console.log(`🥔✅ TX verified: ${txHash.slice(0,16)}... | ${verification.amount} SBETS from ${wallet.slice(0,10)}...`);
+      } catch (verifyErr: any) {
+        console.error(`🥔🚫 TX verification FAILED (fail-closed): ${verifyErr.message}`);
+        return res.status(503).json({ error: 'Transaction verification temporarily unavailable. Please try again.' });
+      }
+
+      const gameLock = acquireGameLock(id);
+      return await gameLock.execute(async () => {
+
+      const txNormalized = txHash.toLowerCase();
+      if (usedHpTxHashes.has(txNormalized)) {
+        return res.status(400).json({ error: 'Transaction already used for a grab (replay rejected)' });
+      }
+      const existingGrabWithTx2 = await db.select().from(hotPotatoGrabs)
+        .where(eq(hotPotatoGrabs.txHash, txHash));
+      if (existingGrabWithTx2.length > 0) {
+        return res.status(400).json({ error: 'Transaction already used for a grab' });
+      }
+      usedHpTxHashes.add(txNormalized);
 
       const [game] = await db.select().from(hotPotatoGames).where(eq(hotPotatoGames.id, id));
       if (!game) return res.status(404).json({ error: 'Game not found' });
@@ -10329,7 +10402,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         explosionTimeMs: newExplosion,
       }).where(eq(hotPotatoGames.id, id));
 
-      console.log(`🥔 Grab #${newGrabCount} on game #${id}: ${wallet.slice(0,10)}... added ${amount} SBETS (team ${teamChosen}), pot=${newPot}, timer=${newTimer}ms`);
+      console.log(`🥔 Grab #${newGrabCount} on game #${id}: ${wallet.slice(0,10)}... added ${amount} SBETS (team ${teamChosen}), pot=${newPot}, timer=${newTimer}ms, TX: ${txHash.slice(0,16)}...`);
 
       res.json({
         success: true,
@@ -10337,6 +10410,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         potAmount: newPot,
         timerDurationMs: newTimer,
         explosionTimeMs: newExplosion,
+      });
+
       });
     } catch (err: any) {
       console.error('Hot Potato grab error:', err.message);
@@ -10471,8 +10546,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     }
   }
 
-  setInterval(hotPotatoExplosionChecker, 30 * 1000);
-  console.log('🥔 Hot Potato explosion checker started — runs every 30 seconds');
+  setInterval(hotPotatoExplosionChecker, 5 * 1000);
+  console.log('🥔 Hot Potato explosion checker started — runs every 5 seconds');
 
   // 2. Settlement worker — settles exploded games when match results are available
   async function hotPotatoSettlementWorker() {

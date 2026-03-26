@@ -3980,6 +3980,14 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
+      if (txHash && typeof txHash === 'string' && txHash.length > 10) {
+        const existingBet = await storage.getBetByTxHash(txHash);
+        if (existingBet) {
+          console.log(`⚡ Duplicate txHash detected (retry-safe): ${txHash.slice(0, 12)}... → returning existing bet ID ${existingBet.id}`);
+          return res.status(200).json({ ...existingBet, duplicate: true });
+        }
+      }
+
       // ANTI-EXPLOIT: Acquire wallet lock to prevent race conditions
       // All DB checks + insert happen serially per wallet, preventing duplicate bets
       const lock = acquireWalletLock(resolvedWallet);
@@ -4618,18 +4626,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const platformFee = betAmount * 0.01; // 1% platform fee
       const totalDebit = betAmount + platformFee;
 
-      // ANTI-EXPLOIT: txHash replay prevention - reject duplicate transaction hashes
       if (txHash) {
         try {
-          const existingBet = await db.execute(sql`
-            SELECT id FROM bets WHERE tx_hash = ${txHash} LIMIT 1
-          `);
-          if (existingBet.rows?.length > 0) {
-            console.log(`🚫 DUPLICATE txHash BLOCKED: ${txHash} already used by bet ${existingBet.rows[0].id}`);
-            return res.status(409).json({
-              message: "This transaction has already been recorded.",
-              code: "DUPLICATE_TRANSACTION"
-            });
+          const existingBetInLock = await storage.getBetByTxHash(txHash);
+          if (existingBetInLock) {
+            console.log(`⚡ Duplicate txHash (inside lock, retry-safe): ${txHash.slice(0, 12)}... → returning existing bet`);
+            return res.status(200).json({ ...existingBetInLock, duplicate: true });
           }
         } catch (dupErr) {
           console.error('[TxDedup] Check failed - FAIL CLOSED:', dupErr);
@@ -5373,18 +5375,12 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         if (!cd.allowed) return res.status(429).json({ message: `Please wait ${cd.secondsLeft}s between bets`, code: "BET_COOLDOWN" });
       }
 
-      // ANTI-EXPLOIT: txHash replay prevention for parlays
       if (txHash) {
         try {
-          const existingParlay = await db.execute(sql`
-            SELECT id FROM bets WHERE tx_hash = ${txHash} LIMIT 1
-          `);
-          if (existingParlay.rows?.length > 0) {
-            console.log(`🚫 DUPLICATE txHash BLOCKED (parlay): ${txHash} already used`);
-            return res.status(409).json({
-              message: "This transaction has already been recorded.",
-              code: "DUPLICATE_TRANSACTION"
-            });
+          const existingParlay = await storage.getBetByTxHash(txHash);
+          if (existingParlay) {
+            console.log(`⚡ Duplicate txHash detected (parlay retry-safe): ${txHash.slice(0, 12)}... → returning existing bet`);
+            return res.status(200).json({ ...existingParlay, duplicate: true });
           }
         } catch (dupErr) {
           console.error('[TxDedup-Parlay] Check failed - FAIL CLOSED:', dupErr);
@@ -5458,20 +5454,22 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       const currency: 'SUI' | 'SBETS' = onChainParlayCurrency === 'SBETS' || feeCurrency === 'SBETS' ? 'SBETS' : 'SUI';
 
-      const parlayRateLimit = await checkBetRateLimitDB(walletAddress);
-      if (!parlayRateLimit.allowed) {
-        return res.status(429).json({
-          message: parlayRateLimit.message || "Daily bet limit reached",
-          code: "RATE_LIMIT_EXCEEDED"
-        });
-      }
+      if (!txHash) {
+        const parlayRateLimit = await checkBetRateLimitDB(walletAddress);
+        if (!parlayRateLimit.allowed) {
+          return res.status(429).json({
+            message: parlayRateLimit.message || "Daily bet limit reached",
+            code: "RATE_LIMIT_EXCEEDED"
+          });
+        }
 
-      const parlayCooldown = await checkBetCooldownDB(walletAddress);
-      if (!parlayCooldown.allowed) {
-        return res.status(429).json({
-          message: `Please wait ${parlayCooldown.secondsLeft}s between bets`,
-          code: "COOLDOWN_ACTIVE"
-        });
+        const parlayCooldown = await checkBetCooldownDB(walletAddress);
+        if (!parlayCooldown.allowed) {
+          return res.status(429).json({
+            message: `Please wait ${parlayCooldown.secondsLeft}s between bets`,
+            code: "COOLDOWN_ACTIVE"
+          });
+        }
       }
 
       // MAX STAKE VALIDATION

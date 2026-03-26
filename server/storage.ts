@@ -26,6 +26,7 @@ export interface IStorage {
   
   // Betting methods
   getBet(betId: number | string): Promise<any | undefined>;
+  getBetByTxHash(txHash: string): Promise<any | undefined>;
   getBetByStringId(betId: string): Promise<any | undefined>;
   getBetsByBetObjectId(betObjectId: string): Promise<any[]>;
   createBet(bet: any): Promise<any>;
@@ -303,6 +304,38 @@ export class DatabaseStorage implements IStorage {
       };
     } catch (error) {
       console.error('Error getting bet from database:', error);
+      return undefined;
+    }
+  }
+
+  async getBetByTxHash(txHash: string): Promise<any | undefined> {
+    try {
+      const results = await db.execute(sql`SELECT * FROM bets WHERE tx_hash = ${txHash} LIMIT 1`);
+      const rows = Array.isArray(results) ? results : (results.rows || []);
+      if (!rows[0]) return undefined;
+      const r = rows[0] as any;
+      return {
+        id: r.wurlus_bet_id || String(r.id),
+        numericId: r.id,
+        userId: r.wallet_address || r.user_id,
+        walletAddress: r.wallet_address,
+        eventId: r.event_id,
+        eventName: r.event_name,
+        homeTeam: r.home_team,
+        awayTeam: r.away_team,
+        marketId: r.market_id,
+        outcomeId: r.outcome_id,
+        betAmount: r.bet_amount,
+        odds: r.odds,
+        potentialPayout: r.potential_payout,
+        status: r.status,
+        prediction: r.prediction,
+        txHash: r.tx_hash,
+        currency: r.currency,
+        createdAt: r.created_at,
+      };
+    } catch (error) {
+      console.error('Error getting bet by txHash:', error);
       return undefined;
     }
   }

@@ -54,6 +54,45 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
     localStorage.setItem('selectedBets', JSON.stringify(selectedBets));
   }, [selectedBets]);
 
+  useEffect(() => {
+    if (!activeWalletAddress) return;
+    const retryPendingDbSaves = async () => {
+      try {
+        const raw = localStorage.getItem('suibets_pending_db_saves');
+        if (!raw) return;
+        const pending = JSON.parse(raw);
+        if (!Array.isArray(pending) || pending.length === 0) return;
+        console.log(`[BettingContext] Found ${pending.length} pending DB saves to retry`);
+        const stillPending: any[] = [];
+        for (const bet of pending) {
+          if (Date.now() - bet.savedAt > 24 * 60 * 60 * 1000) continue;
+          try {
+            const endpoint = bet.isParlay ? '/api/parlays' : '/api/bets';
+            const { savedAt, isParlay, ...payload } = bet;
+            const response = await apiRequest('POST', endpoint, payload);
+            if (response.ok) {
+              console.log('[BettingContext] Recovery: saved pending bet to DB, txHash:', bet.txHash?.slice(0, 12));
+            } else {
+              const errBody = await response.json().catch(() => ({}));
+              if (!errBody.duplicate) {
+                stillPending.push(bet);
+              }
+            }
+          } catch {
+            stillPending.push(bet);
+          }
+        }
+        if (stillPending.length > 0) {
+          localStorage.setItem('suibets_pending_db_saves', JSON.stringify(stillPending));
+        } else {
+          localStorage.removeItem('suibets_pending_db_saves');
+        }
+      } catch {}
+    };
+    const timer = setTimeout(retryPendingDbSaves, 5000);
+    return () => clearTimeout(timer);
+  }, [activeWalletAddress]);
+
   // Add a bet to the selection - with improved handling for better user experience
   const addBet = (bet: SelectedBet) => {
     console.log("BettingContext: Adding bet to slip", bet);
@@ -423,92 +462,103 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         });
 
         if (onChainResult.success) {
-          try {
-            console.log('[BettingContext] On-chain bet successful, recording in DB:', onChainResult.txDigest);
-            const response = await apiRequest('POST', '/api/bets', {
-              userId: activeWalletAddress,
-              walletAddress: activeWalletAddress,
-              eventId: String(selectedBets[0].eventId),
-              eventName: selectedBets[0].eventName,
-              homeTeam: selectedBets[0].homeTeam,
-              awayTeam: selectedBets[0].awayTeam,
-              marketId: String(selectedBets[0].marketId || 'match_winner'),
-              outcomeId: String(selectedBets[0].outcomeId || selectedBets[0].selectionName || 'selection'),
-              odds: selectedBets[0].odds,
-              betAmount: stakeAmount,
-              prediction: selectedBets[0].selectionName,
-              potentialPayout: calculatePotentialWinnings(stakeAmount, selectedBets[0].odds),
-              currency: betOptions.currency,
-              feeCurrency: betOptions.currency,
-              txHash: onChainResult.txDigest,
-              onChainBetId: onChainResult.betObjectId,
-              paymentMethod: 'wallet',
-              status: 'confirmed',
-              useBonus: betOptions.useBonus || false,
-              giftRecipientWallet: betOptions.giftRecipientWallet || undefined,
-            });
+          const betPayload = {
+            userId: activeWalletAddress,
+            walletAddress: activeWalletAddress,
+            eventId: String(selectedBets[0].eventId),
+            eventName: selectedBets[0].eventName,
+            homeTeam: selectedBets[0].homeTeam,
+            awayTeam: selectedBets[0].awayTeam,
+            marketId: String(selectedBets[0].marketId || 'match_winner'),
+            outcomeId: String(selectedBets[0].outcomeId || selectedBets[0].selectionName || 'selection'),
+            odds: selectedBets[0].odds,
+            betAmount: stakeAmount,
+            prediction: selectedBets[0].selectionName,
+            potentialPayout: calculatePotentialWinnings(stakeAmount, selectedBets[0].odds),
+            currency: betOptions.currency,
+            feeCurrency: betOptions.currency,
+            txHash: onChainResult.txDigest,
+            onChainBetId: onChainResult.betObjectId,
+            paymentMethod: 'wallet',
+            status: 'confirmed',
+            useBonus: betOptions.useBonus || false,
+            giftRecipientWallet: betOptions.giftRecipientWallet || undefined,
+          };
 
-            if (response.ok) {
-              const betData = await response.json();
-              
-              // Emit confirmation event for UI
-              const betConfirmedEvent = new CustomEvent('suibets:bet-confirmed', {
-                detail: {
-                  betId: betData.bet?.id || onChainResult.betObjectId || betData.id || `onchain_${onChainResult.txDigest?.slice(0, 10)}`,
-                  eventName: selectedBets[0].eventName,
-                  prediction: selectedBets[0].selectionName,
-                  odds: selectedBets[0].odds,
-                  stake: stakeAmount,
-                  currency: betOptions.currency,
-                  potentialWin: calculatePotentialWinnings(stakeAmount, selectedBets[0].odds),
-                  txHash: onChainResult.txDigest,
-                  status: 'confirmed',
-                  placedAt: new Date().toISOString(),
-                  walrusBlobId: betData.walrusBlobId || null,
-                  walrusUrl: betData.walrusUrl || null,
-                  walrusStorageEpoch: betData.walrusStorageEpoch ?? null,
-                  walrusEndEpoch: betData.walrusEndEpoch ?? null,
-                  walrusCost: betData.walrusCost ?? null,
+          let dbSaved = false;
+          let betData: any = null;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+              if (attempt > 0) {
+                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                console.log(`[BettingContext] DB save retry ${attempt}/4 for TX: ${onChainResult.txDigest?.slice(0, 12)}`);
+              }
+              const response = await apiRequest('POST', '/api/bets', betPayload);
+              if (response.ok) {
+                betData = await response.json();
+                dbSaved = true;
+                console.log('[BettingContext] DB save SUCCESS on attempt', attempt + 1);
+                break;
+              } else {
+                const errBody = await response.json().catch(() => ({}));
+                if (errBody.duplicate) {
+                  console.log('[BettingContext] Bet already exists in DB (duplicate), treating as success');
+                  dbSaved = true;
+                  break;
                 }
-              });
-              window.dispatchEvent(betConfirmedEvent);
-              
-              const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
-              toast({
-                title: "Bet Placed On-Chain!",
-                description: (
-                  <a href={txLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
-                    View TX: {onChainResult.txDigest?.slice(0, 12)}...
-                  </a>
-                ),
-              });
-              return true;
-            } else {
-              // Database failed but bet is on-chain - still show success to user
-              console.error('[BettingContext] DB record failed for on-chain bet:', onChainResult.txDigest);
-              
-              const betConfirmedEvent = new CustomEvent('suibets:bet-confirmed', {
-                detail: {
-                  betId: onChainResult.betObjectId || `onchain_${onChainResult.txDigest?.slice(0, 10)}`,
-                  eventName: selectedBets[0].eventName,
-                  prediction: selectedBets[0].selectionName,
-                  odds: selectedBets[0].odds,
-                  stake: stakeAmount,
-                  currency: betOptions.currency,
-                  potentialWin: calculatePotentialWinnings(stakeAmount, selectedBets[0].odds),
-                  txHash: onChainResult.txDigest,
-                  status: 'confirmed',
-                  placedAt: new Date().toISOString(),
-                }
-              });
-              window.dispatchEvent(betConfirmedEvent);
-              return true;
+                console.error(`[BettingContext] DB save failed (attempt ${attempt + 1}):`, errBody.message || response.status);
+              }
+            } catch (retryErr: any) {
+              console.error(`[BettingContext] DB save error (attempt ${attempt + 1}):`, retryErr.message);
             }
-          } catch (dbError: any) {
-            console.error('[BettingContext] Error recording on-chain bet in DB:', dbError);
-            // Fallback success for user since on-chain worked
-            return true;
           }
+
+          if (!dbSaved) {
+            console.error('[BettingContext] ALL DB RETRIES FAILED — saving to localStorage for recovery');
+            try {
+              const pendingBets = JSON.parse(localStorage.getItem('suibets_pending_db_saves') || '[]');
+              pendingBets.push({ ...betPayload, savedAt: Date.now() });
+              localStorage.setItem('suibets_pending_db_saves', JSON.stringify(pendingBets));
+            } catch {}
+            toast({
+              title: "Bet Placed On-Chain!",
+              description: "Your bet is confirmed on the blockchain. It will appear in My Bets shortly.",
+            });
+          }
+
+          const confirmation: any = {
+            betId: betData?.bet?.id || betData?.id || onChainResult.betObjectId || `onchain_${onChainResult.txDigest?.slice(0, 10)}`,
+            eventName: selectedBets[0].eventName,
+            prediction: selectedBets[0].selectionName,
+            odds: selectedBets[0].odds,
+            stake: stakeAmount,
+            currency: betOptions.currency,
+            potentialWin: calculatePotentialWinnings(stakeAmount, selectedBets[0].odds),
+            txHash: onChainResult.txDigest,
+            status: 'confirmed',
+            placedAt: new Date().toISOString(),
+          };
+          if (betData) {
+            confirmation.walrusBlobId = betData.walrusBlobId || null;
+            confirmation.walrusUrl = betData.walrusUrl || null;
+            confirmation.walrusStorageEpoch = betData.walrusStorageEpoch ?? null;
+            confirmation.walrusEndEpoch = betData.walrusEndEpoch ?? null;
+            confirmation.walrusCost = betData.walrusCost ?? null;
+          }
+          window.dispatchEvent(new CustomEvent('suibets:bet-confirmed', { detail: confirmation }));
+
+          if (dbSaved) {
+            const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
+            toast({
+              title: "Bet Placed On-Chain!",
+              description: (
+                <a href={txLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                  View TX: {onChainResult.txDigest?.slice(0, 12)}...
+                </a>
+              ),
+            });
+          }
+          return true;
         } else {
           return false;
         }
@@ -580,89 +630,99 @@ export const BettingProvider: React.FC<{children: ReactNode}> = ({ children }) =
         });
 
         if (onChainResult.success) {
-          try {
-            console.log('[BettingContext] On-chain parlay successful, recording in DB:', onChainResult.txDigest);
-            const response = await apiRequest('POST', '/api/parlays', {
-              userId: activeWalletAddress,
-              walletAddress: activeWalletAddress,
-              totalOdds: parlayOdds,
-              betAmount: betAmount,
-              potentialPayout: potentialPayout,
-              currency: betOptions.currency,
-              feeCurrency: betOptions.currency,
-              txHash: onChainResult.txDigest,
-              onChainBetId: onChainResult.betObjectId,
-              status: 'confirmed',
-              legs: selectedBets.map(bet => ({
-                eventId: bet.eventId,
-                eventName: bet.eventName,
-                homeTeam: bet.homeTeam,
-                awayTeam: bet.awayTeam,
-                marketId: bet.marketId,
-                outcomeId: bet.outcomeId,
-                odds: bet.odds,
-                prediction: bet.selectionName,
-              })),
-            });
+          const parlayPayload = {
+            userId: activeWalletAddress,
+            walletAddress: activeWalletAddress,
+            totalOdds: parlayOdds,
+            betAmount: betAmount,
+            potentialPayout: potentialPayout,
+            currency: betOptions.currency,
+            feeCurrency: betOptions.currency,
+            txHash: onChainResult.txDigest,
+            onChainBetId: onChainResult.betObjectId,
+            status: 'confirmed',
+            legs: selectedBets.map(bet => ({
+              eventId: bet.eventId,
+              eventName: bet.eventName,
+              homeTeam: bet.homeTeam,
+              awayTeam: bet.awayTeam,
+              marketId: bet.marketId,
+              outcomeId: bet.outcomeId,
+              odds: bet.odds,
+              prediction: bet.selectionName,
+            })),
+          };
 
-            const parlayConfirmation = {
-              betId: onChainResult.betObjectId || `parlay_${onChainResult.txDigest?.slice(0, 10)}`,
-              eventName: `Parlay (${selectedBets.length} legs)`,
-              prediction: selectedBets.map(b => b.selectionName).join(' | '),
-              odds: parlayOdds,
-              stake: betAmount,
-              currency: betOptions.currency,
-              potentialWin: potentialPayout,
-              txHash: onChainResult.txDigest,
-              status: 'confirmed',
-              placedAt: new Date().toISOString(),
-              isParlay: true,
-              legs: selectedBets.map(b => ({
-                eventName: b.eventName,
-                prediction: b.selectionName,
-                odds: b.odds,
-              })),
-            };
-
-            if (response.ok) {
-              const betData = await response.json();
-              parlayConfirmation.betId = betData.bet?.id || betData.id || parlayConfirmation.betId;
-
-              window.dispatchEvent(new CustomEvent('suibets:bet-confirmed', { detail: parlayConfirmation }));
-
-              const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
-              toast({
-                title: "Parlay Placed On-Chain!",
-                description: (
-                  <a href={txLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
-                    View TX: {onChainResult.txDigest?.slice(0, 12)}...
-                  </a>
-                ),
-              });
-              clearBets();
-              return true;
-            } else {
-              console.error('[BettingContext] DB record failed for on-chain parlay:', onChainResult.txDigest);
-
-              window.dispatchEvent(new CustomEvent('suibets:bet-confirmed', { detail: parlayConfirmation }));
-
-              const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
-              toast({
-                title: "Parlay On-Chain!",
-                description: (
-                  <a href={txLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
-                    View TX: {onChainResult.txDigest?.slice(0, 12)}...
-                  </a>
-                ),
-              });
-              clearBets();
-              return true;
+          let dbSaved = false;
+          let betData: any = null;
+          for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+              if (attempt > 0) {
+                await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+                console.log(`[BettingContext] Parlay DB save retry ${attempt}/4 for TX: ${onChainResult.txDigest?.slice(0, 12)}`);
+              }
+              const response = await apiRequest('POST', '/api/parlays', parlayPayload);
+              if (response.ok) {
+                betData = await response.json();
+                dbSaved = true;
+                console.log('[BettingContext] Parlay DB save SUCCESS on attempt', attempt + 1);
+                break;
+              } else {
+                const errBody = await response.json().catch(() => ({}));
+                if (errBody.duplicate) { dbSaved = true; break; }
+                console.error(`[BettingContext] Parlay DB save failed (attempt ${attempt + 1}):`, errBody.message || response.status);
+              }
+            } catch (retryErr: any) {
+              console.error(`[BettingContext] Parlay DB save error (attempt ${attempt + 1}):`, retryErr.message);
             }
-          } catch (err) {
-            console.error('[BettingContext] Error recording parlay in DB:', err);
-            clearBets();
-            return true;
           }
+
+          if (!dbSaved) {
+            console.error('[BettingContext] ALL PARLAY DB RETRIES FAILED — saving to localStorage');
+            try {
+              const pendingBets = JSON.parse(localStorage.getItem('suibets_pending_db_saves') || '[]');
+              pendingBets.push({ ...parlayPayload, isParlay: true, savedAt: Date.now() });
+              localStorage.setItem('suibets_pending_db_saves', JSON.stringify(pendingBets));
+            } catch {}
+            toast({
+              title: "Parlay Placed On-Chain!",
+              description: "Your parlay is confirmed on the blockchain. It will appear in My Bets shortly.",
+            });
+          }
+
+          const parlayConfirmation = {
+            betId: betData?.bet?.id || betData?.id || onChainResult.betObjectId || `parlay_${onChainResult.txDigest?.slice(0, 10)}`,
+            eventName: `Parlay (${selectedBets.length} legs)`,
+            prediction: selectedBets.map(b => b.selectionName).join(' | '),
+            odds: parlayOdds,
+            stake: betAmount,
+            currency: betOptions.currency,
+            potentialWin: potentialPayout,
+            txHash: onChainResult.txDigest,
+            status: 'confirmed',
+            placedAt: new Date().toISOString(),
+            isParlay: true,
+            legs: selectedBets.map(b => ({
+              eventName: b.eventName,
+              prediction: b.selectionName,
+              odds: b.odds,
+            })),
+          };
+          window.dispatchEvent(new CustomEvent('suibets:bet-confirmed', { detail: parlayConfirmation }));
+
+          if (dbSaved) {
+            const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
+            toast({
+              title: "Parlay Placed On-Chain!",
+              description: (
+                <a href={txLink} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:text-cyan-300 underline">
+                  View TX: {onChainResult.txDigest?.slice(0, 12)}...
+                </a>
+              ),
+            });
+          }
+          clearBets();
+          return true;
         } else {
           return false;
         }

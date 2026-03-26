@@ -20,7 +20,8 @@ import {
   ArrowLeft,
   Share2,
   Gift,
-  DollarSign
+  DollarSign,
+  Copy
 } from 'lucide-react';
 import { ShareableBetCard } from '@/components/betting/ShareableBetCard';
 

@@ -10780,10 +10780,13 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
       for (const game of activeGames) {
         const explodeTime = game.explosionTimeMs ? parseInt(game.explosionTimeMs) : 0;
         const deadline = game.gameDeadlineMs ? parseInt(game.gameDeadlineMs) : 0;
+        const matchTimeMs = game.matchTime ? new Date(game.matchTime).getTime() : 0;
 
-        if ((explodeTime && now >= explodeTime) || (deadline && now >= deadline)) {
-          await db.update(hotPotatoGames).set({ status: 'exploded' }).where(eq(hotPotatoGames.id, game.id));
-          console.log(`🥔💥 Auto-exploded game #${game.id}: ${game.teamA} vs ${game.teamB} | Holder: ${game.currentHolder?.slice(0,10)}... on team ${game.holderTeam}`);
+        if ((explodeTime && now >= explodeTime) || (deadline && now >= deadline) || (matchTimeMs && now >= matchTimeMs)) {
+          const hasPlayers = game.grabCount && game.grabCount > 0;
+          const newStatus = hasPlayers ? 'exploded' : 'cancelled';
+          await db.update(hotPotatoGames).set({ status: newStatus }).where(eq(hotPotatoGames.id, game.id));
+          console.log(`🥔💥 Auto-${newStatus} game #${game.id}: ${game.teamA} vs ${game.teamB} | Holder: ${game.currentHolder?.slice(0,10)}... on team ${game.holderTeam}`);
         }
       }
     } catch (err: any) {

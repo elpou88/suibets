@@ -3902,8 +3902,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       // ANTI-EXPLOIT: Rate limiting - max 7 bets per 24 hours (DB-backed, survives restarts)
+      // Skip rate limit & cooldown when txHash proves funds already moved on-chain
+      // Blocking DB record after on-chain tx = lost bets (user pays but bet never recorded)
+      const hasOnChainProof = !!(txHash && paymentMethod === 'wallet');
       const rateLimitKey = resolvedWallet;
-      if (rateLimitKey && rateLimitKey.startsWith('0x')) {
+      if (!hasOnChainProof && rateLimitKey && rateLimitKey.startsWith('0x')) {
         const rateLimitResult = await checkBetRateLimitDB(rateLimitKey);
         if (!rateLimitResult.allowed) {
           console.log(`❌ Daily bet limit hit for ${rateLimitKey.slice(0, 12)}... (7/7 used) [DB-enforced]`);
@@ -3918,7 +3921,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       // ANTI-EXPLOIT: Bet cooldown - 60 seconds between bets (DB-backed)
-      if (rateLimitKey && rateLimitKey.startsWith('0x')) {
+      if (!hasOnChainProof && rateLimitKey && rateLimitKey.startsWith('0x')) {
         const cooldownResult = await checkBetCooldownDB(rateLimitKey);
         if (!cooldownResult.allowed) {
           console.log(`❌ Cooldown active for ${rateLimitKey.slice(0, 12)}... (${cooldownResult.secondsLeft}s left)`);
@@ -5262,8 +5265,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       const onChainParlayLock = onChainParlayWallet?.startsWith('0x') ? acquireWalletLock(onChainParlayWallet) : null;
       const onChainParlayHandler = async () => {
 
-      // ANTI-EXPLOIT: Rate limit + cooldown for on-chain parlays
-      if (onChainParlayWallet?.startsWith('0x')) {
+      // ON-CHAIN bets: Skip rate limit & cooldown when txHash proves funds already moved on-chain
+      // Blocking the DB record after on-chain tx = lost bets (user pays but bet never recorded)
+      if (!txHash && onChainParlayWallet?.startsWith('0x')) {
         const rl = await checkBetRateLimitDB(onChainParlayWallet);
         if (!rl.allowed) return res.status(429).json({ message: rl.message, code: "RATE_LIMIT_EXCEEDED" });
         const cd = await checkBetCooldownDB(onChainParlayWallet);
@@ -5668,6 +5672,120 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       });
     } catch (error: any) {
       res.status(500).json({ message: "Debug query failed", error: error.message });
+    }
+  });
+
+  // Admin: recover missing on-chain bets by scanning blockchain
+  app.post("/api/admin/recover-bets/:wallet", async (req: Request, res: Response) => {
+    try {
+      const wallet = req.params.wallet;
+      if (!wallet.startsWith('0x') || wallet.length !== 66) {
+        return res.status(400).json({ message: "Invalid wallet address" });
+      }
+
+      const CONTRACT_PKG = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
+      const { bets } = await import('@shared/schema');
+      const { db } = await import('./db');
+      const { SuiClient } = await import('@mysten/sui/client');
+      const suiClient = new SuiClient({ url: 'https://fullnode.mainnet.sui.io:443' });
+
+      const txList = await suiClient.queryTransactionBlocks({
+        filter: { FromAddress: wallet },
+        limit: 50,
+        order: 'descending',
+      });
+
+      const recovered: any[] = [];
+      const skipped: any[] = [];
+
+      for (const txRef of txList.data) {
+        const tx = await suiClient.getTransactionBlock({
+          digest: txRef.digest,
+          options: { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true },
+        });
+
+        const calls = (tx.transaction?.data?.transaction as any)?.transactions || [];
+        const isBetTx = calls.some((c: any) => c.MoveCall?.package === CONTRACT_PKG && c.MoveCall?.function?.includes('place_bet'));
+        if (!isBetTx) continue;
+
+        const status = tx.effects?.status?.status;
+        if (status !== 'success') continue;
+
+        const existingByTx = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${txRef.digest} LIMIT 1`);
+        if ((existingByTx.rows?.length || 0) > 0) {
+          skipped.push({ digest: txRef.digest, reason: 'already_exists' });
+          continue;
+        }
+
+        const betObj = tx.objectChanges?.find((c: any) => c.type === 'created' && c.objectType?.includes('::betting::Bet'));
+        const betObjectId = (betObj as any)?.objectId || null;
+
+        if (betObjectId) {
+          const existingByObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
+          if ((existingByObj.rows?.length || 0) > 0) {
+            skipped.push({ digest: txRef.digest, reason: 'bet_object_exists' });
+            continue;
+          }
+        }
+
+        const event = tx.events?.[0]?.parsedJson as any;
+        const eventIdBytes = event?.event_id;
+        const eventIdStr = eventIdBytes ? String.fromCharCode(...eventIdBytes) : 'unknown';
+        const oddsBps = event?.odds_bps ? Number(event.odds_bps) : 200;
+        const odds = oddsBps / 100;
+        const amount = event?.amount ? Number(event.amount) / 1e9 : 0;
+        const coinType = event?.coin_type === 1 ? 'SBETS' : 'SUI';
+        const ts = tx.timestampMs ? new Date(parseInt(tx.timestampMs)) : new Date();
+
+        const betId = betObjectId || `recovered-${txRef.digest.slice(0, 16)}`;
+        const potentialPayout = Math.round(amount * odds * 100) / 100;
+
+        const [inserted] = await db.insert(bets).values({
+          userId: null,
+          walletAddress: wallet.toLowerCase(),
+          betAmount: amount,
+          currency: coinType,
+          odds,
+          prediction: eventIdStr.includes('parlay') ? eventIdStr : eventIdStr,
+          potentialPayout,
+          status: 'pending',
+          betType: eventIdStr.includes('parlay') ? 'parlay' : 'single',
+          cashOutAvailable: true,
+          wurlusBetId: betId,
+          txHash: txRef.digest,
+          platformFee: 0,
+          networkFee: 0,
+          feeCurrency: coinType,
+          eventName: eventIdStr.includes('parlay') ? 'Parlay Bet (Recovered)' : 'Recovered Bet',
+          externalEventId: eventIdStr,
+          betObjectId: betObjectId,
+          createdAt: ts,
+        }).returning();
+
+        recovered.push({
+          id: inserted.id,
+          betId,
+          digest: txRef.digest,
+          betObjectId,
+          amount,
+          coinType,
+          odds,
+          eventId: eventIdStr,
+          timestamp: ts.toISOString(),
+        });
+
+        console.log(`🔧 RECOVERED BET: ${betId} from tx ${txRef.digest.slice(0,16)} for ${wallet.slice(0,12)}... (${amount} ${coinType})`);
+      }
+
+      res.json({
+        wallet,
+        recovered: recovered.length,
+        skipped: skipped.length,
+        details: { recovered, skipped },
+      });
+    } catch (error: any) {
+      console.error('Recovery failed:', error);
+      res.status(500).json({ message: "Recovery failed", error: error.message });
     }
   });
 

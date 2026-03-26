@@ -198,57 +198,65 @@ export default function ParlayPage() {
 
       // Save bet to database after successful on-chain transaction
       // Use /api/bets for single bets, /api/parlays for multi-leg parlays
+      // CRITICAL: Retry up to 3 times — on-chain funds are already gone, must not lose the DB record
       let response;
-      if (parlayLegs.length === 1) {
-        // Single bet - use the single bet API endpoint
-        const singleLeg = parlayLegs[0];
-        
-        response = await apiRequest('POST', '/api/bets', {
-          userId: walletAddress,
-          walletAddress: walletAddress,
-          eventId: singleLeg.eventId,
-          eventName: singleLeg.eventName,
-          homeTeam: singleLeg.homeTeam,
-          awayTeam: singleLeg.awayTeam,
-          marketId: singleLeg.marketId || 'match_winner',
-          outcomeId: singleLeg.outcomeId || singleLeg.selection,
-          prediction: singleLeg.selection,
-          odds: singleLeg.odds,
-          betAmount: stakeAmount,
-          potentialPayout: potentialPayout,
-          feeCurrency: betCurrency,
-          paymentMethod: 'wallet',
-          txHash: onChainResult.txDigest,
-          onChainBetId: onChainResult.betObjectId,
-          status: 'confirmed',
-          isLive: singleLeg.isLive || false
-        });
-      } else {
-        // Parlay - use the parlay API endpoint
-        response = await apiRequest('POST', '/api/parlays', {
-          walletAddress: walletAddress,
-          totalOdds,
-          betAmount: stakeAmount,
-          potentialPayout,
-          feeCurrency: betCurrency,
-          txHash: onChainResult.txDigest,
-          onChainBetId: onChainResult.betObjectId,
-          status: 'confirmed',
-          legs: parlayLegs.map(leg => ({
-            eventId: leg.eventId,
-            eventName: leg.eventName,
-            selection: leg.selection,
-            odds: leg.odds,
-            marketId: leg.marketId,
-            outcomeId: leg.outcomeId,
-            homeTeam: leg.homeTeam,
-            awayTeam: leg.awayTeam,
-            isLive: leg.isLive || false
-          }))
-        });
+      const maxRetries = 3;
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          if (parlayLegs.length === 1) {
+            const singleLeg = parlayLegs[0];
+            response = await apiRequest('POST', '/api/bets', {
+              userId: walletAddress,
+              walletAddress: walletAddress,
+              eventId: singleLeg.eventId,
+              eventName: singleLeg.eventName,
+              homeTeam: singleLeg.homeTeam,
+              awayTeam: singleLeg.awayTeam,
+              marketId: singleLeg.marketId || 'match_winner',
+              outcomeId: singleLeg.outcomeId || singleLeg.selection,
+              prediction: singleLeg.selection,
+              odds: singleLeg.odds,
+              betAmount: stakeAmount,
+              potentialPayout: potentialPayout,
+              feeCurrency: betCurrency,
+              paymentMethod: 'wallet',
+              txHash: onChainResult.txDigest,
+              onChainBetId: onChainResult.betObjectId,
+              status: 'confirmed',
+              isLive: singleLeg.isLive || false
+            });
+          } else {
+            response = await apiRequest('POST', '/api/parlays', {
+              walletAddress: walletAddress,
+              totalOdds,
+              betAmount: stakeAmount,
+              potentialPayout,
+              feeCurrency: betCurrency,
+              txHash: onChainResult.txDigest,
+              onChainBetId: onChainResult.betObjectId,
+              status: 'confirmed',
+              legs: parlayLegs.map(leg => ({
+                eventId: leg.eventId,
+                eventName: leg.eventName,
+                selection: leg.selection,
+                odds: leg.odds,
+                marketId: leg.marketId,
+                outcomeId: leg.outcomeId,
+                homeTeam: leg.homeTeam,
+                awayTeam: leg.awayTeam,
+                isLive: leg.isLive || false
+              }))
+            });
+          }
+          if (response.ok || response.status === 409) break;
+          console.warn(`[Parlay] DB save attempt ${attempt}/${maxRetries} failed: ${response.status}`);
+        } catch (retryErr) {
+          console.warn(`[Parlay] DB save attempt ${attempt}/${maxRetries} error:`, retryErr);
+        }
+        if (attempt < maxRetries) await new Promise(r => setTimeout(r, 2000));
       }
 
-      if (response.ok) {
+      if (response?.ok) {
         const betType = parlayLegs.length === 1 ? 'Bet' : 'Parlay';
         const txLink = `https://suiscan.xyz/mainnet/tx/${onChainResult.txDigest}`;
         toast({ 

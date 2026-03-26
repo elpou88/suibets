@@ -186,8 +186,8 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
   const suiClient = useSuiClient();
   const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
   const { toast } = useToast();
-  const [grabAmount, setGrabAmount] = useState("");
-  const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [grabAmount, setGrabAmount] = useState("1000");
+  const [selectedTeam, setSelectedTeam] = useState<number | null>(0);
   const [isGrabbing, setIsGrabbing] = useState(false);
 
   const { data: game, isLoading } = useQuery<HotPotatoGame>({

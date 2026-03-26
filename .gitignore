@@ -35,4 +35,17 @@ replit.nix
 id_rsa
 id_ed25519
 
+# Deployment docs with sensitive env var references
+RAILWAY_ENV_VARIABLES.txt
+DEPLOY_CONTRACT.md
+
+# Admin scripts that use private keys at runtime
+deploy-walrus.sh
+relink-suins.ts
+transfer_treasury.ts
+extract_coins.ts
+upgrade_contract.ts
+scripts/create-bluefin-sbets-pool.ts
+scripts/add-bluefin-sbets-liquidity.ts
+
 .git-backup

@@ -1,12 +1,17 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useCurrentAccount, useSignAndExecuteTransaction, useSuiClient } from "@mysten/dapp-kit";
+import { Transaction } from "@mysten/sui/transactions";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { Flame, Timer, Users, Trophy, ChevronLeft, Zap, Shield, Crown, ArrowRight, Plus, Bomb, HandMetal, Coins, TrendingUp } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Footer from "@/components/layout/Footer";
+
+const SBETS_TOKEN_TYPE = '0x999d696dad9e4684068fa74ef9c5d3afc411d3ba62973bd5d54830f324f29502::sbets::SBETS';
+const PLATFORM_ID = '0xfed2649741e4d3f6316434d6bdc51d0d0975167a0dc87447122d04830d59fdf9';
+const BETTING_PACKAGE_ID = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
 
 interface HotPotatoGame {
   id: number;
@@ -168,9 +173,12 @@ function GameCard({ game, onSelect }: { game: HotPotatoGame; onSelect: (id: numb
 
 function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) {
   const account = useCurrentAccount();
+  const suiClient = useSuiClient();
+  const { mutateAsync: signAndExecute } = useSignAndExecuteTransaction();
   const { toast } = useToast();
   const [grabAmount, setGrabAmount] = useState("");
   const [selectedTeam, setSelectedTeam] = useState<number | null>(null);
+  const [isGrabbing, setIsGrabbing] = useState(false);
 
   const { data: game, isLoading } = useQuery<HotPotatoGame>({
     queryKey: ["/api/hot-potato/games", gameId],
@@ -182,26 +190,98 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
     refetchInterval: 5000,
   });
 
-  const grabMutation = useMutation({
-    mutationFn: async (data: { amount: number; teamChosen: number }) => {
-      return apiRequest("POST", `/api/hot-potato/games/${gameId}/grab`, {
-        wallet: account?.address,
-        amount: data.amount,
-        teamChosen: data.teamChosen,
+  const handleGrab = useCallback(async (amount: number, teamChosen: number) => {
+    if (!account?.address) {
+      toast({ title: "Connect Wallet", description: "Please connect your wallet to play", variant: "destructive" });
+      return;
+    }
+    setIsGrabbing(true);
+    try {
+      const amountMist = BigInt(Math.floor(amount * 1_000_000_000));
+
+      const sbetsCoins = await suiClient.getCoins({
+        owner: account.address,
+        coinType: SBETS_TOKEN_TYPE,
       });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games", gameId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games", gameId, "grabs"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games"] });
-      toast({ title: "Potato Grabbed!", description: "You're now holding the hot potato!" });
-      setGrabAmount("");
-      setSelectedTeam(null);
-    },
-    onError: (err: any) => {
-      toast({ title: "Grab Failed", description: err.message || "Try again", variant: "destructive" });
-    },
-  });
+
+      if (!sbetsCoins.data || sbetsCoins.data.length === 0) {
+        throw new Error('No SBETS tokens found in your wallet');
+      }
+
+      const totalSbets = sbetsCoins.data.reduce((sum, c) => sum + BigInt(c.balance), 0n);
+      if (totalSbets < amountMist) {
+        throw new Error(`Insufficient SBETS. Need ${amount.toLocaleString()} but have ${Number(totalSbets / 1_000_000_000n).toLocaleString()}`);
+      }
+
+      const tx = new Transaction();
+      tx.setGasBudget(20_000_000);
+
+      const primaryCoin = tx.object(sbetsCoins.data[0].coinObjectId);
+      if (sbetsCoins.data.length > 1) {
+        const otherCoins = sbetsCoins.data.slice(1).map(c => tx.object(c.coinObjectId));
+        tx.mergeCoins(primaryCoin, otherCoins);
+      }
+      const [stakeCoin] = tx.splitCoins(primaryCoin, [tx.pure.u64(amountMist)]);
+
+      tx.transferObjects([stakeCoin], tx.pure.address(PLATFORM_ID));
+
+      toast({ title: "Approve in Wallet", description: `Sending ${amount.toLocaleString()} SBETS to grab the potato...` });
+
+      const result = await signAndExecute({ transaction: tx });
+      const txDigest = result.digest;
+
+      await suiClient.waitForTransaction({ digest: txDigest });
+
+      toast({ title: "Transaction Confirmed!", description: "Recording your grab..." });
+
+      let saved = false;
+      for (let retry = 0; retry < 3; retry++) {
+        try {
+          const res = await fetch(`/api/hot-potato/games/${gameId}/grab`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              wallet: account.address,
+              amount,
+              teamChosen,
+              txHash: txDigest,
+            }),
+          });
+          if (res.ok) {
+            saved = true;
+            break;
+          }
+          const err = await res.json();
+          if (err.exploded) {
+            toast({ title: "Game Exploded!", description: "The potato exploded before your grab landed!", variant: "destructive" });
+            saved = true;
+            break;
+          }
+        } catch (e) {
+          if (retry < 2) await new Promise(r => setTimeout(r, 2000));
+        }
+      }
+
+      if (saved) {
+        queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games", gameId] });
+        queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games", gameId, "grabs"] });
+        queryClient.invalidateQueries({ queryKey: ["/api/hot-potato/games"] });
+        toast({ title: "Potato Grabbed!", description: "You're now holding the hot potato!" });
+        setGrabAmount("");
+        setSelectedTeam(null);
+      }
+    } catch (err: any) {
+      const msg = err.message || "Transaction failed";
+      if (msg.includes("rejected") || msg.includes("denied")) {
+        toast({ title: "Cancelled", description: "Transaction was cancelled in your wallet" });
+      } else {
+        toast({ title: "Grab Failed", description: msg, variant: "destructive" });
+      }
+    }
+    setIsGrabbing(false);
+  }, [account, suiClient, signAndExecute, gameId, toast]);
+
+  const grabMutation = { isPending: isGrabbing };
 
   if (isLoading || !game) {
     return (
@@ -360,7 +440,7 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
               disabled={!canGrab || grabMutation.isPending}
               onClick={() => {
                 if (canGrab) {
-                  grabMutation.mutate({ amount: parseFloat(grabAmount), teamChosen: selectedTeam! });
+                  handleGrab(parseFloat(grabAmount), selectedTeam!);
                 }
               }}
               className={`w-full py-4 rounded-xl font-bold text-lg transition-all flex items-center justify-center gap-2 ${

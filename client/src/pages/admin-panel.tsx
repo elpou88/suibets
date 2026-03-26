@@ -2459,7 +2459,224 @@ export default function AdminPanel() {
             )}
           </>
         )}
+
+        {/* Hot Potato Game Management */}
+        <div className="border-t border-orange-500/20 pt-6 mt-6">
+          <h2 className="text-xl font-bold text-orange-400 mb-4 flex items-center gap-2">
+            <span>🥔</span> Hot Potato Game Management
+          </h2>
+          
+          <HotPotatoAdmin token={sessionStorage.getItem('admin_token') || ''} />
+        </div>
       </div>
     </Layout>
+  );
+}
+
+function HotPotatoAdmin({ token }: { token: string }) {
+  const { toast } = useToast();
+  const [eventId, setEventId] = useState('');
+  const [teamA, setTeamA] = useState('');
+  const [teamB, setTeamB] = useState('');
+  const [sportName, setSportName] = useState('Football');
+  const [leagueName, setLeagueName] = useState('');
+  const [minGrabAmount, setMinGrabAmount] = useState('1000');
+  const [timerSeconds, setTimerSeconds] = useState('60');
+  const [gameDurationHours, setGameDurationHours] = useState('2');
+  const [creating, setCreating] = useState(false);
+  const [games, setGames] = useState<any[]>([]);
+  const [loadingGames, setLoadingGames] = useState(false);
+  const [upcomingMatches, setUpcomingMatches] = useState<any[]>([]);
+  const [loadingMatches, setLoadingMatches] = useState(false);
+
+  const fetchGames = useCallback(async () => {
+    setLoadingGames(true);
+    try {
+      const res = await fetch('/api/hot-potato/games');
+      if (res.ok) setGames(await res.json());
+    } catch (err) {}
+    setLoadingGames(false);
+  }, []);
+
+  const fetchUpcoming = useCallback(async () => {
+    setLoadingMatches(true);
+    try {
+      const res = await fetch('/api/events?status=upcoming&limit=20');
+      if (res.ok) {
+        const data = await res.json();
+        const matches = Array.isArray(data) ? data : (data.events || []);
+        setUpcomingMatches(matches.slice(0, 12));
+      }
+    } catch (err) {}
+    setLoadingMatches(false);
+  }, []);
+
+  useEffect(() => { fetchGames(); fetchUpcoming(); }, []);
+
+  const createGame = async () => {
+    if (!eventId || !teamA || !teamB) {
+      toast({ title: "Missing fields", description: "Event ID, Team A, and Team B are required", variant: "destructive" });
+      return;
+    }
+    setCreating(true);
+    try {
+      const res = await fetch('/api/hot-potato/games', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          eventId,
+          teamA,
+          teamB,
+          sportName,
+          leagueName,
+          minGrabAmount: parseFloat(minGrabAmount) || 1000,
+          timerDurationMs: (parseFloat(timerSeconds) || 60) * 1000,
+          gameDurationMs: (parseFloat(gameDurationHours) || 2) * 3600000,
+        }),
+      });
+      if (res.ok) {
+        const game = await res.json();
+        toast({ title: "Game Created!", description: `Hot Potato #${game.id}: ${teamA} vs ${teamB}` });
+        setEventId(''); setTeamA(''); setTeamB(''); setLeagueName('');
+        fetchGames();
+      } else {
+        const err = await res.json();
+        toast({ title: "Failed", description: err.error || 'Unknown error', variant: "destructive" });
+      }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+    setCreating(false);
+  };
+
+  const quickCreate = (match: any) => {
+    setEventId(String(match.externalId || match.id));
+    setTeamA(match.homeTeam || '');
+    setTeamB(match.awayTeam || '');
+    setLeagueName(match.leagueName || '');
+    setSportName(match.sportName || 'Football');
+    toast({ title: "Match loaded", description: `${match.homeTeam} vs ${match.awayTeam} — fill in settings and create` });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Quick-pick from upcoming matches */}
+      <Card className="bg-gray-900 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-300 flex items-center justify-between">
+            Quick Pick from Upcoming Matches
+            <Button size="sm" variant="outline" onClick={fetchUpcoming} className="text-xs" data-testid="button-refresh-matches">
+              <RefreshCw className="w-3 h-3 mr-1" /> Refresh
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingMatches ? (
+            <div className="text-gray-500 text-sm text-center py-3"><Loader2 className="w-4 h-4 animate-spin inline mr-1" /> Loading...</div>
+          ) : upcomingMatches.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto">
+              {upcomingMatches.map((m: any, i: number) => (
+                <button
+                  key={i}
+                  onClick={() => quickCreate(m)}
+                  className="text-left px-3 py-2 rounded-lg bg-gray-800/50 hover:bg-orange-500/10 border border-gray-700 hover:border-orange-500/40 transition text-xs"
+                  data-testid={`button-pick-match-${i}`}
+                >
+                  <div className="text-gray-400 text-[10px]">{m.leagueName}</div>
+                  <div className="text-white font-medium">{m.homeTeam} vs {m.awayTeam}</div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-500 text-sm text-center py-3">No upcoming matches found</div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Create Game Form */}
+      <Card className="bg-gray-900 border-orange-500/30">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-orange-400">Create New Hot Potato Game</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Event ID</label>
+              <Input value={eventId} onChange={(e) => setEventId(e.target.value)} placeholder="Match ID" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-event-id" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">League</label>
+              <Input value={leagueName} onChange={(e) => setLeagueName(e.target.value)} placeholder="e.g. Premier League" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-league" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Team A (Home)</label>
+              <Input value={teamA} onChange={(e) => setTeamA(e.target.value)} placeholder="Home team" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-team-a" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Team B (Away)</label>
+              <Input value={teamB} onChange={(e) => setTeamB(e.target.value)} placeholder="Away team" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-team-b" />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Min Grab (SBETS)</label>
+              <Input value={minGrabAmount} onChange={(e) => setMinGrabAmount(e.target.value)} type="number" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-min-grab" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Timer (seconds)</label>
+              <Input value={timerSeconds} onChange={(e) => setTimerSeconds(e.target.value)} type="number" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-timer" />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 block mb-1">Duration (hours)</label>
+              <Input value={gameDurationHours} onChange={(e) => setGameDurationHours(e.target.value)} type="number" className="bg-gray-800 border-gray-700 text-sm" data-testid="input-hp-duration" />
+            </div>
+          </div>
+          <Button
+            onClick={createGame}
+            disabled={creating || !eventId || !teamA || !teamB}
+            className="w-full bg-orange-600 hover:bg-orange-700 text-white"
+            data-testid="button-create-hp-game"
+          >
+            {creating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+            Create Hot Potato Game
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Existing Games List */}
+      <Card className="bg-gray-900 border-gray-700">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm text-gray-300 flex items-center justify-between">
+            Active Games ({games.filter((g: any) => g.status === 'active').length})
+            <Button size="sm" variant="outline" onClick={fetchGames} className="text-xs" data-testid="button-refresh-hp-games">
+              <RefreshCw className="w-3 h-3 mr-1" /> Refresh
+            </Button>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loadingGames ? (
+            <div className="text-gray-500 text-sm text-center py-3"><Loader2 className="w-4 h-4 animate-spin inline mr-1" /> Loading...</div>
+          ) : games.length > 0 ? (
+            <div className="space-y-2">
+              {games.map((g: any) => (
+                <div key={g.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-800/50 border border-gray-700">
+                  <div>
+                    <div className="text-white text-sm font-medium">#{g.id} {g.teamA} vs {g.teamB}</div>
+                    <div className="text-gray-400 text-xs">{g.leagueName} | Pot: {g.potAmount} SBETS | {g.grabCount} grabs</div>
+                  </div>
+                  <Badge className={g.status === 'active' ? 'bg-orange-500/20 text-orange-400' : g.status === 'exploded' ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}>
+                    {g.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-500 text-sm text-center py-3">No games created yet</div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

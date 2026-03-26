@@ -148,11 +148,38 @@ export default function BetHistoryPage() {
 
   const winRate = stats.won + stats.lost > 0 ? ((stats.won / (stats.won + stats.lost)) * 100).toFixed(0) : 0;
 
+  const [isSyncing, setIsSyncing] = useState(false);
+
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await refetch();
     toast({ title: 'Refreshed', description: 'Bet history updated' });
     setIsRefreshing(false);
+  };
+
+  const handleSyncFromChain = async () => {
+    if (!walletAddress || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const res = await fetch('/api/bets/sync-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wallet: walletAddress }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast({
+          title: data.recovered > 0 ? 'Bets Recovered!' : 'All Synced',
+          description: data.message,
+        });
+        await refetch();
+      } else {
+        toast({ title: 'Sync Failed', description: data.message || 'Could not sync bets', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'Sync Error', description: 'Network error — please try again', variant: 'destructive' });
+    }
+    setIsSyncing(false);
   };
 
   const handleConnectWallet = () => {
@@ -294,6 +321,17 @@ export default function BetHistoryPage() {
             <Link href="/parlay" className="text-gray-400 hover:text-cyan-400 text-sm font-medium" data-testid="nav-parlays">Parlays</Link>
           </div>
           <div className="flex items-center gap-4">
+            {walletAddress && (
+              <button
+                onClick={handleSyncFromChain}
+                disabled={isSyncing}
+                className="text-xs bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 px-3 py-1.5 rounded-lg font-medium disabled:opacity-50 flex items-center gap-1.5"
+                data-testid="btn-sync-chain"
+              >
+                <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+                {isSyncing ? 'Syncing...' : 'Sync from Chain'}
+              </button>
+            )}
             <button onClick={handleRefresh} className="text-gray-400 hover:text-white p-2" data-testid="btn-refresh">
               <RefreshCw size={18} className={isRefreshing ? 'animate-spin' : ''} />
             </button>

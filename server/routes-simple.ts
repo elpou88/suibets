@@ -774,11 +774,19 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return ((await r.json()) as any).result;
       }
 
-      const eventsResult = await suiRpc('suix_queryEvents', [
-        { MoveEventType: `${CONTRACT_PKG_ID}::betting::BetPlaced` },
-        null, 25, true
-      ]);
-      const events = eventsResult?.data || [];
+      let cursor2: string | null = null;
+      let events: any[] = [];
+      for (let pg = 0; pg < 4; pg++) {
+        const eventsResult = await suiRpc('suix_queryEvents', [
+          { MoveEventType: `${CONTRACT_PKG_ID}::betting::BetPlaced` },
+          cursor2, 50, true
+        ]);
+        const batch = eventsResult?.data || [];
+        if (!batch.length) break;
+        events = events.concat(batch);
+        if (!eventsResult.hasNextPage) break;
+        cursor2 = eventsResult.nextCursor;
+      }
       if (!events.length) return;
 
       let recoveredCount = 0;
@@ -851,6 +859,175 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
   setTimeout(autoRecoverMissingBets, 30 * 1000);
   setInterval(autoRecoverMissingBets, 5 * 60 * 1000);
   console.log('🔧 Auto-recovery worker started - checks every 5 minutes for missing on-chain bets');
+
+  async function recoverBetsForWallet(walletAddress: string): Promise<{ recovered: number; alreadyExist: number; errors: number }> {
+    const results = { recovered: 0, alreadyExist: 0, errors: 0 };
+    try {
+      const normalizedWallet = walletAddress.toLowerCase();
+      const { bets: betsTable } = await import('@shared/schema');
+
+      async function suiRpcCall(method: string, params: any[]) {
+        const r = await fetch(RPC_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        });
+        return ((await r.json()) as any).result;
+      }
+
+      let cursor: string | null = null;
+      let allEvents: any[] = [];
+      for (let page = 0; page < 5; page++) {
+        const eventsResult = await suiRpcCall('suix_queryEvents', [
+          { MoveEventType: `${CONTRACT_PKG_ID}::betting::BetPlaced` },
+          cursor, 50, true
+        ]);
+        const events = eventsResult?.data || [];
+        if (!events.length) break;
+        allEvents = allEvents.concat(events);
+        if (!eventsResult.hasNextPage) break;
+        cursor = eventsResult.nextCursor;
+      }
+
+      const walletEvents = allEvents.filter((ev: any) => {
+        const bettor = (ev.parsedJson?.bettor || '').toLowerCase();
+        return bettor === normalizedWallet;
+      });
+
+      console.log(`🔍 Wallet sync: Found ${walletEvents.length}/${allEvents.length} on-chain events for ${walletAddress.slice(0, 12)}...`);
+
+      for (const ev of walletEvents) {
+        const parsed = ev.parsedJson || {};
+        const txDigest = ev.id?.txDigest;
+        if (!txDigest) continue;
+
+        const existing = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${txDigest} LIMIT 1`);
+        if ((existing.rows?.length || 0) > 0) {
+          const row = existing.rows[0] as any;
+          if (!row.wallet_address || row.wallet_address.toLowerCase() !== normalizedWallet) {
+            await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet} WHERE id = ${row.id} AND (wallet_address IS NULL OR wallet_address = '')`);
+          }
+          results.alreadyExist++;
+          continue;
+        }
+
+        const betObjectId = parsed.bet_id || null;
+        if (betObjectId) {
+          const existObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
+          if ((existObj.rows?.length || 0) > 0) {
+            const objRow = existObj.rows[0] as any;
+            await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet}, tx_hash = ${txDigest} WHERE id = ${objRow.id}`);
+            results.alreadyExist++;
+            continue;
+          }
+        }
+
+        const eventIdBytes = parsed.event_id;
+        const eventIdStr = Array.isArray(eventIdBytes) ? String.fromCharCode(...eventIdBytes) : 'unknown';
+        const oddsBps = parsed.odds_bps ? Number(parsed.odds_bps) : 200;
+        const odds = oddsBps / 100;
+        const rawAmount = parsed.amount ? Number(parsed.amount) : 0;
+        const coinType = parsed.coin_type === 1 ? 'SBETS' : 'SUI';
+        const amount = rawAmount / 1e9;
+        const ts = ev.timestampMs ? new Date(parseInt(ev.timestampMs)) : new Date();
+        const isParlay = eventIdStr.includes('parlay');
+        const betId = betObjectId || `auto-${txDigest.slice(0, 16)}`;
+
+        let eventName = isParlay ? 'Parlay Bet (Recovered)' : 'Bet (Recovered)';
+        let homeTeam = 'Unknown';
+        let awayTeam = 'Unknown';
+
+        const refBet = await db.execute(sql`
+          SELECT event_name, home_team, away_team FROM bets 
+          WHERE external_event_id = ${eventIdStr} AND home_team != 'Unknown' AND away_team != 'Unknown'
+          LIMIT 1
+        `);
+        if (refBet.rows?.length) {
+          const ref = refBet.rows[0] as any;
+          eventName = ref.event_name || eventName;
+          homeTeam = ref.home_team || homeTeam;
+          awayTeam = ref.away_team || awayTeam;
+        } else {
+          try {
+            const eventLookup = apiSportsService.lookupEventSync(eventIdStr);
+            if (eventLookup.found) {
+              homeTeam = eventLookup.homeTeam || homeTeam;
+              awayTeam = eventLookup.awayTeam || awayTeam;
+              eventName = `${homeTeam} vs ${awayTeam}`;
+            }
+          } catch {}
+        }
+
+        try {
+          await db.insert(betsTable).values({
+            userId: null,
+            walletAddress: normalizedWallet,
+            betAmount: amount,
+            currency: coinType,
+            odds,
+            prediction: eventIdStr,
+            potentialPayout: Math.round(amount * odds * 100) / 100,
+            status: 'pending',
+            betType: isParlay ? 'parlay' : 'single',
+            cashOutAvailable: true,
+            wurlusBetId: betId,
+            txHash: txDigest,
+            platformFee: 0,
+            networkFee: 0,
+            feeCurrency: coinType,
+            eventName,
+            homeTeam,
+            awayTeam,
+            externalEventId: eventIdStr,
+            betObjectId,
+            createdAt: ts,
+          }).returning();
+          results.recovered++;
+          console.log(`🔧 WALLET-RECOVERED: ${betId} for ${walletAddress.slice(0,12)}... (${amount} ${coinType}) - ${eventName}`);
+        } catch (insertErr: any) {
+          if (insertErr.code !== '23505') {
+            console.error(`Wallet recovery insert failed:`, insertErr.message);
+            results.errors++;
+          } else {
+            results.alreadyExist++;
+          }
+        }
+      }
+    } catch (err: any) {
+      console.error('Wallet recovery error:', err.message);
+      results.errors++;
+    }
+    return results;
+  }
+
+  app.post("/api/bets/sync-wallet", async (req: Request, res: Response) => {
+    try {
+      const { wallet } = req.body;
+      if (!wallet || !isValidSuiWallet(wallet)) {
+        return res.status(400).json({ message: "Valid wallet address required" });
+      }
+
+      console.log(`🔄 User-triggered bet sync for ${wallet.slice(0, 12)}...`);
+      const result = await recoverBetsForWallet(wallet);
+
+      const userBets = await storage.getUserBets(wallet);
+
+      res.json({
+        success: true,
+        recovered: result.recovered,
+        alreadyExist: result.alreadyExist,
+        errors: result.errors,
+        totalBets: userBets.length,
+        message: result.recovered > 0
+          ? `Recovered ${result.recovered} missing bet(s) from the blockchain!`
+          : `All ${userBets.length} on-chain bets are already synced.`,
+        bets: userBets,
+      });
+    } catch (error: any) {
+      console.error('Wallet bet sync error:', error);
+      res.status(500).json({ message: "Failed to sync bets" });
+    }
+  });
 
   // Betting status endpoint - check if SUI betting is paused
   app.get("/api/betting-status", (req: Request, res: Response) => {

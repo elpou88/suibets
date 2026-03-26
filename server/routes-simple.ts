@@ -5675,7 +5675,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Admin: recover missing on-chain bets by scanning blockchain
+  // Admin: recover missing on-chain bets by scanning blockchain (uses raw fetch, no SDK)
   app.post("/api/admin/recover-bets/:wallet", async (req: Request, res: Response) => {
     try {
       const wallet = req.params.wallet;
@@ -5684,60 +5684,73 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       const CONTRACT_PKG = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
+      const RPC = 'https://fullnode.mainnet.sui.io:443';
       const { bets: betsTable } = await import('@shared/schema');
-      const { SuiClient } = await import('@mysten/sui/client');
-      const suiClient = new SuiClient({ url: 'https://fullnode.mainnet.sui.io:443' });
 
-      const txList = await suiClient.queryTransactionBlocks({
-        filter: { FromAddress: wallet },
-        limit: 50,
-        order: 'descending',
-      });
+      async function rpc(method: string, params: any[]) {
+        const r = await fetch(RPC, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+        });
+        const j = await r.json() as any;
+        return j.result;
+      }
+
+      const txList = await rpc('suix_queryTransactionBlocks', [
+        { filter: { FromAddress: wallet } }, null, 50, true
+      ]);
+      const digests = (txList?.data || []).map((t: any) => t.digest);
 
       const recovered: any[] = [];
       const skipped: any[] = [];
 
-      for (const txRef of txList.data) {
-        const tx = await suiClient.getTransactionBlock({
-          digest: txRef.digest,
-          options: { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true },
-        });
+      for (const digest of digests) {
+        const tx = await rpc('sui_getTransactionBlock', [
+          digest, { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true }
+        ]);
+        if (!tx) continue;
 
-        const calls = (tx.transaction?.data?.transaction as any)?.transactions || [];
-        const isBetTx = calls.some((c: any) => c.MoveCall?.package === CONTRACT_PKG && c.MoveCall?.function?.includes('place_bet'));
+        const txData = tx.transaction?.data?.transaction;
+        const calls = (txData?.transactions || []).filter((c: any) => c.MoveCall);
+        const isBetTx = calls.some((c: any) => 
+          c.MoveCall?.package === CONTRACT_PKG && c.MoveCall?.function?.includes('place_bet')
+        );
         if (!isBetTx) continue;
 
-        const status = tx.effects?.status?.status;
-        if (status !== 'success') continue;
+        if (tx.effects?.status?.status !== 'success') continue;
 
-        const existingByTx = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${txRef.digest} LIMIT 1`);
+        const existingByTx = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${digest} LIMIT 1`);
         if ((existingByTx.rows?.length || 0) > 0) {
-          skipped.push({ digest: txRef.digest, reason: 'already_exists' });
+          skipped.push({ digest, reason: 'already_exists' });
           continue;
         }
 
-        const betObj = tx.objectChanges?.find((c: any) => c.type === 'created' && c.objectType?.includes('::betting::Bet'));
-        const betObjectId = (betObj as any)?.objectId || null;
+        const betObjChange = (tx.objectChanges || []).find((c: any) => 
+          c.type === 'created' && c.objectType?.includes('::betting::Bet')
+        );
+        const betObjectId = betObjChange?.objectId || null;
 
         if (betObjectId) {
           const existingByObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
           if ((existingByObj.rows?.length || 0) > 0) {
-            skipped.push({ digest: txRef.digest, reason: 'bet_object_exists' });
+            skipped.push({ digest, reason: 'bet_object_exists' });
             continue;
           }
         }
 
-        const event = tx.events?.[0]?.parsedJson as any;
-        const eventIdBytes = event?.event_id;
-        const eventIdStr = eventIdBytes ? String.fromCharCode(...eventIdBytes) : 'unknown';
-        const oddsBps = event?.odds_bps ? Number(event.odds_bps) : 200;
+        const event = tx.events?.[0]?.parsedJson || {};
+        const eventIdBytes = (event as any).event_id;
+        const eventIdStr = Array.isArray(eventIdBytes) ? String.fromCharCode(...eventIdBytes) : 'unknown';
+        const oddsBps = (event as any).odds_bps ? Number((event as any).odds_bps) : 200;
         const odds = oddsBps / 100;
-        const amount = event?.amount ? Number(event.amount) / 1e9 : 0;
-        const coinType = event?.coin_type === 1 ? 'SBETS' : 'SUI';
+        const amount = (event as any).amount ? Number((event as any).amount) / 1e9 : 0;
+        const coinType = (event as any).coin_type === 1 ? 'SBETS' : 'SUI';
         const ts = tx.timestampMs ? new Date(parseInt(tx.timestampMs)) : new Date();
 
-        const betId = betObjectId || `recovered-${txRef.digest.slice(0, 16)}`;
+        const betId = betObjectId || `recovered-${digest.slice(0, 16)}`;
         const potentialPayout = Math.round(amount * odds * 100) / 100;
+        const isParlay = eventIdStr.includes('parlay');
 
         const [inserted] = await db.insert(betsTable).values({
           userId: null,
@@ -5745,35 +5758,28 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           betAmount: amount,
           currency: coinType,
           odds,
-          prediction: eventIdStr.includes('parlay') ? eventIdStr : eventIdStr,
+          prediction: eventIdStr,
           potentialPayout,
           status: 'pending',
-          betType: eventIdStr.includes('parlay') ? 'parlay' : 'single',
+          betType: isParlay ? 'parlay' : 'single',
           cashOutAvailable: true,
           wurlusBetId: betId,
-          txHash: txRef.digest,
+          txHash: digest,
           platformFee: 0,
           networkFee: 0,
           feeCurrency: coinType,
-          eventName: eventIdStr.includes('parlay') ? 'Parlay Bet (Recovered)' : 'Recovered Bet',
+          eventName: isParlay ? 'Parlay Bet (Recovered)' : 'Recovered Bet',
           externalEventId: eventIdStr,
           betObjectId: betObjectId,
           createdAt: ts,
         }).returning();
 
         recovered.push({
-          id: inserted.id,
-          betId,
-          digest: txRef.digest,
-          betObjectId,
-          amount,
-          coinType,
-          odds,
-          eventId: eventIdStr,
-          timestamp: ts.toISOString(),
+          id: inserted.id, betId, digest, betObjectId,
+          amount, coinType, odds, eventId: eventIdStr, timestamp: ts.toISOString(),
         });
 
-        console.log(`🔧 RECOVERED BET: ${betId} from tx ${txRef.digest.slice(0,16)} for ${wallet.slice(0,12)}... (${amount} ${coinType})`);
+        console.log(`🔧 RECOVERED BET: ${betId} from tx ${digest.slice(0,16)} for ${wallet.slice(0,12)}... (${amount} ${coinType})`);
       }
 
       res.json({

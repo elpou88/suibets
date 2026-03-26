@@ -48,7 +48,8 @@ interface GrabEntry {
   createdAt: string;
 }
 
-function formatSBETS(amount: number): string {
+function formatSBETS(amount: number | null | undefined): string {
+  if (amount === null || amount === undefined) return "0";
   if (amount >= 1_000_000) return `${(amount / 1_000_000).toFixed(1)}M`;
   if (amount >= 1_000) return `${(amount / 1_000).toFixed(1)}K`;
   return amount.toLocaleString();
@@ -181,11 +182,21 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
 
   const { data: game, isLoading } = useQuery<HotPotatoGame>({
     queryKey: ["/api/hot-potato/games", gameId],
+    queryFn: async () => {
+      const res = await fetch(`/api/hot-potato/games/${gameId}`);
+      if (!res.ok) throw new Error('Failed to fetch game');
+      return res.json();
+    },
     refetchInterval: 2000,
   });
 
   const { data: grabs } = useQuery<GrabEntry[]>({
     queryKey: ["/api/hot-potato/games", gameId, "grabs"],
+    queryFn: async () => {
+      const res = await fetch(`/api/hot-potato/games/${gameId}/grabs`);
+      if (!res.ok) throw new Error('Failed to fetch grabs');
+      return res.json();
+    },
     refetchInterval: 5000,
   });
 
@@ -605,7 +616,7 @@ export default function HotPotatoPage() {
             >
               <Flame className="w-8 h-8 text-orange-500" />
             </motion.div>
-            <h1 className="text-3xl font-bold text-white">Hot Potato</h1>
+            <h1 className="text-3xl font-bold text-white">Hot Potato Bets</h1>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/30">
               SUI-NATIVE
             </span>

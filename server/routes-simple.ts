@@ -10617,7 +10617,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 
         const matchStartMs = new Date(match.startTime).getTime();
         const gameDeadlineMs = matchStartMs - 5 * 60 * 1000;
-        const timerMs = 60000;
+        const timerMs = 10 * 60 * 1000;
 
         try {
           const [newGame] = await db.insert(hotPotatoGames).values({

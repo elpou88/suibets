@@ -657,12 +657,12 @@ export default function HotPotatoPage() {
   });
 
   const { data: treasury } = useQuery<{
-    activePot: number;
-    pendingPot: number;
-    totalSettled: number;
+    activePot?: number;
+    pendingPot?: number;
+    totalSettled?: number;
     activeGames: number;
-    explodedGames: number;
-    settledGames: number;
+    explodedGames?: number;
+    settledGames?: number;
     totalVolume: number;
   }>({
     queryKey: ["/api/hot-potato/treasury"],
@@ -744,16 +744,16 @@ export default function HotPotatoPage() {
             </h3>
             <div className="grid grid-cols-3 gap-4 text-center">
               <div>
-                <div className="text-lg font-bold text-cyan-400" data-testid="text-treasury-active-pot">{formatSBETS(treasury.activePot)}</div>
+                <div className="text-lg font-bold text-cyan-400" data-testid="text-treasury-active-pot">{formatSBETS(treasury.activePot ?? 0)}</div>
                 <div className="text-[9px] text-gray-600 uppercase tracking-wider">Active Pots</div>
               </div>
               <div>
-                <div className="text-lg font-bold text-blue-400" data-testid="text-treasury-pending">{formatSBETS(treasury.pendingPot)}</div>
-                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Pending</div>
+                <div className="text-lg font-bold text-blue-400" data-testid="text-treasury-volume">{formatSBETS(treasury.totalVolume)}</div>
+                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Total Volume</div>
               </div>
               <div>
-                <div className="text-lg font-bold text-emerald-400" data-testid="text-treasury-settled">{formatSBETS(treasury.totalSettled)}</div>
-                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Settled</div>
+                <div className="text-lg font-bold text-emerald-400" data-testid="text-treasury-games">{treasury.activeGames}</div>
+                <div className="text-[9px] text-gray-600 uppercase tracking-wider">Active Games</div>
               </div>
             </div>
           </div>

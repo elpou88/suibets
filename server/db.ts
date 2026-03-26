@@ -112,6 +112,34 @@ async function runAutoMigrations() {
     console.log('Revenue claims columns ensured');
 
     await client`
+      DO $$ 
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'hot_potato_players' AND column_name = 'payout_amount'
+        ) THEN
+          ALTER TABLE hot_potato_players ADD COLUMN payout_amount REAL;
+          RAISE NOTICE 'Added payout_amount column to hot_potato_players';
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'hot_potato_players' AND column_name = 'payout_tx_hash'
+        ) THEN
+          ALTER TABLE hot_potato_players ADD COLUMN payout_tx_hash TEXT;
+          RAISE NOTICE 'Added payout_tx_hash column to hot_potato_players';
+        END IF;
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.columns 
+          WHERE table_name = 'hot_potato_players' AND column_name = 'payout_status'
+        ) THEN
+          ALTER TABLE hot_potato_players ADD COLUMN payout_status TEXT;
+          RAISE NOTICE 'Added payout_status column to hot_potato_players';
+        END IF;
+      END $$;
+    `;
+    console.log('Hot Potato payout tracking columns ensured');
+
+    await client`
       CREATE UNIQUE INDEX IF NOT EXISTS idx_bets_tx_hash_unique
       ON bets (tx_hash)
       WHERE tx_hash IS NOT NULL

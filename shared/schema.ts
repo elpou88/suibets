@@ -760,6 +760,9 @@ export const hotPotatoPlayers = pgTable("hot_potato_players", {
   lastTeam: integer("last_team").default(0),
   lastGrabAt: timestamp("last_grab_at"),
   joinedAt: timestamp("joined_at").defaultNow(),
+  payoutAmount: real("payout_amount"),
+  payoutTxHash: text("payout_tx_hash"),
+  payoutStatus: text("payout_status"),
 });
 
 export const hotPotatoGrabs = pgTable("hot_potato_grabs", {

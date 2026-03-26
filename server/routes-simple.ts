@@ -5610,13 +5610,64 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
       
       const lookupId = wallet || userId;
-      const bets = await storage.getUserBets(lookupId);
-      const filtered = status ? bets.filter(b => b.status === status) : bets;
+      const userBets = await storage.getUserBets(lookupId);
+      const filtered = status ? userBets.filter(b => b.status === status) : userBets;
       
       // Storage already provides currency field properly mapped
       res.json(filtered);
     } catch (error) {
+      console.error('Error fetching bets for wallet:', error);
       res.status(500).json({ message: "Failed to fetch bets" });
+    }
+  });
+
+  // Admin diagnostic: raw bet lookup by wallet (checks all possible storage locations)
+  app.get("/api/admin/debug-bets/:wallet", async (req: Request, res: Response) => {
+    try {
+      const wallet = req.params.wallet;
+      const normalizedWallet = wallet.toLowerCase();
+      
+      const { bets: betsTable } = await import('@shared/schema');
+      const { db: dbInstance } = await import('./db');
+      
+      const directMatch = await dbInstance.execute(sql`
+        SELECT id, wurlus_bet_id, wallet_address, bet_amount, currency, odds, status, bet_type, prediction, event_name, created_at, tx_hash, bet_object_id
+        FROM bets 
+        WHERE LOWER(wallet_address) = ${normalizedWallet}
+        ORDER BY created_at DESC
+      `);
+      
+      const wurlusMatch = await dbInstance.execute(sql`
+        SELECT id, wurlus_bet_id, wallet_address, bet_amount, currency, odds, status, bet_type, prediction, event_name, created_at
+        FROM bets 
+        WHERE LOWER(wurlus_bet_id) LIKE ${`%${normalizedWallet.slice(0, 10)}%`}
+        ORDER BY created_at DESC
+      `);
+      
+      const txMatch = await dbInstance.execute(sql`
+        SELECT id, wurlus_bet_id, wallet_address, bet_amount, currency, odds, status, bet_type, tx_hash, created_at
+        FROM bets 
+        WHERE LOWER(tx_hash) LIKE ${`%${normalizedWallet.slice(0, 10)}%`}
+        ORDER BY created_at DESC
+      `);
+
+      const giftMatch = await dbInstance.execute(sql`
+        SELECT id, wurlus_bet_id, wallet_address, gifted_to, bet_amount, currency, status, created_at
+        FROM bets 
+        WHERE LOWER(gifted_to) = ${normalizedWallet}
+        ORDER BY created_at DESC
+      `);
+
+      res.json({
+        wallet,
+        normalizedWallet,
+        directMatch: { count: directMatch.rows?.length || 0, rows: directMatch.rows || [] },
+        wurlusMatch: { count: wurlusMatch.rows?.length || 0, rows: wurlusMatch.rows || [] },
+        txMatch: { count: txMatch.rows?.length || 0, rows: txMatch.rows || [] },
+        giftMatch: { count: giftMatch.rows?.length || 0, rows: giftMatch.rows || [] },
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: "Debug query failed", error: error.message });
     }
   });
 

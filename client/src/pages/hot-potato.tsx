@@ -373,27 +373,41 @@ function GameDetail({ gameId, onBack }: { gameId: number; onBack: () => void }) 
           <div className="text-xs text-gray-400 mb-2 flex items-center gap-1">
             <Crown className="w-3 h-3" /> CURRENT HOLDER
           </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <div className={`font-mono font-bold ${isHolder ? "text-orange-400" : "text-white"}`} data-testid="text-holder">
-                {isHolder ? "YOU!" : shortenWallet(game.currentHolder)}
+          {game.currentHolder ? (
+            <div className="flex items-center justify-between">
+              <div>
+                <div className={`font-mono font-bold ${isHolder ? "text-orange-400" : "text-white"}`} data-testid="text-holder">
+                  {isHolder ? "YOU!" : shortenWallet(game.currentHolder)}
+                </div>
+                <div className="text-xs text-gray-500 mt-0.5">
+                  Betting on: <span className={game.holderTeam === 0 ? "text-blue-400" : "text-red-400"}>
+                    {game.holderTeam === 0 ? game.teamA : game.teamB}
+                  </span>
+                </div>
               </div>
-              <div className="text-xs text-gray-500 mt-0.5">
-                Betting on: <span className={game.holderTeam === 0 ? "text-blue-400" : "text-red-400"}>
-                  {game.holderTeam === 0 ? game.teamA : game.teamB}
-                </span>
-              </div>
+              {isHolder && (
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ repeat: Infinity, duration: 1 }}
+                >
+                  <Flame className="w-8 h-8 text-orange-500" />
+                </motion.div>
+              )}
             </div>
-            {isHolder && (
-              <motion.div
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ repeat: Infinity, duration: 1 }}
-              >
-                <Flame className="w-8 h-8 text-orange-500" />
-              </motion.div>
-            )}
-          </div>
+          ) : (
+            <div className="text-center py-2">
+              <div className="text-yellow-400 font-bold" data-testid="text-holder">No one yet!</div>
+              <div className="text-xs text-gray-500 mt-0.5">Be the first to grab the potato</div>
+            </div>
+          )}
         </div>
+
+        {isActive && !account?.address && (
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4 mb-6 text-center">
+            <div className="text-yellow-400 font-bold mb-1">Connect Your Wallet to Play</div>
+            <div className="text-xs text-gray-400">Connect a Sui wallet to grab the potato and join the game</div>
+          </div>
+        )}
 
         {isActive && !isHolder && account?.address && (
           <div className="space-y-4">

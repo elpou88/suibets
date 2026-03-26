@@ -5,6 +5,7 @@ import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import SuiNSName from '@/components/SuiNSName';
+import { useBetting } from '@/context/BettingContext';
 const suibetsLogo = "/images/suibets-logo.png";
 import { 
   FileText, 
@@ -47,6 +48,7 @@ export default function BetHistoryPage() {
   const { toast } = useToast();
   const [, setLocation] = useLocation();
   const currentAccount = useCurrentAccount();
+  const { addBet } = useBetting();
   const [filter, setFilter] = useState<string>('all');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [shareBet, setShareBet] = useState<Bet | null>(null);
@@ -572,7 +574,47 @@ export default function BetHistoryPage() {
                     )}
                     <div className="mt-2 flex items-center gap-3">
                       <button
-                        onClick={() => setShareBet(bet)}
+                        onClick={async () => {
+                          const b = bet as any;
+                          const extId = b.externalEventId || '';
+                          const eventId = (extId && !extId.startsWith('parlay_') && !extId.startsWith('sync_'))
+                            ? extId
+                            : String(b.eventId || b.id || '');
+                          if (!eventId) {
+                            toast({ title: 'Cannot Copy', description: 'Event info missing.', variant: 'destructive' });
+                            return;
+                          }
+                          try {
+                            const resp = await fetch(`/api/events/check/${encodeURIComponent(eventId)}`);
+                            const data = resp.ok ? await resp.json() : { available: false };
+                            if (!data.available) {
+                              const settled = ['won','paid_out','lost','void'].includes(bet.status);
+                              toast({
+                                title: 'Event No Longer Available',
+                                description: settled
+                                  ? 'This bet has already settled. The event is no longer open.'
+                                  : 'This event has ended or is unavailable.',
+                                variant: 'destructive',
+                              });
+                              return;
+                            }
+                            addBet({
+                              id: `copy-${bet.id}-${Date.now()}`,
+                              eventId,
+                              eventName: bet.eventName || 'Copied Bet',
+                              selectionName: bet.selection || b.prediction || 'Pick',
+                              odds: bet.odds || 1,
+                              stake: 0,
+                              market: b.marketId || 'match-winner',
+                              currency: (bet.currency || 'SUI') as 'SUI' | 'SBETS',
+                              homeTeam: data.homeTeam || b.homeTeam,
+                              awayTeam: data.awayTeam || b.awayTeam,
+                            });
+                            toast({ title: 'Bet Copied!', description: 'Added to your bet slip. Set your stake and place it!' });
+                          } catch {
+                            toast({ title: 'Copy failed', variant: 'destructive' });
+                          }
+                        }}
                         className="flex items-center gap-1 text-xs text-gray-400 hover:text-cyan-400 transition-colors"
                         data-testid={`button-copy-bet-${bet.id}`}
                       >

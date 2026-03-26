@@ -112,6 +112,65 @@ async function runAutoMigrations() {
     console.log('Revenue claims columns ensured');
 
     await client`
+      CREATE TABLE IF NOT EXISTS hot_potato_games (
+        id SERIAL PRIMARY KEY,
+        game_object_id TEXT UNIQUE,
+        event_id TEXT NOT NULL,
+        team_a TEXT NOT NULL,
+        team_b TEXT NOT NULL,
+        sport_name TEXT,
+        league_name TEXT,
+        match_time TIMESTAMP,
+        pot_amount REAL DEFAULT 0,
+        currency TEXT DEFAULT 'SBETS',
+        min_grab_amount REAL DEFAULT 100,
+        current_holder TEXT,
+        holder_team INTEGER DEFAULT 0,
+        grab_count INTEGER DEFAULT 0,
+        player_count INTEGER DEFAULT 0,
+        status TEXT DEFAULT 'active',
+        timer_duration_ms INTEGER DEFAULT 60000,
+        explosion_time_ms TEXT,
+        game_deadline_ms TEXT,
+        created_by TEXT,
+        created_at TIMESTAMP DEFAULT NOW(),
+        settled_at TIMESTAMP,
+        winning_team INTEGER,
+        tx_hash TEXT
+      )
+    `;
+    await client`
+      CREATE TABLE IF NOT EXISTS hot_potato_players (
+        id SERIAL PRIMARY KEY,
+        game_id INTEGER REFERENCES hot_potato_games(id),
+        wallet TEXT NOT NULL,
+        total_contributed REAL DEFAULT 0,
+        grab_count INTEGER DEFAULT 0,
+        last_team INTEGER DEFAULT 0,
+        last_grab_at TIMESTAMP,
+        joined_at TIMESTAMP DEFAULT NOW(),
+        payout_amount REAL,
+        payout_tx_hash TEXT,
+        payout_status TEXT
+      )
+    `;
+    await client`
+      CREATE TABLE IF NOT EXISTS hot_potato_grabs (
+        id SERIAL PRIMARY KEY,
+        game_id INTEGER REFERENCES hot_potato_games(id),
+        wallet TEXT NOT NULL,
+        amount REAL NOT NULL,
+        team_chosen INTEGER NOT NULL,
+        grab_number INTEGER NOT NULL,
+        timer_at_grab INTEGER,
+        pot_after_grab REAL,
+        tx_hash TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      )
+    `;
+    console.log('Hot Potato tables ensured');
+
+    await client`
       DO $$ 
       BEGIN
         IF NOT EXISTS (

@@ -872,127 +872,153 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
         });
-        return ((await r.json()) as any).result;
+        if (!r.ok) throw new Error(`RPC HTTP error: ${r.status}`);
+        const json = await r.json() as any;
+        if (json.error) throw new Error(`RPC error: ${json.error.message || JSON.stringify(json.error)}`);
+        return json.result;
       }
 
-      let cursor: string | null = null;
-      let allEvents: any[] = [];
+      let digests: string[] = [];
+      let txCursor: string | null = null;
       for (let page = 0; page < 5; page++) {
-        const eventsResult = await suiRpcCall('suix_queryEvents', [
-          { MoveEventType: `${CONTRACT_PKG_ID}::betting::BetPlaced` },
-          cursor, 50, true
+        const txList = await suiRpcCall('suix_queryTransactionBlocks', [
+          { filter: { FromAddress: walletAddress } }, txCursor, 50, true
         ]);
-        const events = eventsResult?.data || [];
-        if (!events.length) break;
-        allEvents = allEvents.concat(events);
-        if (!eventsResult.hasNextPage) break;
-        cursor = eventsResult.nextCursor;
+        const batch = (txList?.data || []).map((t: any) => t.digest);
+        digests = digests.concat(batch);
+        if (!txList?.hasNextPage || !batch.length) break;
+        txCursor = txList.nextCursor;
       }
 
-      const walletEvents = allEvents.filter((ev: any) => {
-        const bettor = (ev.parsedJson?.bettor || '').toLowerCase();
-        return bettor === normalizedWallet;
-      });
+      console.log(`🔍 Wallet sync (tx-scan): Found ${digests.length} transactions for ${walletAddress.slice(0, 12)}...`);
 
-      console.log(`🔍 Wallet sync: Found ${walletEvents.length}/${allEvents.length} on-chain events for ${walletAddress.slice(0, 12)}...`);
+      let betTxCount = 0;
+      for (const digest of digests) {
+        try {
+          const tx = await suiRpcCall('sui_getTransactionBlock', [
+            digest, { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true }
+          ]);
+          if (!tx) continue;
 
-      for (const ev of walletEvents) {
-        const parsed = ev.parsedJson || {};
-        const txDigest = ev.id?.txDigest;
-        if (!txDigest) continue;
+          const txData = tx.transaction?.data?.transaction;
+          const calls = (txData?.transactions || []).filter((c: any) => c.MoveCall);
+          const isBetTx = calls.some((c: any) => {
+            const pkg = c.MoveCall?.package || '';
+            const fn = c.MoveCall?.function || '';
+            const mod = c.MoveCall?.module || '';
+            return fn.includes('place_bet') && mod === 'betting' && (
+              pkg === CONTRACT_PKG_ID || 
+              pkg.startsWith('0x4d83eab')
+            );
+          });
+          if (!isBetTx) continue;
 
-        const existing = await db.execute(sql`SELECT id FROM bets WHERE tx_hash = ${txDigest} LIMIT 1`);
-        if ((existing.rows?.length || 0) > 0) {
-          const row = existing.rows[0] as any;
-          if (!row.wallet_address || row.wallet_address.toLowerCase() !== normalizedWallet) {
-            await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet} WHERE id = ${row.id} AND (wallet_address IS NULL OR wallet_address = '')`);
-          }
-          results.alreadyExist++;
-          continue;
-        }
+          if (tx.effects?.status?.status !== 'success') continue;
+          betTxCount++;
 
-        const betObjectId = parsed.bet_id || null;
-        if (betObjectId) {
-          const existObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
-          if ((existObj.rows?.length || 0) > 0) {
-            const objRow = existObj.rows[0] as any;
-            await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet}, tx_hash = ${txDigest} WHERE id = ${objRow.id}`);
+          const existing = await db.execute(sql`SELECT id, wallet_address FROM bets WHERE tx_hash = ${digest} LIMIT 1`);
+          if ((existing.rows?.length || 0) > 0) {
+            const row = existing.rows[0] as any;
+            if (!row.wallet_address || row.wallet_address.toLowerCase() !== normalizedWallet) {
+              await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet} WHERE id = ${row.id} AND (wallet_address IS NULL OR wallet_address = '')`);
+            }
             results.alreadyExist++;
             continue;
           }
-        }
 
-        const eventIdBytes = parsed.event_id;
-        const eventIdStr = Array.isArray(eventIdBytes) ? String.fromCharCode(...eventIdBytes) : 'unknown';
-        const oddsBps = parsed.odds_bps ? Number(parsed.odds_bps) : 200;
-        const odds = oddsBps / 100;
-        const rawAmount = parsed.amount ? Number(parsed.amount) : 0;
-        const coinType = parsed.coin_type === 1 ? 'SBETS' : 'SUI';
-        const amount = rawAmount / 1e9;
-        const ts = ev.timestampMs ? new Date(parseInt(ev.timestampMs)) : new Date();
-        const isParlay = eventIdStr.includes('parlay');
-        const betId = betObjectId || `auto-${txDigest.slice(0, 16)}`;
+          const betObjChange = (tx.objectChanges || []).find((c: any) =>
+            c.type === 'created' && c.objectType?.includes('::betting::Bet')
+          );
+          const betObjectId = betObjChange?.objectId || null;
 
-        let eventName = isParlay ? 'Parlay Bet (Recovered)' : 'Bet (Recovered)';
-        let homeTeam = 'Unknown';
-        let awayTeam = 'Unknown';
-
-        const refBet = await db.execute(sql`
-          SELECT event_name, home_team, away_team FROM bets 
-          WHERE external_event_id = ${eventIdStr} AND home_team != 'Unknown' AND away_team != 'Unknown'
-          LIMIT 1
-        `);
-        if (refBet.rows?.length) {
-          const ref = refBet.rows[0] as any;
-          eventName = ref.event_name || eventName;
-          homeTeam = ref.home_team || homeTeam;
-          awayTeam = ref.away_team || awayTeam;
-        } else {
-          try {
-            const eventLookup = apiSportsService.lookupEventSync(eventIdStr);
-            if (eventLookup.found) {
-              homeTeam = eventLookup.homeTeam || homeTeam;
-              awayTeam = eventLookup.awayTeam || awayTeam;
-              eventName = `${homeTeam} vs ${awayTeam}`;
+          if (betObjectId) {
+            const existObj = await db.execute(sql`SELECT id FROM bets WHERE bet_object_id = ${betObjectId} LIMIT 1`);
+            if ((existObj.rows?.length || 0) > 0) {
+              const objRow = existObj.rows[0] as any;
+              await db.execute(sql`UPDATE bets SET wallet_address = ${normalizedWallet}, tx_hash = ${digest} WHERE id = ${objRow.id}`);
+              results.alreadyExist++;
+              continue;
             }
-          } catch {}
-        }
-
-        try {
-          await db.insert(betsTable).values({
-            userId: null,
-            walletAddress: normalizedWallet,
-            betAmount: amount,
-            currency: coinType,
-            odds,
-            prediction: eventIdStr,
-            potentialPayout: Math.round(amount * odds * 100) / 100,
-            status: 'pending',
-            betType: isParlay ? 'parlay' : 'single',
-            cashOutAvailable: true,
-            wurlusBetId: betId,
-            txHash: txDigest,
-            platformFee: 0,
-            networkFee: 0,
-            feeCurrency: coinType,
-            eventName,
-            homeTeam,
-            awayTeam,
-            externalEventId: eventIdStr,
-            betObjectId,
-            createdAt: ts,
-          }).returning();
-          results.recovered++;
-          console.log(`🔧 WALLET-RECOVERED: ${betId} for ${walletAddress.slice(0,12)}... (${amount} ${coinType}) - ${eventName}`);
-        } catch (insertErr: any) {
-          if (insertErr.code !== '23505') {
-            console.error(`Wallet recovery insert failed:`, insertErr.message);
-            results.errors++;
-          } else {
-            results.alreadyExist++;
           }
+
+          const event = tx.events?.find((e: any) => e.type?.includes('BetPlaced'))?.parsedJson || tx.events?.[0]?.parsedJson || {};
+          const eventIdBytes = (event as any).event_id;
+          const eventIdStr = Array.isArray(eventIdBytes) ? String.fromCharCode(...eventIdBytes) : 'unknown';
+          const oddsBps = (event as any).odds_bps ? Number((event as any).odds_bps) : ((event as any).odds ? Number((event as any).odds) : 200);
+          const odds = oddsBps > 10 ? oddsBps / 100 : oddsBps;
+          const rawAmount = (event as any).amount || (event as any).stake || 0;
+          const amount = Number(rawAmount) / 1e9;
+          const coinType = (event as any).coin_type === 1 ? 'SBETS' : 'SUI';
+          const ts = tx.timestampMs ? new Date(parseInt(tx.timestampMs)) : new Date();
+          const isParlay = eventIdStr.includes('parlay');
+          const betId = betObjectId || `auto-${digest.slice(0, 16)}`;
+
+          let eventName = isParlay ? 'Parlay Bet (Recovered)' : 'Bet (Recovered)';
+          let homeTeam = 'Unknown';
+          let awayTeam = 'Unknown';
+
+          const refBet = await db.execute(sql`
+            SELECT event_name, home_team, away_team FROM bets 
+            WHERE external_event_id = ${eventIdStr} AND home_team != 'Unknown' AND away_team != 'Unknown'
+            LIMIT 1
+          `);
+          if (refBet.rows?.length) {
+            const ref = refBet.rows[0] as any;
+            eventName = ref.event_name || eventName;
+            homeTeam = ref.home_team || homeTeam;
+            awayTeam = ref.away_team || awayTeam;
+          } else {
+            try {
+              const eventLookup = apiSportsService.lookupEventSync(eventIdStr);
+              if (eventLookup.found) {
+                homeTeam = eventLookup.homeTeam || homeTeam;
+                awayTeam = eventLookup.awayTeam || awayTeam;
+                eventName = `${homeTeam} vs ${awayTeam}`;
+              }
+            } catch {}
+          }
+
+          try {
+            await db.insert(betsTable).values({
+              userId: null,
+              walletAddress: normalizedWallet,
+              betAmount: amount,
+              currency: coinType,
+              odds,
+              prediction: eventIdStr,
+              potentialPayout: Math.round(amount * odds * 100) / 100,
+              status: 'pending',
+              betType: isParlay ? 'parlay' : 'single',
+              cashOutAvailable: true,
+              wurlusBetId: betId,
+              txHash: digest,
+              platformFee: 0,
+              networkFee: 0,
+              feeCurrency: coinType,
+              eventName,
+              homeTeam,
+              awayTeam,
+              externalEventId: eventIdStr,
+              betObjectId,
+              createdAt: ts,
+            }).returning();
+            results.recovered++;
+            console.log(`🔧 WALLET-RECOVERED: ${betId} for ${walletAddress.slice(0,12)}... (${amount} ${coinType}) - ${eventName}`);
+          } catch (insertErr: any) {
+            if (insertErr.code !== '23505') {
+              console.error(`Wallet recovery insert failed:`, insertErr.message);
+              results.errors++;
+            } else {
+              results.alreadyExist++;
+            }
+          }
+        } catch (txErr: any) {
+          console.warn(`Wallet sync tx error for ${digest.slice(0, 12)}: ${txErr.message}`);
+          results.errors++;
         }
       }
+
+      console.log(`🔍 Wallet sync complete: ${betTxCount} bet txs found, ${results.recovered} recovered, ${results.alreadyExist} already existed`);
     } catch (err: any) {
       console.error('Wallet recovery error:', err.message);
       results.errors++;
@@ -5875,23 +5901,47 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
-  // Get user's bets - requires wallet address, returns empty if not provided
+  const walletSyncInProgress = new Set<string>();
+  const walletSyncLastAttempt = new Map<string, number>();
+  const WALLET_SYNC_COOLDOWN_MS = 5 * 60 * 1000;
+
   app.get("/api/bets", async (req: Request, res: Response) => {
     try {
       const wallet = req.query.wallet as string;
       const userId = req.query.userId as string;
       const status = req.query.status as string | undefined;
       
-      // No mock data - require a wallet or userId
       if (!wallet && !userId) {
         return res.json([]);
       }
       
       const lookupId = wallet || userId;
       const userBets = await storage.getUserBets(lookupId);
-      const filtered = status ? userBets.filter(b => b.status === status) : userBets;
+
+      const wLower = wallet?.toLowerCase();
+      const lastAttempt = wLower ? (walletSyncLastAttempt.get(wLower) || 0) : Infinity;
+      const cooldownExpired = Date.now() - lastAttempt > WALLET_SYNC_COOLDOWN_MS;
+
+      if (wallet && isValidSuiWallet(wallet) && userBets.length === 0 && cooldownExpired && !walletSyncInProgress.has(wLower)) {
+        walletSyncInProgress.add(wLower);
+        walletSyncLastAttempt.set(wLower, Date.now());
+        console.log(`🔄 Auto-sync triggered for wallet with 0 bets: ${wallet.slice(0, 12)}...`);
+        recoverBetsForWallet(wallet).then(async (syncResult) => {
+          walletSyncInProgress.delete(wLower);
+          if (syncResult.recovered > 0) {
+            console.log(`✅ Auto-sync recovered ${syncResult.recovered} bets for ${wallet.slice(0, 12)}...`);
+          }
+          if (syncResult.errors > 0) {
+            walletSyncLastAttempt.set(wLower, Date.now() - WALLET_SYNC_COOLDOWN_MS + 60000);
+          }
+        }).catch((err) => {
+          walletSyncInProgress.delete(wLower);
+          walletSyncLastAttempt.set(wLower, Date.now() - WALLET_SYNC_COOLDOWN_MS + 60000);
+          console.warn(`Auto-sync error for ${wallet.slice(0, 12)}...:`, err.message);
+        });
+      }
       
-      // Storage already provides currency field properly mapped
+      const filtered = status ? userBets.filter(b => b.status === status) : userBets;
       res.json(filtered);
     } catch (error) {
       console.error('Error fetching bets for wallet:', error);

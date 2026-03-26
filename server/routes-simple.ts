@@ -5752,34 +5752,43 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         const potentialPayout = Math.round(amount * odds * 100) / 100;
         const isParlay = eventIdStr.includes('parlay');
 
-        const [inserted] = await db.insert(betsTable).values({
-          userId: null,
-          walletAddress: wallet.toLowerCase(),
-          betAmount: amount,
-          currency: coinType,
-          odds,
-          prediction: eventIdStr,
-          potentialPayout,
-          status: 'pending',
-          betType: isParlay ? 'parlay' : 'single',
-          cashOutAvailable: true,
-          wurlusBetId: betId,
-          txHash: digest,
-          platformFee: 0,
-          networkFee: 0,
-          feeCurrency: coinType,
-          eventName: isParlay ? 'Parlay Bet (Recovered)' : 'Recovered Bet',
-          externalEventId: eventIdStr,
-          betObjectId: betObjectId,
-          createdAt: ts,
-        }).returning();
+        try {
+          const insertResult = await db.insert(betsTable).values({
+            userId: null,
+            walletAddress: wallet.toLowerCase(),
+            betAmount: amount,
+            currency: coinType,
+            odds,
+            prediction: eventIdStr,
+            potentialPayout,
+            status: 'pending',
+            betType: isParlay ? 'parlay' : 'single',
+            cashOutAvailable: true,
+            wurlusBetId: betId,
+            txHash: digest,
+            platformFee: 0,
+            networkFee: 0,
+            feeCurrency: coinType,
+            eventName: isParlay ? 'Parlay Bet (Recovered)' : 'Recovered Bet',
+            externalEventId: eventIdStr,
+            betObjectId: betObjectId,
+            createdAt: ts,
+          }).returning();
 
-        recovered.push({
-          id: inserted.id, betId, digest, betObjectId,
-          amount, coinType, odds, eventId: eventIdStr, timestamp: ts.toISOString(),
-        });
-
-        console.log(`🔧 RECOVERED BET: ${betId} from tx ${digest.slice(0,16)} for ${wallet.slice(0,12)}... (${amount} ${coinType})`);
+          const inserted = insertResult[0];
+          recovered.push({
+            id: inserted.id, betId, digest, betObjectId,
+            amount, coinType, odds, eventId: eventIdStr, timestamp: ts.toISOString(),
+          });
+          console.log(`🔧 RECOVERED BET: ${betId} from tx ${digest.slice(0,16)} for ${wallet.slice(0,12)}... (${amount} ${coinType})`);
+        } catch (insertErr: any) {
+          if (insertErr.code === '23505') {
+            skipped.push({ digest, reason: 'duplicate_key', detail: insertErr.detail });
+            console.log(`⏭ Skipped duplicate: ${digest.slice(0,16)}`);
+          } else {
+            throw insertErr;
+          }
+        }
       }
 
       res.json({

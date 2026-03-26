@@ -5684,8 +5684,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       const CONTRACT_PKG = '0x4d83eab83defa9e2488b3c525f54fc588185cfc1a906e5dada1954bf52296e76';
-      const { bets } = await import('@shared/schema');
-      const { db } = await import('./db');
+      const { bets: betsTable } = await import('@shared/schema');
       const { SuiClient } = await import('@mysten/sui/client');
       const suiClient = new SuiClient({ url: 'https://fullnode.mainnet.sui.io:443' });
 
@@ -5740,7 +5739,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         const betId = betObjectId || `recovered-${txRef.digest.slice(0, 16)}`;
         const potentialPayout = Math.round(amount * odds * 100) / 100;
 
-        const [inserted] = await db.insert(bets).values({
+        const [inserted] = await db.insert(betsTable).values({
           userId: null,
           walletAddress: wallet.toLowerCase(),
           betAmount: amount,

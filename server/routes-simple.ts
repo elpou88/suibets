@@ -893,12 +893,35 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
 
       console.log(`🔍 Wallet sync (tx-scan): Found ${digests.length} transactions for ${walletAddress.slice(0, 12)}...`);
 
-      let betTxCount = 0;
-      for (const digest of digests) {
+      const BATCH_SIZE = 50;
+      const allTxDetails: any[] = [];
+      for (let i = 0; i < digests.length; i += BATCH_SIZE) {
+        const chunk = digests.slice(i, i + BATCH_SIZE);
         try {
-          const tx = await suiRpcCall('sui_getTransactionBlock', [
-            digest, { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true }
+          const batchResult = await suiRpcCall('sui_multiGetTransactionBlocks', [
+            chunk, { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true }
           ]);
+          if (Array.isArray(batchResult)) {
+            allTxDetails.push(...batchResult.filter((t: any) => t && t.digest));
+          }
+        } catch (batchErr: any) {
+          console.warn(`[Sync] Batch fetch failed for ${chunk.length} txs, falling back to individual: ${batchErr.message}`);
+          for (const d of chunk) {
+            try {
+              const tx = await suiRpcCall('sui_getTransactionBlock', [
+                d, { showInput: true, showEffects: true, showEvents: true, showObjectChanges: true }
+              ]);
+              if (tx) allTxDetails.push(tx);
+            } catch {}
+          }
+        }
+      }
+
+      console.log(`🔍 Wallet sync: Fetched ${allTxDetails.length} tx details for ${walletAddress.slice(0, 12)}...`);
+
+      let betTxCount = 0;
+      for (const tx of allTxDetails) {
+        try {
           if (!tx) continue;
 
           const txData = tx.transaction?.data?.transaction;
@@ -917,6 +940,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           if (tx.effects?.status?.status !== 'success') continue;
           betTxCount++;
 
+          const digest = tx.digest;
           const existing = await db.execute(sql`SELECT id, wallet_address FROM bets WHERE tx_hash = ${digest} LIMIT 1`);
           if ((existing.rows?.length || 0) > 0) {
             const row = existing.rows[0] as any;
@@ -1038,7 +1062,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
             }
           }
         } catch (txErr: any) {
-          console.warn(`Wallet sync tx error for ${digest.slice(0, 12)}: ${txErr.message}`);
+          const txDigest = tx?.digest || 'unknown';
+          console.warn(`Wallet sync tx error for ${txDigest.slice(0, 12)}: ${txErr.message}`);
           results.errors++;
         }
       }
@@ -1111,19 +1136,31 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
 
       console.log(`🔄 User-triggered bet sync for ${wallet.slice(0, 12)}...`);
-      const result = await recoverBetsForWallet(wallet);
+      const syncTimeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SYNC_TIMEOUT')), 25000)
+      );
+      const result = await Promise.race([recoverBetsForWallet(wallet), syncTimeout]).catch(err => {
+        if (err.message === 'SYNC_TIMEOUT') {
+          console.warn(`⏱️ Wallet sync timed out for ${wallet.slice(0, 12)}... returning partial results`);
+          return { recovered: 0, alreadyExist: 0, errors: 0, timedOut: true };
+        }
+        throw err;
+      });
 
       const userBets = await storage.getUserBets(wallet);
 
+      const timedOut = (result as any).timedOut;
       res.json({
         success: true,
         recovered: result.recovered,
         alreadyExist: result.alreadyExist,
         errors: result.errors,
         totalBets: userBets.length,
-        message: result.recovered > 0
-          ? `Recovered ${result.recovered} missing bet(s) from the blockchain!`
-          : `All ${userBets.length} on-chain bets are already synced.`,
+        message: timedOut
+          ? `Sync is still processing in the background. Found ${userBets.length} bet(s) so far.`
+          : result.recovered > 0
+            ? `Recovered ${result.recovered} missing bet(s) from the blockchain!`
+            : `All ${userBets.length} on-chain bets are already synced.`,
         bets: userBets,
       });
     } catch (error: any) {

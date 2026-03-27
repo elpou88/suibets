@@ -165,20 +165,27 @@ export default function BetHistoryPage() {
     if (!walletAddress || isSyncing) return;
     setIsSyncing(true);
     try {
-      const res = await fetch('/api/bets/sync-wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ wallet: walletAddress }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        toast({
-          title: data.recovered > 0 ? 'Bets Recovered!' : 'All Synced',
-          description: data.message,
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      try {
+        const res = await fetch('/api/bets/sync-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ wallet: walletAddress }),
+          signal: controller.signal,
         });
-        await refetch();
-      } else {
-        toast({ title: 'Sync Failed', description: data.message || 'Could not sync bets', variant: 'destructive' });
+        const data = await res.json();
+        if (res.ok) {
+          toast({
+            title: data.recovered > 0 ? 'Bets Recovered!' : 'All Synced',
+            description: data.message,
+          });
+          await refetch();
+        } else {
+          toast({ title: 'Sync Failed', description: data.message || 'Could not sync bets', variant: 'destructive' });
+        }
+      } finally {
+        clearTimeout(timeoutId);
       }
     } catch {
       toast({ title: 'Sync Error', description: 'Network error — please try again', variant: 'destructive' });

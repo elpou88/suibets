@@ -2754,6 +2754,130 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     }
   });
 
+  app.get("/api/admin/find-lost-bets", async (req: Request, res: Response) => {
+    try {
+      if (!(await validateAdminAuth(req))) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const searchTerm = req.query.search as string;
+      if (!searchTerm) {
+        return res.status(400).json({ message: "Provide ?search=teamname" });
+      }
+      const result = await db.execute(sql`
+        SELECT id, wurlus_bet_id, bet_object_id, status, home_team, away_team, prediction,
+               stake, potential_win, potential_payout, currency, fee_currency,
+               wallet_address, bet_amount, odds, settled_at, created_at
+        FROM bets 
+        WHERE (LOWER(home_team) LIKE LOWER(${'%' + searchTerm + '%'})
+               OR LOWER(away_team) LIKE LOWER(${'%' + searchTerm + '%'})
+               OR LOWER(prediction) LIKE LOWER(${'%' + searchTerm + '%'}))
+          AND status = 'lost'
+        ORDER BY created_at DESC
+        LIMIT 20
+      `);
+      const rows = Array.isArray(result) ? result : (result.rows || []);
+      res.json({ count: rows.length, bets: rows });
+    } catch (error: any) {
+      console.error("Find lost bets error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  app.post("/api/admin/correct-u21-bets", async (req: Request, res: Response) => {
+    try {
+      if (!(await validateAdminAuth(req))) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const results: any[] = [];
+      const { betIds } = req.body;
+
+      if (!betIds || !Array.isArray(betIds) || betIds.length === 0) {
+        return res.status(400).json({ message: "Provide betIds array (database IDs or betObjectIds)" });
+      }
+
+      for (const betId of betIds) {
+        try {
+          const bet = await storage.getBetByStringId(String(betId));
+          if (!bet) {
+            results.push({ betId, error: "Bet not found" });
+            continue;
+          }
+
+          if (bet.status !== 'lost') {
+            results.push({ betId, error: `Bet status is '${bet.status}', not 'lost' - skipping` });
+            continue;
+          }
+
+          const dbId = String(bet.wurlusBetId || bet.id || bet.betObjectId);
+
+          const rolledBack = await storage.updateBetStatus(dbId, 'pending');
+          if (!rolledBack) {
+            results.push({ betId, error: "Failed to rollback to pending" });
+            continue;
+          }
+
+          const settled = await storage.updateBetStatus(dbId, 'won');
+          if (!settled) {
+            results.push({ betId, error: "Failed to settle as won after rollback" });
+            continue;
+          }
+
+          const currency = (bet.currency === 'SBETS' || bet.feeCurrency === 'SBETS') ? 'SBETS' : 'SUI';
+          const walletId = bet.walletAddress && isValidSuiWallet(bet.walletAddress) ? bet.walletAddress : null;
+          const stake = bet.stake || bet.betAmount || 0;
+          const potentialPayout = bet.potentialWin || bet.potentialPayout || 0;
+
+          if (!walletId) {
+            results.push({ betId, error: "No valid wallet address - cannot credit winnings", dbId });
+            continue;
+          }
+
+          const profit = potentialPayout - stake;
+          const platformFee = profit > 0 ? profit * 0.01 : 0;
+          const netPayout = potentialPayout - platformFee;
+
+          const winningsAdded = await balanceService.addWinnings(walletId, netPayout, currency);
+          if (!winningsAdded) {
+            await storage.updateBetStatus(dbId, 'pending');
+            results.push({ betId, error: "Failed to credit winnings - reverted to pending", dbId });
+            continue;
+          }
+
+          if (platformFee > 0) {
+            await balanceService.addRevenue(platformFee, currency);
+          }
+
+          const refundedStake = await balanceService.addWinnings(walletId, 0, currency);
+
+          console.log(`✅ U21 CORRECTION: Bet ${betId} resettled as WON - paid ${netPayout} ${currency} to ${walletId.slice(0,12)}...`);
+          results.push({
+            betId,
+            dbId,
+            success: true,
+            wallet: walletId,
+            stake,
+            potentialPayout,
+            netPayout,
+            platformFee,
+            currency,
+            homeTeam: bet.homeTeam,
+            awayTeam: bet.awayTeam,
+            prediction: bet.prediction
+          });
+        } catch (err: any) {
+          results.push({ betId, error: err.message });
+        }
+      }
+
+      console.log(`🔧 U21 BET CORRECTION COMPLETE:`, JSON.stringify(results, null, 2));
+      res.json({ success: true, results });
+    } catch (error: any) {
+      console.error("U21 correction error:", error);
+      res.status(500).json({ message: error.message });
+    }
+  });
+
   app.post("/api/admin/sync-onchain-bets", async (req: Request, res: Response) => {
     try {
       if (!(await validateAdminAuth(req))) {

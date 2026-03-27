@@ -859,8 +859,8 @@ class SettlementWorkerService {
 
       const homeTeam = match.teams?.home?.name || '';
       const awayTeam = match.teams?.away?.name || '';
-      const homeScore = match.goals?.home ?? 0;
-      const awayScore = match.goals?.away ?? 0;
+      const homeScore = match.score?.fulltime?.home ?? match.goals?.home ?? 0;
+      const awayScore = match.score?.fulltime?.away ?? match.goals?.away ?? 0;
 
       if (['CANC', 'ABD', 'PST'].includes(statusShort)) {
         console.log(`⚠️ Direct lookup: fixture ${fixtureId} ${statusShort} (${homeTeam} vs ${awayTeam}) - treating as void/draw`);
@@ -1686,8 +1686,8 @@ class SettlementWorkerService {
             let awayScore = 0;
             
             if (sport === 'football') {
-              homeScore = match.goals?.home || 0;
-              awayScore = match.goals?.away || 0;
+              homeScore = match.score?.fulltime?.home ?? match.goals?.home ?? 0;
+              awayScore = match.score?.fulltime?.away ?? match.goals?.away ?? 0;
             } else if (sport === 'basketball') {
               homeScore = match.scores?.home?.total || 0;
               awayScore = match.scores?.away?.total || 0;

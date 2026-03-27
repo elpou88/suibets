@@ -408,20 +408,19 @@ export class FreeSportsService {
           return true;
         });
         
-        if (sportEvents.length === 0 && ['basketball', 'baseball', 'ice-hockey'].includes(sportSlug)) {
+        if (sportEvents.length === 0) {
           try {
+            console.log(`[FreeSports] ${config.name}: API returned 0 events, trying SofaScore fallback...`);
             const sofaFallback = await this.fetchSofaScoreScheduledSport(sportSlug, config.sportId, config.hasDraws);
             if (sofaFallback.length > 0) {
               sportEvents.push(...sofaFallback);
               console.log(`[FreeSports] ${config.name}: ${sofaFallback.length} events from SofaScore fallback`);
+            } else {
+              console.log(`[FreeSports] ${config.name}: No real events found — skipping (no mock data)`);
             }
           } catch (sfErr: any) {
             console.warn(`[FreeSports] SofaScore fallback failed for ${config.name}: ${sfErr.message}`);
           }
-        }
-
-        if (sportEvents.length === 0 && ['basketball', 'baseball', 'ice-hockey'].includes(sportSlug)) {
-          console.log(`[FreeSports] ${config.name}: No real events found — skipping (no mock data)`);
         }
 
         if (sportSlug === 'mma') {
@@ -1097,6 +1096,12 @@ export class FreeSportsService {
       'basketball': 'basketball',
       'baseball': 'baseball',
       'ice-hockey': 'ice-hockey',
+      'mma': 'mma',
+      'american-football': 'american-football',
+      'afl': 'aussie-rules',
+      'handball': 'handball',
+      'rugby': 'rugby',
+      'volleyball': 'volleyball',
       'tennis': 'tennis',
       'boxing': 'boxing',
       'motorsport': 'motorsport',

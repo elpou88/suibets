@@ -46,7 +46,8 @@ export function BetHistory() {
   const { data: userBetsData = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
     enabled: !!walletAddress,
-    refetchInterval: 30000, // Refresh every 30 seconds
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
   
   const userBets = Array.isArray(userBetsData) ? userBetsData : [];

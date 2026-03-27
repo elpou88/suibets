@@ -5992,7 +5992,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       }
       
       const lookupId = wallet || userId;
-      const userBets = await storage.getUserBets(lookupId);
+      let userBets = await storage.getUserBets(lookupId);
 
       const wLower = wallet?.toLowerCase();
       const lastAttempt = wLower ? (walletSyncLastAttempt.get(wLower) || 0) : Infinity;
@@ -6002,19 +6002,21 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         walletSyncInProgress.add(wLower);
         walletSyncLastAttempt.set(wLower, Date.now());
         console.log(`🔄 Auto-sync triggered for wallet with 0 bets: ${wallet.slice(0, 12)}...`);
-        recoverBetsForWallet(wallet).then(async (syncResult) => {
+        try {
+          const syncResult = await recoverBetsForWallet(wallet);
           walletSyncInProgress.delete(wLower);
           if (syncResult.recovered > 0) {
             console.log(`✅ Auto-sync recovered ${syncResult.recovered} bets for ${wallet.slice(0, 12)}...`);
+            userBets = await storage.getUserBets(lookupId);
           }
           if (syncResult.errors > 0) {
             walletSyncLastAttempt.set(wLower, Date.now() - WALLET_SYNC_COOLDOWN_MS + 60000);
           }
-        }).catch((err) => {
+        } catch (err: any) {
           walletSyncInProgress.delete(wLower);
           walletSyncLastAttempt.set(wLower, Date.now() - WALLET_SYNC_COOLDOWN_MS + 60000);
           console.warn(`Auto-sync error for ${wallet.slice(0, 12)}...:`, err.message);
-        });
+        }
       }
       
       const filtered = status ? userBets.filter(b => b.status === status) : userBets;

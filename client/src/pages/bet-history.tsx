@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'wouter';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useCurrentAccount } from '@mysten/dapp-kit';
 import { useToast } from '@/hooks/use-toast';
@@ -56,10 +56,11 @@ export default function BetHistoryPage() {
   // Only fetch data when wallet is connected - prevents mock data
   const walletAddress = currentAccount?.address;
   
-  const { data: rawBets, refetch } = useQuery({
+  const { data: rawBets, refetch, isLoading } = useQuery({
     queryKey: [`/api/bets?wallet=${walletAddress}`, walletAddress],
     enabled: !!walletAddress,
-    refetchInterval: 30000, // Reduced from 10s
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
   
   const bets: Bet[] = Array.isArray(rawBets) ? rawBets : [];
@@ -184,6 +185,14 @@ export default function BetHistoryPage() {
     }
     setIsSyncing(false);
   };
+
+  const autoSyncDone = useRef(false);
+  useEffect(() => {
+    if (walletAddress && !isLoading && bets.length === 0 && !isSyncing && !autoSyncDone.current) {
+      autoSyncDone.current = true;
+      handleSyncFromChain();
+    }
+  }, [walletAddress, isLoading, bets.length, isSyncing]);
 
   const handleConnectWallet = () => {
     window.dispatchEvent(new CustomEvent('suibets:connect-wallet-required'));
@@ -420,8 +429,19 @@ export default function BetHistoryPage() {
           {filteredBets.length === 0 ? (
             <div className="text-center py-16">
               <FileText className="h-16 w-16 text-gray-500 mx-auto mb-4" />
-              <p className="text-gray-400 text-lg mb-2">No bets yet</p>
-              <p className="text-gray-500 text-sm mb-6">Place your first bet to see it here</p>
+              <p className="text-gray-400 text-lg mb-2">{isLoading ? 'Loading your bets...' : 'No bets yet'}</p>
+              <p className="text-gray-500 text-sm mb-6">{isLoading ? 'Checking your wallet on the blockchain' : 'Place your first bet to see it here'}</p>
+              {!isLoading && walletAddress && (
+                <button
+                  onClick={handleSyncFromChain}
+                  disabled={isSyncing}
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 font-bold px-6 py-3 rounded-xl transition-colors mb-4 flex items-center gap-2 mx-auto"
+                  data-testid="btn-sync-empty"
+                >
+                  <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                  {isSyncing ? 'Syncing from blockchain...' : 'Sync Bets from Blockchain'}
+                </button>
+              )}
               <Link href="/">
                 <button className="bg-cyan-500 hover:bg-cyan-600 text-black font-bold px-6 py-3 rounded-xl transition-colors" data-testid="btn-place-bet">
                   Place a Bet

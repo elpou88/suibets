@@ -74,8 +74,8 @@ interface AutoBetStrategy {
 
 const PRESET_STRATEGIES: Record<string, Partial<AutoBetStrategy>> = {
   conservative: { minEdge: 0.03, minOdds: 1.4, maxOdds: 5.0, maxStake: 10000, maxBets: 3, stakingMode: 'kelly' },
-  balanced:     { minEdge: 0.015, minOdds: 1.3, maxOdds: 8.0, maxStake: 50000, maxBets: 5, stakingMode: 'fixed' },
-  aggressive:   { minEdge: 0.005, minOdds: 1.15, maxOdds: 15.0, maxStake: 100000, maxBets: 10, stakingMode: 'fixed' },
+  balanced:     { minEdge: 0.015, minOdds: 1.3, maxOdds: 7.0, maxStake: 50000, maxBets: 5, stakingMode: 'fixed' },
+  aggressive:   { minEdge: 0.005, minOdds: 1.15, maxOdds: 7.0, maxStake: 100000, maxBets: 10, stakingMode: 'fixed' },
 };
 
 interface AgentMessage {
@@ -2955,7 +2955,7 @@ export default function AIBettingPage() {
                   </div>
                   <div>
                     <label className="text-xs text-gray-400 block mb-1">Max Odds: <span className="text-cyan-400 font-mono font-bold">{strategy.maxOdds.toFixed(1)}</span></label>
-                    <input type="range" min="1.5" max="15.0" step="0.5" value={strategy.maxOdds}
+                    <input type="range" min="1.5" max="7.0" step="0.5" value={strategy.maxOdds}
                       onChange={e => { setActivePreset(''); setStrategy(s => ({ ...s, maxOdds: parseFloat(e.target.value) })); }}
                       className="sui-range" data-testid="strategy-max-odds" />
                   </div>

@@ -203,7 +203,8 @@ async function checkEventBetLimitDB(walletAddress: string, eventId: string): Pro
 }
 
 const MAX_PAYOUT_SUI = 50;
-const MAX_PAYOUT_SBETS = 25_000_000;
+const MAX_PAYOUT_SBETS = 8_000_000;
+const MAX_ODDS_CAP = 7.0;
 const ODDS_TOLERANCE = 0.15; // 15% tolerance for odds deviation
 
 function extractParlayLegIds(parlayEventId: string): string[] {
@@ -3300,6 +3301,10 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Parlay legs are individually validated in /api/parlays endpoint
       const isParlay = eventIdStr.startsWith('parlay_');
       const submittedOddsDecimal = oddsBps / 100;
+      if (!isParlay && submittedOddsDecimal > MAX_ODDS_CAP) {
+        console.log(`❌ ORACLE SIGN BLOCKED (max odds cap): oddsBps=${oddsBps} (${submittedOddsDecimal}x) > ${MAX_ODDS_CAP}x, event=${eventIdStr}`);
+        return res.status(400).json({ success: false, message: `Maximum odds allowed is ${MAX_ODDS_CAP}x. Please choose a different selection.` });
+      }
       if (!isParlay) {
         if (isLiveEvent && liveScore) {
           const liveOddsCheck = apiSportsService.getOddsFromCacheLive(eventIdStr, liveScore);
@@ -3327,9 +3332,9 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           }
         }
       } else {
-        // Parlay: cap combined odds at 50x (already validated by Zod schema)
-        if (submittedOddsDecimal > 50) {
-          console.log(`❌ ORACLE SIGN BLOCKED (parlay cap): oddsBps=${oddsBps} > 5000, event=${eventIdStr}`);
+        const parlayMaxCombined = MAX_ODDS_CAP * MAX_ODDS_CAP;
+        if (submittedOddsDecimal > parlayMaxCombined) {
+          console.log(`❌ ORACLE SIGN BLOCKED (parlay cap): oddsBps=${oddsBps} (${submittedOddsDecimal}x) > ${parlayMaxCombined}x, event=${eventIdStr}`);
           return res.status(400).json({ success: false, message: "Parlay odds exceed maximum allowed." });
         }
       }
@@ -4256,6 +4261,14 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         return res.status(403).json({
           message: "This wallet has been suspended due to policy violations.",
           code: "WALLET_BLOCKED"
+        });
+      }
+
+      if (odds > MAX_ODDS_CAP) {
+        console.log(`❌ ODDS CAP: submitted=${odds} > max ${MAX_ODDS_CAP}, event=${data.eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
+        return res.status(400).json({
+          message: `Maximum odds allowed is ${MAX_ODDS_CAP}x. Please choose a different selection.`,
+          code: "MAX_ODDS_EXCEEDED"
         });
       }
 
@@ -5474,11 +5487,27 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Check user balance (using async for accurate DB read)
       const balance = await balanceService.getBalanceAsync(userIdStr);
       
-      // Calculate parlay odds (multiply all odds)
+      const highOddsLeg = selections.find((sel: any) => sel.odds > MAX_ODDS_CAP);
+      if (highOddsLeg) {
+        console.log(`❌ PARLAY LEG ODDS CAP: leg odds=${highOddsLeg.odds} > max ${MAX_ODDS_CAP}, wallet=${userIdStr.slice(0,12)}...`);
+        return res.status(400).json({
+          message: `Maximum odds per selection is ${MAX_ODDS_CAP}x. Please remove high-odds selections.`,
+          code: "MAX_ODDS_EXCEEDED"
+        });
+      }
+
       const parlayOdds = selections.reduce((acc: number, sel: any) => acc * sel.odds, 1);
       
       if (!isFinite(parlayOdds) || parlayOdds <= 0) {
         return res.status(400).json({ message: "Invalid parlay odds calculation" });
+      }
+
+      if (parlayOdds > MAX_ODDS_CAP * MAX_ODDS_CAP) {
+        console.log(`❌ PARLAY COMBINED ODDS CAP: combined=${parlayOdds.toFixed(2)} > max ${(MAX_ODDS_CAP * MAX_ODDS_CAP).toFixed(0)}, wallet=${userIdStr.slice(0,12)}...`);
+        return res.status(400).json({
+          message: `Combined parlay odds of ${parlayOdds.toFixed(1)}x exceed the maximum. Please reduce your selections.`,
+          code: "PARLAY_ODDS_TOO_HIGH"
+        });
       }
 
       // ANTI-EXPLOIT: Max payout cap for parlays

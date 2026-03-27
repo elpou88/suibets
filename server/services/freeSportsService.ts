@@ -455,65 +455,8 @@ export class FreeSportsService {
       console.error(`[FreeSports] Horse Racing fetch error:`, error.message);
     }
 
-    try {
-      const motoGPEvents = this.generateMotoGPEvents();
-      if (motoGPEvents.length > 0) {
-        allEvents.push(...motoGPEvents);
-        console.log(`[FreeSports] 🏍️ MotoGP: ${motoGPEvents.length} upcoming races generated`);
-      }
-    } catch (error: any) {
-      console.error(`[FreeSports] MotoGP generation error:`, error.message);
-    }
-
-    try {
-      const boxingEvents = this.generateBoxingEvents();
-      if (boxingEvents.length > 0) {
-        allEvents.push(...boxingEvents);
-        console.log(`[FreeSports] 🥊 Boxing: ${boxingEvents.length} upcoming fights generated`);
-      }
-    } catch (error: any) {
-      console.error(`[FreeSports] Boxing generation error:`, error.message);
-    }
-
-    try {
-      const tennisEvents = this.generateTennisEvents();
-      if (tennisEvents.length > 0) {
-        allEvents.push(...tennisEvents);
-        console.log(`[FreeSports] 🎾 Tennis: ${tennisEvents.length} upcoming matches generated`);
-      }
-    } catch (error: any) {
-      console.error(`[FreeSports] Tennis generation error:`, error.message);
-    }
-
-    try {
-      const wweEvents = this.generateWWEEvents();
-      if (wweEvents.length > 0) {
-        allEvents.push(...wweEvents);
-        console.log(`[FreeSports] 🎭 WWE Entertainment: ${wweEvents.length} upcoming events generated`);
-      } else {
-        console.log(`[FreeSports] 🎭 WWE Entertainment: 0 events returned from generator`);
-      }
-    } catch (error: any) {
-      console.error(`[FreeSports] WWE generation error:`, error.message, error.stack);
-    }
-
-    try {
-      const generatedF1 = this.generateF1Schedule();
-      if (generatedF1.length > 0) {
-        const existingF1 = allEvents.filter(e => e.sportId === 11);
-        const existingF1Ids = new Set(existingF1.map(e => String(e.id)));
-        // Match by race date (same day = same race, even if name differs slightly e.g. "China" vs "Chinese")
-        const existingF1Dates = new Set(existingF1.map(e => (e.startTime || '').slice(0, 10)));
-        const newF1 = generatedF1.filter(e =>
-          !existingF1Ids.has(String(e.id)) &&
-          !existingF1Dates.has((e.startTime || '').slice(0, 10))
-        );
-        allEvents.push(...newF1);
-        console.log(`[FreeSports] 🏎️ F1 Generated: ${newF1.length} upcoming races added (${existingF1.length} from API skipped)`);
-      }
-    } catch (error: any) {
-      console.error(`[FreeSports] F1 schedule generation error:`, error.message);
-    }
+    // MotoGP, Boxing, Tennis, WWE, F1 fake generators REMOVED — no fabricated matchups allowed
+    // These sports will only show data when real APIs provide it
 
     try {
       await mmaApiService.refreshCache();
@@ -522,21 +465,10 @@ export class FreeSportsService {
         allEvents.push(...realMMAEvents);
         console.log(`[FreeSports] 🥋 UFC/MMA Real API: ${realMMAEvents.length} upcoming fights from API`);
       } else {
-        const generatedUFC = this.generateUFCEvents();
-        if (generatedUFC.length > 0) {
-          allEvents.push(...generatedUFC);
-          console.log(`[FreeSports] 🥋 UFC Fallback: ${generatedUFC.length} generated fight cards (API returned 0)`);
-        }
+        console.log(`[FreeSports] 🥋 UFC/MMA: No real events from API — no fake fallback`);
       }
     } catch (error: any) {
       console.error(`[FreeSports] UFC/MMA fetch error:`, error.message);
-      try {
-        const generatedUFC = this.generateUFCEvents();
-        if (generatedUFC.length > 0) {
-          allEvents.push(...generatedUFC);
-          console.log(`[FreeSports] 🥋 UFC Fallback after error: ${generatedUFC.length} generated fight cards`);
-        }
-      } catch {}
     }
 
     try {
@@ -2689,6 +2621,14 @@ export class FreeSportsService {
       'basketball': 'basketball',
       'baseball': 'baseball',
       'ice-hockey': 'ice-hockey',
+      'tennis': 'tennis',
+      'boxing': 'boxing',
+      'motorsport': 'motorsport',
+      'darts': 'darts',
+      'snooker': 'snooker',
+      'table-tennis': 'table-tennis',
+      'water-polo': 'water-polo',
+      'badminton': 'badminton',
     };
     const key = sofaSportKey[sportSlug];
     if (!key) return [];
@@ -2773,17 +2713,34 @@ export class FreeSportsService {
   }
 
   private async fetchSofaScoreUpcoming(): Promise<SportEvent[]> {
-    const events: SportEvent[] = [];
+    const nicheSports: Array<{ slug: string; sportId: number; hasDraws: boolean }> = [
+      { slug: 'tennis', sportId: 3, hasDraws: false },
+      { slug: 'boxing', sportId: 8, hasDraws: false },
+      { slug: 'motorsport', sportId: 19, hasDraws: false },
+      { slug: 'darts', sportId: 21, hasDraws: false },
+      { slug: 'snooker', sportId: 22, hasDraws: false },
+      { slug: 'table-tennis', sportId: 23, hasDraws: false },
+      { slug: 'water-polo', sportId: 24, hasDraws: true },
+      { slug: 'badminton', sportId: 25, hasDraws: false },
+    ];
 
-    events.push(...this.generateDartsEvents());
-    events.push(...this.generateSnookerEvents());
-    events.push(...this.generateTableTennisEvents());
-    events.push(...this.generateWaterPoloEvents());
-    events.push(...this.generateBadmintonEvents());
-    events.push(...this.generateChessEvents());
-    events.push(...this.generateArmwrestlingEvents());
+    const allEvents: SportEvent[] = [];
+    for (const sport of nicheSports) {
+      try {
+        const events = await this.fetchSofaScoreScheduledSport(sport.slug, sport.sportId, sport.hasDraws);
+        if (events.length > 0) {
+          allEvents.push(...events);
+          console.log(`[FreeSports] 🎯 ${sport.slug}: ${events.length} real upcoming events from SofaScore`);
+        } else {
+          console.log(`[FreeSports] ${sport.slug}: No upcoming events found on SofaScore`);
+        }
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (err: any) {
+        console.warn(`[FreeSports] SofaScore ${sport.slug} upcoming failed: ${err.message}`);
+      }
+    }
 
-    return events;
+    return allEvents;
   }
 
   /**
@@ -3201,36 +3158,31 @@ export class FreeSportsService {
   private async fetchSofaScoreResults(): Promise<FreeSportsResult[]> {
     const results: FreeSportsResult[] = [];
 
-    // Sports that have real SofaScore coverage
-    const sofaScoreSports: Array<{ slug: string; sportKey: string; sportId: number; hasDraws: boolean }> = [
-      { slug: 'darts', sportKey: 'darts', sportId: 21, hasDraws: false },
-      { slug: 'snooker', sportKey: 'snooker', sportId: 22, hasDraws: false },
-      { slug: 'table-tennis', sportKey: 'table-tennis', sportId: 23, hasDraws: false },
-      { slug: 'waterpolo', sportKey: 'water-polo', sportId: 24, hasDraws: true },
-      { slug: 'badminton', sportKey: 'badminton', sportId: 25, hasDraws: false },
+    const sofaScoreSports: Array<{ slug: string; sportKey: string; sportId: number }> = [
+      { slug: 'tennis', sportKey: 'tennis', sportId: 3 },
+      { slug: 'boxing', sportKey: 'boxing', sportId: 8 },
+      { slug: 'darts', sportKey: 'darts', sportId: 21 },
+      { slug: 'snooker', sportKey: 'snooker', sportId: 22 },
+      { slug: 'table-tennis', sportKey: 'table-tennis', sportId: 23 },
+      { slug: 'waterpolo', sportKey: 'water-polo', sportId: 24 },
+      { slug: 'badminton', sportKey: 'badminton', sportId: 25 },
     ];
 
-    // Build a lookup of our generated events so we can match by name
-    const allNicheEvents = [
-      ...this.generateDartsEvents(),
-      ...this.generateSnookerEvents(),
-      ...this.generateTableTennisEvents(),
-      ...this.generateWaterPoloEvents(),
-      ...this.generateBadmintonEvents(),
-      ...this.generateChessEvents(),
-      ...this.generateArmwrestlingEvents(),
-    ];
+    const cachedEvents = cachedFreeSportsEvents || [];
+    const nicheEventIds = new Set(
+      cachedEvents
+        .filter(e => [3, 8, 19, 21, 22, 23, 24, 25].includes(e.sportId))
+        .map(e => String(e.id))
+    );
     const now = new Date();
 
     for (const sport of sofaScoreSports) {
       try {
-        // Fetch the most recent finished events from SofaScore (page 0 = most recent)
         const resp = await axios.get(
           `${SOFASCORE_BASE_URL}/sport/${sport.slug}/events/last/0`,
           { headers: SOFASCORE_HEADERS, timeout: 12000 }
         );
         const events: any[] = resp.data?.events || [];
-
         const FINISHED_STATUSES = new Set(['ended', 'finished', 'canceled', 'walkover', 'retired', 'final']);
 
         for (const ev of events) {
@@ -3246,39 +3198,41 @@ export class FreeSportsService {
           const winner: 'home' | 'away' | 'draw' =
             homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw';
 
-          // Match against our generated events by player/team name similarity
-          const matchingEvent = allNicheEvents.find(ge => {
-            if (!ge.startTime) return false;
-            // Only match events that should be finished (started > 2 hours ago)
-            const startedAt = new Date(ge.startTime);
-            if (now.getTime() - startedAt.getTime() < 2 * 60 * 60 * 1000) return false;
+          const sfId = ev?.id || `${homeTeamName}_${awayTeamName}`;
+          const possibleEventId = `${sport.slug}_sf_${sfId}`;
 
-            const geHome = ge.homeTeam.toLowerCase().trim();
-            const geAway = ge.awayTeam.toLowerCase().trim();
-            const sfHome = homeTeamName.toLowerCase().trim();
-            const sfAway = awayTeamName.toLowerCase().trim();
-
-            const homeMatch =
-              geHome === sfHome ||
-              sfHome.includes(geHome) ||
-              geHome.includes(sfHome) ||
-              geHome.split(' ')[0] === sfHome.split(' ')[0]; // match on first name (common for darts/snooker)
-            const awayMatch =
-              geAway === sfAway ||
-              sfAway.includes(geAway) ||
-              geAway.includes(sfAway) ||
-              geAway.split(' ')[0] === sfAway.split(' ')[0];
-
-            return homeMatch && awayMatch;
-          });
-
-          if (matchingEvent) {
-            const eventId = String(matchingEvent.id);
-            // Avoid duplicates
-            if (!results.some(r => r.eventId === eventId)) {
+          if (nicheEventIds.has(possibleEventId)) {
+            const cachedEvent = cachedEvents.find(e => String(e.id) === possibleEventId);
+            if (cachedEvent && !results.some(r => r.eventId === possibleEventId)) {
               console.log(`[FreeSports] ✅ SofaScore ${sport.slug} result: ${homeTeamName} ${homeScore}-${awayScore} ${awayTeamName} → ${winner}`);
               results.push({
-                eventId,
+                eventId: possibleEventId,
+                homeTeam: cachedEvent.homeTeam,
+                awayTeam: cachedEvent.awayTeam,
+                homeScore,
+                awayScore,
+                winner,
+                status: 'finished',
+              });
+            }
+          } else {
+            const matchingEvent = cachedEvents.find(ge => {
+              if (ge.sportId !== sport.sportId) return false;
+              if (!ge.startTime) return false;
+              const startedAt = new Date(ge.startTime);
+              if (now.getTime() - startedAt.getTime() < 2 * 60 * 60 * 1000) return false;
+              const geHome = ge.homeTeam.toLowerCase().trim();
+              const geAway = ge.awayTeam.toLowerCase().trim();
+              const sfHome = homeTeamName.toLowerCase().trim();
+              const sfAway = awayTeamName.toLowerCase().trim();
+              return (geHome === sfHome || sfHome.includes(geHome) || geHome.includes(sfHome)) &&
+                     (geAway === sfAway || sfAway.includes(geAway) || geAway.includes(sfAway));
+            });
+
+            if (matchingEvent && !results.some(r => r.eventId === String(matchingEvent.id))) {
+              console.log(`[FreeSports] ✅ SofaScore ${sport.slug} result (name match): ${homeTeamName} ${homeScore}-${awayScore} ${awayTeamName} → ${winner}`);
+              results.push({
+                eventId: String(matchingEvent.id),
                 homeTeam: matchingEvent.homeTeam,
                 awayTeam: matchingEvent.awayTeam,
                 homeScore,
@@ -3290,22 +3244,11 @@ export class FreeSportsService {
           }
         }
 
-        console.log(`[FreeSports] SofaScore ${sport.slug}: ${events.length} API events checked, ${results.filter(r => String(r.eventId).startsWith(sport.sportKey)).length} matched`);
+        console.log(`[FreeSports] SofaScore ${sport.slug}: ${events.length} API events checked`);
         await new Promise(resolve => setTimeout(resolve, 500));
       } catch (err: any) {
-        console.warn(`[FreeSports] SofaScore ${sport.slug} results unavailable: ${err.message} — bets remain pending (no random settlement)`);
+        console.warn(`[FreeSports] SofaScore ${sport.slug} results unavailable: ${err.message} — bets remain pending`);
       }
-    }
-
-    // Chess and Armwrestling: no real-time API available — bets remain pending
-    // Do NOT settle with random/seeded results
-    const chessPending = allNicheEvents.filter(e => String(e.id).startsWith('chess_') && e.startTime && now.getTime() - new Date(e.startTime).getTime() > 2 * 60 * 60 * 1000);
-    const armPending = allNicheEvents.filter(e => String(e.id).startsWith('armwrestling_') && e.startTime && now.getTime() - new Date(e.startTime).getTime() > 2 * 60 * 60 * 1000);
-    if (chessPending.length > 0) {
-      console.log(`[FreeSports] ♟️ Chess: ${chessPending.length} past events — awaiting real results (no API available)`);
-    }
-    if (armPending.length > 0) {
-      console.log(`[FreeSports] 💪 Armwrestling: ${armPending.length} past events — awaiting real results (no API available)`);
     }
 
     console.log(`[FreeSports] 🎯 SofaScore niche sports settlement: ${results.length} real results found`);

@@ -259,6 +259,7 @@ export class FreeSportsService {
   private isRunning: boolean = false;
   private morningSchedulerInterval: NodeJS.Timeout | null = null;
   private nightSchedulerInterval: NodeJS.Timeout | null = null;
+  private retryInterval: NodeJS.Timeout | null = null;
 
   /**
    * Start the daily schedulers
@@ -284,6 +285,7 @@ export class FreeSportsService {
       console.log(`[FreeSports] Initial fetch of upcoming matches (date: ${lastUpcomingFetchDate}, cache: ${cachedFreeSportsEvents.length} events)...`);
       this.fetchAllUpcomingMatches().catch(err => {
         console.error('[FreeSports] Initial fetch failed:', err.message);
+        this.startRetryLoop();
       });
     } else {
       console.log(`[FreeSports] Using cached data - ${cachedFreeSportsEvents.length} events (fetched: ${lastUpcomingFetchDate})`);
@@ -322,6 +324,28 @@ export class FreeSportsService {
     console.log('[FreeSports] ✅ Daily schedulers started');
   }
 
+  private startRetryLoop(): void {
+    if (this.retryInterval) return;
+    console.log('[FreeSports] ⏰ Starting retry loop (every 10 minutes until data loads)');
+    this.retryInterval = setInterval(async () => {
+      if (cachedFreeSportsEvents.length > 0) {
+        console.log(`[FreeSports] ✅ Retry loop: data loaded (${cachedFreeSportsEvents.length} events), stopping retries`);
+        if (this.retryInterval) { clearInterval(this.retryInterval); this.retryInterval = null; }
+        return;
+      }
+      console.log('[FreeSports] 🔄 Retry loop: attempting to fetch free sports data...');
+      try {
+        await this.fetchAllUpcomingMatches();
+        if (cachedFreeSportsEvents.length > 0) {
+          console.log(`[FreeSports] ✅ Retry succeeded: ${cachedFreeSportsEvents.length} events loaded`);
+          if (this.retryInterval) { clearInterval(this.retryInterval); this.retryInterval = null; }
+        }
+      } catch (err: any) {
+        console.error('[FreeSports] Retry failed:', err.message);
+      }
+    }, 10 * 60 * 1000);
+  }
+
   /**
    * Stop the schedulers
    */
@@ -333,6 +357,10 @@ export class FreeSportsService {
     if (this.nightSchedulerInterval) {
       clearInterval(this.nightSchedulerInterval);
       this.nightSchedulerInterval = null;
+    }
+    if (this.retryInterval) {
+      clearInterval(this.retryInterval);
+      this.retryInterval = null;
     }
     this.isRunning = false;
     console.log('[FreeSports] Schedulers stopped');

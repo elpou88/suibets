@@ -1024,6 +1024,71 @@ class SettlementWorkerService {
     }
   }
 
+  private async fetchSofaScoreResults(neededSports: string[]): Promise<FinishedMatch[]> {
+    const sofaSportMap: Record<string, string> = {
+      'basketball': 'basketball',
+      'ice-hockey': 'ice-hockey',
+      'baseball': 'baseball',
+      'handball': 'handball',
+      'volleyball': 'volleyball',
+      'rugby': 'rugby',
+      'american-football': 'american-football',
+    };
+
+    const results: FinishedMatch[] = [];
+    const today = new Date();
+    const datesToCheck: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      datesToCheck.push(d.toISOString().split('T')[0]);
+    }
+
+    for (const sportSlug of neededSports) {
+      const sfSport = sofaSportMap[sportSlug];
+      if (!sfSport) continue;
+
+      for (const dateStr of datesToCheck) {
+        try {
+          const axios = await import('axios');
+          const response = await axios.default.get(`https://api.sofascore.com/api/v1/sport/${sfSport}/scheduled-events/${dateStr}`, {
+            headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000
+          });
+
+          const events = response.data?.events || [];
+          for (const ev of events) {
+            const statusType = ev.status?.type || '';
+            if (statusType !== 'finished') continue;
+
+            const homeTeam = ev.homeTeam?.name || '';
+            const awayTeam = ev.awayTeam?.name || '';
+            const homeScore = ev.homeScore?.current ?? ev.homeScore?.display ?? 0;
+            const awayScore = ev.awayScore?.current ?? ev.awayScore?.display ?? 0;
+            const sfId = ev.id;
+
+            const winner: 'home' | 'away' | 'draw' =
+              homeScore > awayScore ? 'home' :
+              awayScore > homeScore ? 'away' : 'draw';
+
+            const eventId = `${sportSlug}_sf_${sfId}`;
+            results.push({ eventId, homeTeam, awayTeam, homeScore, awayScore, winner, status: 'finished' });
+          }
+        } catch (error: any) {
+          if (error.response?.status !== 404) {
+            console.warn(`⚠️ SofaScore results for ${sfSport} ${dateStr}: ${error.message}`);
+          }
+        }
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+
+    if (results.length > 0) {
+      console.log(`📊 SofaScore: fetched ${results.length} finished results for ${neededSports.join(', ')}`);
+    }
+    return results;
+  }
+
   private async settleParlaySingleBet(bet: UnsettledBet, match: FinishedMatch, isWinner: boolean) {
     // DUPLICATE SETTLEMENT PREVENTION: Skip if already settled this session
     if (this.settledBetIds.has(bet.id)) {
@@ -1220,9 +1285,27 @@ class SettlementWorkerService {
       let neededSports = this.detectNeededFreeSports(pendingBets);
       if (neededSports.length > 0) {
         try {
-          addUnique(await this.fetchFreeSportsResults(neededSports));
+          const apiResults = await this.fetchFreeSportsResults(neededSports);
+          addUnique(apiResults);
+          
+          const sportsWithNoApiResults = neededSports.filter(s => 
+            !apiResults.some(r => r.eventId.startsWith(s + '_'))
+          );
+          if (sportsWithNoApiResults.length > 0) {
+            console.log(`📊 SettlementWorker: API returned no results for ${sportsWithNoApiResults.join(', ')}, trying SofaScore fallback...`);
+            try {
+              addUnique(await this.fetchSofaScoreResults(sportsWithNoApiResults));
+            } catch (sfErr: any) {
+              console.warn('⚠️ SofaScore results fallback failed:', sfErr.message);
+            }
+          }
         } catch (error) {
-          console.error('⚠️ Free sports results fetch failed:', error);
+          console.error('⚠️ Free sports results fetch failed, trying SofaScore fallback:', error);
+          try {
+            addUnique(await this.fetchSofaScoreResults(neededSports));
+          } catch (sfErr: any) {
+            console.warn('⚠️ SofaScore results fallback also failed:', sfErr.message);
+          }
         }
       }
 

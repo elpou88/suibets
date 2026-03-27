@@ -480,9 +480,13 @@ class SettlementWorkerService {
           
           let directMatch: FinishedMatch | null = null;
           
-          if (extId.startsWith('basketball_api_') || extId.startsWith('ice-hockey_api_') || extId.startsWith('baseball_api_') ||
-              extId.startsWith('handball_api_') || extId.startsWith('volleyball_api_') || extId.startsWith('rugby_api_')) {
+          const freeSportsPrefixes = ['basketball', 'ice-hockey', 'baseball', 'handball', 'volleyball', 'rugby'];
+          const isFreeSportApi = freeSportsPrefixes.some(p => extId.startsWith(`${p}_api_`));
+          const isFreeSportSf = freeSportsPrefixes.some(p => extId.startsWith(`${p}_sf_`));
+          if (isFreeSportApi) {
             directMatch = await this.fetchFreeSportsGameById(extId);
+          } else if (isFreeSportSf && bet.homeTeam && bet.awayTeam) {
+            directMatch = await this.fetchFreeSportsGameByTeams(extId, bet.homeTeam, bet.awayTeam);
           } else if (/^\d+$/.test(extId)) {
             directMatch = await this.fetchFootballFixtureById(extId);
           }
@@ -946,6 +950,80 @@ class SettlementWorkerService {
     }
   }
 
+  private async fetchFreeSportsGameByTeams(extId: string, homeTeam: string, awayTeam: string): Promise<FinishedMatch | null> {
+    const sportMap: Record<string, { endpoint: string; apiHost: string }> = {
+      'basketball': { endpoint: 'https://v1.basketball.api-sports.io/games', apiHost: 'v1.basketball.api-sports.io' },
+      'ice-hockey': { endpoint: 'https://v1.hockey.api-sports.io/games', apiHost: 'v1.hockey.api-sports.io' },
+      'baseball': { endpoint: 'https://v1.baseball.api-sports.io/games', apiHost: 'v1.baseball.api-sports.io' },
+      'handball': { endpoint: 'https://v1.handball.api-sports.io/games', apiHost: 'v1.handball.api-sports.io' },
+      'volleyball': { endpoint: 'https://v1.volleyball.api-sports.io/games', apiHost: 'v1.volleyball.api-sports.io' },
+      'rugby': { endpoint: 'https://v1.rugby.api-sports.io/games', apiHost: 'v1.rugby.api-sports.io' },
+    };
+
+    const sportSlug = extId.split('_sf_')[0];
+    const config = sportMap[sportSlug];
+    if (!config) return null;
+
+    const apiKey = process.env.API_SPORTS_KEY || process.env.SPORTSDATA_API_KEY || process.env.APISPORTS_KEY || '';
+    if (!apiKey) return null;
+
+    try {
+      const today = new Date();
+      const dates = [];
+      for (let i = 0; i < 3; i++) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        dates.push(d.toISOString().split('T')[0]);
+      }
+
+      const normalize = (name: string) => name.toLowerCase().trim()
+        .replace(/\b(fc|sc|cf|afc|united|utd|city|town|athletic|ath|sporting|sp|de)\b/gi, ' ')
+        .replace(/\s+/g, ' ').trim();
+
+      const betHome = normalize(homeTeam);
+      const betAway = normalize(awayTeam);
+
+      for (const dateStr of dates) {
+        const axios = await import('axios');
+        const response = await axios.default.get(config.endpoint, {
+          params: { date: dateStr, timezone: 'UTC' },
+          headers: { 'x-rapidapi-key': apiKey, 'x-rapidapi-host': config.apiHost },
+          timeout: 10000
+        });
+
+        const games = response.data?.response || [];
+        for (const game of games) {
+          const statusShort = (game.status?.short || '').toUpperCase();
+          if (!['FT', 'AOT', 'AP', 'AET'].includes(statusShort)) continue;
+
+          const gHome = normalize(game.teams?.home?.name || '');
+          const gAway = normalize(game.teams?.away?.name || '');
+
+          const match = (betHome.length >= 4 && betAway.length >= 4) && (
+            (gHome.includes(betHome) || betHome.includes(gHome)) &&
+            (gAway.includes(betAway) || betAway.includes(gAway))
+          ) || (
+            (gAway.includes(betHome) || betHome.includes(gAway)) &&
+            (gHome.includes(betAway) || betAway.includes(gHome))
+          );
+
+          if (match) {
+            const homeScore = game.scores?.home?.total ?? game.scores?.home?.points ?? 0;
+            const awayScore = game.scores?.away?.total ?? game.scores?.away?.points ?? 0;
+            const winner: 'home' | 'away' | 'draw' =
+              homeScore > awayScore ? 'home' : awayScore > homeScore ? 'away' : 'draw';
+            console.log(`✅ SF team lookup: ${extId} → ${game.teams?.home?.name} ${homeScore}-${awayScore} ${game.teams?.away?.name}`);
+            return { eventId: extId, homeTeam: game.teams?.home?.name || homeTeam, awayTeam: game.teams?.away?.name || awayTeam, homeScore, awayScore, winner, status: 'finished' };
+          }
+        }
+      }
+      return null;
+    } catch (error: any) {
+      console.error(`❌ SF team lookup failed for ${extId}:`, error.message);
+      return null;
+    }
+  }
+
   private async settleParlaySingleBet(bet: UnsettledBet, match: FinishedMatch, isWinner: boolean) {
     // DUPLICATE SETTLEMENT PREVENTION: Skip if already settled this session
     if (this.settledBetIds.has(bet.id)) {
@@ -1318,9 +1396,11 @@ class SettlementWorkerService {
               }
             }
 
-            const eventId = `${effectiveSlug}_${game.id}`;
+            const eventId = `${effectiveSlug}_api_${game.id}`;
+            const legacyEventId = `${effectiveSlug}_${game.id}`;
             if (seenIds.has(eventId)) continue;
             seenIds.add(eventId);
+            seenIds.add(legacyEventId);
 
             let homeTeam = '';
             let awayTeam = '';

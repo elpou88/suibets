@@ -62,6 +62,7 @@ import AuthCallback from "@/pages/auth-callback";
 const TradingPage = lazy(() => import("@/pages/trade"));
 import AIBettingPage from "@/pages/ai-betting";
 import HotPotatoPage from "@/pages/hot-potato";
+import WorldCupPage from "@/pages/world-cup";
 
 // Informational Pages
 import PrivacyPolicy from "@/pages/privacy";
@@ -222,6 +223,8 @@ function App() {
                           <Route path="/sports-live" component={SportsLive} />
                           <Route path="/sports-live/:sport" component={SportPage} />
                           <Route path="/parlay" component={ParlayPageNew} />
+                          <Route path="/world-cup" component={WorldCupPage} />
+                          <Route path="/futures" component={WorldCupPage} />
                           
                           {/* Legacy redirects to main pages */}
                           <Route path="/goto-sports" component={CleanHome} />

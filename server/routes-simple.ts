@@ -205,7 +205,119 @@ async function checkEventBetLimitDB(walletAddress: string, eventId: string): Pro
 const MAX_PAYOUT_SUI = 50;
 const MAX_PAYOUT_SBETS = 8_000_000;
 const MAX_ODDS_CAP = 7.0;
+const MAX_ODDS_CAP_FUTURES = 200.0;
 const ODDS_TOLERANCE = 0.15; // 15% tolerance for odds deviation
+
+const WORLD_CUP_2026_FUTURES = {
+  id: 'wc2026_winner',
+  name: 'FIFA World Cup 2026',
+  type: 'outright_winner',
+  description: 'Who will win the 2026 FIFA World Cup?',
+  closingDate: '2026-06-11T00:00:00Z',
+  settlementDate: '2026-07-19T23:59:59Z',
+  status: 'open' as const,
+  markets: [
+    {
+      id: 'wc2026_outright',
+      name: 'Outright Winner',
+      selections: [
+        { id: 'wc2026_spain', name: 'Spain', odds: 5.50, flag: 'ES' },
+        { id: 'wc2026_england', name: 'England', odds: 6.50, flag: 'GB-ENG' },
+        { id: 'wc2026_france', name: 'France', odds: 9.00, flag: 'FR' },
+        { id: 'wc2026_brazil', name: 'Brazil', odds: 9.00, flag: 'BR' },
+        { id: 'wc2026_argentina', name: 'Argentina', odds: 9.00, flag: 'AR' },
+        { id: 'wc2026_portugal', name: 'Portugal', odds: 12.00, flag: 'PT' },
+        { id: 'wc2026_germany', name: 'Germany', odds: 13.00, flag: 'DE' },
+        { id: 'wc2026_netherlands', name: 'Netherlands', odds: 21.00, flag: 'NL' },
+        { id: 'wc2026_norway', name: 'Norway', odds: 26.00, flag: 'NO' },
+        { id: 'wc2026_italy', name: 'Italy', odds: 34.00, flag: 'IT' },
+        { id: 'wc2026_belgium', name: 'Belgium', odds: 34.00, flag: 'BE' },
+        { id: 'wc2026_colombia', name: 'Colombia', odds: 51.00, flag: 'CO' },
+        { id: 'wc2026_morocco', name: 'Morocco', odds: 51.00, flag: 'MA' },
+        { id: 'wc2026_usa', name: 'United States', odds: 67.00, flag: 'US' },
+        { id: 'wc2026_mexico', name: 'Mexico', odds: 81.00, flag: 'MX' },
+        { id: 'wc2026_uruguay', name: 'Uruguay', odds: 81.00, flag: 'UY' },
+        { id: 'wc2026_ecuador', name: 'Ecuador', odds: 101.00, flag: 'EC' },
+        { id: 'wc2026_croatia', name: 'Croatia', odds: 101.00, flag: 'HR' },
+        { id: 'wc2026_cameroon', name: 'Cameroon', odds: 101.00, flag: 'CM' },
+        { id: 'wc2026_senegal', name: 'Senegal', odds: 101.00, flag: 'SN' },
+        { id: 'wc2026_switzerland', name: 'Switzerland', odds: 101.00, flag: 'CH' },
+        { id: 'wc2026_denmark', name: 'Denmark', odds: 101.00, flag: 'DK' },
+        { id: 'wc2026_austria', name: 'Austria', odds: 151.00, flag: 'AT' },
+        { id: 'wc2026_paraguay', name: 'Paraguay', odds: 151.00, flag: 'PY' },
+        { id: 'wc2026_japan', name: 'Japan', odds: 151.00, flag: 'JP' },
+        { id: 'wc2026_south_korea', name: 'South Korea', odds: 151.00, flag: 'KR' },
+        { id: 'wc2026_australia', name: 'Australia', odds: 201.00, flag: 'AU' },
+        { id: 'wc2026_nigeria', name: 'Nigeria', odds: 201.00, flag: 'NG' },
+        { id: 'wc2026_serbia', name: 'Serbia', odds: 201.00, flag: 'RS' },
+        { id: 'wc2026_turkey', name: 'Turkey', odds: 201.00, flag: 'TR' },
+        { id: 'wc2026_canada', name: 'Canada', odds: 251.00, flag: 'CA' },
+        { id: 'wc2026_poland', name: 'Poland', odds: 251.00, flag: 'PL' },
+      ]
+    },
+    {
+      id: 'wc2026_reach_final',
+      name: 'To Reach The Final',
+      selections: [
+        { id: 'wc2026_final_spain', name: 'Spain', odds: 3.00, flag: 'ES' },
+        { id: 'wc2026_final_england', name: 'England', odds: 3.50, flag: 'GB-ENG' },
+        { id: 'wc2026_final_france', name: 'France', odds: 4.50, flag: 'FR' },
+        { id: 'wc2026_final_brazil', name: 'Brazil', odds: 4.50, flag: 'BR' },
+        { id: 'wc2026_final_argentina', name: 'Argentina', odds: 4.50, flag: 'AR' },
+        { id: 'wc2026_final_portugal', name: 'Portugal', odds: 6.00, flag: 'PT' },
+        { id: 'wc2026_final_germany', name: 'Germany', odds: 6.50, flag: 'DE' },
+        { id: 'wc2026_final_netherlands', name: 'Netherlands', odds: 10.00, flag: 'NL' },
+        { id: 'wc2026_final_italy', name: 'Italy', odds: 15.00, flag: 'IT' },
+        { id: 'wc2026_final_belgium', name: 'Belgium', odds: 15.00, flag: 'BE' },
+        { id: 'wc2026_final_usa', name: 'United States', odds: 26.00, flag: 'US' },
+        { id: 'wc2026_final_colombia', name: 'Colombia', odds: 21.00, flag: 'CO' },
+        { id: 'wc2026_final_croatia', name: 'Croatia', odds: 34.00, flag: 'HR' },
+        { id: 'wc2026_final_uruguay', name: 'Uruguay', odds: 34.00, flag: 'UY' },
+        { id: 'wc2026_final_mexico', name: 'Mexico', odds: 34.00, flag: 'MX' },
+      ]
+    },
+    {
+      id: 'wc2026_top_scorer_team',
+      name: 'Top Scoring Team',
+      selections: [
+        { id: 'wc2026_scorer_spain', name: 'Spain', odds: 6.00, flag: 'ES' },
+        { id: 'wc2026_scorer_france', name: 'France', odds: 7.00, flag: 'FR' },
+        { id: 'wc2026_scorer_england', name: 'England', odds: 7.00, flag: 'GB-ENG' },
+        { id: 'wc2026_scorer_brazil', name: 'Brazil', odds: 8.00, flag: 'BR' },
+        { id: 'wc2026_scorer_germany', name: 'Germany', odds: 8.00, flag: 'DE' },
+        { id: 'wc2026_scorer_argentina', name: 'Argentina', odds: 9.00, flag: 'AR' },
+        { id: 'wc2026_scorer_portugal', name: 'Portugal', odds: 11.00, flag: 'PT' },
+        { id: 'wc2026_scorer_netherlands', name: 'Netherlands', odds: 17.00, flag: 'NL' },
+      ]
+    },
+    {
+      id: 'wc2026_continent',
+      name: 'Winning Continent',
+      selections: [
+        { id: 'wc2026_cont_europe', name: 'Europe', odds: 1.40, flag: 'EU' },
+        { id: 'wc2026_cont_south_america', name: 'South America', odds: 3.50, flag: 'SA' },
+        { id: 'wc2026_cont_africa', name: 'Africa', odds: 21.00, flag: 'AF' },
+        { id: 'wc2026_cont_asia', name: 'Asia', odds: 51.00, flag: 'AS' },
+        { id: 'wc2026_cont_north_america', name: 'North/Central America', odds: 67.00, flag: 'NA' },
+      ]
+    }
+  ]
+};
+
+function isFuturesEvent(eventId: string): boolean {
+  return eventId.startsWith('wc2026_');
+}
+
+function lookupFuturesOdds(eventId: string, selectionId: string): number | null {
+  for (const market of WORLD_CUP_2026_FUTURES.markets) {
+    for (const sel of market.selections) {
+      if (sel.id === selectionId || sel.id === eventId) {
+        return sel.odds;
+      }
+    }
+  }
+  return null;
+}
 
 function extractParlayLegIds(parlayEventId: string): string[] {
   const parts = parlayEventId.split('_');
@@ -3458,19 +3570,30 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         }
       }
 
+      if (!eventFound && isFuturesEvent(eventIdStr)) {
+        const futuresOdds = lookupFuturesOdds(eventIdStr, prediction);
+        if (futuresOdds !== null) {
+          eventFound = true;
+          const closing = new Date(WORLD_CUP_2026_FUTURES.closingDate);
+          if (new Date() >= closing) {
+            return res.status(400).json({ success: false, message: "Futures market is closed" });
+          }
+          console.log(`[Oracle] ✅ Futures event validated: ${eventIdStr}, prediction: ${prediction}, odds: ${futuresOdds}`);
+        }
+      }
+
       if (!eventFound) {
         console.log(`[Oracle] ❌ Refused to sign unknown event: ${eventIdStr}`);
         return res.status(400).json({ success: false, message: "Event not found in system" });
       }
 
-      // ANTI-EXPLOIT: Verify odds before signing — oracle must not sign inflated odds (FAIL-CLOSED)
-      // Parlay bets have combined odds that won't match individual events — skip per-event odds check
-      // Parlay legs are individually validated in /api/parlays endpoint
       const isParlay = eventIdStr.startsWith('parlay_');
+      const isFutures = isFuturesEvent(eventIdStr);
       const submittedOddsDecimal = oddsBps / 100;
-      if (!isParlay && submittedOddsDecimal > MAX_ODDS_CAP) {
-        console.log(`❌ ORACLE SIGN BLOCKED (max odds cap): oddsBps=${oddsBps} (${submittedOddsDecimal}x) > ${MAX_ODDS_CAP}x, event=${eventIdStr}`);
-        return res.status(400).json({ success: false, message: `Maximum odds allowed is ${MAX_ODDS_CAP}x. Please choose a different selection.` });
+      const effectiveOddsCap = isFutures ? MAX_ODDS_CAP_FUTURES : MAX_ODDS_CAP;
+      if (!isParlay && submittedOddsDecimal > effectiveOddsCap) {
+        console.log(`❌ ORACLE SIGN BLOCKED (max odds cap): oddsBps=${oddsBps} (${submittedOddsDecimal}x) > ${effectiveOddsCap}x, event=${eventIdStr}`);
+        return res.status(400).json({ success: false, message: `Maximum odds allowed is ${effectiveOddsCap}x. Please choose a different selection.` });
       }
       if (!isParlay) {
         if (isLiveEvent && liveScore) {
@@ -3620,6 +3743,36 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       res.json(sports);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch sports" });
+    }
+  });
+
+  app.get("/api/futures", async (_req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const closing = new Date(WORLD_CUP_2026_FUTURES.closingDate);
+      const isOpen = now < closing;
+      res.json({
+        ...WORLD_CUP_2026_FUTURES,
+        status: isOpen ? 'open' : 'closed',
+        timeUntilClose: isOpen ? closing.getTime() - now.getTime() : 0
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to fetch futures' });
+    }
+  });
+
+  app.get("/api/futures/world-cup-2026", async (_req: Request, res: Response) => {
+    try {
+      const now = new Date();
+      const closing = new Date(WORLD_CUP_2026_FUTURES.closingDate);
+      const isOpen = now < closing;
+      res.json({
+        ...WORLD_CUP_2026_FUTURES,
+        status: isOpen ? 'open' : 'closed',
+        timeUntilClose: isOpen ? closing.getTime() - now.getTime() : 0
+      });
+    } catch (error: any) {
+      res.status(500).json({ message: 'Failed to fetch World Cup futures' });
     }
   });
 
@@ -4431,10 +4584,11 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
 
-      if (odds > MAX_ODDS_CAP) {
-        console.log(`❌ ODDS CAP: submitted=${odds} > max ${MAX_ODDS_CAP}, event=${data.eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
+      const eventOddsCap = isFuturesEvent(String(data.eventId)) ? MAX_ODDS_CAP_FUTURES : MAX_ODDS_CAP;
+      if (odds > eventOddsCap) {
+        console.log(`❌ ODDS CAP: submitted=${odds} > max ${eventOddsCap}, event=${data.eventId}, wallet=${resolvedWallet.slice(0,12)}...`);
         return res.status(400).json({
-          message: `Maximum odds allowed is ${MAX_ODDS_CAP}x. Please choose a different selection.`,
+          message: `Maximum odds allowed is ${eventOddsCap}x. Please choose a different selection.`,
           code: "MAX_ODDS_EXCEEDED"
         });
       }

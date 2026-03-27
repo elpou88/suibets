@@ -435,6 +435,10 @@ export default function CleanHome() {
               <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
             </Link>
             <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">{t('myBets')}</Link>
+            <Link href="/world-cup" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-world-cup">
+              🏆 World Cup
+              <span className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-[9px] font-bold px-1 py-0.5 rounded animate-pulse">NEW</span>
+            </Link>
             <Link href="/revenue" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-revenue">{t('revenue')}</Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium flex items-center gap-1 outline-none" data-testid="nav-more">
@@ -646,6 +650,9 @@ export default function CleanHome() {
               <Link href="/wallet-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-dashboard">{t('dashboard')}</Link>
               <Link href="/promotions" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-promotions">{t('promotions')}</Link>
               <Link href="/trading" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-trade">{t('trade')}</Link>
+              <Link href="/world-cup" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-world-cup">
+                🏆 World Cup 2026 <span className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
+              </Link>
               <Link href="/hot-potato" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-hot-potato">
                 Hot Potato Bets <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
               </Link>

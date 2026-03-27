@@ -415,11 +415,7 @@ export class FreeSportsService {
         }
 
         if (sportEvents.length === 0 && ['basketball', 'baseball', 'ice-hockey'].includes(sportSlug)) {
-          const generated = this.generateBuiltInSportEvents(sportSlug, config.sportId);
-          if (generated.length > 0) {
-            sportEvents.push(...generated);
-            console.log(`[FreeSports] ${config.name}: ${generated.length} events from built-in schedule`);
-          }
+          console.log(`[FreeSports] ${config.name}: No real events found — skipping (no mock data)`);
         }
 
         if (sportSlug === 'mma') {

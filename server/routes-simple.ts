@@ -110,11 +110,12 @@ let RUNTIME_MAX_STAKE_SBETS = 1_000_000; // 1,000,000 SBETS max per bet
 const RUNTIME_MAX_STAKE_SUI = 100;    // 100 SUI max (fixed)
 
 // ── Futures-specific liability protection ────────────────────────────────────
-// Futures odds go up to 251x — need strict caps to prevent treasury blowout
-const FUTURES_MAX_STAKE_SBETS = 50_000;   // 50K SBETS max per futures bet
-const FUTURES_MAX_STAKE_SUI = 5;          // 5 SUI max per futures bet
-const FUTURES_MAX_PAYOUT_SBETS = 5_000_000;  // 5M SBETS max payout per futures bet
-const FUTURES_MAX_PAYOUT_SUI = 500;       // 500 SUI max payout per futures bet
+// World Cup futures: 10K SBETS max stake — users can bet any odds freely
+// Worst case: 10,000 × 251 = 2.51M SBETS payout — manageable for treasury
+const FUTURES_MAX_STAKE_SBETS = 10_000;   // 10K SBETS max per futures bet
+const FUTURES_MAX_STAKE_SUI = 1;          // 1 SUI max per futures bet
+const FUTURES_MAX_PAYOUT_SBETS = 5_000_000;  // 5M SBETS max payout per futures bet (safety net)
+const FUTURES_MAX_PAYOUT_SUI = 500;       // 500 SUI max payout per futures bet (safety net)
 
 async function checkBetRateLimitDB(walletAddress: string): Promise<{ allowed: boolean; remaining?: number; message?: string }> {
   const key = walletAddress.toLowerCase();

@@ -924,9 +924,13 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         try {
           if (!tx) continue;
 
+          const isBetTxByEvent = (tx.events || []).some((e: any) => 
+            e.type?.includes('::betting::BetPlaced') || e.type?.includes('::betting::bet_placed')
+          );
+
           const txData = tx.transaction?.data?.transaction;
           const calls = (txData?.transactions || []).filter((c: any) => c.MoveCall);
-          const isBetTx = calls.some((c: any) => {
+          const isBetTxByCall = calls.some((c: any) => {
             const pkg = c.MoveCall?.package || '';
             const fn = c.MoveCall?.function || '';
             const mod = c.MoveCall?.module || '';
@@ -935,6 +939,8 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
               pkg.startsWith('0x4d83eab')
             );
           });
+
+          const isBetTx = isBetTxByEvent || isBetTxByCall;
           if (!isBetTx) continue;
 
           if (tx.effects?.status?.status !== 'success') continue;

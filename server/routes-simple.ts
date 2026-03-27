@@ -3594,7 +3594,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         const freeSportsEvents = freeSportsService.getUpcomingEvents();
         const now = Date.now();
         const filtered = freeSportsEvents
-          .filter(e => e.sportId === reqSportId)
+          .filter(e => Number(e.sportId) === reqSportId)
           .filter(e => {
             if (!e.startTime) return false;
             const startMs = new Date(e.startTime).getTime();
@@ -3661,7 +3661,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           
           // Filter by sport if requested
           if (reqSportId && allLiveEvents.length > 0) {
-            const filtered = allLiveEvents.filter(e => e.sportId === reqSportId);
+            const filtered = allLiveEvents.filter(e => Number(e.sportId) === reqSportId);
             console.log(`Filtered to ${filtered.length} events for sport ID ${reqSportId}`);
             return res.json(filtered.length > 0 ? filtered : []);
           }
@@ -3748,7 +3748,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
           
           // Filter by sport if requested
           if (reqSportId && allUpcomingEvents.length > 0) {
-            const filtered = allUpcomingEvents.filter(e => e.sportId === reqSportId);
+            const filtered = allUpcomingEvents.filter(e => Number(e.sportId) === reqSportId);
             console.log(`Filtered to ${filtered.length} events for sport ID ${reqSportId}`);
             return res.json(filtered);
           }
@@ -3850,7 +3850,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         
         // Filter by sport if requested
         if (reqSportId && allUpcomingEvents.length > 0) {
-          const filtered = allUpcomingEvents.filter(e => e.sportId === reqSportId);
+          const filtered = allUpcomingEvents.filter(e => Number(e.sportId) === reqSportId);
           console.log(`Filtered to ${filtered.length} events for sport ID ${reqSportId}`);
           return res.json(filtered.length > 0 ? filtered : []);
         }
@@ -4064,7 +4064,7 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
       // Filter by sport if specified
       let filteredEvents = allLiveEvents;
       if (sportId) {
-        filteredEvents = allLiveEvents.filter(e => e.sportId === sportId);
+        filteredEvents = allLiveEvents.filter(e => Number(e.sportId) === Number(sportId));
       }
       
       // Sort by startTime (earliest first, events without startTime go to end)

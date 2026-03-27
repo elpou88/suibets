@@ -1203,16 +1203,30 @@ class SettlementWorkerService {
     const normHomeTeam = normName(homeTeam);
     const normAwayTeam = normName(awayTeam);
     
-    // Match Winner
-    if (pred.includes(homeTeam) || homeTeam.includes(pred) ||
+    // Match Winner — check both sides first to resolve ambiguity (e.g., U21 vs U21)
+    const matchesHomeLeg = pred.includes(homeTeam) || homeTeam.includes(pred) ||
         normPred === normHomeTeam || normHomeTeam.includes(normPred) || normPred.includes(normHomeTeam) ||
-        pred === 'home' || pred === '1') {
+        pred === 'home' || pred === '1';
+    const matchesAwayLeg = pred.includes(awayTeam) || awayTeam.includes(pred) ||
+        normPred === normAwayTeam || normAwayTeam.includes(normPred) || normPred.includes(normAwayTeam) ||
+        pred === 'away' || pred === '2';
+
+    if (matchesHomeLeg && !matchesAwayLeg) {
       return match.winner === 'home';
     }
-    if (pred.includes(awayTeam) || awayTeam.includes(pred) ||
-        normPred === normAwayTeam || normAwayTeam.includes(normPred) || normPred.includes(normAwayTeam) ||
-        pred === 'away' || pred === '2') {
+    if (matchesAwayLeg && !matchesHomeLeg) {
       return match.winner === 'away';
+    }
+    if (matchesHomeLeg && matchesAwayLeg) {
+      const predWords = pred.split(/\s+/);
+      const homeWords = homeTeam.split(/\s+/);
+      const awayWords = awayTeam.split(/\s+/);
+      const homeOverlap = predWords.filter(w => homeWords.includes(w)).length;
+      const awayOverlap = predWords.filter(w => awayWords.includes(w)).length;
+      if (homeOverlap > awayOverlap) return match.winner === 'home';
+      if (awayOverlap > homeOverlap) return match.winner === 'away';
+      console.warn(`⚠️ AMBIGUOUS PARLAY LEG: prediction="${pred}" matches both "${homeTeam}" and "${awayTeam}" equally`);
+      return false;
     }
     if (pred === 'draw' || pred === 'x' || pred === 'tie') {
       return match.winner === 'draw';
@@ -2315,22 +2329,40 @@ class SettlementWorkerService {
     const homeLastName = extractLastName(homeTeam);
     const awayLastName = extractLastName(awayTeam);
 
-    const matchesHome = prediction.includes(homeTeam) || homeTeam.includes(prediction) ||
+    const directMatchesHome = prediction.includes(homeTeam) || homeTeam.includes(prediction) ||
         normPred === normHome || normHome.includes(normPred) || normPred.includes(normHome) ||
-        prediction === 'home' || prediction === '1' ||
-        (predLastName.length >= 3 && predLastName === homeLastName);
+        prediction === 'home' || prediction === '1';
 
-    const matchesAway = prediction.includes(awayTeam) || awayTeam.includes(prediction) ||
+    const directMatchesAway = prediction.includes(awayTeam) || awayTeam.includes(prediction) ||
         normPred === normAway || normAway.includes(normPred) || normPred.includes(normAway) ||
-        prediction === 'away' || prediction === '2' ||
-        (predLastName.length >= 3 && predLastName === awayLastName);
+        prediction === 'away' || prediction === '2';
 
-    if (matchesHome) {
+    const lastNameMatchesHome = !directMatchesHome && predLastName.length >= 3 && predLastName === homeLastName;
+    const lastNameMatchesAway = !directMatchesAway && predLastName.length >= 3 && predLastName === awayLastName;
+
+    const matchesHome = directMatchesHome || (lastNameMatchesHome && !lastNameMatchesAway);
+    const matchesAway = directMatchesAway || (lastNameMatchesAway && !lastNameMatchesHome);
+
+    if (matchesHome && !matchesAway) {
       return match.winner === 'home';
     }
     
-    if (matchesAway) {
+    if (matchesAway && !matchesHome) {
       return match.winner === 'away';
+    }
+
+    if (matchesHome && matchesAway) {
+      if (directMatchesHome && !directMatchesAway) return match.winner === 'home';
+      if (directMatchesAway && !directMatchesHome) return match.winner === 'away';
+      const predWords = prediction.split(/\s+/);
+      const homeWords = homeTeam.split(/\s+/);
+      const awayWords = awayTeam.split(/\s+/);
+      const homeOverlap = predWords.filter(w => homeWords.includes(w)).length;
+      const awayOverlap = predWords.filter(w => awayWords.includes(w)).length;
+      if (homeOverlap > awayOverlap) return match.winner === 'home';
+      if (awayOverlap > homeOverlap) return match.winner === 'away';
+      console.warn(`⚠️ AMBIGUOUS MATCH: prediction="${prediction}" matches both "${homeTeam}" and "${awayTeam}" equally — defaulting to false`);
+      return false;
     }
     
     if (prediction === 'draw' || prediction === 'x' || prediction === 'tie') {

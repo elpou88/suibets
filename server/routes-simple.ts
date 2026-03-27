@@ -109,6 +109,13 @@ async function checkDuplicateBetDB(walletAddress: string, eventId: string, predi
 let RUNTIME_MAX_STAKE_SBETS = 1_000_000; // 1,000,000 SBETS max per bet
 const RUNTIME_MAX_STAKE_SUI = 100;    // 100 SUI max (fixed)
 
+// ── Futures-specific liability protection ────────────────────────────────────
+// Futures odds go up to 251x — need strict caps to prevent treasury blowout
+const FUTURES_MAX_STAKE_SBETS = 50_000;   // 50K SBETS max per futures bet
+const FUTURES_MAX_STAKE_SUI = 5;          // 5 SUI max per futures bet
+const FUTURES_MAX_PAYOUT_SBETS = 5_000_000;  // 5M SBETS max payout per futures bet
+const FUTURES_MAX_PAYOUT_SUI = 500;       // 500 SUI max payout per futures bet
+
 async function checkBetRateLimitDB(walletAddress: string): Promise<{ allowed: boolean; remaining?: number; message?: string }> {
   const key = walletAddress.toLowerCase();
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -1841,7 +1848,25 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
     if (!(await validateAdminAuth(req))) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    return res.json({ maxStakeSbets: RUNTIME_MAX_STAKE_SBETS, maxStakeSui: RUNTIME_MAX_STAKE_SUI });
+    return res.json({ 
+      maxStakeSbets: RUNTIME_MAX_STAKE_SBETS, 
+      maxStakeSui: RUNTIME_MAX_STAKE_SUI,
+      futures: {
+        maxStakeSbets: FUTURES_MAX_STAKE_SBETS,
+        maxStakeSui: FUTURES_MAX_STAKE_SUI,
+        maxPayoutSbets: FUTURES_MAX_PAYOUT_SBETS,
+        maxPayoutSui: FUTURES_MAX_PAYOUT_SUI,
+      }
+    });
+  });
+
+  app.get("/api/futures/stake-limits", async (_req: Request, res: Response) => {
+    return res.json({
+      maxStakeSbets: FUTURES_MAX_STAKE_SBETS,
+      maxStakeSui: FUTURES_MAX_STAKE_SUI,
+      maxPayoutSbets: FUTURES_MAX_PAYOUT_SBETS,
+      maxPayoutSui: FUTURES_MAX_PAYOUT_SUI,
+    });
   });
 
   // Admin get all bets endpoint
@@ -4911,16 +4936,33 @@ export async function registerRoutes(app: express.Express): Promise<Server> {
         });
       }
       
-      const MAX_STAKE_SUI = RUNTIME_MAX_STAKE_SUI;
-      const MAX_STAKE_SBETS = RUNTIME_MAX_STAKE_SBETS;
+      const isFuturesBet = isFuturesEvent(String(data.eventId));
+      const MAX_STAKE_SUI = isFuturesBet ? FUTURES_MAX_STAKE_SUI : RUNTIME_MAX_STAKE_SUI;
+      const MAX_STAKE_SBETS = isFuturesBet ? FUTURES_MAX_STAKE_SBETS : RUNTIME_MAX_STAKE_SBETS;
       const maxStake = betCurrency === 'SBETS' ? MAX_STAKE_SBETS : MAX_STAKE_SUI;
       
       if (betAmount > maxStake) {
-        console.log(`❌ Bet rejected (max stake exceeded): ${betAmount} ${betCurrency} > ${maxStake} ${betCurrency}`);
+        console.log(`❌ Bet rejected (max stake exceeded${isFuturesBet ? ' FUTURES' : ''}): ${betAmount} ${betCurrency} > ${maxStake} ${betCurrency}`);
         return res.status(400).json({
-          message: `Maximum stake is ${maxStake.toLocaleString()} ${betCurrency}`,
+          message: isFuturesBet 
+            ? `Futures bets are limited to ${maxStake.toLocaleString()} ${betCurrency} to manage liability. High odds = lower max stake.`
+            : `Maximum stake is ${maxStake.toLocaleString()} ${betCurrency}`,
           code: "MAX_STAKE_EXCEEDED"
         });
+      }
+
+      if (isFuturesBet) {
+        const potentialPayout = betAmount * odds;
+        const maxPayout = betCurrency === 'SBETS' ? FUTURES_MAX_PAYOUT_SBETS : FUTURES_MAX_PAYOUT_SUI;
+        if (potentialPayout > maxPayout) {
+          const safeStake = Math.floor(maxPayout / odds);
+          console.log(`❌ Futures payout cap: ${potentialPayout.toFixed(0)} ${betCurrency} > max ${maxPayout}, suggesting stake ${safeStake}`);
+          return res.status(400).json({
+            message: `Maximum potential payout for futures is ${maxPayout.toLocaleString()} ${betCurrency}. Try a stake of ${safeStake.toLocaleString()} ${betCurrency} or less.`,
+            code: "FUTURES_PAYOUT_CAP",
+            maxStake: safeStake,
+          });
+        }
       }
       
       // USER BETTING LIMITS CHECK (validate only, update after bet success)

@@ -435,9 +435,10 @@ export default function CleanHome() {
               <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded">AI</span>
             </Link>
             <Link href="/bet-history" className="text-gray-400 hover:text-cyan-400 transition-colors text-sm font-medium" data-testid="nav-my-bets">{t('myBets')}</Link>
-            <Link href="/world-cup" className="flex items-center gap-1.5 text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-world-cup">
-              🏆 World Cup
-              <span className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-[9px] font-bold px-1 py-0.5 rounded animate-pulse">NEW</span>
+            <Link href="/world-cup" className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 transition-colors text-sm font-bold" data-testid="nav-world-cup">
+              <svg width="16" height="16" viewBox="0 0 64 64" fill="none" className="inline-block"><path d="M20 8h24v4c0 12-4 22-12 26-8-4-12-14-12-26V8z" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/><path d="M20 10C16 10 10 14 10 22c0 6 4 10 8 12l2-2c-4-2-7-5-7-10 0-6 3-10 7-12z" fill="#FFD700"/><path d="M44 10c4 0 10 4 10 12 0 6-4 10-8 12l-2-2c4-2 7-5 7-10 0-6-3-10-7-12z" fill="#FFD700"/><rect x="29" y="36" width="6" height="10" rx="1" fill="#FFD700"/><path d="M22 48h20c1 0 2 1 2 2v4H20v-4c0-1 1-2 2-2z" fill="#06B6D4"/></svg>
+              World Cup
+              <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[9px] font-bold px-1 py-0.5 rounded animate-pulse">NEW</span>
             </Link>
             <Link href="/revenue" className="text-yellow-400 hover:text-yellow-300 transition-colors text-sm font-bold" data-testid="nav-revenue">{t('revenue')}</Link>
             <DropdownMenu>
@@ -650,8 +651,9 @@ export default function CleanHome() {
               <Link href="/wallet-dashboard" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-dashboard">{t('dashboard')}</Link>
               <Link href="/promotions" onClick={() => setIsMobileMenuOpen(false)} className="text-gray-400 hover:text-cyan-400 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-promotions">{t('promotions')}</Link>
               <Link href="/trading" onClick={() => setIsMobileMenuOpen(false)} className="text-cyan-400 hover:text-cyan-300 transition-colors text-base font-medium py-2 border-b border-cyan-900/20" data-testid="mobile-nav-trade">{t('trade')}</Link>
-              <Link href="/world-cup" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-yellow-400 hover:text-yellow-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-world-cup">
-                🏆 World Cup 2026 <span className="bg-yellow-500/20 border border-yellow-500/40 text-yellow-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
+              <Link href="/world-cup" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-cyan-400 hover:text-cyan-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-world-cup">
+                <svg width="18" height="18" viewBox="0 0 64 64" fill="none"><path d="M20 8h24v4c0 12-4 22-12 26-8-4-12-14-12-26V8z" fill="#FFD700" stroke="#B8860B" strokeWidth="2"/><path d="M20 10C16 10 10 14 10 22c0 6 4 10 8 12l2-2c-4-2-7-5-7-10 0-6 3-10 7-12z" fill="#FFD700"/><path d="M44 10c4 0 10 4 10 12 0 6-4 10-8 12l-2-2c4-2 7-5 7-10 0-6-3-10-7-12z" fill="#FFD700"/><rect x="29" y="36" width="6" height="10" rx="1" fill="#FFD700"/><path d="M22 48h20c1 0 2 1 2 2v4H20v-4c0-1 1-2 2-2z" fill="#06B6D4"/></svg>
+                World Cup 2026 <span className="bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
               </Link>
               <Link href="/hot-potato" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 text-orange-400 hover:text-orange-300 transition-colors text-base font-bold py-2 border-b border-cyan-900/20" data-testid="mobile-nav-hot-potato">
                 Hot Potato Bets <span className="bg-orange-500/20 border border-orange-500/40 text-orange-300 text-[10px] font-bold px-1.5 py-0.5 rounded animate-pulse">NEW</span>
